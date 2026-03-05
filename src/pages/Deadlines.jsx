@@ -4,6 +4,7 @@ import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import DeadlinePanel from "../components/transactions/DeadlinePanel";
+import DeadlineAlerts from "../components/transactions/DeadlineAlerts";
 
 export default function Deadlines() {
   const { data: transactions = [], isLoading } = useQuery({
@@ -19,6 +20,9 @@ export default function Deadlines() {
           Track inspection, appraisal, and closing deadlines across all active transactions.
         </p>
       </div>
+
+      {/* Alerts */}
+      {!isLoading && <DeadlineAlerts transactions={transactions} />}
 
       <Card className="shadow-sm border-gray-100">
         <CardHeader>

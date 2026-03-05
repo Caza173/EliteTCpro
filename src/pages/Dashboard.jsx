@@ -11,6 +11,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import DashboardStats from "../components/dashboard/DashboardStats";
 import TransactionTable from "../components/transactions/TransactionTable";
 import DeadlinePanel from "../components/transactions/DeadlinePanel";
+import DeadlineAlerts from "../components/transactions/DeadlineAlerts";
 
 export default function Dashboard() {
   const { data: transactions = [], isLoading } = useQuery({
@@ -33,6 +34,9 @@ export default function Dashboard() {
           </Button>
         </Link>
       </div>
+
+      {/* Alerts */}
+      {!isLoading && <DeadlineAlerts transactions={transactions} />}
 
       {/* Stats */}
       {isLoading ? (
