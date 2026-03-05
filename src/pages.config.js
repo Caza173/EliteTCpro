@@ -57,6 +57,11 @@ import AgentIntake from './pages/AgentIntake';
 import Tasks from './pages/Tasks';
 import Documents from './pages/Documents';
 import ClientPortal from './pages/ClientPortal';
+import BrokerageSetup from './pages/BrokerageSetup';
+import Billing from './pages/Billing';
+import Templates from './pages/Templates';
+import AuditLog from './pages/AuditLog';
+import Notifications from './pages/Notifications';
 import __Layout from './Layout.jsx';
 
 
@@ -71,6 +76,11 @@ export const PAGES = {
     "Tasks": Tasks,
     "Documents": Documents,
     "ClientPortal": ClientPortal,
+    "BrokerageSetup": BrokerageSetup,
+    "Billing": Billing,
+    "Templates": Templates,
+    "AuditLog": AuditLog,
+    "Notifications": Notifications,
 }
 
 export const pagesConfig = {
