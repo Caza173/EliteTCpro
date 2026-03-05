@@ -9,8 +9,12 @@ export function useCurrentUser() {
   });
 }
 
+export function isOwnerOrAdmin(user) {
+  return user?.role === "owner" || user?.role === "admin";
+}
+
 export function isTCOrAdmin(user) {
-  return user?.role === "tc" || user?.role === "admin";
+  return user?.role === "tc" || user?.role === "admin" || user?.role === "owner";
 }
 
 export function isAgent(user) {
@@ -22,5 +26,9 @@ export function isClient(user) {
 }
 
 export function canEdit(user) {
-  return user?.role === "tc" || user?.role === "admin" || user?.role === "agent";
+  return ["owner", "admin", "tc", "agent"].includes(user?.role);
+}
+
+export function canManageBilling(user) {
+  return user?.role === "owner" || user?.role === "admin";
 }
