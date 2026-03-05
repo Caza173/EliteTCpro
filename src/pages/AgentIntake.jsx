@@ -15,7 +15,7 @@ import { generateDefaultTasks } from "../components/transactions/defaultTasks";
 const initial = {
   agent: "", agent_email: "", buyer: "", seller: "",
   address: "", mls_number: "", contract_date: "", closing_date: "",
-  commission: "", transaction_type: "buyer",
+  commission: "", transaction_type: "buyer", client_email: "",
 };
 
 export default function AgentIntake() {
@@ -24,7 +24,14 @@ export default function AgentIntake() {
   const queryClient = useQueryClient();
 
   const createMutation = useMutation({
-    mutationFn: (data) => base44.entities.Transaction.create(data),
+    mutationFn: async (data) => {
+      const tx = await base44.entities.Transaction.create(data);
+      // Invite client if email provided
+      if (data.client_email) {
+        try { await base44.users.inviteUser(data.client_email, "user"); } catch (_) {}
+      }
+      return tx;
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["transactions"] });
       setSubmitted(true);
@@ -141,6 +148,9 @@ export default function AgentIntake() {
                   <Input id="closing_date" type="date" value={form.closing_date} onChange={(e) => handleChange("closing_date", e.target.value)} />
                 </Field>
               </div>
+              <Field label="Client Email (will receive portal invite)" id="client_email">
+                <Input id="client_email" type="email" value={form.client_email} onChange={(e) => handleChange("client_email", e.target.value)} placeholder="client@email.com" />
+              </Field>
             </div>
 
             <div className="flex justify-end pt-2">
