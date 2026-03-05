@@ -7,8 +7,9 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Settings as SettingsIcon, Users, Bell, Palette, Loader2, UserPlus, CheckCircle } from "lucide-react";
-import { useCurrentUser, isTCOrAdmin } from "../components/auth/useCurrentUser";
+import { Settings as SettingsIcon, Users, Bell, Palette, Loader2, UserPlus, CheckCircle, Building2 } from "lucide-react";
+import { useCurrentUser, isTCOrAdmin, isOwnerOrAdmin } from "../components/auth/useCurrentUser";
+import { ROLE_COLORS } from "../components/utils/tenantUtils";
 
 export default function Settings() {
   const { data: currentUser } = useCurrentUser();
@@ -22,6 +23,13 @@ export default function Settings() {
     queryKey: ["users"],
     queryFn: () => base44.entities.User.list(),
     enabled: isTCOrAdmin(currentUser),
+  });
+
+  const { data: brokerage } = useQuery({
+    queryKey: ["brokerage", currentUser?.brokerage_id],
+    queryFn: () => base44.entities.Brokerage.filter({ id: currentUser?.brokerage_id }),
+    enabled: !!currentUser?.brokerage_id,
+    select: (data) => data[0],
   });
 
   const updateRoleMutation = useMutation({
@@ -40,12 +48,7 @@ export default function Settings() {
     setTimeout(() => setInvited(false), 3000);
   };
 
-  const roleColors = {
-    admin: "bg-red-50 text-red-700 border-red-200",
-    tc: "bg-purple-50 text-purple-700 border-purple-200",
-    agent: "bg-blue-50 text-blue-700 border-blue-200",
-    client: "bg-gray-50 text-gray-600 border-gray-200",
-  };
+  const roleColors = ROLE_COLORS;
 
   return (
     <div className="max-w-3xl mx-auto space-y-6">
@@ -157,10 +160,33 @@ export default function Settings() {
         </Card>
       )}
 
+      {/* Brokerage info */}
+      {brokerage && (
+        <Card className="shadow-sm border-gray-100">
+          <CardHeader className="pb-3">
+            <CardTitle className="text-base font-semibold flex items-center gap-2">
+              <Building2 className="w-4 h-4" /> Brokerage
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-2 gap-3 text-sm">
+              <div><p className="text-xs text-gray-400">Name</p><p className="font-medium">{brokerage.name}</p></div>
+              <div><p className="text-xs text-gray-400">Status</p>
+                <Badge variant="outline" className={`capitalize text-xs ${brokerage.status === "active" ? "bg-emerald-50 text-emerald-700 border-emerald-200" : brokerage.status === "trial" ? "bg-amber-50 text-amber-700 border-amber-200" : "bg-gray-50 text-gray-600"}`}>
+                  {brokerage.status}
+                </Badge>
+              </div>
+              <div><p className="text-xs text-gray-400">Timezone</p><p className="font-medium">{brokerage.timezone}</p></div>
+              <div><p className="text-xs text-gray-400">Contact</p><p className="font-medium">{brokerage.primary_contact_email || "—"}</p></div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
       {/* Placeholders */}
       {[
-        { icon: Bell, title: "Notifications", desc: "Email deadline reminders via SendGrid/Resend — coming soon." },
-        { icon: Palette, title: "Appearance", desc: "Theme customization and branding options coming soon." },
+        { icon: Bell, title: "Notification Rules", desc: "Configure deadline alerts, task reminders, and doc checklist notifications." },
+        { icon: Palette, title: "Branding", desc: "Upload logo, set primary color, and customize the client portal." },
       ].map(({ icon: Icon, title, desc }) => (
         <Card key={title} className="shadow-sm border-gray-100 opacity-70">
           <CardHeader className="flex flex-row items-center gap-4 py-4">
