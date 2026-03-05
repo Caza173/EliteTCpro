@@ -7,10 +7,10 @@ import { CheckCircle2, XCircle, Upload, Clock, Loader2, FileText } from "lucide-
 import { format } from "date-fns";
 
 const STATUS_STYLES = {
-  missing: { badge: "bg-red-50 text-red-600 border-red-200", label: "Missing", Icon: XCircle },
-  uploaded: { badge: "bg-amber-50 text-amber-600 border-amber-200", label: "Uploaded", Icon: Clock },
-  approved: { badge: "bg-emerald-50 text-emerald-700 border-emerald-200", label: "Approved", Icon: CheckCircle2 },
-  rejected: { badge: "bg-red-50 text-red-600 border-red-200", label: "Rejected", Icon: XCircle },
+  missing: { badge: "bg-red-50 text-red-600 border-red-200", label: "Missing" },
+  uploaded: { badge: "bg-amber-50 text-amber-600 border-amber-200", label: "Uploaded" },
+  approved: { badge: "bg-emerald-50 text-emerald-700 border-emerald-200", label: "Approved" },
+  rejected: { badge: "bg-red-50 text-red-600 border-red-200", label: "Rejected" },
 };
 
 export default function DocChecklistPanel({ items = [], currentUser, transactionId, brokerageId, onUpload }) {
@@ -34,10 +34,11 @@ export default function DocChecklistPanel({ items = [], currentUser, transaction
   return (
     <div className="space-y-2">
       {visibleItems.map((item) => {
-        const { badge, label, Icon } = STATUS_STYLES[item.status] || STATUS_STYLES.missing;
+        const { badge, label } = STATUS_STYLES[item.status] || STATUS_STYLES.missing;
+        const StatusIcon = item.status === "approved" ? CheckCircle2 : item.status === "uploaded" ? Clock : XCircle;
         return (
           <div key={item.id} className="flex items-center gap-3 p-3 rounded-lg border border-gray-100 bg-white">
-            <Icon className={`w-4 h-4 flex-shrink-0 ${item.status === "approved" ? "text-emerald-500" : item.status === "missing" || item.status === "rejected" ? "text-red-400" : "text-amber-400"}`} />
+            <StatusIcon className={`w-4 h-4 flex-shrink-0 ${item.status === "approved" ? "text-emerald-500" : item.status === "missing" || item.status === "rejected" ? "text-red-400" : "text-amber-400"}`} />
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-2">
                 <p className="text-sm font-medium text-gray-800 capitalize">{item.label || item.doc_type}</p>
