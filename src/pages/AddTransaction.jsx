@@ -1,16 +1,27 @@
 import React from "react";
 import { useNavigate } from "react-router-dom";
 import { base44 } from "@/api/base44Client";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQueryClient, useQuery } from "@tanstack/react-query";
 import { createPageUrl } from "@/utils";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import TransactionForm from "../components/transactions/TransactionForm";
 import { generateDeadlines } from "../components/transactions/deadlineUtils";
 import { generateDefaultTasks } from "../components/transactions/defaultTasks";
+import { useCurrentUser } from "../components/auth/useCurrentUser";
+import { generateTasksFromTemplate, generateDeadlinesFromTemplate, buildChecklistItems, writeAuditLog } from "../components/utils/tenantUtils";
 
 export default function AddTransaction() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
+  const { data: currentUser } = useCurrentUser();
+
+  const { data: templates = [] } = useQuery({
+    queryKey: ["templates", currentUser?.brokerage_id],
+    queryFn: () => base44.entities.WorkflowTemplate.filter({ brokerage_id: currentUser?.brokerage_id }),
+    enabled: !!currentUser?.brokerage_id,
+  });
+
+  const defaultTemplate = templates.find((t) => t.is_default) || templates[0];
 
   const createMutation = useMutation({
     mutationFn: (data) => base44.entities.Transaction.create(data),
