@@ -23,11 +23,16 @@ import {
   Calendar,
   ArrowLeft,
   Trash2,
+  ClipboardCheck,
 } from "lucide-react";
 import { format } from "date-fns";
 import PhaseChecklist from "../components/transactions/PhaseChecklist";
 import TransactionTimeline from "../components/transactions/TransactionTimeline";
 import TaskList from "../components/transactions/TaskList";
+import DocChecklistPanel from "../components/transactions/DocChecklistPanel";
+import HealthScoreBadge from "../components/dashboard/HealthScoreBadge";
+import { useCurrentUser } from "../components/auth/useCurrentUser";
+import { writeAuditLog, computeHealthScore } from "../components/utils/tenantUtils";
 
 const PHASES = [
   "Pre-Contract", "Offer Drafting", "Offer Accepted", "Escrow Opened",
@@ -47,6 +52,7 @@ export default function TransactionDetail() {
   const id = urlParams.get("id");
   const navigate = useNavigate();
   const queryClient = useQueryClient();
+  const { data: currentUser } = useCurrentUser();
 
   const { data: transactions = [], isLoading } = useQuery({
     queryKey: ["transactions"],
@@ -54,6 +60,12 @@ export default function TransactionDetail() {
   });
 
   const transaction = transactions.find((t) => t.id === id);
+
+  const { data: checklistItems = [] } = useQuery({
+    queryKey: ["checklist", id],
+    queryFn: () => base44.entities.DocumentChecklistItem.filter({ transaction_id: id }),
+    enabled: !!id,
+  });
 
   const updateMutation = useMutation({
     mutationFn: ({ id, data }) => base44.entities.Transaction.update(id, data),
@@ -68,7 +80,7 @@ export default function TransactionDetail() {
     },
   });
 
-  const handleTogglePhase = (phaseNum) => {
+  const handleTogglePhase = async (phaseNum) => {
     if (!transaction) return;
     const completed = transaction.phases_completed || [];
     let newCompleted;
@@ -77,17 +89,25 @@ export default function TransactionDetail() {
     } else {
       newCompleted = [...completed, phaseNum];
     }
-    // Current phase = highest completed + 1, or 1 if none
     const maxCompleted = newCompleted.length > 0 ? Math.max(...newCompleted) : 0;
     const newPhase = Math.min(maxCompleted + 1, 12);
     updateMutation.mutate({
       id: transaction.id,
-      data: { phases_completed: newCompleted, phase: newPhase },
+      data: { phases_completed: newCompleted, phase: newPhase, last_activity_at: new Date().toISOString() },
+    });
+    await writeAuditLog({
+      brokerageId: transaction.brokerage_id,
+      transactionId: transaction.id,
+      actorEmail: currentUser?.email,
+      action: "phase_changed",
+      entityType: "transaction",
+      entityId: transaction.id,
+      description: `Phase ${phaseNum} ${newCompleted.includes(phaseNum) ? "completed" : "unchecked"}`,
     });
   };
 
   const handleStatusChange = (newStatus) => {
-    updateMutation.mutate({ id: transaction.id, data: { status: newStatus } });
+    updateMutation.mutate({ id: transaction.id, data: { status: newStatus, last_activity_at: new Date().toISOString() } });
   };
 
   if (isLoading) {
@@ -159,13 +179,17 @@ export default function TransactionDetail() {
               </div>
               <div>
                 <CardTitle className="text-xl">{transaction.address}</CardTitle>
-                <div className="flex items-center gap-2 mt-1">
+                <div className="flex items-center gap-2 mt-1 flex-wrap">
                   <Badge variant="outline" className={`text-xs capitalize ${statusStyles[transaction.status] || statusStyles.active}`}>
                     {transaction.status || "active"}
                   </Badge>
                   <Badge variant="outline" className="text-xs capitalize bg-gray-50 text-gray-600">
                     {transaction.transaction_type || "buyer"}
                   </Badge>
+                  <HealthScoreBadge
+                    healthScore={transaction.health_score ?? computeHealthScore(transaction, checklistItems).health_score}
+                    riskLevel={transaction.risk_level ?? computeHealthScore(transaction, checklistItems).risk_level}
+                  />
                 </div>
               </div>
             </div>
@@ -210,7 +234,7 @@ export default function TransactionDetail() {
         </CardContent>
       </Card>
 
-      {/* Phase Checklist + Tasks side by side on large screens */}
+      {/* Phase Checklist + Tasks */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <Card className="shadow-sm border-gray-100">
           <CardHeader>
@@ -236,16 +260,49 @@ export default function TransactionDetail() {
           <CardContent>
             <TaskList
               tasks={transaction.tasks || []}
-              onToggleTask={(taskId) => {
+              onToggleTask={async (taskId) => {
                 const updatedTasks = (transaction.tasks || []).map((task) =>
                   task.id === taskId ? { ...task, completed: !task.completed } : task
                 );
-                updateMutation.mutate({ id: transaction.id, data: { tasks: updatedTasks } });
+                updateMutation.mutate({ id: transaction.id, data: { tasks: updatedTasks, last_activity_at: new Date().toISOString() } });
+                await writeAuditLog({
+                  brokerageId: transaction.brokerage_id,
+                  transactionId: transaction.id,
+                  actorEmail: currentUser?.email,
+                  action: "task_completed",
+                  entityType: "task",
+                  entityId: taskId,
+                  description: `Task ${taskId} toggled by ${currentUser?.email}`,
+                });
               }}
             />
           </CardContent>
         </Card>
       </div>
+
+      {/* Doc Checklist */}
+      {checklistItems.length > 0 && (
+        <Card className="shadow-sm border-gray-100">
+          <CardHeader>
+            <div className="flex items-center justify-between">
+              <CardTitle className="text-base font-semibold flex items-center gap-2">
+                <ClipboardCheck className="w-4 h-4 text-blue-500" /> Document Checklist
+              </CardTitle>
+              <span className="text-xs text-gray-400">
+                {checklistItems.filter((i) => i.status === "approved").length}/{checklistItems.length} approved
+              </span>
+            </div>
+          </CardHeader>
+          <CardContent>
+            <DocChecklistPanel
+              items={checklistItems}
+              currentUser={currentUser}
+              transactionId={transaction.id}
+              brokerageId={transaction.brokerage_id}
+            />
+          </CardContent>
+        </Card>
+      )}
     </div>
   );
 }
