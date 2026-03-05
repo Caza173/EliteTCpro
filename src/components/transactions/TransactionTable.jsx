@@ -1,0 +1,105 @@
+import React from "react";
+import { Link } from "react-router-dom";
+import { createPageUrl } from "@/utils";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import { Eye, MapPin, User, Calendar } from "lucide-react";
+import { format } from "date-fns";
+
+const PHASES = [
+  "Pre-Contract", "Offer Drafting", "Offer Accepted", "Escrow Opened",
+  "Inspection Period", "Repair Negotiation", "Appraisal Ordered",
+  "Loan Processing", "Clear to Close", "Final Walkthrough", "Closing", "Post Closing"
+];
+
+const statusStyles = {
+  active: "bg-emerald-50 text-emerald-700 border-emerald-200",
+  pending: "bg-amber-50 text-amber-700 border-amber-200",
+  closed: "bg-slate-100 text-slate-600 border-slate-200",
+  cancelled: "bg-red-50 text-red-700 border-red-200",
+};
+
+export default function TransactionTable({ transactions }) {
+  if (!transactions || transactions.length === 0) {
+    return (
+      <div className="text-center py-16">
+        <div className="w-16 h-16 rounded-full bg-gray-100 flex items-center justify-center mx-auto mb-4">
+          <MapPin className="w-7 h-7 text-gray-400" />
+        </div>
+        <h3 className="text-lg font-semibold text-gray-900 mb-1">No transactions yet</h3>
+        <p className="text-sm text-gray-500">Create your first transaction to get started.</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="overflow-x-auto">
+      <Table>
+        <TableHeader>
+          <TableRow className="border-gray-200/60">
+            <TableHead className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Property</TableHead>
+            <TableHead className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Client</TableHead>
+            <TableHead className="text-xs font-semibold text-gray-500 uppercase tracking-wider hidden md:table-cell">Agent</TableHead>
+            <TableHead className="text-xs font-semibold text-gray-500 uppercase tracking-wider hidden lg:table-cell">Contract Date</TableHead>
+            <TableHead className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Phase</TableHead>
+            <TableHead className="text-xs font-semibold text-gray-500 uppercase tracking-wider hidden sm:table-cell">Status</TableHead>
+            <TableHead className="text-xs font-semibold text-gray-500 uppercase tracking-wider text-right">Action</TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          {transactions.map((tx) => (
+            <TableRow key={tx.id} className="hover:bg-gray-50/60 transition-colors border-gray-100">
+              <TableCell>
+                <div className="flex items-center gap-2">
+                  <div className="w-8 h-8 rounded-lg bg-blue-50 flex items-center justify-center flex-shrink-0">
+                    <MapPin className="w-4 h-4 text-blue-500" />
+                  </div>
+                  <span className="font-medium text-gray-900 text-sm">{tx.address}</span>
+                </div>
+              </TableCell>
+              <TableCell>
+                <div className="flex items-center gap-1.5 text-sm text-gray-600">
+                  <User className="w-3.5 h-3.5 text-gray-400" />
+                  {tx.buyer}
+                </div>
+              </TableCell>
+              <TableCell className="hidden md:table-cell text-sm text-gray-600">{tx.agent}</TableCell>
+              <TableCell className="hidden lg:table-cell">
+                <div className="flex items-center gap-1.5 text-sm text-gray-500">
+                  <Calendar className="w-3.5 h-3.5" />
+                  {tx.contract_date ? format(new Date(tx.contract_date), "MMM d, yyyy") : "—"}
+                </div>
+              </TableCell>
+              <TableCell>
+                <span className="text-xs font-medium text-gray-700 bg-gray-100 px-2 py-1 rounded-md">
+                  {PHASES[(tx.phase || 1) - 1]}
+                </span>
+              </TableCell>
+              <TableCell className="hidden sm:table-cell">
+                <Badge variant="outline" className={`text-xs font-medium capitalize ${statusStyles[tx.status] || statusStyles.active}`}>
+                  {tx.status || "active"}
+                </Badge>
+              </TableCell>
+              <TableCell className="text-right">
+                <Link to={createPageUrl("TransactionDetail") + `?id=${tx.id}`}>
+                  <Button variant="ghost" size="sm" className="text-blue-600 hover:text-blue-700 hover:bg-blue-50">
+                    <Eye className="w-4 h-4 mr-1" />
+                    View
+                  </Button>
+                </Link>
+              </TableCell>
+            </TableRow>
+          ))}
+        </TableBody>
+      </Table>
+    </div>
+  );
+}
