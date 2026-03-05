@@ -9,6 +9,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Upload, FileText, Trash2, Download, Loader2, FolderOpen } from "lucide-react";
 import { format } from "date-fns";
 import { useCurrentUser } from "../components/auth/useCurrentUser";
+import { writeAuditLog, createNotification } from "../components/utils/tenantUtils";
 
 const DOC_TYPES = ["contract", "disclosures", "inspection", "appraisal", "title", "lender", "closing", "other"];
 
@@ -41,6 +42,11 @@ export default function Documents() {
     queryFn: () => base44.entities.Document.list("-created_date"),
   });
 
+  const { data: checklistItems = [] } = useQuery({
+    queryKey: ["allChecklist"],
+    queryFn: () => base44.entities.DocumentChecklistItem.list(),
+  });
+
   const deleteMutation = useMutation({
     mutationFn: (id) => base44.entities.Document.delete(id),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["documents"] }),
@@ -53,8 +59,11 @@ export default function Documents() {
       return;
     }
     setUploading(true);
+
     const { file_url } = await base44.integrations.Core.UploadFile({ file });
-    await base44.entities.Document.create({
+
+    const doc = await base44.entities.Document.create({
+      brokerage_id: currentUser?.brokerage_id,
       transaction_id: selectedTxId,
       doc_type: selectedDocType,
       file_url,
@@ -62,6 +71,31 @@ export default function Documents() {
       uploaded_by: currentUser?.email || "unknown",
       uploaded_by_role: currentUser?.role || "agent",
     });
+
+    // Auto-link to checklist item if matching doc type + transaction
+    const matchingItem = checklistItems.find(
+      (ci) => ci.transaction_id === selectedTxId && ci.doc_type === selectedDocType && ci.status === "missing"
+    );
+    if (matchingItem) {
+      await base44.entities.DocumentChecklistItem.update(matchingItem.id, {
+        status: "uploaded",
+        uploaded_document_id: doc.id,
+      });
+      queryClient.invalidateQueries({ queryKey: ["checklist"] });
+      queryClient.invalidateQueries({ queryKey: ["allChecklist"] });
+    }
+
+    // Audit log
+    await writeAuditLog({
+      brokerageId: currentUser?.brokerage_id,
+      transactionId: selectedTxId,
+      actorEmail: currentUser?.email,
+      action: "doc_uploaded",
+      entityType: "document",
+      entityId: doc.id,
+      description: `${currentUser?.email} uploaded ${file.name} (${selectedDocType})`,
+    });
+
     queryClient.invalidateQueries({ queryKey: ["documents"] });
     setUploading(false);
     if (fileInputRef.current) fileInputRef.current.value = "";
@@ -123,7 +157,7 @@ export default function Documents() {
         </CardContent>
       </Card>
 
-      {/* Filter by transaction */}
+      {/* Filter */}
       <div className="flex items-center gap-3">
         <Select value={selectedTxId} onValueChange={setSelectedTxId}>
           <SelectTrigger className="w-64">
@@ -138,7 +172,7 @@ export default function Documents() {
         </Select>
       </div>
 
-      {/* Documents List */}
+      {/* List */}
       <Card className="shadow-sm border-gray-100">
         <CardContent className="pt-4">
           {isLoading ? (
@@ -173,7 +207,7 @@ export default function Documents() {
                         <Download className="w-4 h-4" />
                       </Button>
                     </a>
-                    {(currentUser?.role === "tc" || currentUser?.role === "admin") && (
+                    {(currentUser?.role === "tc" || currentUser?.role === "admin" || currentUser?.role === "owner") && (
                       <Button
                         variant="ghost" size="icon"
                         className="h-8 w-8 text-red-400 hover:text-red-600"
