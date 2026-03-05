@@ -15,8 +15,12 @@ import {
   ClipboardList,
   UserPlus,
   FolderOpen,
-  Home
+  Home,
+  CreditCard,
+  Shield,
+  Workflow
 } from "lucide-react";
+import NotificationBell from "./components/dashboard/NotificationBell";
 
 const TC_NAV = [
   { label: "Dashboard", page: "Dashboard", icon: LayoutDashboard },
@@ -25,6 +29,20 @@ const TC_NAV = [
   { label: "Deadlines", page: "Deadlines", icon: Clock },
   { label: "Tasks", page: "Tasks", icon: ClipboardList },
   { label: "Documents", page: "Documents", icon: FolderOpen },
+  { label: "Templates", page: "Templates", icon: Workflow },
+  { label: "Settings", page: "Settings", icon: Settings },
+];
+
+const OWNER_NAV = [
+  { label: "Dashboard", page: "Dashboard", icon: LayoutDashboard },
+  { label: "Transactions", page: "Transactions", icon: FileText },
+  { label: "Agent Intake", page: "AgentIntake", icon: UserPlus },
+  { label: "Deadlines", page: "Deadlines", icon: Clock },
+  { label: "Tasks", page: "Tasks", icon: ClipboardList },
+  { label: "Documents", page: "Documents", icon: FolderOpen },
+  { label: "Templates", page: "Templates", icon: Workflow },
+  { label: "Billing", page: "Billing", icon: CreditCard },
+  { label: "Audit Log", page: "AuditLog", icon: Shield },
   { label: "Settings", page: "Settings", icon: Settings },
 ];
 
@@ -50,7 +68,10 @@ export default function Layout({ children, currentPageName }) {
   });
 
   const role = currentUser?.role;
-  const navItems = role === "client" ? CLIENT_NAV : role === "agent" ? AGENT_NAV : TC_NAV;
+  const navItems = role === "client" ? CLIENT_NAV
+    : role === "agent" ? AGENT_NAV
+    : (role === "owner" || role === "admin") ? OWNER_NAV
+    : TC_NAV;
 
   return (
     <div className="min-h-screen bg-gray-50 flex">
@@ -141,8 +162,13 @@ export default function Layout({ children, currentPageName }) {
              currentPageName === "AgentIntake" ? "Agent Intake" :
              currentPageName === "ClientPortal" ? "My Transaction" :
              currentPageName === "Documents" ? "Documents" :
+             currentPageName === "AuditLog" ? "Audit Log" :
+             currentPageName === "BrokerageSetup" ? "Brokerage Setup" :
              currentPageName}
           </h2>
+          <div className="ml-auto">
+            <NotificationBell />
+          </div>
         </header>
 
         {/* Page content */}
