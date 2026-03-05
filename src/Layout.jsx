@@ -1,6 +1,8 @@
 import React, { useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link } from "react-router-dom";
 import { createPageUrl } from "@/utils";
+import { base44 } from "@/api/base44Client";
+import { useQuery } from "@tanstack/react-query";
 import {
   LayoutDashboard,
   FileText,
@@ -11,20 +13,44 @@ import {
   ChevronRight,
   Building2,
   ClipboardList,
-  UserPlus
+  UserPlus,
+  FolderOpen,
+  Home
 } from "lucide-react";
 
-const navItems = [
+const TC_NAV = [
   { label: "Dashboard", page: "Dashboard", icon: LayoutDashboard },
   { label: "Transactions", page: "Transactions", icon: FileText },
   { label: "Agent Intake", page: "AgentIntake", icon: UserPlus },
   { label: "Deadlines", page: "Deadlines", icon: Clock },
   { label: "Tasks", page: "Tasks", icon: ClipboardList },
+  { label: "Documents", page: "Documents", icon: FolderOpen },
   { label: "Settings", page: "Settings", icon: Settings },
+];
+
+const AGENT_NAV = [
+  { label: "Dashboard", page: "Dashboard", icon: LayoutDashboard },
+  { label: "Transactions", page: "Transactions", icon: FileText },
+  { label: "Agent Intake", page: "AgentIntake", icon: UserPlus },
+  { label: "Tasks", page: "Tasks", icon: ClipboardList },
+  { label: "Documents", page: "Documents", icon: FolderOpen },
+];
+
+const CLIENT_NAV = [
+  { label: "My Transaction", page: "ClientPortal", icon: Home },
+  { label: "Documents", page: "Documents", icon: FolderOpen },
 ];
 
 export default function Layout({ children, currentPageName }) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const { data: currentUser } = useQuery({
+    queryKey: ["currentUser"],
+    queryFn: () => base44.auth.me(),
+    retry: false,
+  });
+
+  const role = currentUser?.role;
+  const navItems = role === "client" ? CLIENT_NAV : role === "agent" ? AGENT_NAV : TC_NAV;
 
   return (
     <div className="min-h-screen bg-gray-50 flex">
@@ -113,6 +139,8 @@ export default function Layout({ children, currentPageName }) {
             {currentPageName === "TransactionDetail" ? "Transaction Detail" : 
              currentPageName === "AddTransaction" ? "New Transaction" :
              currentPageName === "AgentIntake" ? "Agent Intake" :
+             currentPageName === "ClientPortal" ? "My Transaction" :
+             currentPageName === "Documents" ? "Documents" :
              currentPageName}
           </h2>
         </header>
