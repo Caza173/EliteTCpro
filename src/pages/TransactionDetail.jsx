@@ -26,6 +26,8 @@ import {
 } from "lucide-react";
 import { format } from "date-fns";
 import PhaseChecklist from "../components/transactions/PhaseChecklist";
+import TransactionTimeline from "../components/transactions/TransactionTimeline";
+import TaskList from "../components/transactions/TaskList";
 
 const PHASES = [
   "Pre-Contract", "Offer Drafting", "Offer Accepted", "Escrow Opened",
@@ -195,20 +197,55 @@ export default function TransactionDetail() {
         </CardContent>
       </Card>
 
-      {/* Phase Checklist */}
+      {/* Timeline */}
       <Card className="shadow-sm border-gray-100">
-        <CardHeader>
-          <CardTitle className="text-base font-semibold">Transaction Phases</CardTitle>
-          <p className="text-sm text-gray-500">Check off phases as they are completed.</p>
+        <CardHeader className="pb-2">
+          <CardTitle className="text-base font-semibold">Transaction Timeline</CardTitle>
         </CardHeader>
         <CardContent>
-          <PhaseChecklist
+          <TransactionTimeline
             phasesCompleted={transaction.phases_completed || []}
             currentPhase={transaction.phase || 1}
-            onTogglePhase={handleTogglePhase}
           />
         </CardContent>
       </Card>
+
+      {/* Phase Checklist + Tasks side by side on large screens */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <Card className="shadow-sm border-gray-100">
+          <CardHeader>
+            <CardTitle className="text-base font-semibold">Transaction Phases</CardTitle>
+            <p className="text-sm text-gray-500">Check off phases as completed.</p>
+          </CardHeader>
+          <CardContent>
+            <PhaseChecklist
+              phasesCompleted={transaction.phases_completed || []}
+              currentPhase={transaction.phase || 1}
+              onTogglePhase={handleTogglePhase}
+            />
+          </CardContent>
+        </Card>
+
+        <Card className="shadow-sm border-gray-100">
+          <CardHeader>
+            <CardTitle className="text-base font-semibold">Tasks</CardTitle>
+            <p className="text-sm text-gray-500">
+              {(transaction.tasks || []).filter((t) => t.completed).length} / {(transaction.tasks || []).length} completed
+            </p>
+          </CardHeader>
+          <CardContent>
+            <TaskList
+              tasks={transaction.tasks || []}
+              onToggleTask={(taskId) => {
+                const updatedTasks = (transaction.tasks || []).map((task) =>
+                  task.id === taskId ? { ...task, completed: !task.completed } : task
+                );
+                updateMutation.mutate({ id: transaction.id, data: { tasks: updatedTasks } });
+              }}
+            />
+          </CardContent>
+        </Card>
+      </div>
     </div>
   );
 }
