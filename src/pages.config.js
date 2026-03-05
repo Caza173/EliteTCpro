@@ -53,6 +53,8 @@ import AddTransaction from './pages/AddTransaction';
 import TransactionDetail from './pages/TransactionDetail';
 import Deadlines from './pages/Deadlines';
 import Settings from './pages/Settings';
+import AgentIntake from './pages/AgentIntake';
+import Tasks from './pages/Tasks';
 import __Layout from './Layout.jsx';
 
 
@@ -63,6 +65,8 @@ export const PAGES = {
     "TransactionDetail": TransactionDetail,
     "Deadlines": Deadlines,
     "Settings": Settings,
+    "AgentIntake": AgentIntake,
+    "Tasks": Tasks,
 }
 
 export const pagesConfig = {
