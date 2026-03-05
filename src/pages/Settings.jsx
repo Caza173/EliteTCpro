@@ -184,22 +184,28 @@ export default function Settings() {
       )}
 
       {/* Placeholders */}
-      {[
-        { icon: Bell, title: "Notification Rules", desc: "Configure deadline alerts, task reminders, and doc checklist notifications." },
-        { icon: Palette, title: "Branding", desc: "Upload logo, set primary color, and customize the client portal." },
-      ].map(({ icon: Icon, title, desc }) => (
-        <Card key={title} className="shadow-sm border-gray-100 opacity-70">
-          <CardHeader className="flex flex-row items-center gap-4 py-4">
-            <div className="w-9 h-9 rounded-lg bg-gray-50 flex items-center justify-center">
-              <Icon className="w-4 h-4 text-gray-400" />
-            </div>
-            <div>
-              <p className="font-semibold text-sm text-gray-700">{title}</p>
-              <p className="text-xs text-gray-400">{desc}</p>
-            </div>
-          </CardHeader>
-        </Card>
-      ))}
+      <Card className="shadow-sm border-gray-100 opacity-70">
+        <CardHeader className="flex flex-row items-center gap-4 py-4">
+          <div className="w-9 h-9 rounded-lg bg-gray-50 flex items-center justify-center">
+            <Bell className="w-4 h-4 text-gray-400" />
+          </div>
+          <div>
+            <p className="font-semibold text-sm text-gray-700">Notification Rules</p>
+            <p className="text-xs text-gray-400">Configure deadline alerts, task reminders, and doc checklist notifications.</p>
+          </div>
+        </CardHeader>
+      </Card>
+      <Card className="shadow-sm border-gray-100 opacity-70">
+        <CardHeader className="flex flex-row items-center gap-4 py-4">
+          <div className="w-9 h-9 rounded-lg bg-gray-50 flex items-center justify-center">
+            <Palette className="w-4 h-4 text-gray-400" />
+          </div>
+          <div>
+            <p className="font-semibold text-sm text-gray-700">Branding</p>
+            <p className="text-xs text-gray-400">Upload logo, set primary color, and customize the client portal.</p>
+          </div>
+        </CardHeader>
+      </Card>
     </div>
   );
 }
