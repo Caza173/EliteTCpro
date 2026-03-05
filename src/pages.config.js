@@ -55,6 +55,8 @@ import Deadlines from './pages/Deadlines';
 import Settings from './pages/Settings';
 import AgentIntake from './pages/AgentIntake';
 import Tasks from './pages/Tasks';
+import Documents from './pages/Documents';
+import ClientPortal from './pages/ClientPortal';
 import __Layout from './Layout.jsx';
 
 
@@ -67,6 +69,8 @@ export const PAGES = {
     "Settings": Settings,
     "AgentIntake": AgentIntake,
     "Tasks": Tasks,
+    "Documents": Documents,
+    "ClientPortal": ClientPortal,
 }
 
 export const pagesConfig = {
