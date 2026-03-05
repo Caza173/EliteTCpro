@@ -5,6 +5,8 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { createPageUrl } from "@/utils";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import TransactionForm from "../components/transactions/TransactionForm";
+import { generateDeadlines } from "../components/transactions/deadlineUtils";
+import { generateDefaultTasks } from "../components/transactions/defaultTasks";
 
 export default function AddTransaction() {
   const navigate = useNavigate();
@@ -27,7 +29,11 @@ export default function AddTransaction() {
         </CardHeader>
         <CardContent>
           <TransactionForm
-            onSubmit={(data) => createMutation.mutate(data)}
+            onSubmit={(data) => {
+              const deadlines = data.contract_date ? generateDeadlines(data.contract_date, data.closing_date) : {};
+              const tasks = generateDefaultTasks();
+              createMutation.mutate({ ...data, ...deadlines, tasks });
+            }}
             isSubmitting={createMutation.isPending}
           />
         </CardContent>

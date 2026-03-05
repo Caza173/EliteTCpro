@@ -9,13 +9,17 @@ import {
   Menu,
   X,
   ChevronRight,
-  Building2
+  Building2,
+  ClipboardList,
+  UserPlus
 } from "lucide-react";
 
 const navItems = [
   { label: "Dashboard", page: "Dashboard", icon: LayoutDashboard },
   { label: "Transactions", page: "Transactions", icon: FileText },
+  { label: "Agent Intake", page: "AgentIntake", icon: UserPlus },
   { label: "Deadlines", page: "Deadlines", icon: Clock },
+  { label: "Tasks", page: "Tasks", icon: ClipboardList },
   { label: "Settings", page: "Settings", icon: Settings },
 ];
 
@@ -108,6 +112,7 @@ export default function Layout({ children, currentPageName }) {
           <h2 className="text-lg font-semibold text-gray-900 tracking-tight">
             {currentPageName === "TransactionDetail" ? "Transaction Detail" : 
              currentPageName === "AddTransaction" ? "New Transaction" :
+             currentPageName === "AgentIntake" ? "Agent Intake" :
              currentPageName}
           </h2>
         </header>
