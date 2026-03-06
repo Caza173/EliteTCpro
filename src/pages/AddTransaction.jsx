@@ -52,15 +52,24 @@ export default function AddTransaction() {
   });
 
   const handleSubmit = (data) => {
-    let tasks, deadlines;
+    let tasks;
+    // Use deadlines from the form (auto-filled from P&S or manually entered)
+    // Only fall back to template/default generator if no dates set at all
+    const hasManualDeadlines = data.inspection_deadline || data.closing_date || data.earnest_money_deadline;
+    let templateDeadlines = {};
     if (defaultTemplate) {
       tasks = generateTasksFromTemplate(defaultTemplate, data.contract_date, data.closing_date);
-      deadlines = generateDeadlinesFromTemplate(defaultTemplate, data.contract_date, data.closing_date);
+      if (!hasManualDeadlines) {
+        templateDeadlines = generateDeadlinesFromTemplate(defaultTemplate, data.contract_date, data.closing_date);
+      }
     } else {
       tasks = generateDefaultTasks();
-      deadlines = data.contract_date ? generateDeadlines(data.contract_date, data.closing_date) : {};
+      if (!hasManualDeadlines && data.contract_date) {
+        templateDeadlines = generateDeadlines(data.contract_date, data.closing_date);
+      }
     }
     createMutation.mutate({
+      ...templateDeadlines,
       ...data,
       brokerage_id: currentUser?.brokerage_id,
       template_id: defaultTemplate?.id,
@@ -70,7 +79,6 @@ export default function AddTransaction() {
       health_score: 100,
       risk_level: "on_track",
       last_activity_at: new Date().toISOString(),
-      ...deadlines,
       tasks,
     });
   };
