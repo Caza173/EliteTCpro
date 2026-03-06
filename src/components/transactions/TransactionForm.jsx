@@ -54,6 +54,11 @@ export default function TransactionForm({ onSubmit, isSubmitting }) {
     if (parsed.propertyAddress) updates.address = parsed.propertyAddress;
     if (parsed.buyerName) updates.buyer = parsed.buyerName;
     if (parsed.sellerName) updates.seller = parsed.sellerName;
+    if (parsed.buyersAgentName) updates.buyers_agent_name = parsed.buyersAgentName;
+    if (parsed.sellersAgentName) updates.sellers_agent_name = parsed.sellersAgentName;
+    if (parsed.buyerBrokerage) updates.buyer_brokerage = parsed.buyerBrokerage;
+    if (parsed.sellerBrokerage) updates.seller_brokerage = parsed.sellerBrokerage;
+    if (parsed.closingTitleCompany) updates.closing_title_company = parsed.closingTitleCompany;
     if (parsed.financingCommitmentDate) updates.financing_deadline = parsed.financingCommitmentDate;
 
     // Compute offset-based deadlines from effectiveDate
