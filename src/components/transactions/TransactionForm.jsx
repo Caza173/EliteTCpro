@@ -35,6 +35,18 @@ export default function TransactionForm({ onSubmit, isSubmitting }) {
     setForm((prev) => ({ ...prev, [field]: value }));
   };
 
+  const handleParsed = (parsed) => {
+    setParsedData(parsed);
+    // Auto-fill form fields from parsed contract
+    const updates = {};
+    if (parsed.effectiveDate) updates.contract_date = parsed.effectiveDate;
+    if (parsed.closingDate) updates.closing_date = parsed.closingDate;
+    if (parsed.propertyAddress) updates.address = parsed.propertyAddress;
+    if (parsed.buyerName) updates.buyer = parsed.buyerName;
+    if (parsed.sellerName) updates.seller = parsed.sellerName;
+    setForm((prev) => ({ ...prev, ...updates }));
+  };
+
   const handleSubmit = (e) => {
     e.preventDefault();
     onSubmit({
