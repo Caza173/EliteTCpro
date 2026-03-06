@@ -131,8 +131,22 @@ export default function Dashboard() {
 
         {/* Deadlines */}
         <Card className="shadow-sm border-gray-100">
-          <CardHeader className="pb-2">
-            <CardTitle className="text-base font-semibold">Upcoming Deadlines</CardTitle>
+          <CardHeader className="pb-2 flex flex-row items-center justify-between">
+            <CardTitle className="text-base font-semibold">Deadlines</CardTitle>
+            <div className="flex gap-1 rounded-lg bg-gray-100 p-0.5">
+              <button
+                onClick={() => setDeadlineView("list")}
+                className={`px-2.5 py-1 rounded-md text-xs font-medium transition-colors flex items-center gap-1.5 ${deadlineView === "list" ? "bg-white shadow-sm text-gray-800" : "text-gray-500 hover:text-gray-700"}`}
+              >
+                <List className="w-3 h-3" /> List
+              </button>
+              <button
+                onClick={() => setDeadlineView("calendar")}
+                className={`px-2.5 py-1 rounded-md text-xs font-medium transition-colors flex items-center gap-1.5 ${deadlineView === "calendar" ? "bg-white shadow-sm text-gray-800" : "text-gray-500 hover:text-gray-700"}`}
+              >
+                <CalendarDays className="w-3 h-3" /> Calendar
+              </button>
+            </div>
           </CardHeader>
           <CardContent>
             {isLoading ? (
@@ -141,6 +155,8 @@ export default function Dashboard() {
                   <Skeleton key={i} className="h-16 rounded" />
                 ))}
               </div>
+            ) : deadlineView === "calendar" ? (
+              <DeadlineCalendarView transactions={transactions} />
             ) : (
               <DeadlinePanel transactions={transactions} />
             )}
