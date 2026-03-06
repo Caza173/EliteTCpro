@@ -60,6 +60,20 @@ export default function TransactionForm({ onSubmit, isSubmitting }) {
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
+
+      {/* P&S Upload Section */}
+      <div className="rounded-xl border border-dashed border-blue-200 bg-blue-50/30 p-4 space-y-3">
+        <div className="flex items-center gap-2">
+          <FileSearch className="w-4 h-4 text-blue-500" />
+          <p className="text-sm font-semibold text-gray-700">Upload Purchase &amp; Sales Agreement</p>
+          <span className="text-xs text-gray-400 ml-1">— auto-fills deadlines</span>
+        </div>
+        <PurchaseAgreementUpload onParsed={handleParsed} />
+        {parsedData && <ParsedDeadlinesPreview parsed={parsedData} />}
+      </div>
+
+      <Separator />
+
       {/* Property */}
       <div>
         <Label htmlFor="address" className="text-sm font-medium text-gray-700">Property Address *</Label>
