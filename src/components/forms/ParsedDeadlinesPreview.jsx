@@ -54,7 +54,7 @@ export default function ParsedDeadlinesPreview({ parsed }) {
             </div>
             <span className={`text-xs font-medium ${dateStr ? "text-gray-800" : "text-gray-400 italic"}`}>
               {dateStr
-                ? format(parseISO(dateStr), "MMM d, yyyy")
+                ? (() => { try { return format(parseISO(dateStr), "MMM d, yyyy"); } catch { return "Invalid date"; } })()
                 : "Not detected in contract"
               }
             </span>
