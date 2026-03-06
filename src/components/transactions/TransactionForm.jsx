@@ -146,22 +146,35 @@ export default function TransactionForm({ onSubmit, isSubmitting }) {
         />
       </div>
 
-      {/* Parties */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        {field("buyer", "Buyer Name", "text", "John Smith", true)}
-        {field("seller", "Seller Name", "text", "Jane Doe", true)}
-        {field("buyers_agent_name", "Buyer's Agent Name", "text", "Agent Name")}
-        {field("sellers_agent_name", "Seller's Agent Name", "text", "Agent Name")}
+      {/* Buyer side */}
+      <div>
+        <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3">Buyer Side</p>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {field("buyer", "Buyer Name(s)", "text", "John & Jane Smith", true)}
+          {field("buyers_agent_name", "Buyer's Agent Name", "text", "Agent Name")}
+          {field("buyer_brokerage", "Buyer Brokerage", "text", "Brokerage Name")}
+        </div>
       </div>
 
-      {/* TC / Listing Agent */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        {field("agent", "Transaction Coordinator / Agent *", "text", "TC Name", true)}
-        {field("agent_email", "Agent Email", "email", "agent@brokerage.com")}
+      {/* Seller side */}
+      <div>
+        <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3">Seller Side</p>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {field("seller", "Seller Name(s)", "text", "Robert Doe", true)}
+          {field("sellers_agent_name", "Seller's Agent Name", "text", "Agent Name")}
+          {field("seller_brokerage", "Seller Brokerage", "text", "Brokerage Name")}
+        </div>
       </div>
 
-      {/* Closing Company */}
-      {field("closing_title_company", "Closing / Title Company Name", "text", "NH Title & Escrow Co.")}
+      {/* TC / Title */}
+      <div>
+        <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3">Coordinator &amp; Title</p>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {field("agent", "Transaction Coordinator *", "text", "TC Name", true)}
+          {field("agent_email", "TC Email", "email", "tc@office.com")}
+        </div>
+        {field("closing_title_company", "Closing / Title Company Name", "text", "NH Title & Escrow Co.")}
+      </div>
 
       {/* Client Contact */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
