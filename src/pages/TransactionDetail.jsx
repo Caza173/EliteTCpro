@@ -243,24 +243,25 @@ TC Manager
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
             <InfoItem icon={User} label="Buyer" value={transaction.buyer} />
             <InfoItem icon={Users} label="Seller" value={transaction.seller} />
-            <InfoItem icon={User} label="Agent" value={transaction.agent} />
-            <InfoItem icon={Mail} label="Email" value={transaction.client_email || "—"} />
-            <InfoItem icon={Phone} label="Phone" value={transaction.client_phone || "—"} />
+            {transaction.buyers_agent_name && <InfoItem icon={User} label="Buyer's Agent" value={transaction.buyers_agent_name} />}
+            {transaction.sellers_agent_name && <InfoItem icon={User} label="Seller's Agent" value={transaction.sellers_agent_name} />}
+            <InfoItem icon={User} label="Transaction Coordinator" value={transaction.agent} />
+            <InfoItem icon={Mail} label="Client Email" value={transaction.client_email || "—"} />
+            <InfoItem icon={Phone} label="Client Phone" value={transaction.client_phone || "—"} />
+            {transaction.closing_title_company && <InfoItem icon={Calendar} label="Closing / Title Company" value={transaction.closing_title_company} />}
             <InfoItem
               icon={Calendar}
               label="Contract Date"
               value={transaction.contract_date ? format(new Date(transaction.contract_date), "MMM d, yyyy") : "—"}
             />
             <InfoItem
-              icon={Calendar}
-              label="Closing Date"
-              value={transaction.closing_date ? format(new Date(transaction.closing_date), "MMM d, yyyy") : "—"}
-            />
-            <InfoItem
               label="Current Phase"
               value={PHASES[(transaction.phase || 1) - 1]}
               highlight
             />
+            {transaction.is_cash_transaction && (
+              <InfoItem label="Financing" value="Cash Transaction" />
+            )}
           </div>
         </CardContent>
       </Card>
