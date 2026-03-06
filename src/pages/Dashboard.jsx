@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import { Link } from "react-router-dom";
 import { base44 } from "@/api/base44Client";
 import { useQuery } from "@tanstack/react-query";
@@ -6,13 +6,14 @@ import { createPageUrl } from "@/utils";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Plus, ArrowRight, AlertTriangle, CheckCircle2, FileWarning } from "lucide-react";
+import { Plus, ArrowRight, AlertTriangle, CheckCircle2, FileWarning, CalendarDays, List } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 
 import DashboardStats from "../components/dashboard/DashboardStats";
 import TransactionTable from "../components/transactions/TransactionTable";
 import DeadlinePanel from "../components/transactions/DeadlinePanel";
 import DeadlineAlerts from "../components/transactions/DeadlineAlerts";
+import DeadlineCalendarView from "../components/dashboard/DeadlineCalendarView";
 import { useCurrentUser } from "../components/auth/useCurrentUser";
 import { computeHealthScore, RISK_STYLES } from "../components/utils/tenantUtils";
 
