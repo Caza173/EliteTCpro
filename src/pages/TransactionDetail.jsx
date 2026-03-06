@@ -244,7 +244,9 @@ TC Manager
             <InfoItem icon={User} label="Buyer" value={transaction.buyer} />
             <InfoItem icon={Users} label="Seller" value={transaction.seller} />
             {transaction.buyers_agent_name && <InfoItem icon={User} label="Buyer's Agent" value={transaction.buyers_agent_name} />}
+            {transaction.buyer_brokerage && <InfoItem icon={User} label="Buyer Brokerage" value={transaction.buyer_brokerage} />}
             {transaction.sellers_agent_name && <InfoItem icon={User} label="Seller's Agent" value={transaction.sellers_agent_name} />}
+            {transaction.seller_brokerage && <InfoItem icon={User} label="Seller Brokerage" value={transaction.seller_brokerage} />}
             <InfoItem icon={User} label="Transaction Coordinator" value={transaction.agent} />
             <InfoItem icon={Mail} label="Client Email" value={transaction.client_email || "—"} />
             <InfoItem icon={Phone} label="Client Phone" value={transaction.client_phone || "—"} />
