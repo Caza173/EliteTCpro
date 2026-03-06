@@ -143,7 +143,7 @@ TC Manager
         transaction.agent_email,
       ].filter(Boolean);
 
-      await Promise.all(
+      await Promise.allSettled(
         recipients.map((to) =>
           base44.integrations.Core.SendEmail({ to, subject, body })
         )
