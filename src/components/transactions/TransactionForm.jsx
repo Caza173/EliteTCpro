@@ -29,6 +29,7 @@ const initialForm = {
 
 export default function TransactionForm({ onSubmit, isSubmitting }) {
   const [form, setForm] = useState(initialForm);
+  const [parsedData, setParsedData] = useState(null);
 
   const handleChange = (field, value) => {
     setForm((prev) => ({ ...prev, [field]: value }));
