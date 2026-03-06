@@ -47,7 +47,7 @@ export default function ParsedDeadlinesPreview({ parsed, isCash = false }) {
                 : <AlertCircle className="w-3.5 h-3.5 text-gray-400" />
               }
             </div>
-            {i < TIMELINE_ITEMS.length - 1 && (
+            {i < items.length - 1 && (
               <div className="absolute left-[1.75rem] mt-7 w-px h-5 bg-gray-200" style={{ display: "none" }} />
             )}
             <div className="flex-1">
