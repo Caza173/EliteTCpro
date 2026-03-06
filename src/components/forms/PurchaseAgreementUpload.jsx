@@ -74,8 +74,13 @@ Fields to extract:
 - dueDiligenceDays: integer or null
 - financingCommitmentDate: ISO date string or null
 - purchasePrice: number or null
-- buyerName: string or null
-- sellerName: string or null
+- buyerName: string or null (full name of buyer(s))
+- sellerName: string or null (full name of seller(s))
+- buyersAgentName: string or null
+- sellersAgentName: string or null
+- buyerBrokerage: string or null
+- sellerBrokerage: string or null
+- closingTitleCompany: string or null
 - propertyAddress: string or null
 
 Look for patterns like:
@@ -88,8 +93,11 @@ Look for patterns like:
 - "Water Quality within ___ days"
 - "Radon Air Quality within ___ days"
 - "Due Diligence"
-- "Financing Deadline", "Financing Commitment"
+- "Financing Deadline", "Financing Commitment", "Financial Commitment Date"
 - "PURCHASE PRICE"
+- "Buyer's Agent", "Listing Agent", "Seller's Agent"
+- "Closing Agent", "Title Company", "Settlement Agent"
+- Brokerage names near agent names
 
 If a field is not found, return null for that field.`,
       file_urls: [file_url],
@@ -111,6 +119,11 @@ If a field is not found, return null for that field.`,
           purchasePrice: { type: "number" },
           buyerName: { type: "string" },
           sellerName: { type: "string" },
+          buyersAgentName: { type: "string" },
+          sellersAgentName: { type: "string" },
+          buyerBrokerage: { type: "string" },
+          sellerBrokerage: { type: "string" },
+          closingTitleCompany: { type: "string" },
           propertyAddress: { type: "string" },
         },
       },
