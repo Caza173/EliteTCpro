@@ -18,6 +18,7 @@ import { useCurrentUser } from "../components/auth/useCurrentUser";
 import { computeHealthScore, RISK_STYLES } from "../components/utils/tenantUtils";
 
 export default function Dashboard() {
+  const [deadlineView, setDeadlineView] = useState("list"); // "list" | "calendar"
   const { data: currentUser } = useCurrentUser();
   const { data: transactions = [], isLoading } = useQuery({
     queryKey: ["transactions"],
