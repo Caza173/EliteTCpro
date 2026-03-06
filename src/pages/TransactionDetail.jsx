@@ -155,6 +155,56 @@ TC Manager
     updateMutation.mutate({ id: transaction.id, data: { status: newStatus, last_activity_at: new Date().toISOString() } });
   };
 
+  const [sendingTimeline, setSendingTimeline] = React.useState(false);
+
+  const handleSendTimeline = async () => {
+    if (!transaction) return;
+    setSendingTimeline(true);
+
+    const deadlines = [
+      { label: "Earnest Money Deposit", date: transaction.earnest_money_deadline },
+      { label: "Inspection Deadline", date: transaction.inspection_deadline },
+      { label: "Due Diligence Deadline", date: transaction.due_diligence_deadline },
+      { label: "Appraisal Deadline", date: transaction.appraisal_deadline },
+      { label: "Financing Commitment", date: transaction.financing_deadline },
+      { label: "Closing / Transfer of Title", date: transaction.closing_date },
+    ].filter((d) => d.date);
+
+    const deadlineRows = deadlines.length > 0
+      ? deadlines.map((d) => `<tr><td style="padding:6px 12px;border-bottom:1px solid #f0f0f0;">${d.label}</td><td style="padding:6px 12px;border-bottom:1px solid #f0f0f0;font-weight:600;">${format(new Date(d.date), "MMM d, yyyy")}</td></tr>`).join("")
+      : "<tr><td colspan='2' style='padding:8px 12px;color:#999;'>No deadlines set.</td></tr>";
+
+    const body = `
+<p>Hello,</p>
+<p>Here is the key deadline timeline for the transaction at <strong>${transaction.address}</strong>:</p>
+<table style="border-collapse:collapse;width:100%;max-width:480px;margin:16px 0;font-size:14px;">
+  <thead>
+    <tr style="background:#f8fafc;">
+      <th style="padding:8px 12px;text-align:left;color:#64748b;font-weight:600;border-bottom:2px solid #e2e8f0;">Milestone</th>
+      <th style="padding:8px 12px;text-align:left;color:#64748b;font-weight:600;border-bottom:2px solid #e2e8f0;">Date</th>
+    </tr>
+  </thead>
+  <tbody>${deadlineRows}</tbody>
+</table>
+<p style="color:#64748b;font-size:13px;">Buyer: <strong>${transaction.buyer}</strong> &nbsp;|&nbsp; Seller: <strong>${transaction.seller}</strong></p>
+<p style="color:#64748b;font-size:13px;">Please reach out to your transaction coordinator with any questions.</p>
+<p>Best regards,<br/>TC Manager</p>
+    `.trim();
+
+    const recipients = [transaction.client_email, transaction.agent_email].filter(Boolean);
+    await Promise.all(
+      recipients.map((to) =>
+        base44.integrations.Core.SendEmail({
+          to,
+          subject: `Key Deadlines — ${transaction.address}`,
+          body,
+        })
+      )
+    );
+    setSendingTimeline(false);
+    alert(`Timeline sent to ${recipients.join(", ") || "no recipients on file"}.`);
+  };
+
   if (isLoading) {
     return (
       <div className="max-w-5xl mx-auto space-y-6">
