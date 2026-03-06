@@ -24,6 +24,7 @@ import {
   ArrowLeft,
   Trash2,
   ClipboardCheck,
+  Send,
 } from "lucide-react";
 import { format } from "date-fns";
 import PhaseChecklist from "../components/transactions/PhaseChecklist";
