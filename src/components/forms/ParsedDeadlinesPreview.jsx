@@ -28,8 +28,9 @@ function resolveDate(item, parsed) {
   return null;
 }
 
-export default function ParsedDeadlinesPreview({ parsed }) {
+export default function ParsedDeadlinesPreview({ parsed, isCash = false }) {
   if (!parsed) return null;
+  const items = TIMELINE_ITEMS.filter(item => !(item.key === "financingCommitmentDate" && isCash));
 
   return (
     <div className="rounded-xl border border-blue-100 bg-blue-50/40 p-4 space-y-2">
