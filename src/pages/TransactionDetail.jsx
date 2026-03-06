@@ -84,17 +84,20 @@ export default function TransactionDetail() {
     if (!transaction) return;
     const completed = transaction.phases_completed || [];
     let newCompleted;
-    if (completed.includes(phaseNum)) {
+    const isCompleting = !completed.includes(phaseNum);
+    if (!isCompleting) {
       newCompleted = completed.filter((n) => n !== phaseNum);
     } else {
       newCompleted = [...completed, phaseNum];
     }
     const maxCompleted = newCompleted.length > 0 ? Math.max(...newCompleted) : 0;
     const newPhase = Math.min(maxCompleted + 1, 12);
+
     updateMutation.mutate({
       id: transaction.id,
       data: { phases_completed: newCompleted, phase: newPhase, last_activity_at: new Date().toISOString() },
     });
+
     await writeAuditLog({
       brokerageId: transaction.brokerage_id,
       transactionId: transaction.id,
@@ -102,8 +105,48 @@ export default function TransactionDetail() {
       action: "phase_changed",
       entityType: "transaction",
       entityId: transaction.id,
-      description: `Phase ${phaseNum} ${newCompleted.includes(phaseNum) ? "completed" : "unchecked"}`,
+      description: `Phase ${phaseNum} ${isCompleting ? "completed" : "unchecked"}`,
     });
+
+    // Send email notifications when a phase is completed
+    if (isCompleting) {
+      const phaseName = PHASES[phaseNum - 1];
+      const nextPhaseName = PHASES[phaseNum] || null;
+      const subject = `Transaction Update: ${phaseName} Completed — ${transaction.address}`;
+      const body = `
+Hello,
+
+We wanted to let you know that the <strong>${phaseName}</strong> phase has been completed for the transaction at:
+
+<strong>${transaction.address}</strong>
+
+${nextPhaseName ? `<p>Next up: <strong>${nextPhaseName}</strong></p>` : "<p>This transaction is nearing its final stages.</p>"}
+
+<hr/>
+<p><strong>Transaction Details:</strong></p>
+<ul>
+  <li>Buyer: ${transaction.buyer}</li>
+  <li>Seller: ${transaction.seller}</li>
+  ${transaction.closing_date ? `<li>Closing Date: ${transaction.closing_date}</li>` : ""}
+</ul>
+
+<p>If you have any questions, please don't hesitate to reach out to your transaction coordinator.</p>
+
+Best regards,
+TC Manager
+      `.trim();
+
+      const recipients = [
+        transaction.client_email,
+        transaction.agent_email,
+      ].filter(Boolean);
+
+      await Promise.all(
+        recipients.map((to) =>
+          base44.integrations.Core.SendEmail({ to, subject, body })
+        )
+      );
+    }
   };
 
   const handleStatusChange = (newStatus) => {

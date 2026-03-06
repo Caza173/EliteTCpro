@@ -47,40 +47,40 @@
  *
  * The mainPage value must match a key in the PAGES object exactly.
  */
-import Dashboard from './pages/Dashboard';
-import Transactions from './pages/Transactions';
 import AddTransaction from './pages/AddTransaction';
-import TransactionDetail from './pages/TransactionDetail';
-import Deadlines from './pages/Deadlines';
-import Settings from './pages/Settings';
 import AgentIntake from './pages/AgentIntake';
-import Tasks from './pages/Tasks';
-import Documents from './pages/Documents';
-import ClientPortal from './pages/ClientPortal';
-import BrokerageSetup from './pages/BrokerageSetup';
-import Billing from './pages/Billing';
-import Templates from './pages/Templates';
 import AuditLog from './pages/AuditLog';
+import Billing from './pages/Billing';
+import BrokerageSetup from './pages/BrokerageSetup';
+import ClientPortal from './pages/ClientPortal';
+import Dashboard from './pages/Dashboard';
+import Deadlines from './pages/Deadlines';
+import Documents from './pages/Documents';
 import Notifications from './pages/Notifications';
+import Settings from './pages/Settings';
+import Tasks from './pages/Tasks';
+import Templates from './pages/Templates';
+import TransactionDetail from './pages/TransactionDetail';
+import Transactions from './pages/Transactions';
 import __Layout from './Layout.jsx';
 
 
 export const PAGES = {
-    "Dashboard": Dashboard,
-    "Transactions": Transactions,
     "AddTransaction": AddTransaction,
-    "TransactionDetail": TransactionDetail,
-    "Deadlines": Deadlines,
-    "Settings": Settings,
     "AgentIntake": AgentIntake,
-    "Tasks": Tasks,
-    "Documents": Documents,
-    "ClientPortal": ClientPortal,
-    "BrokerageSetup": BrokerageSetup,
-    "Billing": Billing,
-    "Templates": Templates,
     "AuditLog": AuditLog,
+    "Billing": Billing,
+    "BrokerageSetup": BrokerageSetup,
+    "ClientPortal": ClientPortal,
+    "Dashboard": Dashboard,
+    "Deadlines": Deadlines,
+    "Documents": Documents,
     "Notifications": Notifications,
+    "Settings": Settings,
+    "Tasks": Tasks,
+    "Templates": Templates,
+    "TransactionDetail": TransactionDetail,
+    "Transactions": Transactions,
 }
 
 export const pagesConfig = {
