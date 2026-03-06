@@ -1,32 +1,43 @@
 import React, { useState } from "react";
-import { useNavigate } from "react-router-dom";
 import { base44 } from "@/api/base44Client";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { createPageUrl } from "@/utils";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
+import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Loader2, Send, CheckCircle } from "lucide-react";
-import { generateDeadlines } from "../components/transactions/deadlineUtils";
+import { Separator } from "@/components/ui/separator";
+import { Loader2, Send, CheckCircle, FileSearch, Building2 } from "lucide-react";
+import { addDays, format, parseISO } from "date-fns";
 import { generateDefaultTasks } from "../components/transactions/defaultTasks";
+import PurchaseAgreementUpload from "../components/forms/PurchaseAgreementUpload";
+import ParsedDeadlinesPreview from "../components/forms/ParsedDeadlinesPreview";
 
 const initial = {
-  agent: "", agent_email: "", buyer: "", seller: "",
-  address: "", mls_number: "", contract_date: "", closing_date: "",
-  commission: "", transaction_type: "buyer", client_email: "",
+  agent: "", agent_email: "",
+  buyer: "", seller: "",
+  buyers_agent_name: "", sellers_agent_name: "",
+  buyer_brokerage: "", seller_brokerage: "",
+  closing_title_company: "",
+  address: "", mls_number: "", commission: "",
+  transaction_type: "buyer",
+  is_cash_transaction: false,
+  client_email: "", client_phone: "",
+  contract_date: "", closing_date: "",
+  earnest_money_deadline: "", inspection_deadline: "",
+  due_diligence_deadline: "", financing_deadline: "",
 };
 
 export default function AgentIntake() {
   const [form, setForm] = useState(initial);
+  const [parsedData, setParsedData] = useState(null);
   const [submitted, setSubmitted] = useState(false);
   const queryClient = useQueryClient();
 
   const createMutation = useMutation({
     mutationFn: async (data) => {
       const tx = await base44.entities.Transaction.create(data);
-      // Invite client if email provided
       if (data.client_email) {
         try { await base44.users.inviteUser(data.client_email, "user"); } catch (_) {}
       }
@@ -36,23 +47,40 @@ export default function AgentIntake() {
       queryClient.invalidateQueries({ queryKey: ["transactions"] });
       setSubmitted(true);
       setForm(initial);
+      setParsedData(null);
     },
   });
 
-  const handleChange = (field, value) => setForm((p) => ({ ...p, [field]: value }));
+  const set = (field, value) => setForm((p) => ({ ...p, [field]: value }));
+
+  const handleParsed = (parsed) => {
+    setParsedData(parsed);
+    const u = {};
+    if (parsed.effectiveDate) u.contract_date = parsed.effectiveDate;
+    if (parsed.closingDate || parsed.transferOfTitleDate)
+      u.closing_date = parsed.closingDate || parsed.transferOfTitleDate;
+    if (parsed.propertyAddress) u.address = parsed.propertyAddress;
+    if (parsed.buyerName) u.buyer = parsed.buyerName;
+    if (parsed.sellerName) u.seller = parsed.sellerName;
+    if (parsed.financingCommitmentDate) u.financing_deadline = parsed.financingCommitmentDate;
+    const base = parsed.effectiveDate;
+    if (base) {
+      try {
+        if (parsed.earnestMoneyDays != null)
+          u.earnest_money_deadline = format(addDays(parseISO(base), parsed.earnestMoneyDays), "yyyy-MM-dd");
+        if (parsed.inspectionDays != null)
+          u.inspection_deadline = format(addDays(parseISO(base), parsed.inspectionDays), "yyyy-MM-dd");
+        if (parsed.dueDiligenceDays != null)
+          u.due_diligence_deadline = format(addDays(parseISO(base), parsed.dueDiligenceDays), "yyyy-MM-dd");
+      } catch {}
+    }
+    setForm((p) => ({ ...p, ...u }));
+  };
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    const deadlines = form.contract_date ? generateDeadlines(form.contract_date, form.closing_date) : {};
     const tasks = generateDefaultTasks();
-    createMutation.mutate({
-      ...form,
-      phase: 1,
-      phases_completed: [],
-      status: "active",
-      ...deadlines,
-      tasks,
-    });
+    createMutation.mutate({ ...form, phase: 1, phases_completed: [], status: "active", tasks });
   };
 
   if (submitted) {
@@ -62,10 +90,8 @@ export default function AgentIntake() {
           <CheckCircle className="w-8 h-8 text-emerald-500" />
         </div>
         <h2 className="text-2xl font-bold text-gray-900 mb-2">Transaction Submitted!</h2>
-        <p className="text-gray-500 mb-6">Your transaction has been sent to the TC for processing.</p>
-        <Button onClick={() => setSubmitted(false)} className="bg-blue-600 hover:bg-blue-700">
-          Submit Another
-        </Button>
+        <p className="text-gray-500 mb-6">Your transaction has been sent to the TC for processing. All parties will be notified.</p>
+        <Button onClick={() => setSubmitted(false)} className="bg-blue-600 hover:bg-blue-700">Submit Another</Button>
       </div>
     );
   }
@@ -74,87 +100,162 @@ export default function AgentIntake() {
     <div className="max-w-3xl mx-auto space-y-6">
       <div>
         <h1 className="text-2xl font-bold text-gray-900 tracking-tight">Agent Intake Form</h1>
-        <p className="text-sm text-gray-500 mt-0.5">Submit your transaction details to your TC for processing.</p>
+        <p className="text-sm text-gray-500 mt-0.5">Submit a new transaction to your TC. Upload the P&amp;S to auto-fill key dates.</p>
       </div>
 
-      <Card className="shadow-sm border-gray-100">
-        <CardHeader>
-          <CardTitle className="text-base font-semibold">Transaction Information</CardTitle>
+      {/* P&S Upload */}
+      <Card className="shadow-sm border-blue-100 bg-blue-50/20">
+        <CardHeader className="pb-3">
+          <div className="flex items-center gap-2">
+            <FileSearch className="w-4 h-4 text-blue-500" />
+            <CardTitle className="text-base font-semibold">Upload Purchase &amp; Sales Agreement</CardTitle>
+          </div>
+          <CardDescription>Optional — auto-fills buyer, seller, and all deadline dates</CardDescription>
         </CardHeader>
-        <CardContent>
+        <CardContent className="space-y-3">
+          <PurchaseAgreementUpload onParsed={handleParsed} />
+          {parsedData && <ParsedDeadlinesPreview parsed={parsedData} isCash={form.is_cash_transaction} />}
+        </CardContent>
+      </Card>
+
+      <Card className="shadow-sm border-gray-100">
+        <CardContent className="pt-6">
           <form onSubmit={handleSubmit} className="space-y-6">
-            {/* Agent Info */}
-            <div>
-              <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">Agent Details</p>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <Field label="Agent Name *" id="agent">
-                  <Input id="agent" value={form.agent} onChange={(e) => handleChange("agent", e.target.value)} placeholder="Your full name" required />
-                </Field>
-                <Field label="Agent Email *" id="agent_email">
-                  <Input id="agent_email" type="email" value={form.agent_email} onChange={(e) => handleChange("agent_email", e.target.value)} placeholder="agent@brokerage.com" required />
-                </Field>
+
+            {/* Transaction Type & Cash Toggle */}
+            <div className="flex flex-col sm:flex-row gap-4">
+              <div className="flex-1">
+                <Label className="text-sm font-medium text-gray-700">Transaction Type</Label>
+                <Select value={form.transaction_type} onValueChange={(v) => set("transaction_type", v)}>
+                  <SelectTrigger className="mt-1.5"><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="buyer">Buyer</SelectItem>
+                    <SelectItem value="seller">Seller</SelectItem>
+                    <SelectItem value="dual">Dual</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="flex items-center justify-between sm:w-52 rounded-xl border border-gray-100 bg-gray-50 px-4 py-3 mt-0 sm:mt-0">
+                <div>
+                  <p className="text-sm font-medium text-gray-800">Cash Transaction</p>
+                  <p className="text-xs text-gray-400">No financing required</p>
+                </div>
+                <Switch checked={form.is_cash_transaction} onCheckedChange={(v) => set("is_cash_transaction", v)} />
               </div>
             </div>
+
+            <Separator />
 
             {/* Property */}
-            <div>
-              <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">Property Details</p>
-              <div className="space-y-4">
-                <Field label="Property Address *" id="address">
-                  <Input id="address" value={form.address} onChange={(e) => handleChange("address", e.target.value)} placeholder="123 Main St, City, State" required />
-                </Field>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <Field label="MLS Number" id="mls">
-                    <Input id="mls" value={form.mls_number} onChange={(e) => handleChange("mls_number", e.target.value)} placeholder="MLS#" />
-                  </Field>
-                  <Field label="Commission" id="commission">
-                    <Input id="commission" value={form.commission} onChange={(e) => handleChange("commission", e.target.value)} placeholder="e.g. 3% or $12,000" />
-                  </Field>
-                </div>
+            <Section label="Property">
+              <F label="Property Address *" id="address">
+                <Input id="address" value={form.address} onChange={(e) => set("address", e.target.value)} placeholder="123 Main St, City, State" required className="mt-1.5" />
+              </F>
+              <div className="grid grid-cols-2 gap-4">
+                <F label="MLS Number" id="mls_number">
+                  <Input id="mls_number" value={form.mls_number} onChange={(e) => set("mls_number", e.target.value)} placeholder="MLS#" className="mt-1.5" />
+                </F>
+                <F label="Commission" id="commission">
+                  <Input id="commission" value={form.commission} onChange={(e) => set("commission", e.target.value)} placeholder="3% or $12,000" className="mt-1.5" />
+                </F>
               </div>
-            </div>
+            </Section>
 
-            {/* Parties */}
-            <div>
-              <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">Parties</p>
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                <Field label="Buyer Name *" id="buyer">
-                  <Input id="buyer" value={form.buyer} onChange={(e) => handleChange("buyer", e.target.value)} placeholder="Buyer full name" required />
-                </Field>
-                <Field label="Seller Name *" id="seller">
-                  <Input id="seller" value={form.seller} onChange={(e) => handleChange("seller", e.target.value)} placeholder="Seller full name" required />
-                </Field>
-                <Field label="Transaction Type" id="type">
-                  <Select value={form.transaction_type} onValueChange={(v) => handleChange("transaction_type", v)}>
-                    <SelectTrigger><SelectValue /></SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="buyer">Buyer</SelectItem>
-                      <SelectItem value="seller">Seller</SelectItem>
-                      <SelectItem value="dual">Dual</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </Field>
-              </div>
-            </div>
+            <Separator />
 
-            {/* Dates */}
-            <div>
-              <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">Key Dates</p>
+            {/* Buyer side */}
+            <Section label="Buyer Side">
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <Field label="Contract Date" id="contract_date">
-                  <Input id="contract_date" type="date" value={form.contract_date} onChange={(e) => handleChange("contract_date", e.target.value)} />
-                </Field>
-                <Field label="Closing Date" id="closing_date">
-                  <Input id="closing_date" type="date" value={form.closing_date} onChange={(e) => handleChange("closing_date", e.target.value)} />
-                </Field>
+                <F label="Buyer Name(s) *" id="buyer">
+                  <Input id="buyer" value={form.buyer} onChange={(e) => set("buyer", e.target.value)} placeholder="John & Jane Smith" required className="mt-1.5" />
+                </F>
+                <F label="Buyer's Agent Name" id="buyers_agent_name">
+                  <Input id="buyers_agent_name" value={form.buyers_agent_name} onChange={(e) => set("buyers_agent_name", e.target.value)} placeholder="Agent full name" className="mt-1.5" />
+                </F>
+                <F label="Buyer Brokerage" id="buyer_brokerage">
+                  <Input id="buyer_brokerage" value={form.buyer_brokerage} onChange={(e) => set("buyer_brokerage", e.target.value)} placeholder="Brokerage name" className="mt-1.5" />
+                </F>
               </div>
-              <Field label="Client Email (will receive portal invite)" id="client_email">
-                <Input id="client_email" type="email" value={form.client_email} onChange={(e) => handleChange("client_email", e.target.value)} placeholder="client@email.com" />
-              </Field>
-            </div>
+            </Section>
+
+            <Separator />
+
+            {/* Seller side */}
+            <Section label="Seller Side">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <F label="Seller Name(s) *" id="seller">
+                  <Input id="seller" value={form.seller} onChange={(e) => set("seller", e.target.value)} placeholder="Robert Doe" required className="mt-1.5" />
+                </F>
+                <F label="Seller's Agent Name" id="sellers_agent_name">
+                  <Input id="sellers_agent_name" value={form.sellers_agent_name} onChange={(e) => set("sellers_agent_name", e.target.value)} placeholder="Agent full name" className="mt-1.5" />
+                </F>
+                <F label="Seller Brokerage" id="seller_brokerage">
+                  <Input id="seller_brokerage" value={form.seller_brokerage} onChange={(e) => set("seller_brokerage", e.target.value)} placeholder="Brokerage name" className="mt-1.5" />
+                </F>
+              </div>
+            </Section>
+
+            <Separator />
+
+            {/* TC + Title */}
+            <Section label="Coordinator &amp; Title">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <F label="Transaction Coordinator *" id="agent">
+                  <Input id="agent" value={form.agent} onChange={(e) => set("agent", e.target.value)} placeholder="TC Name" required className="mt-1.5" />
+                </F>
+                <F label="TC Email *" id="agent_email">
+                  <Input id="agent_email" type="email" value={form.agent_email} onChange={(e) => set("agent_email", e.target.value)} placeholder="tc@office.com" required className="mt-1.5" />
+                </F>
+                <F label="Closing / Title Company" id="closing_title_company">
+                  <Input id="closing_title_company" value={form.closing_title_company} onChange={(e) => set("closing_title_company", e.target.value)} placeholder="NH Title & Escrow" className="mt-1.5" />
+                </F>
+              </div>
+            </Section>
+
+            <Separator />
+
+            {/* Client contact */}
+            <Section label="Client Contact">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <F label="Client Email (gets portal invite)" id="client_email">
+                  <Input id="client_email" type="email" value={form.client_email} onChange={(e) => set("client_email", e.target.value)} placeholder="client@email.com" className="mt-1.5" />
+                </F>
+                <F label="Client Phone" id="client_phone">
+                  <Input id="client_phone" type="tel" value={form.client_phone} onChange={(e) => set("client_phone", e.target.value)} placeholder="(555) 123-4567" className="mt-1.5" />
+                </F>
+              </div>
+            </Section>
+
+            <Separator />
+
+            {/* Key Dates */}
+            <Section label="Key Dates &amp; Deadlines">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <F label="Contract / Effective Date" id="contract_date">
+                  <Input id="contract_date" type="date" value={form.contract_date} onChange={(e) => set("contract_date", e.target.value)} className="mt-1.5" />
+                </F>
+                <F label="Closing / Transfer of Title Date" id="closing_date">
+                  <Input id="closing_date" type="date" value={form.closing_date} onChange={(e) => set("closing_date", e.target.value)} className="mt-1.5" />
+                </F>
+                <F label="Earnest Money Deadline" id="earnest_money_deadline">
+                  <Input id="earnest_money_deadline" type="date" value={form.earnest_money_deadline} onChange={(e) => set("earnest_money_deadline", e.target.value)} className="mt-1.5" />
+                </F>
+                <F label="Inspection Deadline" id="inspection_deadline">
+                  <Input id="inspection_deadline" type="date" value={form.inspection_deadline} onChange={(e) => set("inspection_deadline", e.target.value)} className="mt-1.5" />
+                </F>
+                <F label="Due Diligence Deadline" id="due_diligence_deadline">
+                  <Input id="due_diligence_deadline" type="date" value={form.due_diligence_deadline} onChange={(e) => set("due_diligence_deadline", e.target.value)} className="mt-1.5" />
+                </F>
+                {!form.is_cash_transaction && (
+                  <F label="Financing Commitment Date" id="financing_deadline">
+                    <Input id="financing_deadline" type="date" value={form.financing_deadline} onChange={(e) => set("financing_deadline", e.target.value)} className="mt-1.5" />
+                  </F>
+                )}
+              </div>
+            </Section>
 
             <div className="flex justify-end pt-2">
-              <Button type="submit" disabled={createMutation.isPending} className="bg-blue-600 hover:bg-blue-700">
+              <Button type="submit" disabled={createMutation.isPending} className="bg-blue-600 hover:bg-blue-700 px-8">
                 {createMutation.isPending ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Send className="w-4 h-4 mr-2" />}
                 Submit to TC
               </Button>
@@ -166,11 +267,20 @@ export default function AgentIntake() {
   );
 }
 
-function Field({ label, id, children }) {
+function Section({ label, children }) {
+  return (
+    <div className="space-y-3">
+      <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider">{label}</p>
+      {children}
+    </div>
+  );
+}
+
+function F({ label, id, children }) {
   return (
     <div>
       <Label htmlFor={id} className="text-sm font-medium text-gray-700">{label}</Label>
-      <div className="mt-1.5">{children}</div>
+      {children}
     </div>
   );
 }
