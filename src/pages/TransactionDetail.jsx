@@ -30,6 +30,7 @@ import PhaseChecklist from "../components/transactions/PhaseChecklist";
 import TransactionTimeline from "../components/transactions/TransactionTimeline";
 import TaskList from "../components/transactions/TaskList";
 import DocChecklistPanel from "../components/transactions/DocChecklistPanel";
+import DeadlineDashboard from "../components/transactions/DeadlineDashboard";
 import HealthScoreBadge from "../components/dashboard/HealthScoreBadge";
 import { useCurrentUser } from "../components/auth/useCurrentUser";
 import { writeAuditLog, computeHealthScore } from "../components/utils/tenantUtils";
