@@ -197,7 +197,7 @@ TC Manager
     `.trim();
 
     const recipients = [transaction.client_email, transaction.agent_email].filter(Boolean);
-    await Promise.all(
+    const results = await Promise.allSettled(
       recipients.map((to) =>
         base44.integrations.Core.SendEmail({
           to,
@@ -207,7 +207,11 @@ TC Manager
       )
     );
     setSendingTimeline(false);
-    alert(`Timeline sent to ${recipients.join(", ") || "no recipients on file"}.`);
+    const sent = recipients.filter((_, i) => results[i].status === "fulfilled");
+    const failed = recipients.filter((_, i) => results[i].status === "rejected");
+    const msg = sent.length > 0 ? `Timeline sent to: ${sent.join(", ")}.` : "No emails sent.";
+    const failMsg = failed.length > 0 ? `\nCould not send to: ${failed.join(", ")} (recipients must be registered app users).` : "";
+    alert(msg + failMsg);
   };
 
   if (isLoading) {
