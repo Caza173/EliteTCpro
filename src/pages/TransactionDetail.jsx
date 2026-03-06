@@ -155,7 +155,7 @@ TC Manager
     updateMutation.mutate({ id: transaction.id, data: { status: newStatus, last_activity_at: new Date().toISOString() } });
   };
 
-  const [sendingTimeline, setSendingTimeline] = React.useState(false);
+  const [sendingTimeline, setSendingTimeline] = useState(false);
 
   const handleSendTimeline = async () => {
     if (!transaction) return;
