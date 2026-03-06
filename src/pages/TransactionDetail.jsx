@@ -266,6 +266,17 @@ TC Manager
         </CardContent>
       </Card>
 
+      {/* Deadline Dashboard */}
+      <Card className="shadow-sm border-gray-100">
+        <CardHeader className="pb-2">
+          <CardTitle className="text-base font-semibold">Key Deadlines</CardTitle>
+          <p className="text-sm text-gray-500">Contract milestones and critical dates</p>
+        </CardHeader>
+        <CardContent>
+          <DeadlineDashboard transaction={transaction} />
+        </CardContent>
+      </Card>
+
       {/* Timeline */}
       <Card className="shadow-sm border-gray-100">
         <CardHeader className="pb-2">
