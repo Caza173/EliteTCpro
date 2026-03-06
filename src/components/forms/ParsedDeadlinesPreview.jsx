@@ -13,13 +13,15 @@ const TIMELINE_ITEMS = [
 
 function resolveDate(item, parsed) {
   if (item.type === "date") {
-    return parsed[item.key] || null;
+    const val = parsed[item.key];
+    if (!val) return null;
+    try { parseISO(val); return val; } catch { return null; }
   }
   if (item.type === "offset") {
     const days = parsed[item.key];
     const anchor = parsed[item.anchor];
     if (days != null && anchor) {
-      return format(addDays(parseISO(anchor), days), "yyyy-MM-dd");
+      try { return format(addDays(parseISO(anchor), days), "yyyy-MM-dd"); } catch { return null; }
     }
     return null;
   }
