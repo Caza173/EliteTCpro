@@ -64,12 +64,19 @@ export default function DeadlinePanel({ transactions = [] }) {
             className="flex items-center gap-3 p-3 rounded-lg border border-gray-100 hover:border-gray-200 transition-colors bg-white"
           >
             <div className={`w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0 ${
-              dl.type === "closing" ? "bg-purple-50" : dl.type === "inspection" ? "bg-orange-50" : "bg-cyan-50"
+              dl.type === "closing" ? "bg-rose-50"
+              : dl.type === "inspection" ? "bg-orange-50"
+              : dl.type === "earnest" ? "bg-blue-50"
+              : dl.type === "financing" ? "bg-emerald-50"
+              : dl.type === "diligence" ? "bg-purple-50"
+              : "bg-cyan-50"
             }`}>
               {dl.type === "closing" ? (
-                <Calendar className="w-4 h-4 text-purple-500" />
+                <Calendar className="w-4 h-4 text-rose-500" />
               ) : dl.type === "inspection" ? (
                 <AlertTriangle className="w-4 h-4 text-orange-500" />
+              ) : dl.type === "earnest" ? (
+                <Clock className="w-4 h-4 text-blue-500" />
               ) : (
                 <Clock className="w-4 h-4 text-cyan-500" />
               )}
