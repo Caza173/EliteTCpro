@@ -7,36 +7,29 @@ import { format, differenceInDays, isPast, isToday } from "date-fns";
 export default function DeadlinePanel({ transactions = [] }) {
   const deadlines = [];
 
+  const FIELDS = [
+    { key: "earnest_money_deadline", label: "Earnest Money Due", type: "earnest" },
+    { key: "inspection_deadline", label: "Inspection Deadline", type: "inspection" },
+    { key: "due_diligence_deadline", label: "Due Diligence", type: "diligence" },
+    { key: "appraisal_deadline", label: "Appraisal Deadline", type: "appraisal" },
+    { key: "financing_deadline", label: "Financing Commitment", type: "financing", cashExcluded: true },
+    { key: "closing_date", label: "Closing Date", type: "closing" },
+  ];
+
   transactions.forEach((tx) => {
     if (tx.status === "closed" || tx.status === "cancelled") return;
-
-    if (tx.closing_date) {
-      deadlines.push({
-        id: `${tx.id}-closing`,
-        label: "Closing Date",
-        date: tx.closing_date,
-        address: tx.address,
-        type: "closing",
-      });
-    }
-    if (tx.inspection_deadline) {
-      deadlines.push({
-        id: `${tx.id}-inspection`,
-        label: "Inspection Deadline",
-        date: tx.inspection_deadline,
-        address: tx.address,
-        type: "inspection",
-      });
-    }
-    if (tx.appraisal_deadline) {
-      deadlines.push({
-        id: `${tx.id}-appraisal`,
-        label: "Appraisal Deadline",
-        date: tx.appraisal_deadline,
-        address: tx.address,
-        type: "appraisal",
-      });
-    }
+    FIELDS.forEach((f) => {
+      if (f.cashExcluded && tx.is_cash_transaction) return;
+      if (tx[f.key]) {
+        deadlines.push({
+          id: `${tx.id}-${f.key}`,
+          label: f.label,
+          date: tx[f.key],
+          address: tx.address,
+          type: f.type,
+        });
+      }
+    });
   });
 
   deadlines.sort((a, b) => new Date(a.date) - new Date(b.date));
