@@ -35,7 +35,7 @@ export default function ParsedDeadlinesPreview({ parsed, isCash = false }) {
   return (
     <div className="rounded-xl border border-blue-100 bg-blue-50/40 p-4 space-y-2">
       <p className="text-xs font-semibold text-blue-700 uppercase tracking-wider mb-3">Transaction Timeline</p>
-      {TIMELINE_ITEMS.map((item, i) => {
+      {items.map((item, i) => {
         const dateStr = resolveDate(item, parsed);
         return (
           <div key={item.key} className="flex items-center gap-3">
