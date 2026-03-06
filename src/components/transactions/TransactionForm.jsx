@@ -22,6 +22,8 @@ const initialForm = {
   seller: "",
   buyers_agent_name: "",
   sellers_agent_name: "",
+  buyer_brokerage: "",
+  seller_brokerage: "",
   agent: "",
   agent_email: "",
   closing_title_company: "",
