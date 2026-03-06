@@ -170,8 +170,13 @@ TC Manager
       { label: "Closing / Transfer of Title", date: transaction.closing_date },
     ].filter((d) => d.date);
 
+    const formatSafe = (dateStr) => {
+      const d = new Date(dateStr);
+      return isNaN(d.getTime()) ? dateStr : format(d, "MMM d, yyyy");
+    };
+
     const deadlineRows = deadlines.length > 0
-      ? deadlines.map((d) => `<tr><td style="padding:6px 12px;border-bottom:1px solid #f0f0f0;">${d.label}</td><td style="padding:6px 12px;border-bottom:1px solid #f0f0f0;font-weight:600;">${format(new Date(d.date), "MMM d, yyyy")}</td></tr>`).join("")
+      ? deadlines.map((d) => `<tr><td style="padding:6px 12px;border-bottom:1px solid #f0f0f0;">${d.label}</td><td style="padding:6px 12px;border-bottom:1px solid #f0f0f0;font-weight:600;">${formatSafe(d.date)}</td></tr>`).join("")
       : "<tr><td colspan='2' style='padding:8px 12px;color:#999;'>No deadlines set.</td></tr>";
 
     const body = `
