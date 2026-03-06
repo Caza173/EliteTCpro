@@ -3,6 +3,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
+import { Switch } from "@/components/ui/switch";
 import {
   Select,
   SelectContent,
@@ -19,11 +20,20 @@ const initialForm = {
   address: "",
   buyer: "",
   seller: "",
+  buyers_agent_name: "",
+  sellers_agent_name: "",
   agent: "",
+  agent_email: "",
+  closing_title_company: "",
   client_email: "",
   client_phone: "",
+  is_cash_transaction: false,
   contract_date: "",
   closing_date: "",
+  inspection_deadline: "",
+  due_diligence_deadline: "",
+  earnest_money_deadline: "",
+  financing_deadline: "",
   transaction_type: "buyer",
 };
 
@@ -37,13 +47,27 @@ export default function TransactionForm({ onSubmit, isSubmitting }) {
 
   const handleParsed = (parsed) => {
     setParsedData(parsed);
-    // Auto-fill form fields from parsed contract
     const updates = {};
     if (parsed.effectiveDate) updates.contract_date = parsed.effectiveDate;
-    if (parsed.closingDate) updates.closing_date = parsed.closingDate;
+    if (parsed.closingDate || parsed.transferOfTitleDate)
+      updates.closing_date = parsed.closingDate || parsed.transferOfTitleDate;
     if (parsed.propertyAddress) updates.address = parsed.propertyAddress;
     if (parsed.buyerName) updates.buyer = parsed.buyerName;
     if (parsed.sellerName) updates.seller = parsed.sellerName;
+    if (parsed.financingCommitmentDate) updates.financing_deadline = parsed.financingCommitmentDate;
+
+    // Compute offset-based deadlines from effectiveDate
+    const base = parsed.effectiveDate;
+    if (base) {
+      try {
+        if (parsed.earnestMoneyDays != null)
+          updates.earnest_money_deadline = format(addDays(parseISO(base), parsed.earnestMoneyDays), "yyyy-MM-dd");
+        if (parsed.inspectionDays != null)
+          updates.inspection_deadline = format(addDays(parseISO(base), parsed.inspectionDays), "yyyy-MM-dd");
+        if (parsed.dueDiligenceDays != null)
+          updates.due_diligence_deadline = format(addDays(parseISO(base), parsed.dueDiligenceDays), "yyyy-MM-dd");
+      } catch {}
+    }
     setForm((prev) => ({ ...prev, ...updates }));
   };
 
@@ -56,7 +80,23 @@ export default function TransactionForm({ onSubmit, isSubmitting }) {
       status: "active",
     });
     setForm(initialForm);
+    setParsedData(null);
   };
+
+  const field = (id, label, type = "text", placeholder = "", required = false) => (
+    <div>
+      <Label htmlFor={id} className="text-sm font-medium text-gray-700">{label}{required ? " *" : ""}</Label>
+      <Input
+        id={id}
+        type={type}
+        value={form[id]}
+        onChange={(e) => handleChange(id, e.target.value)}
+        placeholder={placeholder}
+        required={required}
+        className="mt-1.5"
+      />
+    </div>
+  );
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
@@ -69,10 +109,22 @@ export default function TransactionForm({ onSubmit, isSubmitting }) {
           <span className="text-xs text-gray-400 ml-1">— auto-fills deadlines</span>
         </div>
         <PurchaseAgreementUpload onParsed={handleParsed} />
-        {parsedData && <ParsedDeadlinesPreview parsed={parsedData} />}
+        {parsedData && <ParsedDeadlinesPreview parsed={parsedData} isCash={form.is_cash_transaction} />}
       </div>
 
       <Separator />
+
+      {/* Cash Toggle */}
+      <div className="flex items-center justify-between rounded-xl border border-gray-100 bg-gray-50 px-4 py-3">
+        <div>
+          <p className="text-sm font-medium text-gray-800">Cash Transaction</p>
+          <p className="text-xs text-gray-400">No financing commitment required</p>
+        </div>
+        <Switch
+          checked={form.is_cash_transaction}
+          onCheckedChange={(v) => handleChange("is_cash_transaction", v)}
+        />
+      </div>
 
       {/* Property */}
       <div>
@@ -81,119 +133,66 @@ export default function TransactionForm({ onSubmit, isSubmitting }) {
           id="address"
           value={form.address}
           onChange={(e) => handleChange("address", e.target.value)}
-          placeholder="123 Main Street, City, State"
+          placeholder="123 Main Street, City, NH 00000"
           required
           className="mt-1.5"
         />
       </div>
 
-      {/* Names Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <div>
-          <Label htmlFor="buyer" className="text-sm font-medium text-gray-700">Buyer Name *</Label>
-          <Input
-            id="buyer"
-            value={form.buyer}
-            onChange={(e) => handleChange("buyer", e.target.value)}
-            placeholder="John Smith"
-            required
-            className="mt-1.5"
-          />
-        </div>
-        <div>
-          <Label htmlFor="seller" className="text-sm font-medium text-gray-700">Seller Name *</Label>
-          <Input
-            id="seller"
-            value={form.seller}
-            onChange={(e) => handleChange("seller", e.target.value)}
-            placeholder="Jane Doe"
-            required
-            className="mt-1.5"
-          />
-        </div>
-        <div>
-          <Label htmlFor="agent" className="text-sm font-medium text-gray-700">Agent Name *</Label>
-          <Input
-            id="agent"
-            value={form.agent}
-            onChange={(e) => handleChange("agent", e.target.value)}
-            placeholder="Agent Name"
-            required
-            className="mt-1.5"
-          />
-        </div>
-      </div>
-
-      {/* Contact */}
+      {/* Parties */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <div>
-          <Label htmlFor="email" className="text-sm font-medium text-gray-700">Client Email</Label>
-          <Input
-            id="email"
-            type="email"
-            value={form.client_email}
-            onChange={(e) => handleChange("client_email", e.target.value)}
-            placeholder="client@email.com"
-            className="mt-1.5"
-          />
-        </div>
-        <div>
-          <Label htmlFor="phone" className="text-sm font-medium text-gray-700">Client Phone</Label>
-          <Input
-            id="phone"
-            type="tel"
-            value={form.client_phone}
-            onChange={(e) => handleChange("client_phone", e.target.value)}
-            placeholder="(555) 123-4567"
-            className="mt-1.5"
-          />
+        {field("buyer", "Buyer Name", "text", "John Smith", true)}
+        {field("seller", "Seller Name", "text", "Jane Doe", true)}
+        {field("buyers_agent_name", "Buyer's Agent Name", "text", "Agent Name")}
+        {field("sellers_agent_name", "Seller's Agent Name", "text", "Agent Name")}
+      </div>
+
+      {/* TC / Listing Agent */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        {field("agent", "Transaction Coordinator / Agent *", "text", "TC Name", true)}
+        {field("agent_email", "Agent Email", "email", "agent@brokerage.com")}
+      </div>
+
+      {/* Closing Company */}
+      {field("closing_title_company", "Closing / Title Company Name", "text", "NH Title & Escrow Co.")}
+
+      {/* Client Contact */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        {field("client_email", "Client Email", "email", "client@email.com")}
+        {field("client_phone", "Client Phone", "tel", "(555) 123-4567")}
+      </div>
+
+      {/* Dates */}
+      <div>
+        <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3">Contract Dates &amp; Deadlines</p>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {field("contract_date", "Contract / Effective Date", "date")}
+          {field("closing_date", "Closing / Transfer of Title Date", "date")}
+          {field("earnest_money_deadline", "Earnest Money Deadline", "date")}
+          {field("inspection_deadline", "Inspection Deadline", "date")}
+          {field("due_diligence_deadline", "Due Diligence Deadline", "date")}
+          {!form.is_cash_transaction && field("financing_deadline", "Financing Commitment Date", "date")}
         </div>
       </div>
 
-      {/* Dates & Type */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <div>
-          <Label htmlFor="contract_date" className="text-sm font-medium text-gray-700">Contract Date</Label>
-          <Input
-            id="contract_date"
-            type="date"
-            value={form.contract_date}
-            onChange={(e) => handleChange("contract_date", e.target.value)}
-            className="mt-1.5"
-          />
-        </div>
-        <div>
-          <Label htmlFor="closing_date" className="text-sm font-medium text-gray-700">Closing Date</Label>
-          <Input
-            id="closing_date"
-            type="date"
-            value={form.closing_date}
-            onChange={(e) => handleChange("closing_date", e.target.value)}
-            className="mt-1.5"
-          />
-        </div>
-        <div>
-          <Label className="text-sm font-medium text-gray-700">Transaction Type</Label>
-          <Select value={form.transaction_type} onValueChange={(v) => handleChange("transaction_type", v)}>
-            <SelectTrigger className="mt-1.5">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="buyer">Buyer</SelectItem>
-              <SelectItem value="seller">Seller</SelectItem>
-              <SelectItem value="dual">Dual</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
+      {/* Type */}
+      <div>
+        <Label className="text-sm font-medium text-gray-700">Transaction Type</Label>
+        <Select value={form.transaction_type} onValueChange={(v) => handleChange("transaction_type", v)}>
+          <SelectTrigger className="mt-1.5">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="buyer">Buyer</SelectItem>
+            <SelectItem value="seller">Seller</SelectItem>
+            <SelectItem value="dual">Dual</SelectItem>
+          </SelectContent>
+        </Select>
       </div>
 
       <div className="flex justify-end pt-2">
         <Button type="submit" disabled={isSubmitting} className="bg-blue-600 hover:bg-blue-700">
-          {isSubmitting ? (
-            <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-          ) : (
-            <Plus className="w-4 h-4 mr-2" />
-          )}
+          {isSubmitting ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Plus className="w-4 h-4 mr-2" />}
           Create Transaction
         </Button>
       </div>
