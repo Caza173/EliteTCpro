@@ -322,8 +322,22 @@ TC Manager
       {/* Deadline Dashboard */}
       <Card className="shadow-sm border-gray-100">
         <CardHeader className="pb-2">
-          <CardTitle className="text-base font-semibold">Key Deadlines</CardTitle>
-          <p className="text-sm text-gray-500">Contract milestones and critical dates</p>
+          <div className="flex items-center justify-between">
+            <div>
+              <CardTitle className="text-base font-semibold">Key Deadlines</CardTitle>
+              <p className="text-sm text-gray-500">Contract milestones and critical dates</p>
+            </div>
+            <Button
+              size="sm"
+              variant="outline"
+              className="text-blue-600 hover:text-blue-700 hover:bg-blue-50 border-blue-200"
+              onClick={handleSendTimeline}
+              disabled={sendingTimeline}
+            >
+              <Send className="w-3.5 h-3.5 mr-1.5" />
+              {sendingTimeline ? "Sending..." : "Send Timeline"}
+            </Button>
+          </div>
         </CardHeader>
         <CardContent>
           <DeadlineDashboard transaction={transaction} />
