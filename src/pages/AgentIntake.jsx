@@ -246,10 +246,29 @@ export default function AgentIntake() {
 
             {/* Seller side */}
             <Section label="Seller Side">
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <F label="Seller Name(s) *" id="seller">
-                  <Input id="seller" value={form.seller} onChange={(e) => set("seller", e.target.value)} placeholder="Robert Doe" required className="mt-1.5" />
-                </F>
+              <div className="space-y-2">
+                <Label className="text-sm font-medium text-gray-700">Seller Name(s) *</Label>
+                {sellers.map((s, i) => (
+                  <div key={i} className="flex gap-2 items-center">
+                    <Input
+                      value={s}
+                      onChange={(e) => { const n = [...sellers]; n[i] = e.target.value; setSellers(n); }}
+                      placeholder={i === 0 ? "Robert Doe" : "Additional seller name"}
+                      required={i === 0}
+                      className="flex-1"
+                    />
+                    {sellers.length > 1 && (
+                      <Button type="button" variant="ghost" size="icon" className="h-9 w-9 text-gray-400 hover:text-red-500" onClick={() => setSellers(sellers.filter((_, idx) => idx !== i))}>
+                        <X className="w-4 h-4" />
+                      </Button>
+                    )}
+                  </div>
+                ))}
+                <Button type="button" variant="outline" size="sm" className="text-xs h-8 mt-1" onClick={() => setSellers([...sellers, ""])}>
+                  <Plus className="w-3 h-3 mr-1" /> Add Seller
+                </Button>
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-2">
                 <F label="Seller's Agent Name" id="sellers_agent_name">
                   <Input id="sellers_agent_name" value={form.sellers_agent_name} onChange={(e) => set("sellers_agent_name", e.target.value)} placeholder="Agent full name" className="mt-1.5" />
                 </F>
