@@ -138,8 +138,8 @@ export default function Layout({ children, currentPageName }) {
         </nav>
 
         {/* Footer */}
-        <div className="px-4 py-4 border-t border-white/10">
-          <p className="text-[11px] text-slate-500 text-center">TC Manager v1.0</p>
+        <div className="px-4 py-4 border-t" style={{ borderColor: "var(--sidebar-border)" }}>
+          <p className="text-[11px] text-center" style={{ color: "var(--sidebar-text)" }}>EliteTC v1.0</p>
         </div>
       </aside>
 
