@@ -96,11 +96,32 @@ export default function AgentIntake() {
     );
   }
 
+  const intakeUrl = `${window.location.origin}${window.location.pathname}#/AgentIntake`;
+  const [copied, setCopied] = useState(false);
+  const handleCopy = () => {
+    navigator.clipboard.writeText(intakeUrl);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
+
   return (
     <div className="max-w-3xl mx-auto space-y-6">
       <div>
         <h1 className="text-2xl font-bold text-gray-900 tracking-tight">Agent Intake Form</h1>
         <p className="text-sm text-gray-500 mt-0.5">Submit a new transaction to your TC. Upload the P&amp;S to auto-fill key dates.</p>
+      </div>
+
+      {/* Shareable Link Banner */}
+      <div className="flex items-center gap-3 px-4 py-3 rounded-xl bg-indigo-50 border border-indigo-100">
+        <Link2 className="w-4 h-4 text-indigo-500 flex-shrink-0" />
+        <div className="flex-1 min-w-0">
+          <p className="text-sm font-medium text-indigo-800">Share this intake form with agents</p>
+          <p className="text-xs text-indigo-500 truncate mt-0.5">{intakeUrl}</p>
+        </div>
+        <Button size="sm" variant="outline" className="border-indigo-200 text-indigo-700 hover:bg-indigo-100 flex-shrink-0 h-8 text-xs" onClick={handleCopy}>
+          <Copy className="w-3 h-3 mr-1" />
+          {copied ? "Copied!" : "Copy Link"}
+        </Button>
       </div>
 
       {/* P&S Upload */}
