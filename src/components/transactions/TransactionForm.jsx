@@ -174,8 +174,29 @@ export default function TransactionForm({ onSubmit, isSubmitting }) {
       {/* Buyer side */}
       <div>
         <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3">Buyer Side</p>
+        <div className="space-y-2 mb-3">
+          <Label className="text-sm font-medium text-gray-700">Buyer(s) *</Label>
+          {(form.buyers || [""]).map((buyer, i) => (
+            <div key={i} className="flex gap-2 items-center">
+              <Input
+                value={buyer}
+                onChange={(e) => handlePartyChange("buyers", i, e.target.value)}
+                placeholder={`Buyer ${i + 1} full name`}
+                required={i === 0}
+                className="flex-1"
+              />
+              {(form.buyers || [""]).length > 1 && (
+                <Button type="button" variant="ghost" size="icon" className="text-red-400 hover:text-red-600 flex-shrink-0" onClick={() => removeParty("buyers", i)}>
+                  <X className="w-4 h-4" />
+                </Button>
+              )}
+            </div>
+          ))}
+          <Button type="button" variant="outline" size="sm" onClick={() => addParty("buyers")} className="text-blue-600 border-blue-200 hover:bg-blue-50">
+            <UserPlus className="w-3.5 h-3.5 mr-1.5" /> Add Another Buyer
+          </Button>
+        </div>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {field("buyer", "Buyer Name(s)", "text", "John & Jane Smith", true)}
           {field("buyers_agent_name", "Buyer's Agent Name", "text", "Agent Name")}
           {field("buyer_brokerage", "Buyer Brokerage", "text", "Brokerage Name")}
         </div>
@@ -184,8 +205,29 @@ export default function TransactionForm({ onSubmit, isSubmitting }) {
       {/* Seller side */}
       <div>
         <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3">Seller Side</p>
+        <div className="space-y-2 mb-3">
+          <Label className="text-sm font-medium text-gray-700">Seller(s) *</Label>
+          {(form.sellers || [""]).map((seller, i) => (
+            <div key={i} className="flex gap-2 items-center">
+              <Input
+                value={seller}
+                onChange={(e) => handlePartyChange("sellers", i, e.target.value)}
+                placeholder={`Seller ${i + 1} full name`}
+                required={i === 0}
+                className="flex-1"
+              />
+              {(form.sellers || [""]).length > 1 && (
+                <Button type="button" variant="ghost" size="icon" className="text-red-400 hover:text-red-600 flex-shrink-0" onClick={() => removeParty("sellers", i)}>
+                  <X className="w-4 h-4" />
+                </Button>
+              )}
+            </div>
+          ))}
+          <Button type="button" variant="outline" size="sm" onClick={() => addParty("sellers")} className="text-blue-600 border-blue-200 hover:bg-blue-50">
+            <UserPlus className="w-3.5 h-3.5 mr-1.5" /> Add Another Seller
+          </Button>
+        </div>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {field("seller", "Seller Name(s)", "text", "Robert Doe", true)}
           {field("sellers_agent_name", "Seller's Agent Name", "text", "Agent Name")}
           {field("seller_brokerage", "Seller Brokerage", "text", "Brokerage Name")}
         </div>
