@@ -52,7 +52,7 @@ const TX_TABS = [
   { id: "timeline", label: "Timeline", icon: GitBranch },
   { id: "deadlines", label: "Deadlines", icon: Clock },
   { id: "tasks", label: "Tasks", icon: ListChecks },
-  { id: "documents", label: "Documents", icon: DollarSign },
+  { id: "documents", label: "Documents", icon: FolderOpen },
   { id: "finance", label: "Finance", icon: DollarSign },
 ];
 
