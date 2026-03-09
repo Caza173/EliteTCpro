@@ -17,7 +17,7 @@ function Row({ label, value, deduction, sub, highlight }) {
 }
 
 export default function CommissionBreakdown({ computed, form }) {
-  const { gross, referralAmt, afterReferral, brokerSplitAmt, agentAfterSplit, franchiseFeeAmt, txFee, eoFee, otherFees, netBeforeExpenses } = computed;
+  const { gross, referralAmt, afterReferral, brokerSplitAmt, agentAfterSplit, franchiseFeeAmt, txFee, eoFee, otherFees, professionalFeeAmt, sellerConcessionAmt, netBeforeExpenses } = computed;
   const grossPct = gross > 0 ? 100 : 0;
   const agentPct = gross > 0 ? Math.round((agentAfterSplit / gross) * 100) : 0;
 
