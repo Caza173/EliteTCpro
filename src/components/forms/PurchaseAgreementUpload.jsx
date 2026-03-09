@@ -82,6 +82,15 @@ Fields to extract:
 - sellerBrokerage: string or null
 - closingTitleCompany: string or null
 - propertyAddress: string or null
+- section20AdditionalProvisions: string or null (verbatim text from "Additional Provisions" section)
+- section20Concessions: string or null (verbatim text from "Concessions" section)
+- section20ProfessionalFee: string or null (verbatim text from "Professional Fee" section)
+- professionalFeeType: "percent" or "flat" or null (detected from Professional Fee / Additional Provisions / Concessions sections)
+- professionalFeeValue: number or null (the numeric value — e.g. 2 for "2%", or 5000 for "$5,000")
+- professionalFeeBase: "contract_price" or "sale_price" or "flat" or null
+- sellerConcessionAmount: number or null (flat dollar amount of any seller concession found)
+- sellerConcessionPercent: number or null (percent-based concession if applicable)
+- additionalCompensationNotes: string or null (any other free-text compensation language detected)
 
 Look for patterns like:
 - "EFFECTIVE DATE", "Effective Date of this Agreement"
@@ -98,6 +107,9 @@ Look for patterns like:
 - "Buyer's Agent", "Listing Agent", "Seller's Agent"
 - "Closing Agent", "Title Company", "Settlement Agent"
 - Brokerage names near agent names
+- Section 20: "ADDITIONAL PROVISIONS", "CONCESSIONS", "PROFESSIONAL FEE"
+- Financial patterns: "X% of the net contract price", "X% commission", "Seller shall pay", "buyer broker", "$X,XXX", "X% of sale price"
+- Concession patterns: "seller concession", "closing cost credit", "seller to pay"
 
 If a field is not found, return null for that field.`,
       file_urls: [file_url],
@@ -125,6 +137,15 @@ If a field is not found, return null for that field.`,
           sellerBrokerage: { type: "string" },
           closingTitleCompany: { type: "string" },
           propertyAddress: { type: "string" },
+          section20AdditionalProvisions: { type: "string" },
+          section20Concessions: { type: "string" },
+          section20ProfessionalFee: { type: "string" },
+          professionalFeeType: { type: "string" },
+          professionalFeeValue: { type: "number" },
+          professionalFeeBase: { type: "string" },
+          sellerConcessionAmount: { type: "number" },
+          sellerConcessionPercent: { type: "number" },
+          additionalCompensationNotes: { type: "string" },
         },
       },
     });
