@@ -171,10 +171,11 @@ export default function Layout({ children, currentPageName }) {
         </header>
 
         {/* Page content */}
-        <main className="flex-1 p-4 lg:p-8">
+        <main className="flex-1 p-4 lg:p-8" style={{ backgroundColor: "var(--bg-primary)" }}>
           {children}
         </main>
       </div>
     </div>
+    </ThemeProvider>
   );
 }
