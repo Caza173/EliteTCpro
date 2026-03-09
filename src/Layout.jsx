@@ -74,16 +74,8 @@ export default function Layout({ children, currentPageName }) {
     : TC_NAV;
 
   return (
-    <div className="min-h-screen bg-gray-50 flex">
-      <style>{`
-        :root {
-          --sidebar-bg: #0f172a;
-          --sidebar-hover: #1e293b;
-          --sidebar-active: #3b82f6;
-          --accent: #3b82f6;
-          --accent-light: #eff6ff;
-        }
-      `}</style>
+    <ThemeProvider>
+    <div className="min-h-screen flex" style={{ backgroundColor: "var(--bg-primary)", color: "var(--text-primary)" }}>
 
       {/* Mobile overlay */}
       {sidebarOpen && (
