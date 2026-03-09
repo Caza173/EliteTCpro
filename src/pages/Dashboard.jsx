@@ -67,6 +67,20 @@ export default function Dashboard() {
         </Link>
       </div>
 
+      {/* Tasks Due Today — top of dashboard */}
+      {!isLoading && (
+        <Card className="shadow-sm border-amber-100 bg-amber-50/30">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-base font-semibold flex items-center gap-2">
+              <ClipboardList className="w-4 h-4 text-amber-500" /> Tasks Due Today
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <TasksDueToday transactions={transactions} />
+          </CardContent>
+        </Card>
+      )}
+
       {/* Compliance quick stats */}
       {!isLoading && (atRiskCount > 0 || missingDocsCount > 0 || pendingApprovalCount > 0) && (
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
