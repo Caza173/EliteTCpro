@@ -5,11 +5,19 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import DeadlinePanel from "../components/transactions/DeadlinePanel";
 import DeadlineAlerts from "../components/transactions/DeadlineAlerts";
+import { useCurrentUser, isOwnerOrAdmin } from "../components/auth/useCurrentUser";
 
 export default function Deadlines() {
+  const { data: currentUser } = useCurrentUser();
+
   const { data: transactions = [], isLoading } = useQuery({
-    queryKey: ["transactions"],
-    queryFn: () => base44.entities.Transaction.list("-created_date"),
+    queryKey: ["transactions", currentUser?.email, currentUser?.role],
+    queryFn: () => {
+      if (!currentUser) return [];
+      if (isOwnerOrAdmin(currentUser)) return base44.entities.Transaction.list("-created_date");
+      return base44.entities.Transaction.filter({ agent_email: currentUser.email }, "-created_date");
+    },
+    enabled: !!currentUser,
   });
 
   return (
