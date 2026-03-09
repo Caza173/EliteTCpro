@@ -57,8 +57,8 @@ export default function PurchaseAgreementUpload({ onParsed }) {
 
       // 2. Send to LLM for extraction
       const result = await base44.integrations.Core.InvokeLLM({
-      model: "claude_sonnet_4_6",
-      prompt: `You are a real estate contract parser specializing in the New Hampshire Association of REALTORS® (NHAR) Purchase and Sales Agreement.
+        model: "claude_sonnet_4_6",
+        prompt: `You are a real estate contract parser specializing in the New Hampshire Association of REALTORS® (NHAR) Purchase and Sales Agreement.
 
 Analyze this document carefully and extract the following fields. Return ONLY valid JSON, no explanation.
 
@@ -121,43 +121,43 @@ Look for patterns like:
 - Concession patterns: "seller concession", "closing cost credit", "seller to pay"
 
 If a field is not found, return null for that field.`,
-      file_urls: [file_url],
-      response_json_schema: {
-        type: "object",
-        properties: {
-          effectiveDate: { type: "string" },
-          closingDate: { type: "string" },
-          transferOfTitleDate: { type: "string" },
-          earnestMoneyDays: { type: "number" },
-          additionalDepositDate: { type: "string" },
-          inspectionDays: { type: "number" },
-          generalBuildingInspectionDays: { type: "number" },
-          sewageInspectionDays: { type: "number" },
-          waterQualityInspectionDays: { type: "number" },
-          radonInspectionDays: { type: "number" },
-          dueDiligenceDays: { type: "number" },
-          financingCommitmentDate: { type: "string" },
-          purchasePrice: { type: "number" },
-          buyerName: { type: "string" },
-          sellerName: { type: "string" },
-          buyersAgentName: { type: "string" },
-          sellersAgentName: { type: "string" },
-          buyerBrokerage: { type: "string" },
-          sellerBrokerage: { type: "string" },
-          closingTitleCompany: { type: "string" },
-          propertyAddress: { type: "string" },
-          section20AdditionalProvisions: { type: "string" },
-          section20Concessions: { type: "string" },
-          section20ProfessionalFee: { type: "string" },
-          professionalFeeType: { type: "string" },
-          professionalFeeValue: { type: "number" },
-          professionalFeeBase: { type: "string" },
-          sellerConcessionAmount: { type: "number" },
-          sellerConcessionPercent: { type: "number" },
-          additionalCompensationNotes: { type: "string" },
+        file_urls: [file_url],
+        response_json_schema: {
+          type: "object",
+          properties: {
+            effectiveDate: { type: "string" },
+            closingDate: { type: "string" },
+            transferOfTitleDate: { type: "string" },
+            earnestMoneyDays: { type: "number" },
+            additionalDepositDate: { type: "string" },
+            inspectionDays: { type: "number" },
+            generalBuildingInspectionDays: { type: "number" },
+            sewageInspectionDays: { type: "number" },
+            waterQualityInspectionDays: { type: "number" },
+            radonInspectionDays: { type: "number" },
+            dueDiligenceDays: { type: "number" },
+            financingCommitmentDate: { type: "string" },
+            purchasePrice: { type: "number" },
+            buyerName: { type: "string" },
+            sellerName: { type: "string" },
+            buyersAgentName: { type: "string" },
+            sellersAgentName: { type: "string" },
+            buyerBrokerage: { type: "string" },
+            sellerBrokerage: { type: "string" },
+            closingTitleCompany: { type: "string" },
+            propertyAddress: { type: "string" },
+            section20AdditionalProvisions: { type: "string" },
+            section20Concessions: { type: "string" },
+            section20ProfessionalFee: { type: "string" },
+            professionalFeeType: { type: "string" },
+            professionalFeeValue: { type: "number" },
+            professionalFeeBase: { type: "string" },
+            sellerConcessionAmount: { type: "number" },
+            sellerConcessionPercent: { type: "number" },
+            additionalCompensationNotes: { type: "string" },
+          },
         },
-      },
-    });
+      });
 
       setStatus("done");
       onParsed(result);
