@@ -6,14 +6,21 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Skeleton } from "@/components/ui/skeleton";
 import { ClipboardList } from "lucide-react";
 import TaskList from "../components/transactions/TaskList";
+import { useCurrentUser, isOwnerOrAdmin } from "../components/auth/useCurrentUser";
 
 export default function Tasks() {
   const [selectedTxId, setSelectedTxId] = useState("all");
   const queryClient = useQueryClient();
+  const { data: currentUser } = useCurrentUser();
 
   const { data: transactions = [], isLoading } = useQuery({
-    queryKey: ["transactions"],
-    queryFn: () => base44.entities.Transaction.list("-created_date"),
+    queryKey: ["transactions", currentUser?.email, currentUser?.role],
+    queryFn: () => {
+      if (!currentUser) return [];
+      if (isOwnerOrAdmin(currentUser)) return base44.entities.Transaction.list("-created_date");
+      return base44.entities.Transaction.filter({ agent_email: currentUser.email }, "-created_date");
+    },
+    enabled: !!currentUser,
   });
 
   const updateMutation = useMutation({
