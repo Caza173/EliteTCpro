@@ -67,8 +67,16 @@ export default function TransactionForm({ onSubmit, isSubmitting }) {
   };
 
   const handleParsed = (parsed) => {
+    // Guard: ensure parsed data exists
+    if (!parsed) {
+      console.warn("P&S parser returned no data");
+      return;
+    }
+    
     setParsedData(parsed);
     const updates = {};
+    
+    // Only populate fields if they exist in the parsed data
     if (parsed.effectiveDate) updates.contract_date = parsed.effectiveDate;
     if (parsed.closingDate || parsed.transferOfTitleDate)
       updates.closing_date = parsed.closingDate || parsed.transferOfTitleDate;
@@ -82,7 +90,7 @@ export default function TransactionForm({ onSubmit, isSubmitting }) {
     if (parsed.closingTitleCompany) updates.closing_title_company = parsed.closingTitleCompany;
     if (parsed.financingCommitmentDate) updates.financing_deadline = parsed.financingCommitmentDate;
 
-    // Compute offset-based deadlines from effectiveDate
+    // Only compute offset-based deadlines if effectiveDate exists
     const base = parsed.effectiveDate;
     if (base) {
       try {
@@ -92,8 +100,11 @@ export default function TransactionForm({ onSubmit, isSubmitting }) {
           updates.inspection_deadline = format(addDays(parseISO(base), parsed.inspectionDays), "yyyy-MM-dd");
         if (parsed.dueDiligenceDays != null)
           updates.due_diligence_deadline = format(addDays(parseISO(base), parsed.dueDiligenceDays), "yyyy-MM-dd");
-      } catch {}
+      } catch (err) {
+        console.warn("Failed to calculate deadline offsets:", err);
+      }
     }
+    
     setForm((prev) => ({ ...prev, ...updates }));
   };
 
