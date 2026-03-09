@@ -32,7 +32,7 @@ function calcFinancials(f) {
   return { gross, referralAmt, afterReferral, brokerSplitAmt, agentAfterSplit, franchiseFeeAmt, txFee, eoFee, otherFees, professionalFeeAmt, sellerConcessionAmt, netBeforeExpenses, net };
 }
 
-export default function FinanceTab({ transaction, currentUser }) {
+export default function FinanceTab({ transaction, currentUser, parsedPsData }) {
   const queryClient = useQueryClient();
   const canEditCommission = isOwnerOrAdmin(currentUser) || currentUser?.role === "agent";
 
