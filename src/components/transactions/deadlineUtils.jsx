@@ -11,9 +11,9 @@ export function generateDeadlines(contractDate, closingDate) {
 
   return {
     inspection_deadline: format(addDays(base, 10), "yyyy-MM-dd"),
-    appraisal_deadline: format(addDays(base, 7), "yyyy-MM-dd"),
-    financing_deadline: format(addDays(base, 21), "yyyy-MM-dd"),
-    ctc_target: format(addDays(base, 30), "yyyy-MM-dd"),
+    appraisal_deadline: format(addDays(base, 21), "yyyy-MM-dd"),
+    financing_deadline: format(addDays(base, 30), "yyyy-MM-dd"),
+    ctc_target: format(addDays(base, 45), "yyyy-MM-dd"),
     ...(closingDate ? { closing_date: closingDate } : {}),
   };
 }
