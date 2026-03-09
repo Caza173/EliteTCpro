@@ -53,7 +53,7 @@ export default function PurchaseAgreementUpload({ onParsed }) {
       // 1. Upload the file
       const { file_url } = await base44.integrations.Core.UploadFile({ file });
 
-    setStatus("parsing");
+      setStatus("parsing");
 
     // 2. Send to LLM for extraction
     const result = await base44.integrations.Core.InvokeLLM({
