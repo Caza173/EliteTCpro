@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
-import { Loader2, Send, CheckCircle, FileSearch, Building2, Link2, Copy } from "lucide-react";
+import { Loader2, Send, CheckCircle, FileSearch, Building2, Link2, Copy, Plus, X } from "lucide-react";
 import { addDays, format, parseISO } from "date-fns";
 import { generateDefaultTasks } from "../components/transactions/defaultTasks";
 import PurchaseAgreementUpload from "../components/forms/PurchaseAgreementUpload";
