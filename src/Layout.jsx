@@ -1,5 +1,4 @@
 import React, { useState } from "react";
-import React, { useState } from "react";
 import "./globals.css";
 import { Link } from "react-router-dom";
 import { createPageUrl } from "@/utils";
