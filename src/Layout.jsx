@@ -153,7 +153,7 @@ export default function Layout({ children, currentPageName }) {
           >
             <Menu className="w-5 h-5 text-gray-600" />
           </button>
-          <h2 className="text-lg font-semibold text-gray-900 tracking-tight">
+          <h2 className="text-lg font-semibold tracking-tight" style={{ color: "var(--text-primary)" }}>
             {currentPageName === "TransactionDetail" ? "Transaction Detail" : 
              currentPageName === "AddTransaction" ? "New Transaction" :
              currentPageName === "AgentIntake" ? "Agent Intake" :
