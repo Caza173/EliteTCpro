@@ -14,7 +14,7 @@ import TransactionTable from "../components/transactions/TransactionTable";
 import DeadlinePanel from "../components/transactions/DeadlinePanel";
 import DeadlineAlerts from "../components/transactions/DeadlineAlerts";
 import DeadlineCalendarView from "../components/dashboard/DeadlineCalendarView";
-import { useCurrentUser } from "../components/auth/useCurrentUser";
+import { useCurrentUser, isOwnerOrAdmin } from "../components/auth/useCurrentUser";
 import { computeHealthScore, RISK_STYLES } from "../components/utils/tenantUtils";
 import AddendumAlertChecker from "../components/dashboard/AddendumAlertChecker";
 import TCAnalyticsDashboard from "../components/dashboard/TCAnalyticsDashboard";
