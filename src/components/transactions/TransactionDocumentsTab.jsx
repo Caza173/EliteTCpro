@@ -1,0 +1,218 @@
+import React, { useState, useRef } from "react";
+import { base44 } from "@/api/base44Client";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Skeleton } from "@/components/ui/skeleton";
+import {
+  Upload, FileText, Trash2, Download, Loader2, FolderOpen,
+  ClipboardCheck,
+} from "lucide-react";
+import { format } from "date-fns";
+import { writeAuditLog } from "../utils/tenantUtils";
+import DocChecklistPanel from "./DocChecklistPanel";
+
+const DOC_TYPES = ["contract", "disclosures", "inspection", "appraisal", "title", "lender", "closing", "other"];
+
+const TYPE_COLORS = {
+  contract: "bg-blue-50 text-blue-700",
+  disclosures: "bg-purple-50 text-purple-700",
+  inspection: "bg-orange-50 text-orange-700",
+  appraisal: "bg-cyan-50 text-cyan-700",
+  title: "bg-emerald-50 text-emerald-700",
+  lender: "bg-indigo-50 text-indigo-700",
+  closing: "bg-rose-50 text-rose-700",
+  other: "bg-gray-50 text-gray-600",
+};
+
+export default function TransactionDocumentsTab({ transaction, currentUser }) {
+  const queryClient = useQueryClient();
+  const [selectedDocType, setSelectedDocType] = useState("other");
+  const [uploading, setUploading] = useState(false);
+  const fileInputRef = useRef(null);
+
+  const { data: documents = [], isLoading } = useQuery({
+    queryKey: ["tx-documents", transaction.id],
+    queryFn: () => base44.entities.Document.filter({ transaction_id: transaction.id }, "-created_date"),
+    enabled: !!transaction.id,
+  });
+
+  const { data: checklistItems = [] } = useQuery({
+    queryKey: ["checklist", transaction.id],
+    queryFn: () => base44.entities.DocumentChecklistItem.filter({ transaction_id: transaction.id }),
+    enabled: !!transaction.id,
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: (id) => base44.entities.Document.delete(id),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["tx-documents", transaction.id] }),
+  });
+
+  const handleUpload = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setUploading(true);
+
+    const { file_url } = await base44.integrations.Core.UploadFile({ file });
+
+    const doc = await base44.entities.Document.create({
+      brokerage_id: transaction.brokerage_id,
+      transaction_id: transaction.id,
+      doc_type: selectedDocType,
+      file_url,
+      file_name: file.name,
+      uploaded_by: currentUser?.email || "unknown",
+      uploaded_by_role: currentUser?.role || "agent",
+    });
+
+    // Auto-link to checklist item if matching doc type + missing
+    const matchingItem = checklistItems.find(
+      (ci) => ci.doc_type === selectedDocType && ci.status === "missing"
+    );
+    if (matchingItem) {
+      await base44.entities.DocumentChecklistItem.update(matchingItem.id, {
+        status: "uploaded",
+        uploaded_document_id: doc.id,
+      });
+      queryClient.invalidateQueries({ queryKey: ["checklist", transaction.id] });
+    }
+
+    await writeAuditLog({
+      brokerageId: transaction.brokerage_id,
+      transactionId: transaction.id,
+      actorEmail: currentUser?.email,
+      action: "doc_uploaded",
+      entityType: "document",
+      entityId: doc.id,
+      description: `${currentUser?.email} uploaded ${file.name} (${selectedDocType})`,
+    });
+
+    queryClient.invalidateQueries({ queryKey: ["tx-documents", transaction.id] });
+    setUploading(false);
+    if (fileInputRef.current) fileInputRef.current.value = "";
+  };
+
+  const canDelete = ["tc", "admin", "owner"].includes(currentUser?.role);
+
+  return (
+    <div className="space-y-5">
+      {/* Upload */}
+      <Card className="shadow-sm border-gray-100">
+        <CardHeader className="pb-3">
+          <CardTitle className="text-sm font-semibold flex items-center gap-2">
+            <Upload className="w-4 h-4 text-blue-500" /> Upload Document
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="flex flex-col sm:flex-row gap-3">
+            <Select value={selectedDocType} onValueChange={setSelectedDocType}>
+              <SelectTrigger className="flex-1">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {DOC_TYPES.map((t) => (
+                  <SelectItem key={t} value={t} className="capitalize">{t}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <input ref={fileInputRef} type="file" className="hidden" onChange={handleUpload} />
+            <Button
+              onClick={() => fileInputRef.current?.click()}
+              disabled={uploading}
+              className="bg-blue-600 hover:bg-blue-700"
+            >
+              {uploading ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Upload className="w-4 h-4 mr-2" />}
+              {uploading ? "Uploading..." : "Upload File"}
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Compliance checklist */}
+      {checklistItems.length > 0 && (
+        <Card className="shadow-sm border-gray-100">
+          <CardHeader className="pb-3">
+            <div className="flex items-center justify-between">
+              <CardTitle className="text-sm font-semibold flex items-center gap-2">
+                <ClipboardCheck className="w-4 h-4 text-blue-500" /> Document Checklist
+              </CardTitle>
+              <span className="text-xs text-gray-400">
+                {checklistItems.filter((i) => i.status === "approved").length}/{checklistItems.length} approved
+              </span>
+            </div>
+          </CardHeader>
+          <CardContent>
+            <DocChecklistPanel
+              items={checklistItems}
+              currentUser={currentUser}
+              transactionId={transaction.id}
+              brokerageId={transaction.brokerage_id}
+            />
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Uploaded documents */}
+      <Card className="shadow-sm border-gray-100">
+        <CardHeader className="pb-3">
+          <CardTitle className="text-sm font-semibold flex items-center gap-2">
+            <FolderOpen className="w-4 h-4 text-gray-500" /> Uploaded Files
+            {documents.length > 0 && (
+              <Badge variant="outline" className="text-xs">{documents.length}</Badge>
+            )}
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          {isLoading ? (
+            <div className="space-y-2">
+              {[1, 2, 3].map((i) => <Skeleton key={i} className="h-12 rounded" />)}
+            </div>
+          ) : documents.length === 0 ? (
+            <div className="text-center py-8">
+              <FolderOpen className="w-9 h-9 text-gray-300 mx-auto mb-2" />
+              <p className="text-sm text-gray-400">No documents uploaded yet.</p>
+            </div>
+          ) : (
+            <div className="space-y-2">
+              {documents.map((doc) => (
+                <div key={doc.id} className="flex items-center gap-3 p-3 rounded-lg border border-gray-100 hover:border-gray-200 bg-white transition-colors">
+                  <div className="w-9 h-9 rounded-lg bg-gray-50 flex items-center justify-center flex-shrink-0">
+                    <FileText className="w-4 h-4 text-gray-400" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium text-gray-900 truncate">{doc.file_name || "Document"}</p>
+                    <p className="text-xs text-gray-400">
+                      Uploaded by {doc.uploaded_by || "unknown"}
+                      {doc.created_date ? ` · ${format(new Date(doc.created_date), "MMM d, yyyy")}` : ""}
+                    </p>
+                  </div>
+                  <Badge className={`text-xs capitalize hidden sm:inline-flex ${TYPE_COLORS[doc.doc_type] || TYPE_COLORS.other}`}>
+                    {doc.doc_type}
+                  </Badge>
+                  <div className="flex items-center gap-1">
+                    <a href={doc.file_url} target="_blank" rel="noopener noreferrer">
+                      <Button variant="ghost" size="icon" className="h-8 w-8 text-blue-500 hover:text-blue-700">
+                        <Download className="w-4 h-4" />
+                      </Button>
+                    </a>
+                    {canDelete && (
+                      <Button
+                        variant="ghost" size="icon"
+                        className="h-8 w-8 text-red-400 hover:text-red-600"
+                        onClick={() => deleteMutation.mutate(doc.id)}
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </Button>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
