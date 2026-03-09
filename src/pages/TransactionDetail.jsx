@@ -26,6 +26,11 @@ import {
   ClipboardCheck,
   Send,
   UserPlus,
+  LayoutDashboard,
+  GitBranch,
+  Clock,
+  ListChecks,
+  DollarSign,
 } from "lucide-react";
 import { format } from "date-fns";
 import PhaseChecklist from "../components/transactions/PhaseChecklist";
@@ -36,6 +41,15 @@ import DeadlineDashboard from "../components/transactions/DeadlineDashboard";
 import HealthScoreBadge from "../components/dashboard/HealthScoreBadge";
 import { useCurrentUser } from "../components/auth/useCurrentUser";
 import { writeAuditLog, computeHealthScore } from "../components/utils/tenantUtils";
+import FinanceTab from "../components/finance/FinanceTab";
+
+const TX_TABS = [
+  { id: "overview", label: "Overview", icon: LayoutDashboard },
+  { id: "timeline", label: "Timeline", icon: GitBranch },
+  { id: "deadlines", label: "Deadlines", icon: Clock },
+  { id: "tasks", label: "Tasks", icon: ListChecks },
+  { id: "finance", label: "Finance", icon: DollarSign },
+];
 
 const PHASES = [
   "Pre-Contract", "Offer Drafting", "Offer Accepted", "Escrow Opened",
