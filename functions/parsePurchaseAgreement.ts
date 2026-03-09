@@ -10,19 +10,8 @@ function normalizeText(text) {
     .trim();
 }
 
-// Extract dates in flexible formats
-function extractDate(text, patterns) {
-  const datePattern = "(\\d{1,2}\\/\\d{1,2}\\/\\d{2,4}|[A-Za-z]+\\s\\d{1,2},\\s\\d{4})";
-  
-  for (const pattern of patterns) {
-    const regex = new RegExp(`${pattern}[^0-9]*${datePattern}`, "i");
-    const match = text.match(regex);
-    if (match && match[2]) {
-      return parseDate(match[2]);
-    }
-  }
-  return null;
-}
+// Shared date pattern supporting both MM/DD/YYYY and Month DD, YYYY formats
+const datePattern = "(\\d{1,2}\\/\\d{1,2}\\/\\d{2,4}|[A-Za-z]+\\s\\d{1,2},\\s\\d{4})";
 
 // Parse date string to ISO format
 function parseDate(dateStr) {
@@ -50,6 +39,19 @@ function parseDate(dateStr) {
   return null;
 }
 
+// Extract dates with flexible pattern matching
+function extractDateFlexible(text, patterns) {
+  for (const pattern of patterns) {
+    const regex = new RegExp(`${pattern}[^0-9]*${datePattern}`, "i");
+    const match = text.match(regex);
+    if (match && match[2]) {
+      const parsed = parseDate(match[2]);
+      if (parsed) return parsed;
+    }
+  }
+  return null;
+}
+
 // Extract days offset from text
 function extractDaysOffset(text, patterns) {
   for (const pattern of patterns) {
@@ -70,6 +72,118 @@ function safeExtract(text, patterns, extractor) {
     console.warn("Extraction error:", e.message);
     return null;
   }
+}
+
+// Fallback regex-based P&S parser for when LLM fails
+function parseViRegex(text) {
+  console.log("Starting regex-based P&S parsing...");
+  
+  const result = {
+    effectiveDate: null,
+    closingDate: null,
+    transferOfTitleDate: null,
+    earnestMoneyDays: null,
+    additionalDepositDate: null,
+    inspectionDays: null,
+    generalBuildingInspectionDays: null,
+    sewageInspectionDays: null,
+    waterQualityInspectionDays: null,
+    radonInspectionDays: null,
+    dueDiligenceDays: null,
+    financingCommitmentDate: null,
+    purchasePrice: null,
+    buyerName: null,
+    sellerName: null,
+    buyersAgentName: null,
+    sellersAgentName: null,
+    buyerBrokerage: null,
+    sellerBrokerage: null,
+    closingTitleCompany: null,
+    propertyAddress: null,
+    section20AdditionalProvisions: null,
+    section20Concessions: null,
+    section20ProfessionalFee: null,
+    professionalFeeType: null,
+    professionalFeeValue: null,
+    professionalFeeBase: null,
+    sellerConcessionAmount: null,
+    sellerConcessionPercent: null,
+    additionalCompensationNotes: null,
+  };
+
+  // Extract dates
+  result.effectiveDate = safeExtract(text, [
+    "effective date",
+    "date of acceptance",
+    "acceptance date"
+  ], extractDateFlexible);
+
+  result.closingDate = safeExtract(text, [
+    "closing",
+    "transfer of title",
+    "closing date"
+  ], extractDateFlexible);
+
+  result.transferOfTitleDate = safeExtract(text, [
+    "transfer of title"
+  ], extractDateFlexible);
+
+  result.financingCommitmentDate = safeExtract(text, [
+    "financial commitment",
+    "financing commitment",
+    "financing deadline"
+  ], extractDateFlexible);
+
+  // Extract days offsets
+  result.earnestMoneyDays = safeExtract(text, [
+    "earnest money",
+    "earnest deposit"
+  ], extractDaysOffset);
+
+  result.inspectionDays = safeExtract(text, [
+    "general building inspection",
+    "inspection"
+  ], extractDaysOffset);
+
+  result.generalBuildingInspectionDays = result.inspectionDays;
+
+  result.dueDiligenceDays = safeExtract(text, [
+    "due diligence"
+  ], extractDaysOffset);
+
+  // Extract names and entities with flexible patterns
+  const buyerMatch = text.match(/between\s+(.*?)\s+\(["']?buyer/i);
+  result.buyerName = buyerMatch ? buyerMatch[1].trim() : null;
+
+  const sellerMatch = text.match(/and\s+(.*?)\s+\(["']?seller/i);
+  result.sellerName = sellerMatch ? sellerMatch[1].trim() : null;
+
+  // Agent names (flexible pattern matching)
+  const buyerAgentMatch = text.match(/(?:selling agent|buyer.{0,20}agent)[:\s]+([A-Za-z\s]+?)(?:\n|$|[,;])/i);
+  result.buyersAgentName = buyerAgentMatch ? buyerAgentMatch[1].trim() : null;
+
+  const sellerAgentMatch = text.match(/(?:listing agent|seller.{0,20}agent)[:\s]+([A-Za-z\s]+?)(?:\n|$|[,;])/i);
+  result.sellersAgentName = sellerAgentMatch ? sellerAgentMatch[1].trim() : null;
+
+  // Brokerage names
+  const buyerBrokerageMatch = text.match(/(?:selling brokerage|buyer.{0,20}brokerage)[:\s]+([A-Za-z0-9\s&.,]+?)(?:\n|$|[,;])/i);
+  result.buyerBrokerage = buyerBrokerageMatch ? buyerBrokerageMatch[1].trim() : null;
+
+  const sellerBrokerageMatch = text.match(/(?:listing brokerage|seller.{0,20}brokerage)[:\s]+([A-Za-z0-9\s&.,]+?)(?:\n|$|[,;])/i);
+  result.sellerBrokerage = sellerBrokerageMatch ? sellerBrokerageMatch[1].trim() : null;
+
+  // Title company
+  const titleCompanyMatch = text.match(/(?:closing|title company|settlement agent)[:\s]+([A-Za-z0-9\s&.,]+?)(?:\n|$|[,;])/i);
+  result.closingTitleCompany = titleCompanyMatch ? titleCompanyMatch[1].trim() : null;
+
+  console.log("Regex parsing complete. Found:", {
+    effectiveDate: result.effectiveDate,
+    closingDate: result.closingDate,
+    buyerName: result.buyerName,
+    sellerName: result.sellerName
+  });
+
+  return result;
 }
 
 Deno.serve(async (req) => {
