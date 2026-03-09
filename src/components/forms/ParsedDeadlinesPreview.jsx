@@ -29,7 +29,11 @@ function resolveDate(item, parsed) {
 }
 
 export default function ParsedDeadlinesPreview({ parsed, isCash = false }) {
-  if (!parsed) return null;
+  if (!parsed) {
+    console.warn("ParsedDeadlinesPreview: parsed data is undefined");
+    return null;
+  }
+  
   const items = TIMELINE_ITEMS.filter(item => !(item.key === "financingCommitmentDate" && isCash));
 
   return (
