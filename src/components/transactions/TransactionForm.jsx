@@ -35,6 +35,7 @@ const initialForm = {
   inspection_deadline: "",
   due_diligence_deadline: "",
   earnest_money_deadline: "",
+  appraisal_deadline: "",
   financing_deadline: "",
   transaction_type: "buyer",
 };
