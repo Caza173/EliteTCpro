@@ -51,6 +51,21 @@ export default function TransactionForm({ onSubmit, isSubmitting }) {
     setForm((prev) => ({ ...prev, [field]: value }));
   };
 
+  const handlePartyChange = (side, index, value) => {
+    const arr = [...(form[side] || [""])];
+    arr[index] = value;
+    setForm((prev) => ({ ...prev, [side]: arr }));
+  };
+
+  const addParty = (side) => {
+    setForm((prev) => ({ ...prev, [side]: [...(prev[side] || [""]), ""] }));
+  };
+
+  const removeParty = (side, index) => {
+    const arr = (form[side] || [""]).filter((_, i) => i !== index);
+    setForm((prev) => ({ ...prev, [side]: arr.length ? arr : [""] }));
+  };
+
   const handleParsed = (parsed) => {
     setParsedData(parsed);
     const updates = {};
