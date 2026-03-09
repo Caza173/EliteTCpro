@@ -354,8 +354,16 @@ TC Manager
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-            <InfoItem icon={User} label="Buyer" value={transaction.buyer} />
-            <InfoItem icon={Users} label="Seller" value={transaction.seller} />
+            <InfoItem
+              icon={User}
+              label={transaction.buyers?.length > 1 ? "Buyers" : "Buyer"}
+              value={transaction.buyers?.length ? transaction.buyers.join(", ") : (transaction.buyer || "—")}
+            />
+            <InfoItem
+              icon={Users}
+              label={transaction.sellers?.length > 1 ? "Sellers" : "Seller"}
+              value={transaction.sellers?.length ? transaction.sellers.join(", ") : (transaction.seller || "—")}
+            />
             {transaction.buyers_agent_name && <InfoItem icon={User} label="Buyer's Agent" value={transaction.buyers_agent_name} />}
             {transaction.buyer_brokerage && <InfoItem icon={User} label="Buyer Brokerage" value={transaction.buyer_brokerage} />}
             {transaction.sellers_agent_name && <InfoItem icon={User} label="Seller's Agent" value={transaction.sellers_agent_name} />}
