@@ -149,8 +149,8 @@ ${nextPhaseName ? `<p>Next up: <strong>${nextPhaseName}</strong></p>` : "<p>This
 <hr/>
 <p><strong>Transaction Details:</strong></p>
 <ul>
-  <li>Buyer: ${transaction.buyer}</li>
-  <li>Seller: ${transaction.seller}</li>
+  <li>Buyer(s): ${transaction.buyers?.length ? transaction.buyers.join(", ") : transaction.buyer}</li>
+  <li>Seller(s): ${transaction.sellers?.length ? transaction.sellers.join(", ") : transaction.seller}</li>
   ${transaction.closing_date ? `<li>Closing Date: ${transaction.closing_date}</li>` : ""}
 </ul>
 
