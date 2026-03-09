@@ -31,6 +31,8 @@ const initial = {
 
 export default function AgentIntake() {
   const [form, setForm] = useState(initial);
+  const [buyers, setBuyers] = useState([""]);
+  const [sellers, setSellers] = useState([""]);
   const [parsedData, setParsedData] = useState(null);
   const [submitted, setSubmitted] = useState(false);
   const queryClient = useQueryClient();
