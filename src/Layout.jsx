@@ -47,10 +47,8 @@ const OWNER_NAV = [
 ];
 
 const AGENT_NAV = [
-  { label: "Dashboard", page: "Dashboard", icon: LayoutDashboard },
-  { label: "Transactions", page: "Transactions", icon: FileText },
-  { label: "Agent Intake", page: "AgentIntake", icon: UserPlus },
-  { label: "Tasks", page: "Tasks", icon: ClipboardList },
+  { label: "My Transactions", page: "AgentPortal", icon: LayoutDashboard },
+  { label: "Submit a Deal", page: "AgentIntake", icon: UserPlus },
   { label: "Documents", page: "Documents", icon: FolderOpen },
 ];
 
