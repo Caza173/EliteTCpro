@@ -16,6 +16,7 @@ import DeadlineAlerts from "../components/transactions/DeadlineAlerts";
 import DeadlineCalendarView from "../components/dashboard/DeadlineCalendarView";
 import { useCurrentUser } from "../components/auth/useCurrentUser";
 import { computeHealthScore, RISK_STYLES } from "../components/utils/tenantUtils";
+import AddendumAlertChecker from "../components/dashboard/AddendumAlertChecker";
 
 export default function Dashboard() {
   const [deadlineView, setDeadlineView] = useState("list"); // "list" | "calendar"
