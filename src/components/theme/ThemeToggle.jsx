@@ -37,19 +37,22 @@ export default function ThemeToggle() {
 
       {open && (
         <div className="absolute right-0 top-full mt-1.5 w-36 rounded-xl shadow-xl border theme-dropdown z-50 overflow-hidden">
-          {OPTIONS.map(({ value, label, icon: ItemIcon }) => (
-            <button
-              key={value}
-              onClick={() => { setTheme(value); setOpen(false); }}
-              className={`w-full flex items-center gap-2.5 px-3 py-2 text-sm transition-colors theme-dropdown-item ${theme === value ? "theme-dropdown-active" : ""}`}
-            >
-              <ItemIcon className="w-3.5 h-3.5" />
-              {label}
-              {theme === value && (
-                <span className="ml-auto w-1.5 h-1.5 rounded-full theme-accent-dot" />
-              )}
-            </button>
-          ))}
+          {OPTIONS.map((opt) => {
+            const OptionIcon = opt.icon;
+            return (
+              <button
+                key={opt.value}
+                onClick={() => { setTheme(opt.value); setOpen(false); }}
+                className={`w-full flex items-center gap-2.5 px-3 py-2 text-sm transition-colors theme-dropdown-item ${theme === opt.value ? "theme-dropdown-active" : ""}`}
+              >
+                <OptionIcon className="w-3.5 h-3.5" />
+                {opt.label}
+                {theme === opt.value && (
+                  <span className="ml-auto w-1.5 h-1.5 rounded-full theme-accent-dot" />
+                )}
+              </button>
+            );
+          })}
         </div>
       )}
     </div>
