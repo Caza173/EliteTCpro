@@ -199,95 +199,45 @@ Deno.serve(async (req) => {
     const { text } = body;
 
     if (!text) {
+      console.warn("No text provided to parser");
       return Response.json({ error: "No text provided" }, { status: 400 });
     }
 
+    console.log("RAW PDF TEXT (first 1000 chars):", text.substring(0, 1000));
+
     // Normalize the text
     const normalized = normalizeText(text);
-    console.log("Normalized P&S Text (first 500 chars):", normalized.substring(0, 500));
+    console.log("NORMALIZED TEXT (first 1000 chars):", normalized.substring(0, 1000));
 
-    // Parse dates with flexible patterns
-    const effectiveDate = safeExtract(normalized, [
-      "effective date",
-      "date of acceptance",
-      "acceptance date"
-    ], extractDate);
+    // Use regex fallback parser
+    const result = parseViRegex(normalized);
 
-    const closingDate = safeExtract(normalized, [
-      "closing",
-      "transfer of title",
-      "closing date"
-    ], extractDate);
-
-    const transferOfTitleDate = safeExtract(normalized, [
-      "transfer of title"
-    ], extractDate);
-
-    const financingCommitmentDate = safeExtract(normalized, [
-      "financial commitment",
-      "financing commitment",
-      "financing deadline"
-    ], extractDate);
-
-    // Extract days offsets
-    const earnestMoneyDays = safeExtract(normalized, [
-      "earnest money",
-      "earnest deposit"
-    ], extractDaysOffset);
-
-    const inspectionDays = safeExtract(normalized, [
-      "general building inspection",
-      "inspection"
-    ], extractDaysOffset);
-
-    const dueDiligenceDays = safeExtract(normalized, [
-      "due diligence"
-    ], extractDaysOffset);
-
-    // Extract names and entities
-    const buyerMatch = normalized.match(/between\s+(.*?)\s+\(["']?buyer/i);
-    const buyerName = buyerMatch ? buyerMatch[1].trim() : null;
-
-    const sellerMatch = normalized.match(/and\s+(.*?)\s+\(["']?seller/i);
-    const sellerName = sellerMatch ? sellerMatch[1].trim() : null;
-
-    const buyerAgentMatch = normalized.match(/selling agent[:\s]+([A-Za-z\s]+?)(?:\n|$|[,;])/i);
-    const buyerAgent = buyerAgentMatch ? buyerAgentMatch[1].trim() : null;
-
-    const sellerAgentMatch = normalized.match(/listing agent[:\s]+([A-Za-z\s]+?)(?:\n|$|[,;])/i);
-    const sellerAgent = sellerAgentMatch ? sellerAgentMatch[1].trim() : null;
-
-    const buyerBrokerageMatch = normalized.match(/selling brokerage[:\s]+([A-Za-z0-9\s&.,]+?)(?:\n|$|[,;])/i);
-    const buyerBrokerage = buyerBrokerageMatch ? buyerBrokerageMatch[1].trim() : null;
-
-    const sellerBrokerageMatch = normalized.match(/listing brokerage[:\s]+([A-Za-z0-9\s&.,]+?)(?:\n|$|[,;])/i);
-    const sellerBrokerage = sellerBrokerageMatch ? sellerBrokerageMatch[1].trim() : null;
-
-    const titleCompanyMatch = normalized.match(/closing[^:]*:[^:]*([A-Za-z0-9\s&.,]+)/i);
-    const titleCompany = titleCompanyMatch ? titleCompanyMatch[1].trim() : null;
-
-    // Return safe structured object
-    const result = {
-      effectiveDate: effectiveDate || null,
-      closingDate: closingDate || null,
-      transferOfTitleDate: transferOfTitleDate || null,
-      earnestMoneyDays: earnestMoneyDays || null,
+    console.log("Final parsed result:", result);
+    return Response.json(result);
+  } catch (error) {
+    console.error("Parser error:", error);
+    // Return safe default object on error
+    return Response.json({
+      effectiveDate: null,
+      closingDate: null,
+      transferOfTitleDate: null,
+      earnestMoneyDays: null,
       additionalDepositDate: null,
-      inspectionDays: inspectionDays || null,
-      generalBuildingInspectionDays: inspectionDays || null,
+      inspectionDays: null,
+      generalBuildingInspectionDays: null,
       sewageInspectionDays: null,
       waterQualityInspectionDays: null,
       radonInspectionDays: null,
-      dueDiligenceDays: dueDiligenceDays || null,
-      financingCommitmentDate: financingCommitmentDate || null,
+      dueDiligenceDays: null,
+      financingCommitmentDate: null,
       purchasePrice: null,
-      buyerName: buyerName || null,
-      sellerName: sellerName || null,
-      buyersAgentName: buyerAgent || null,
-      sellersAgentName: sellerAgent || null,
-      buyerBrokerage: buyerBrokerage || null,
-      sellerBrokerage: sellerBrokerage || null,
-      closingTitleCompany: titleCompany || null,
+      buyerName: null,
+      sellerName: null,
+      buyersAgentName: null,
+      sellersAgentName: null,
+      buyerBrokerage: null,
+      sellerBrokerage: null,
+      closingTitleCompany: null,
       propertyAddress: null,
       section20AdditionalProvisions: null,
       section20Concessions: null,
@@ -298,11 +248,6 @@ Deno.serve(async (req) => {
       sellerConcessionAmount: null,
       sellerConcessionPercent: null,
       additionalCompensationNotes: null,
-    };
-
-    return Response.json(result);
-  } catch (error) {
-    console.error("Parser error:", error);
-    return Response.json({ error: error.message }, { status: 500 });
+    });
   }
 });
