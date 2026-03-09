@@ -88,6 +88,10 @@ export default function FinanceTab({ transaction, currentUser, parsedPsData }) {
         transaction_fee: finance.transaction_fee ?? defaults.transaction_fee,
         eo_fee: finance.eo_fee ?? defaults.eo_fee,
         other_brokerage_fees: finance.other_brokerage_fees ?? 0,
+        professional_fee_amount: finance.professional_fee_amount ?? 0,
+        professional_fee_type: finance.professional_fee_type ?? "percent",
+        professional_fee_value: finance.professional_fee_value ?? 0,
+        seller_concession_amount: finance.seller_concession_amount ?? 0,
       });
     } else {
       // Pre-populate from transaction
