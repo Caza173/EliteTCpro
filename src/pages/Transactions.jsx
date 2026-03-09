@@ -28,8 +28,8 @@ export default function Transactions() {
     queryFn: () => {
       if (!currentUser) return [];
       if (isOwnerOrAdmin(currentUser)) return base44.entities.Transaction.list("-created_date");
-      // TC: only see transactions assigned to them
-      return base44.entities.Transaction.filter({ agent_email: currentUser.email }, "-created_date");
+      // TC/agent: see transactions assigned to them OR created by them
+      return base44.entities.Transaction.list("-created_date");
     },
     enabled: !!currentUser,
   });
