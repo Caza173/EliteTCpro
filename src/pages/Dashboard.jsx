@@ -17,6 +17,7 @@ import DeadlineCalendarView from "../components/dashboard/DeadlineCalendarView";
 import { useCurrentUser } from "../components/auth/useCurrentUser";
 import { computeHealthScore, RISK_STYLES } from "../components/utils/tenantUtils";
 import AddendumAlertChecker from "../components/dashboard/AddendumAlertChecker";
+import TCAnalyticsDashboard from "../components/dashboard/TCAnalyticsDashboard";
 
 export default function Dashboard() {
   const [deadlineView, setDeadlineView] = useState("list"); // "list" | "calendar"
