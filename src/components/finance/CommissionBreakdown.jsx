@@ -41,6 +41,8 @@ export default function CommissionBreakdown({ computed, form }) {
             {txFee > 0 && <Row label="Transaction Fee" value={txFee} deduction sub />}
             {eoFee > 0 && <Row label="E&O Fee" value={eoFee} deduction sub />}
             {otherFees > 0 && <Row label="Other Brokerage Fees" value={otherFees} deduction sub />}
+            {professionalFeeAmt > 0 && <Row label={`Professional Fee — Section 20 (${form.professional_fee_type === "percent" ? form.professional_fee_value + "%" : "Flat"})`} value={professionalFeeAmt} deduction sub />}
+            {sellerConcessionAmt > 0 && <Row label="Seller Concession" value={sellerConcessionAmt} deduction sub />}
             <Row label="Net Commission (Before Expenses)" value={netBeforeExpenses} highlight />
           </div>
 
