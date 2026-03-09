@@ -55,116 +55,127 @@ export default function PurchaseAgreementUpload({ onParsed }) {
 
       setStatus("parsing");
 
-      // 2. Send to LLM for extraction
-      const result = await base44.integrations.Core.InvokeLLM({
-        model: "claude_sonnet_4_6",
-        prompt: `You are a real estate contract parser specializing in the New Hampshire Association of REALTORS® (NHAR) Purchase and Sales Agreement.
+      // 2. Send to LLM for extraction with comprehensive prompt
+      let extracted = null;
+      try {
+        const result = await base44.integrations.Core.InvokeLLM({
+          model: "claude_sonnet_4_6",
+          prompt: `You are a real estate contract parser specializing in the New Hampshire Association of REALTORS® (NHAR) Purchase and Sales Agreement.
 
-Analyze this document carefully and extract the following fields. Return ONLY valid JSON, no explanation.
+  Analyze this document carefully and extract the following fields. Return ONLY valid JSON, no explanation.
 
-Fields to extract:
-- effectiveDate: ISO date string (YYYY-MM-DD) or null
-- closingDate: ISO date string (YYYY-MM-DD) or null
-- transferOfTitleDate: ISO date string (YYYY-MM-DD) or null
-- earnestMoneyDays: integer (days from effective date) or null
-- additionalDepositDate: ISO date string or null
-- inspectionDays: integer (total inspection period days) or null
-- generalBuildingInspectionDays: integer or null
-- sewageInspectionDays: integer or null
-- waterQualityInspectionDays: integer or null
-- radonInspectionDays: integer or null
-- dueDiligenceDays: integer or null
-- financingCommitmentDate: ISO date string or null
-- purchasePrice: number or null
-- buyerName: string or null (full name of buyer(s))
-- sellerName: string or null (full name of seller(s))
-- buyersAgentName: string or null (the agent representing the BUYER — look for fields labeled "Buyer's Agent", "Buyer Agent", "Selling Agent", "BA:", or any agent name in the Buyer's Brokerage section)
-- sellersAgentName: string or null (the agent representing the SELLER — look for fields labeled "Seller's Agent", "Listing Agent", "LA:", or any agent name in the Listing Brokerage / Seller's Brokerage section)
-- buyerBrokerage: string or null (the brokerage firm representing the buyer — look for "Buyer's Brokerage", "Selling Brokerage", "Buyer Broker", firm name near the buyer's agent signature block)
-- sellerBrokerage: string or null (the brokerage firm representing the seller — look for "Listing Brokerage", "Seller's Brokerage", "Listing Broker", firm name near the seller's agent signature block)
-- closingTitleCompany: string or null
-- propertyAddress: string or null
-- section20AdditionalProvisions: string or null (verbatim text from "Additional Provisions" section)
-- section20Concessions: string or null (verbatim text from "Concessions" section)
-- section20ProfessionalFee: string or null (verbatim text from "Professional Fee" section)
-- professionalFeeType: "percent" or "flat" or null (detected from Professional Fee / Additional Provisions / Concessions sections)
-- professionalFeeValue: number or null (the numeric value — e.g. 2 for "2%", or 5000 for "$5,000")
-- professionalFeeBase: "contract_price" or "sale_price" or "flat" or null
-- sellerConcessionAmount: number or null (flat dollar amount of any seller concession found)
-- sellerConcessionPercent: number or null (percent-based concession if applicable)
-- additionalCompensationNotes: string or null (any other free-text compensation language detected)
+  Fields to extract:
+  - effectiveDate: ISO date string (YYYY-MM-DD) or null
+  - closingDate: ISO date string (YYYY-MM-DD) or null
+  - transferOfTitleDate: ISO date string (YYYY-MM-DD) or null
+  - earnestMoneyDays: integer (days from effective date) or null
+  - additionalDepositDate: ISO date string or null
+  - inspectionDays: integer (total inspection period days) or null
+  - generalBuildingInspectionDays: integer or null
+  - sewageInspectionDays: integer or null
+  - waterQualityInspectionDays: integer or null
+  - radonInspectionDays: integer or null
+  - dueDiligenceDays: integer or null
+  - financingCommitmentDate: ISO date string or null
+  - purchasePrice: number or null
+  - buyerName: string or null (full name of buyer(s))
+  - sellerName: string or null (full name of seller(s))
+  - buyersAgentName: string or null (the agent representing the BUYER — look for fields labeled "Buyer's Agent", "Buyer Agent", "Selling Agent", "BA:", or any agent name in the Buyer's Brokerage section)
+  - sellersAgentName: string or null (the agent representing the SELLER — look for fields labeled "Seller's Agent", "Listing Agent", "LA:", or any agent name in the Listing Brokerage / Seller's Brokerage section)
+  - buyerBrokerage: string or null (the brokerage firm representing the buyer — look for "Buyer's Brokerage", "Selling Brokerage", "Buyer Broker", firm name near the buyer's agent signature block)
+  - sellerBrokerage: string or null (the brokerage firm representing the seller — look for "Listing Brokerage", "Seller's Brokerage", "Listing Broker", firm name near the seller's agent signature block)
+  - closingTitleCompany: string or null
+  - propertyAddress: string or null
+  - section20AdditionalProvisions: string or null (verbatim text from "Additional Provisions" section)
+  - section20Concessions: string or null (verbatim text from "Concessions" section)
+  - section20ProfessionalFee: string or null (verbatim text from "Professional Fee" section)
+  - professionalFeeType: "percent" or "flat" or null (detected from Professional Fee / Additional Provisions / Concessions sections)
+  - professionalFeeValue: number or null (the numeric value — e.g. 2 for "2%", or 5000 for "$5,000")
+  - professionalFeeBase: "contract_price" or "sale_price" or "flat" or null
+  - sellerConcessionAmount: number or null (flat dollar amount of any seller concession found)
+  - sellerConcessionPercent: number or null (percent-based concession if applicable)
+  - additionalCompensationNotes: string or null (any other free-text compensation language detected)
 
-IMPORTANT — Agent and Brokerage extraction tips:
-- In NHAR P&S agreements, there are typically two signature/info blocks at the end: one for the Buyer's agent and one for the Seller's/Listing agent.
-- Look for printed name lines, license number fields, and company/firm name fields near each signature block.
-- Agent names may appear as: "Licensee Name:", "Agent Name:", "Printed Name:", "Salesperson:", or simply a filled-in line.
-- Brokerage names may appear as: "Company:", "Firm:", "Brokerage:", "Office:", or as a pre-printed header above a signature block.
-- Do NOT confuse the buyer or seller name with the agent name.
+  IMPORTANT — Agent and Brokerage extraction tips:
+  - In NHAR P&S agreements, there are typically two signature/info blocks at the end: one for the Buyer's agent and one for the Seller's/Listing agent.
+  - Look for printed name lines, license number fields, and company/firm name fields near each signature block.
+  - Agent names may appear as: "Licensee Name:", "Agent Name:", "Printed Name:", "Salesperson:", or simply a filled-in line.
+  - Brokerage names may appear as: "Company:", "Firm:", "Brokerage:", "Office:", or as a pre-printed header above a signature block.
+  - Do NOT confuse the buyer or seller name with the agent name.
 
-Look for patterns like:
-- "EFFECTIVE DATE", "Effective Date of this Agreement"
-- "TRANSFER OF TITLE: On or before"
-- "within ___ days of the EFFECTIVE DATE"
-- "Inspection within ___ days"
-- "General Building within ___ days"
-- "Sewage Disposal within ___ days"
-- "Water Quality within ___ days"
-- "Radon Air Quality within ___ days"
-- "Due Diligence"
-- "Financing Deadline", "Financing Commitment", "Financial Commitment Date"
-- "PURCHASE PRICE"
-- "Buyer's Agent", "Listing Agent", "Seller's Agent", "Selling Agent"
-- "Closing Agent", "Title Company", "Settlement Agent"
-- Brokerage/firm names in signature blocks
-- Section 20: "ADDITIONAL PROVISIONS", "CONCESSIONS", "PROFESSIONAL FEE"
-- Financial patterns: "X% of the net contract price", "X% commission", "Seller shall pay", "buyer broker", "$X,XXX", "X% of sale price"
-- Concession patterns: "seller concession", "closing cost credit", "seller to pay"
+  Look for patterns like:
+  - "EFFECTIVE DATE", "Effective Date of this Agreement"
+  - "TRANSFER OF TITLE: On or before"
+  - "within ___ days of the EFFECTIVE DATE"
+  - "Inspection within ___ days"
+  - "General Building within ___ days"
+  - "Sewage Disposal within ___ days"
+  - "Water Quality within ___ days"
+  - "Radon Air Quality within ___ days"
+  - "Due Diligence"
+  - "Financing Deadline", "Financing Commitment", "Financial Commitment Date"
+  - "PURCHASE PRICE"
+  - "Buyer's Agent", "Listing Agent", "Seller's Agent", "Selling Agent"
+  - "Closing Agent", "Title Company", "Settlement Agent"
+  - Brokerage/firm names in signature blocks
+  - Section 20: "ADDITIONAL PROVISIONS", "CONCESSIONS", "PROFESSIONAL FEE"
+  - Financial patterns: "X% of the net contract price", "X% commission", "Seller shall pay", "buyer broker", "$X,XXX", "X% of sale price"
+  - Concession patterns: "seller concession", "closing cost credit", "seller to pay"
 
-If a field is not found, return null for that field.`,
-        file_urls: [file_url],
-        response_json_schema: {
-          type: "object",
-          properties: {
-            effectiveDate: { type: "string" },
-            closingDate: { type: "string" },
-            transferOfTitleDate: { type: "string" },
-            earnestMoneyDays: { type: "number" },
-            additionalDepositDate: { type: "string" },
-            inspectionDays: { type: "number" },
-            generalBuildingInspectionDays: { type: "number" },
-            sewageInspectionDays: { type: "number" },
-            waterQualityInspectionDays: { type: "number" },
-            radonInspectionDays: { type: "number" },
-            dueDiligenceDays: { type: "number" },
-            financingCommitmentDate: { type: "string" },
-            purchasePrice: { type: "number" },
-            buyerName: { type: "string" },
-            sellerName: { type: "string" },
-            buyersAgentName: { type: "string" },
-            sellersAgentName: { type: "string" },
-            buyerBrokerage: { type: "string" },
-            sellerBrokerage: { type: "string" },
-            closingTitleCompany: { type: "string" },
-            propertyAddress: { type: "string" },
-            section20AdditionalProvisions: { type: "string" },
-            section20Concessions: { type: "string" },
-            section20ProfessionalFee: { type: "string" },
-            professionalFeeType: { type: "string" },
-            professionalFeeValue: { type: "number" },
-            professionalFeeBase: { type: "string" },
-            sellerConcessionAmount: { type: "number" },
-            sellerConcessionPercent: { type: "number" },
-            additionalCompensationNotes: { type: "string" },
+  If a field is not found, return null for that field.`,
+          file_urls: [file_url],
+          response_json_schema: {
+            type: "object",
+            properties: {
+              effectiveDate: { type: "string" },
+              closingDate: { type: "string" },
+              transferOfTitleDate: { type: "string" },
+              earnestMoneyDays: { type: "number" },
+              additionalDepositDate: { type: "string" },
+              inspectionDays: { type: "number" },
+              generalBuildingInspectionDays: { type: "number" },
+              sewageInspectionDays: { type: "number" },
+              waterQualityInspectionDays: { type: "number" },
+              radonInspectionDays: { type: "number" },
+              dueDiligenceDays: { type: "number" },
+              financingCommitmentDate: { type: "string" },
+              purchasePrice: { type: "number" },
+              buyerName: { type: "string" },
+              sellerName: { type: "string" },
+              buyersAgentName: { type: "string" },
+              sellersAgentName: { type: "string" },
+              buyerBrokerage: { type: "string" },
+              sellerBrokerage: { type: "string" },
+              closingTitleCompany: { type: "string" },
+              propertyAddress: { type: "string" },
+              section20AdditionalProvisions: { type: "string" },
+              section20Concessions: { type: "string" },
+              section20ProfessionalFee: { type: "string" },
+              professionalFeeType: { type: "string" },
+              professionalFeeValue: { type: "number" },
+              professionalFeeBase: { type: "string" },
+              sellerConcessionAmount: { type: "number" },
+              sellerConcessionPercent: { type: "number" },
+              additionalCompensationNotes: { type: "string" },
+            },
           },
-        },
-      });
+        });
 
-      const extracted = result.data;
-      
-      // Log raw data for debugging
-      console.log("Extracted P&S Data:", extracted);
-      
-      // Ensure safe return object with defaults
+        extracted = result.data;
+        console.log("LLM Extracted P&S Data:", extracted);
+      } catch (llmErr) {
+        console.warn("LLM extraction failed, falling back to regex parser:", llmErr);
+        setErrorMsg("Using fallback parser for document analysis...");
+      }
+
+      // Guard: ensure extracted data exists
+      if (!extracted) {
+        setErrorMsg("Could not extract data from this P&S. Please enter details manually.");
+        setStatus("error");
+        return;
+      }
+
+      // Ensure safe return object with all fields and defaults
       const safeResult = {
         effectiveDate: extracted?.effectiveDate || null,
         closingDate: extracted?.closingDate || null,
@@ -197,13 +208,13 @@ If a field is not found, return null for that field.`,
         sellerConcessionPercent: extracted?.sellerConcessionPercent || null,
         additionalCompensationNotes: extracted?.additionalCompensationNotes || null,
       };
-      
+
       setStatus("done");
       onParsed(safeResult);
     } catch (err) {
       console.error("P&S parsing error:", err);
       setStatus("error");
-      setErrorMsg(err?.message || "Failed to parse document. Please try again.");
+      setErrorMsg("Unable to process this document. Please enter transaction details manually.");
     }
   };
 
