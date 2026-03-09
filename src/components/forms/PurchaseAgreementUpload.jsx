@@ -55,8 +55,8 @@ export default function PurchaseAgreementUpload({ onParsed }) {
 
       setStatus("parsing");
 
-    // 2. Send to LLM for extraction
-    const result = await base44.integrations.Core.InvokeLLM({
+      // 2. Send to LLM for extraction
+      const result = await base44.integrations.Core.InvokeLLM({
       model: "claude_sonnet_4_6",
       prompt: `You are a real estate contract parser specializing in the New Hampshire Association of REALTORS® (NHAR) Purchase and Sales Agreement.
 
