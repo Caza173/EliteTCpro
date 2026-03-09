@@ -23,8 +23,13 @@ export default function Dashboard() {
   const [deadlineView, setDeadlineView] = useState("list"); // "list" | "calendar"
   const { data: currentUser } = useCurrentUser();
   const { data: transactions = [], isLoading } = useQuery({
-    queryKey: ["transactions"],
-    queryFn: () => base44.entities.Transaction.list("-created_date"),
+    queryKey: ["transactions", currentUser?.email, currentUser?.role],
+    queryFn: () => {
+      if (!currentUser) return [];
+      if (isOwnerOrAdmin(currentUser)) return base44.entities.Transaction.list("-created_date");
+      return base44.entities.Transaction.filter({ agent_email: currentUser.email }, "-created_date");
+    },
+    enabled: !!currentUser,
   });
 
   const { data: checklistItems = [] } = useQuery({
