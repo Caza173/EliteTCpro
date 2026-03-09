@@ -40,6 +40,19 @@ export default function AgentIntake() {
       const tx = await base44.entities.Transaction.create(data);
       if (data.client_email) {
         try { await base44.users.inviteUser(data.client_email, "user"); } catch (_) {}
+        const portalUrl = `${window.location.origin}${window.location.pathname}#/ClientPortal?id=${tx.id}`;
+        await base44.integrations.Core.SendEmail({
+          to: data.client_email,
+          subject: `You're invited to track your transaction — ${data.address}`,
+          body: `<p>Hello,</p>
+<p>Your transaction has been submitted and you've been invited to track its progress online.</p>
+<p><strong>Property:</strong> ${data.address}<br/>
+<strong>Buyer:</strong> ${data.buyer}<br/>
+<strong>Seller:</strong> ${data.seller}</p>
+<p>Click the link below to view your transaction portal:</p>
+<p><a href="${portalUrl}" style="display:inline-block;padding:10px 20px;background:#3b82f6;color:#fff;border-radius:6px;text-decoration:none;font-weight:600;">View My Transaction</a></p>
+<p>Best regards,<br/>TC Manager</p>`,
+        });
       }
       return tx;
     },
