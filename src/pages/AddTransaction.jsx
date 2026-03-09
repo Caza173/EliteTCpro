@@ -30,13 +30,13 @@ export default function AddTransaction() {
       const tx = await base44.entities.Transaction.create(data);
       // Generate doc checklist from template
       if (defaultTemplate) {
-        const checklistData = buildChecklistItems(defaultTemplate, tx.id, currentUser?.brokerage_id);
+        const checklistData = buildChecklistItems(defaultTemplate, tx.id, brokerageId);
         if (checklistData.length > 0) {
           await base44.entities.DocumentChecklistItem.bulkCreate(checklistData);
         }
       }
       await writeAuditLog({
-        brokerageId: currentUser?.brokerage_id,
+        brokerageId: brokerageId,
         transactionId: tx.id,
         actorEmail: currentUser?.email,
         action: "transaction_created",
