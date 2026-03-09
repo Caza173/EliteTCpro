@@ -376,60 +376,139 @@ TC Manager
         </CardContent>
       </Card>
 
-      {/* Deadline Dashboard */}
-      <Card className="shadow-sm border-gray-100">
-        <CardHeader className="pb-2">
-          <div className="flex items-center justify-between">
-            <div>
-              <CardTitle className="text-base font-semibold">Key Deadlines</CardTitle>
-              <p className="text-sm text-gray-500">Contract milestones and critical dates</p>
-            </div>
-            <Button
-              size="sm"
-              variant="outline"
-              className="text-blue-600 hover:text-blue-700 hover:bg-blue-50 border-blue-200"
-              onClick={handleSendTimeline}
-              disabled={sendingTimeline}
-            >
-              <Send className="w-3.5 h-3.5 mr-1.5" />
-              {sendingTimeline ? "Sending..." : "Send Timeline"}
-            </Button>
-          </div>
-        </CardHeader>
-        <CardContent>
-          <DeadlineDashboard transaction={transaction} />
-        </CardContent>
-      </Card>
+      {/* Tab Navigation */}
+      <div className="flex gap-1 bg-gray-100 p-1 rounded-xl overflow-x-auto">
+        {TX_TABS.map(({ id, label, icon: Icon }) => (
+          <button
+            key={id}
+            onClick={() => setActiveTab(id)}
+            className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium whitespace-nowrap transition-all ${
+              activeTab === id
+                ? "bg-white shadow-sm text-gray-900"
+                : "text-gray-500 hover:text-gray-700"
+            }`}
+          >
+            <Icon className="w-3.5 h-3.5" />
+            {label}
+          </button>
+        ))}
+      </div>
 
-      {/* Timeline */}
-      <Card className="shadow-sm border-gray-100">
-        <CardHeader className="pb-2">
-          <CardTitle className="text-base font-semibold">Transaction Timeline</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <TransactionTimeline
-            phasesCompleted={transaction.phases_completed || []}
-            currentPhase={transaction.phase || 1}
-          />
-        </CardContent>
-      </Card>
+      {/* Tab: Overview */}
+      {activeTab === "overview" && (
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <Card className="shadow-sm border-gray-100">
+            <CardHeader>
+              <CardTitle className="text-base font-semibold">Transaction Phases</CardTitle>
+              <p className="text-sm text-gray-500">Check off phases as completed.</p>
+            </CardHeader>
+            <CardContent>
+              <PhaseChecklist
+                phasesCompleted={transaction.phases_completed || []}
+                currentPhase={transaction.phase || 1}
+                onTogglePhase={handleTogglePhase}
+              />
+            </CardContent>
+          </Card>
 
-      {/* Phase Checklist + Tasks */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <Card className="shadow-sm border-gray-100">
+            <CardHeader>
+              <CardTitle className="text-base font-semibold">Tasks</CardTitle>
+              <p className="text-sm text-gray-500">
+                {(transaction.tasks || []).filter((t) => t.completed).length} / {(transaction.tasks || []).length} completed
+              </p>
+            </CardHeader>
+            <CardContent>
+              <TaskList
+                tasks={transaction.tasks || []}
+                onToggleTask={async (taskId) => {
+                  const updatedTasks = (transaction.tasks || []).map((task) =>
+                    task.id === taskId ? { ...task, completed: !task.completed } : task
+                  );
+                  updateMutation.mutate({ id: transaction.id, data: { tasks: updatedTasks, last_activity_at: new Date().toISOString() } });
+                  await writeAuditLog({
+                    brokerageId: transaction.brokerage_id,
+                    transactionId: transaction.id,
+                    actorEmail: currentUser?.email,
+                    action: "task_completed",
+                    entityType: "task",
+                    entityId: taskId,
+                    description: `Task ${taskId} toggled by ${currentUser?.email}`,
+                  });
+                }}
+              />
+            </CardContent>
+          </Card>
+
+          {checklistItems.length > 0 && (
+            <Card className="shadow-sm border-gray-100 lg:col-span-2">
+              <CardHeader>
+                <div className="flex items-center justify-between">
+                  <CardTitle className="text-base font-semibold flex items-center gap-2">
+                    <ClipboardCheck className="w-4 h-4 text-blue-500" /> Document Checklist
+                  </CardTitle>
+                  <span className="text-xs text-gray-400">
+                    {checklistItems.filter((i) => i.status === "approved").length}/{checklistItems.length} approved
+                  </span>
+                </div>
+              </CardHeader>
+              <CardContent>
+                <DocChecklistPanel
+                  items={checklistItems}
+                  currentUser={currentUser}
+                  transactionId={transaction.id}
+                  brokerageId={transaction.brokerage_id}
+                />
+              </CardContent>
+            </Card>
+          )}
+        </div>
+      )}
+
+      {/* Tab: Timeline */}
+      {activeTab === "timeline" && (
         <Card className="shadow-sm border-gray-100">
-          <CardHeader>
-            <CardTitle className="text-base font-semibold">Transaction Phases</CardTitle>
-            <p className="text-sm text-gray-500">Check off phases as completed.</p>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-base font-semibold">Transaction Timeline</CardTitle>
           </CardHeader>
           <CardContent>
-            <PhaseChecklist
+            <TransactionTimeline
               phasesCompleted={transaction.phases_completed || []}
               currentPhase={transaction.phase || 1}
-              onTogglePhase={handleTogglePhase}
             />
           </CardContent>
         </Card>
+      )}
 
+      {/* Tab: Deadlines */}
+      {activeTab === "deadlines" && (
+        <Card className="shadow-sm border-gray-100">
+          <CardHeader className="pb-2">
+            <div className="flex items-center justify-between">
+              <div>
+                <CardTitle className="text-base font-semibold">Key Deadlines</CardTitle>
+                <p className="text-sm text-gray-500">Contract milestones and critical dates</p>
+              </div>
+              <Button
+                size="sm"
+                variant="outline"
+                className="text-blue-600 hover:text-blue-700 hover:bg-blue-50 border-blue-200"
+                onClick={handleSendTimeline}
+                disabled={sendingTimeline}
+              >
+                <Send className="w-3.5 h-3.5 mr-1.5" />
+                {sendingTimeline ? "Sending..." : "Send Timeline"}
+              </Button>
+            </div>
+          </CardHeader>
+          <CardContent>
+            <DeadlineDashboard transaction={transaction} />
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Tab: Tasks */}
+      {activeTab === "tasks" && (
         <Card className="shadow-sm border-gray-100">
           <CardHeader>
             <CardTitle className="text-base font-semibold">Tasks</CardTitle>
@@ -445,43 +524,15 @@ TC Manager
                   task.id === taskId ? { ...task, completed: !task.completed } : task
                 );
                 updateMutation.mutate({ id: transaction.id, data: { tasks: updatedTasks, last_activity_at: new Date().toISOString() } });
-                await writeAuditLog({
-                  brokerageId: transaction.brokerage_id,
-                  transactionId: transaction.id,
-                  actorEmail: currentUser?.email,
-                  action: "task_completed",
-                  entityType: "task",
-                  entityId: taskId,
-                  description: `Task ${taskId} toggled by ${currentUser?.email}`,
-                });
               }}
             />
           </CardContent>
         </Card>
-      </div>
+      )}
 
-      {/* Doc Checklist */}
-      {checklistItems.length > 0 && (
-        <Card className="shadow-sm border-gray-100">
-          <CardHeader>
-            <div className="flex items-center justify-between">
-              <CardTitle className="text-base font-semibold flex items-center gap-2">
-                <ClipboardCheck className="w-4 h-4 text-blue-500" /> Document Checklist
-              </CardTitle>
-              <span className="text-xs text-gray-400">
-                {checklistItems.filter((i) => i.status === "approved").length}/{checklistItems.length} approved
-              </span>
-            </div>
-          </CardHeader>
-          <CardContent>
-            <DocChecklistPanel
-              items={checklistItems}
-              currentUser={currentUser}
-              transactionId={transaction.id}
-              brokerageId={transaction.brokerage_id}
-            />
-          </CardContent>
-        </Card>
+      {/* Tab: Finance */}
+      {activeTab === "finance" && (
+        <FinanceTab transaction={transaction} currentUser={currentUser} />
       )}
     </div>
   );
