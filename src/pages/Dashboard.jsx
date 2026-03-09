@@ -152,39 +152,65 @@ export default function Dashboard() {
           </CardContent>
         </Card>
 
-        {/* Deadlines */}
-        <Card className="shadow-sm border-gray-100">
-          <CardHeader className="pb-2 flex flex-row items-center justify-between">
-            <CardTitle className="text-base font-semibold">Deadlines</CardTitle>
-            <div className="flex gap-1 rounded-lg bg-gray-100 p-0.5">
-              <button
-                onClick={() => setDeadlineView("list")}
-                className={`px-2.5 py-1 rounded-md text-xs font-medium transition-colors flex items-center gap-1.5 ${deadlineView === "list" ? "bg-white shadow-sm text-gray-800" : "text-gray-500 hover:text-gray-700"}`}
-              >
-                <List className="w-3 h-3" /> List
-              </button>
-              <button
-                onClick={() => setDeadlineView("calendar")}
-                className={`px-2.5 py-1 rounded-md text-xs font-medium transition-colors flex items-center gap-1.5 ${deadlineView === "calendar" ? "bg-white shadow-sm text-gray-800" : "text-gray-500 hover:text-gray-700"}`}
-              >
-                <CalendarDays className="w-3 h-3" /> Calendar
-              </button>
-            </div>
-          </CardHeader>
-          <CardContent>
-            {isLoading ? (
-              <div className="space-y-3">
-                {[1, 2, 3].map((i) => (
-                  <Skeleton key={i} className="h-16 rounded" />
-                ))}
+        {/* Right column */}
+        <div className="space-y-5">
+          {/* Deadline Risk Alerts */}
+          {!isLoading && (
+            <Card className="shadow-sm border-gray-100">
+              <CardContent className="pt-4">
+                <DeadlineRiskPanel transactions={transactions} checklistItems={checklistItems} />
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Deadlines */}
+          <Card className="shadow-sm border-gray-100">
+            <CardHeader className="pb-2 flex flex-row items-center justify-between">
+              <CardTitle className="text-base font-semibold">Deadlines</CardTitle>
+              <div className="flex gap-1 rounded-lg bg-gray-100 p-0.5">
+                <button
+                  onClick={() => setDeadlineView("list")}
+                  className={`px-2.5 py-1 rounded-md text-xs font-medium transition-colors flex items-center gap-1.5 ${deadlineView === "list" ? "bg-white shadow-sm text-gray-800" : "text-gray-500 hover:text-gray-700"}`}
+                >
+                  <List className="w-3 h-3" /> List
+                </button>
+                <button
+                  onClick={() => setDeadlineView("calendar")}
+                  className={`px-2.5 py-1 rounded-md text-xs font-medium transition-colors flex items-center gap-1.5 ${deadlineView === "calendar" ? "bg-white shadow-sm text-gray-800" : "text-gray-500 hover:text-gray-700"}`}
+                >
+                  <CalendarDays className="w-3 h-3" /> Calendar
+                </button>
               </div>
-            ) : deadlineView === "calendar" ? (
-              <DeadlineCalendarView transactions={transactions} />
-            ) : (
-              <DeadlinePanel transactions={transactions} />
-            )}
-          </CardContent>
-        </Card>
+            </CardHeader>
+            <CardContent>
+              {isLoading ? (
+                <div className="space-y-3">
+                  {[1, 2, 3].map((i) => (
+                    <Skeleton key={i} className="h-16 rounded" />
+                  ))}
+                </div>
+              ) : deadlineView === "calendar" ? (
+                <DeadlineCalendarView transactions={transactions} />
+              ) : (
+                <DeadlinePanel transactions={transactions} />
+              )}
+            </CardContent>
+          </Card>
+
+          {/* Tasks Due Today */}
+          {!isLoading && (
+            <Card className="shadow-sm border-gray-100">
+              <CardHeader className="pb-2">
+                <CardTitle className="text-base font-semibold flex items-center gap-2">
+                  <ClipboardList className="w-4 h-4 text-amber-500" /> Tasks Due Today
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <TasksDueToday transactions={transactions} />
+              </CardContent>
+            </Card>
+          )}
+        </div>
       </div>
     </div>
   );
