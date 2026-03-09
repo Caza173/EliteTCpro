@@ -159,9 +159,49 @@ If a field is not found, return null for that field.`,
         },
       });
 
+      const extracted = result.data;
+      
+      // Log raw data for debugging
+      console.log("Extracted P&S Data:", extracted);
+      
+      // Ensure safe return object with defaults
+      const safeResult = {
+        effectiveDate: extracted?.effectiveDate || null,
+        closingDate: extracted?.closingDate || null,
+        transferOfTitleDate: extracted?.transferOfTitleDate || null,
+        earnestMoneyDays: extracted?.earnestMoneyDays || null,
+        additionalDepositDate: extracted?.additionalDepositDate || null,
+        inspectionDays: extracted?.inspectionDays || null,
+        generalBuildingInspectionDays: extracted?.generalBuildingInspectionDays || null,
+        sewageInspectionDays: extracted?.sewageInspectionDays || null,
+        waterQualityInspectionDays: extracted?.waterQualityInspectionDays || null,
+        radonInspectionDays: extracted?.radonInspectionDays || null,
+        dueDiligenceDays: extracted?.dueDiligenceDays || null,
+        financingCommitmentDate: extracted?.financingCommitmentDate || null,
+        purchasePrice: extracted?.purchasePrice || null,
+        buyerName: extracted?.buyerName || null,
+        sellerName: extracted?.sellerName || null,
+        buyersAgentName: extracted?.buyersAgentName || null,
+        sellersAgentName: extracted?.sellersAgentName || null,
+        buyerBrokerage: extracted?.buyerBrokerage || null,
+        sellerBrokerage: extracted?.sellerBrokerage || null,
+        closingTitleCompany: extracted?.closingTitleCompany || null,
+        propertyAddress: extracted?.propertyAddress || null,
+        section20AdditionalProvisions: extracted?.section20AdditionalProvisions || null,
+        section20Concessions: extracted?.section20Concessions || null,
+        section20ProfessionalFee: extracted?.section20ProfessionalFee || null,
+        professionalFeeType: extracted?.professionalFeeType || null,
+        professionalFeeValue: extracted?.professionalFeeValue || null,
+        professionalFeeBase: extracted?.professionalFeeBase || null,
+        sellerConcessionAmount: extracted?.sellerConcessionAmount || null,
+        sellerConcessionPercent: extracted?.sellerConcessionPercent || null,
+        additionalCompensationNotes: extracted?.additionalCompensationNotes || null,
+      };
+      
       setStatus("done");
-      onParsed(result.data);
+      onParsed(safeResult);
     } catch (err) {
+      console.error("P&S parsing error:", err);
       setStatus("error");
       setErrorMsg(err?.message || "Failed to parse document. Please try again.");
     }
