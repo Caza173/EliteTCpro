@@ -164,7 +164,8 @@ export default function Layout({ children, currentPageName }) {
              currentPageName === "AgentPortal" ? "My Transactions" :
              currentPageName}
           </h2>
-          <div className="ml-auto">
+          <div className="ml-auto flex items-center gap-2">
+            <ThemeToggle />
             <NotificationBell />
           </div>
         </header>
