@@ -12,14 +12,16 @@ const DEADLINE_FIELDS = [
   { field: "closing_date", label: "Closing Date" },
 ];
 
+// Intervals at which we send alerts (hours before deadline)
+const ALERT_INTERVALS = [24, 18, 12, 6, 3, 1];
+
 export default function AddendumAlertChecker({ transactions = [], currentUser }) {
   const checkedRef = useRef(false);
 
   useEffect(() => {
-    // Only run for TC or agent roles, and only once per session
     if (!currentUser || checkedRef.current) return;
     const role = currentUser.role;
-    if (role !== "tc" && role !== "agent" && role !== "admin" && role !== "owner") return;
+    if (!["tc", "agent", "admin", "owner"].includes(role)) return;
 
     checkedRef.current = true;
     checkAndNotify(transactions, currentUser);
@@ -30,19 +32,22 @@ export default function AddendumAlertChecker({ transactions = [], currentUser })
 
 async function checkAndNotify(transactions, currentUser) {
   const now = new Date();
-  const todayKey = now.toISOString().slice(0, 10); // YYYY-MM-DD
 
-  // Fetch recent notifications to avoid duplicates
+  // Fetch existing deadline notifications for this user to avoid duplicate intervals
   const recentNotifications = await base44.entities.InAppNotification.filter(
     { user_email: currentUser.email, type: "deadline" },
     "-created_date",
-    100
+    200
   );
 
-  const alreadyNotifiedKeys = new Set(
-    recentNotifications
-      .filter((n) => n.created_date && n.created_date.slice(0, 10) === todayKey)
-      .map((n) => n.title)
+  // Build a set of already-sent keys: "transactionId|deadlineField|intervalHours"
+  const sentKeys = new Set(
+    recentNotifications.map((n) => {
+      if (n.transaction_id && n.deadline_field && n.alert_interval_hours) {
+        return `${n.transaction_id}|${n.deadline_field}|${n.alert_interval_hours}`;
+      }
+      return null;
+    }).filter(Boolean)
   );
 
   const toCreate = [];
@@ -65,37 +70,44 @@ async function checkAndNotify(transactions, currentUser) {
       const hoursUntil = differenceInHours(date, now);
       if (hoursUntil < 0 || hoursUntil > 24) return;
 
-      const title = `⚠️ Addendum needed? ${label} in ${hoursUntil}h`;
-      const body = `The ${label} for ${tx.address} is approaching within 24 hours. Do you need to prepare an addendum?`;
+      // Find which interval bracket we're in (the closest one that hasn't been sent yet)
+      // e.g. if hoursUntil = 17, the current bracket is 18h (we're just past 18h warning)
+      const triggeredInterval = ALERT_INTERVALS.find((h) => hoursUntil <= h);
+      if (!triggeredInterval) return;
 
-      // Notify the TC (created_by of the transaction)
-      if (tx.created_by) {
-        const key = `${title}|${tx.created_by}`;
-        if (!alreadyNotifiedKeys.has(title)) {
-          toCreate.push({
-            user_email: tx.created_by,
-            transaction_id: tx.id,
-            brokerage_id: tx.brokerage_id,
-            title,
-            body,
-            type: "deadline",
-          });
-        }
-      }
+      const recipients = [];
+      // TC (created_by)
+      if (tx.created_by) recipients.push(tx.created_by);
+      // Agent if different
+      if (tx.agent_email && tx.agent_email !== tx.created_by) recipients.push(tx.agent_email);
 
-      // Notify the agent if different from TC
-      if (tx.agent_email && tx.agent_email !== tx.created_by) {
-        if (!alreadyNotifiedKeys.has(title)) {
-          toCreate.push({
-            user_email: tx.agent_email,
-            transaction_id: tx.id,
-            brokerage_id: tx.brokerage_id,
-            title,
-            body,
-            type: "deadline",
-          });
-        }
-      }
+      recipients.forEach((email) => {
+        const key = `${tx.id}|${field}|${triggeredInterval}`;
+        if (sentKeys.has(key)) return;
+        sentKeys.add(key); // prevent duplicate in this batch
+
+        const title = `⚠️ Addendum needed? ${label} in ${triggeredInterval}h`;
+        const body = `The ${label} for ${tx.address} is approaching within ${triggeredInterval} hours. Do you need to prepare an addendum?`;
+
+        toCreate.push({
+          user_email: email,
+          transaction_id: tx.id,
+          brokerage_id: tx.brokerage_id,
+          title,
+          body,
+          type: "deadline",
+          alert_interval_hours: triggeredInterval,
+          deadline_field: field,
+          addendum_response: "pending",
+        });
+
+        // Send email notification
+        base44.integrations.Core.SendEmail({
+          to: email,
+          subject: title,
+          body: `${body}\n\nPlease log in to TC Manager to respond: Yes, I need an addendum — or — No, we're good.\n\nThis is reminder ${triggeredInterval}h before the deadline.`,
+        }).catch(() => {}); // fire-and-forget
+      });
     });
   });
 
