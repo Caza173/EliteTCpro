@@ -3,11 +3,21 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
 import { CheckCircle2, Circle, ClipboardList } from "lucide-react";
 
-const PHASE_LABELS = [
-  "Pre-Contract", "Offer Drafting", "Offer Accepted", "Escrow Opened",
-  "Inspection Period", "Repair Negotiation", "Appraisal Ordered",
-  "Loan Processing", "Clear to Close", "Final Walkthrough", "Closing", "Post Closing"
-];
+// Phase labels — phases 1 & 2 are agent-side. Phase 3 includes escrow, Phase 5 includes repair.
+const PHASE_LABELS = {
+  1: "Pre-Contract",
+  2: "Offer Drafting",
+  3: "Offer Accepted & Escrow",
+  4: "Escrow Opened",
+  5: "Inspection & Repair",
+  6: "Repair Negotiation",
+  7: "Appraisal Ordered",
+  8: "Loan Processing",
+  9: "Clear to Close",
+  10: "Final Walkthrough",
+  11: "Closing",
+  12: "Post Closing",
+};
 
 export default function TaskList({ tasks = [], onToggleTask }) {
   if (!tasks.length) {
