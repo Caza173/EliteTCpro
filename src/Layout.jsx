@@ -75,7 +75,7 @@ export default function Layout({ children, currentPageName }) {
 
   return (
     <ThemeProvider>
-    <div className="min-h-screen flex" style={{ backgroundColor: "var(--bg-primary)", color: "var(--text-primary)" }}>
+      <div className="min-h-screen flex" style={{ backgroundColor: "var(--bg-primary)", color: "var(--text-primary)" }}>
 
       {/* Mobile overlay */}
       {sidebarOpen && (
