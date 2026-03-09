@@ -271,6 +271,54 @@ export default function FinanceTab({ transaction, currentUser, parsedPsData }) {
         </Card>
       )}
 
+      {/* Section 20 Review Panel */}
+      {parsedPsData && (
+        <Section20ReviewPanel
+          parsed={parsedPsData}
+          salePrice={parseFloat(form.sale_price) || 0}
+          onApply={handleSection20Apply}
+        />
+      )}
+
+      {/* Section 20 Applied Values Display */}
+      {(form.professional_fee_amount > 0 || form.seller_concession_amount > 0) && (
+        <Card className="border-amber-100 shadow-sm">
+          <CardHeader className="pb-3">
+            <CardTitle className="text-sm font-semibold flex items-center gap-2">
+              <FileSearch className="w-4 h-4 text-amber-500" /> Additional Compensation (Section 20)
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-2 gap-4 max-w-md">
+              {form.professional_fee_amount > 0 && (
+                <div>
+                  <Label className="text-xs text-gray-500 mb-1 block">
+                    Professional Fee {form.professional_fee_type === "percent" ? `(${form.professional_fee_value}%)` : ""}
+                  </Label>
+                  <Input
+                    type="number"
+                    value={form.professional_fee_amount}
+                    onChange={(e) => setNum("professional_fee_amount", e.target.value)}
+                    className="h-8 text-sm"
+                  />
+                </div>
+              )}
+              {form.seller_concession_amount > 0 && (
+                <div>
+                  <Label className="text-xs text-gray-500 mb-1 block">Seller Concession</Label>
+                  <Input
+                    type="number"
+                    value={form.seller_concession_amount}
+                    onChange={(e) => setNum("seller_concession_amount", e.target.value)}
+                    className="h-8 text-sm"
+                  />
+                </div>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
       {/* Commission Breakdown */}
       <CommissionBreakdown computed={computed} form={form} />
 
