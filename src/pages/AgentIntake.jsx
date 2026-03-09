@@ -95,7 +95,16 @@ export default function AgentIntake() {
   const handleSubmit = (e) => {
     e.preventDefault();
     const tasks = generateDefaultTasks();
-    createMutation.mutate({ ...form, phase: 1, phases_completed: [], status: "active", tasks });
+    const buyerList = buyers.filter(Boolean);
+    const sellerList = sellers.filter(Boolean);
+    createMutation.mutate({
+      ...form,
+      buyer: buyerList.join(" & "),
+      seller: sellerList.join(" & "),
+      buyers: buyerList,
+      sellers: sellerList,
+      phase: 1, phases_completed: [], status: "active", tasks
+    });
   };
 
   if (submitted) {
