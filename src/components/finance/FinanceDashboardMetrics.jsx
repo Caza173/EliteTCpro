@@ -7,7 +7,7 @@ import { base44 } from "@/api/base44Client";
 const fmt = (n) =>
   new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 0 }).format(n || 0);
 
-function MetricCard({ label, value, sub, icon: Icon, color }) {
+function MetricCard({ label, value, sub, icon: IconComp, color }) {
   return (
     <Card className="shadow-sm border-gray-100">
       <CardContent className="pt-4 pb-4">
@@ -17,8 +17,8 @@ function MetricCard({ label, value, sub, icon: Icon, color }) {
             <p className={`text-xl font-bold mt-1 ${color || "text-gray-900"}`}>{value}</p>
             {sub && <p className="text-xs text-gray-400 mt-0.5">{sub}</p>}
           </div>
-          <div className={`w-9 h-9 rounded-lg flex items-center justify-center ${color ? "bg-opacity-10" : "bg-gray-50"}`} style={{ backgroundColor: "rgba(59,130,246,0.08)" }}>
-            <Icon className="w-4 h-4 text-blue-500" />
+          <div className="w-9 h-9 rounded-lg flex items-center justify-center" style={{ backgroundColor: "rgba(59,130,246,0.08)" }}>
+            <IconComp className="w-4 h-4 text-blue-500" />
           </div>
         </div>
       </CardContent>
