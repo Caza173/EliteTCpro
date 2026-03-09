@@ -48,7 +48,7 @@ export default function TaskList({ tasks = [], onToggleTask }) {
           <div key={phaseNum}>
             <div className="flex items-center gap-2 mb-2">
               <span className="text-xs font-semibold text-gray-500 uppercase tracking-wider">
-                Phase {phaseNum} — {PHASE_LABELS[phaseNum - 1]}
+                Phase {phaseNum} — {PHASE_LABELS[phaseNum] || `Phase ${phaseNum}`}
               </span>
               <Badge variant="outline" className="text-[10px] px-1.5 py-0 bg-gray-50 text-gray-500 border-gray-200">
                 {completedCount}/{phaseTasks.length}
