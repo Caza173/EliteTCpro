@@ -1,13 +1,12 @@
-import React, { useState, useRef } from "react";
+import React from "react";
 import { base44 } from "@/api/base44Client";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
-import { MapPin, Calendar, Upload, Loader2, FileText, Download, CheckCircle2, Circle } from "lucide-react";
-import { format, differenceInDays, isPast } from "date-fns";
+import { MapPin, FileText, Download, CheckCircle2, Circle } from "lucide-react";
+import { format } from "date-fns";
 import { useCurrentUser } from "../components/auth/useCurrentUser";
 import TransactionTimeline from "../components/transactions/TransactionTimeline";
 import DeadlinePanel from "../components/transactions/DeadlinePanel";
