@@ -138,6 +138,8 @@ export default function FinanceTab({ transaction, currentUser, parsedPsData }) {
       referral_amount: computed.referralAmt,
       expenses_total: expensesTotal,
       net_commission: computed.net,
+      professional_fee_amount: computed.professionalFeeAmt,
+      seller_concession_amount: computed.sellerConcessionAmt,
     });
   };
 
