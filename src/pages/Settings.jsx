@@ -18,6 +18,36 @@ export default function Settings() {
   const [inviteRole, setInviteRole] = useState("agent");
   const [inviting, setInviting] = useState(false);
   const [invited, setInvited] = useState(false);
+  const [financeForm, setFinanceForm] = useState({
+    broker_split_percent: "",
+    broker_cap: "",
+    franchise_fee_percent: "",
+    transaction_fee: "",
+    eo_fee: "",
+  });
+  const [financeDefaults, setFinanceDefaults] = useState({});
+  const [financeSaved, setFinanceSaved] = useState(false);
+
+  React.useEffect(() => {
+    if (currentUser) {
+      setFinanceForm({
+        broker_split_percent: currentUser.broker_split_percent ?? 20,
+        broker_cap: currentUser.broker_cap ?? 0,
+        franchise_fee_percent: currentUser.franchise_fee_percent ?? 0,
+        transaction_fee: currentUser.transaction_fee ?? 0,
+        eo_fee: currentUser.eo_fee ?? 0,
+      });
+    }
+  }, [currentUser]);
+
+  const saveFinanceMutation = useMutation({
+    mutationFn: (data) => base44.auth.updateMe(data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["currentUser"] });
+      setFinanceSaved(true);
+      setTimeout(() => setFinanceSaved(false), 2500);
+    },
+  });
 
   const { data: allUsers = [] } = useQuery({
     queryKey: ["users"],
