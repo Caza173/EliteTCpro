@@ -16,14 +16,22 @@ import {
 import { Plus, Search } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import TransactionTable from "../components/transactions/TransactionTable";
+import { useCurrentUser, isOwnerOrAdmin } from "../components/auth/useCurrentUser";
 
 export default function Transactions() {
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
+  const { data: currentUser } = useCurrentUser();
 
   const { data: transactions = [], isLoading } = useQuery({
-    queryKey: ["transactions"],
-    queryFn: () => base44.entities.Transaction.list("-created_date"),
+    queryKey: ["transactions", currentUser?.email, currentUser?.role],
+    queryFn: () => {
+      if (!currentUser) return [];
+      if (isOwnerOrAdmin(currentUser)) return base44.entities.Transaction.list("-created_date");
+      // TC: only see transactions assigned to them
+      return base44.entities.Transaction.filter({ agent_email: currentUser.email }, "-created_date");
+    },
+    enabled: !!currentUser,
   });
 
   const filtered = transactions.filter((tx) => {
