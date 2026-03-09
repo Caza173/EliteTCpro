@@ -49,8 +49,9 @@ export default function PurchaseAgreementUpload({ onParsed }) {
     setStatus("uploading");
     setErrorMsg("");
 
-    // 1. Upload the file
-    const { file_url } = await base44.integrations.Core.UploadFile({ file });
+    try {
+      // 1. Upload the file
+      const { file_url } = await base44.integrations.Core.UploadFile({ file });
 
     setStatus("parsing");
 
