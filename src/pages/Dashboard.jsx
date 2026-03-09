@@ -6,7 +6,7 @@ import { createPageUrl } from "@/utils";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Plus, ArrowRight, AlertTriangle, CheckCircle2, FileWarning, CalendarDays, List } from "lucide-react";
+import { Plus, ArrowRight, AlertTriangle, CheckCircle2, FileWarning, CalendarDays, List, ClipboardList } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 
 import DashboardStats from "../components/dashboard/DashboardStats";
@@ -19,6 +19,8 @@ import { computeHealthScore, RISK_STYLES } from "../components/utils/tenantUtils
 import AddendumAlertChecker from "../components/dashboard/AddendumAlertChecker";
 import TCAnalyticsDashboard from "../components/dashboard/TCAnalyticsDashboard";
 import FinanceDashboardMetrics from "../components/finance/FinanceDashboardMetrics";
+import DeadlineRiskPanel from "../components/transactions/DeadlineRiskPanel";
+import TasksDueToday from "../components/dashboard/TasksDueToday";
 
 export default function Dashboard() {
   const [deadlineView, setDeadlineView] = useState("list"); // "list" | "calendar"
