@@ -160,7 +160,7 @@ If a field is not found, return null for that field.`,
       });
 
       setStatus("done");
-      onParsed(result);
+      onParsed(result.data);
     } catch (err) {
       setStatus("error");
       setErrorMsg(err?.message || "Failed to parse document. Please try again.");
