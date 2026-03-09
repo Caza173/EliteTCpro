@@ -71,6 +71,8 @@ export default function TransactionDetail() {
   const queryClient = useQueryClient();
   const { data: currentUser } = useCurrentUser();
 
+  const [activeTab, setActiveTab] = useState("overview");
+
   const { data: transactions = [], isLoading } = useQuery({
     queryKey: ["transactions"],
     queryFn: () => base44.entities.Transaction.list(),
