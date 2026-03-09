@@ -162,6 +162,7 @@ export default function Layout({ children, currentPageName }) {
              currentPageName === "Documents" ? "Documents" :
              currentPageName === "AuditLog" ? "Audit Log" :
              currentPageName === "BrokerageSetup" ? "Brokerage Setup" :
+             currentPageName === "AgentPortal" ? "My Transactions" :
              currentPageName}
           </h2>
           <div className="ml-auto">
