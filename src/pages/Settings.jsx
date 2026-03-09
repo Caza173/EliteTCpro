@@ -28,7 +28,7 @@ export default function Settings() {
   const [financeDefaults, setFinanceDefaults] = useState({});
   const [financeSaved, setFinanceSaved] = useState(false);
 
-  React.useEffect(() => {
+  useEffect(() => {
     if (currentUser) {
       setFinanceForm({
         broker_split_percent: currentUser.broker_split_percent ?? 20,
