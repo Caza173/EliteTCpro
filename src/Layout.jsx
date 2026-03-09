@@ -146,7 +146,7 @@ export default function Layout({ children, currentPageName }) {
       {/* Main content */}
       <div className="flex-1 flex flex-col min-h-screen">
         {/* Top bar */}
-        <header className="sticky top-0 z-30 bg-white/80 backdrop-blur-md border-b border-gray-200/60 px-4 lg:px-8 py-3 flex items-center gap-4">
+        <header className="sticky top-0 z-30 backdrop-blur-md px-4 lg:px-8 py-3 flex items-center gap-4" style={{ backgroundColor: "var(--header-bg)", borderBottom: "1px solid var(--header-border)" }}>
           <button
             className="lg:hidden p-2 rounded-lg hover:bg-gray-100 transition-colors"
             onClick={() => setSidebarOpen(true)}
