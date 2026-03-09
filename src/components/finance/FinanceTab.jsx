@@ -25,9 +25,11 @@ function calcFinancials(f) {
   const txFee = f.transaction_fee || 0;
   const eoFee = f.eo_fee || 0;
   const otherFees = f.other_brokerage_fees || 0;
-  const netBeforeExpenses = agentAfterSplit - franchiseFeeAmt - txFee - eoFee - otherFees;
+  const professionalFeeAmt = f.professional_fee_amount || 0;
+  const sellerConcessionAmt = f.seller_concession_amount || 0;
+  const netBeforeExpenses = agentAfterSplit - franchiseFeeAmt - txFee - eoFee - otherFees - professionalFeeAmt - sellerConcessionAmt;
   const net = netBeforeExpenses - (f.expenses_total || 0);
-  return { gross, referralAmt, afterReferral, brokerSplitAmt, agentAfterSplit, franchiseFeeAmt, txFee, eoFee, otherFees, netBeforeExpenses, net };
+  return { gross, referralAmt, afterReferral, brokerSplitAmt, agentAfterSplit, franchiseFeeAmt, txFee, eoFee, otherFees, professionalFeeAmt, sellerConcessionAmt, netBeforeExpenses, net };
 }
 
 export default function FinanceTab({ transaction, currentUser }) {
