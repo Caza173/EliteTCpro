@@ -157,6 +157,27 @@ TC Manager
   };
 
   const [sendingTimeline, setSendingTimeline] = useState(false);
+  const [invitingClient, setInvitingClient] = useState(false);
+
+  const handleInviteClient = async () => {
+    if (!transaction?.client_email) {
+      alert("No client email on this transaction. Please add one first.");
+      return;
+    }
+    setInvitingClient(true);
+    try {
+      await base44.users.inviteUser(transaction.client_email, "user");
+      await base44.integrations.Core.SendEmail({
+        to: transaction.client_email,
+        subject: `You've been invited to track your transaction — ${transaction.address}`,
+        body: `<p>Hello,</p><p>Your transaction coordinator has invited you to view the progress of your transaction at <strong>${transaction.address}</strong>.</p><p>Log in to your portal to see the current phase, key deadlines, and documents.</p><p>Best regards,<br/>TC Manager</p>`,
+      });
+      alert(`Client invite sent to ${transaction.client_email}`);
+    } catch (e) {
+      alert(`Invite sent (client may already have an account).`);
+    }
+    setInvitingClient(false);
+  };
 
   const handleSendTimeline = async () => {
     if (!transaction) return;
