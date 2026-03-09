@@ -159,8 +159,12 @@ If a field is not found, return null for that field.`,
       },
     });
 
-    setStatus("done");
-    onParsed(result);
+      setStatus("done");
+      onParsed(result);
+    } catch (err) {
+      setStatus("error");
+      setErrorMsg(err?.message || "Failed to parse document. Please try again.");
+    }
   };
 
   const reset = () => {
