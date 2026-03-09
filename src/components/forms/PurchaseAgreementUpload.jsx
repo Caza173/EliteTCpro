@@ -55,7 +55,7 @@ export default function PurchaseAgreementUpload({ onParsed }) {
 
       setStatus("parsing");
 
-      // 2. Send to LLM for extraction with comprehensive prompt
+      // 2. Try LLM extraction first
       let extracted = null;
       try {
         const result = await base44.integrations.Core.InvokeLLM({
@@ -164,18 +164,29 @@ export default function PurchaseAgreementUpload({ onParsed }) {
         extracted = result.data;
         console.log("LLM Extracted P&S Data:", extracted);
       } catch (llmErr) {
-        console.warn("LLM extraction failed, falling back to regex parser:", llmErr);
-        setErrorMsg("Using fallback parser for document analysis...");
+        console.warn("LLM extraction failed, attempting fallback regex parser:", llmErr.message);
       }
 
-      // Guard: ensure extracted data exists
+      // 3. If LLM fails, fall back to regex parser via backend function
       if (!extracted) {
+        try {
+          console.log("Invoking fallback regex parser...");
+          const fallbackResult = await base44.functions.invoke('parsePurchaseAgreement', { text: "" });
+          extracted = fallbackResult.data;
+          console.log("Fallback parser result:", extracted);
+        } catch (fallbackErr) {
+          console.warn("Fallback parser also failed:", fallbackErr.message);
+        }
+      }
+
+      // 4. Guard: if still no data, show error
+      if (!extracted || typeof extracted !== 'object') {
         setErrorMsg("Could not extract data from this P&S. Please enter details manually.");
         setStatus("error");
         return;
       }
 
-      // Ensure safe return object with all fields and defaults
+      // 5. Ensure safe return object with all fields
       const safeResult = {
         effectiveDate: extracted?.effectiveDate || null,
         closingDate: extracted?.closingDate || null,
