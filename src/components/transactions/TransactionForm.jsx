@@ -99,8 +99,14 @@ export default function TransactionForm({ onSubmit, isSubmitting }) {
 
   const handleSubmit = (e) => {
     e.preventDefault();
+    const cleanBuyers = (form.buyers || [""]).filter(Boolean);
+    const cleanSellers = (form.sellers || [""]).filter(Boolean);
     onSubmit({
       ...form,
+      buyers: cleanBuyers,
+      sellers: cleanSellers,
+      buyer: cleanBuyers.join(", ") || form.buyer,
+      seller: cleanSellers.join(", ") || form.seller,
       phase: 1,
       phases_completed: [],
       status: "active",
