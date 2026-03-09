@@ -412,6 +412,7 @@ TC Manager
                 phasesCompleted={transaction.phases_completed || []}
                 currentPhase={transaction.phase || 1}
                 onTogglePhase={handleTogglePhase}
+                tasks={transaction.tasks || []}
               />
             </CardContent>
           </Card>
