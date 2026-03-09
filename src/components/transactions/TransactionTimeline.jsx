@@ -1,14 +1,16 @@
 import React from "react";
 import { Check, Circle } from "lucide-react";
 
+// TC phases only — 1 & 2 are agent-side. Phase 3 includes escrow, Phase 5 includes repair.
 const TIMELINE_PHASES = [
-  { num: 3, label: "Offer Accepted" },
-  { num: 4, label: "Escrow" },
-  { num: 5, label: "Inspection" },
+  { num: 3, label: "Offer Accepted & Escrow" },
+  { num: 5, label: "Inspection & Repair" },
   { num: 7, label: "Appraisal" },
   { num: 8, label: "Loan Processing" },
   { num: 9, label: "Clear to Close" },
+  { num: 10, label: "Final Walkthrough" },
   { num: 11, label: "Closing" },
+  { num: 12, label: "Post Closing" },
 ];
 
 export default function TransactionTimeline({ phasesCompleted = [], currentPhase = 1 }) {
