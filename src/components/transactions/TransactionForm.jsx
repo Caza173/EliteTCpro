@@ -76,30 +76,57 @@ export default function TransactionForm({ onSubmit, isSubmitting }) {
     setParsedData(parsed);
     const updates = {};
     
-    // Only populate fields if they exist in the parsed data
-    if (parsed.effectiveDate) updates.contract_date = parsed.effectiveDate;
-    if (parsed.closingDate || parsed.transferOfTitleDate)
+    // Safe population of all fields — only if they exist
+    if (parsed.effectiveDate) {
+      updates.contract_date = parsed.effectiveDate;
+    }
+    if (parsed.closingDate || parsed.transferOfTitleDate) {
       updates.closing_date = parsed.closingDate || parsed.transferOfTitleDate;
-    if (parsed.propertyAddress) updates.address = parsed.propertyAddress;
-    if (parsed.buyerName) { updates.buyer = parsed.buyerName; updates.buyers = [parsed.buyerName]; }
-    if (parsed.sellerName) { updates.seller = parsed.sellerName; updates.sellers = [parsed.sellerName]; }
-    if (parsed.buyersAgentName) updates.buyers_agent_name = parsed.buyersAgentName;
-    if (parsed.sellersAgentName) updates.sellers_agent_name = parsed.sellersAgentName;
-    if (parsed.buyerBrokerage) updates.buyer_brokerage = parsed.buyerBrokerage;
-    if (parsed.sellerBrokerage) updates.seller_brokerage = parsed.sellerBrokerage;
-    if (parsed.closingTitleCompany) updates.closing_title_company = parsed.closingTitleCompany;
-    if (parsed.financingCommitmentDate) updates.financing_deadline = parsed.financingCommitmentDate;
+    }
+    if (parsed.propertyAddress) {
+      updates.address = parsed.propertyAddress;
+    }
+    if (parsed.buyerName) {
+      updates.buyer = parsed.buyerName;
+      updates.buyers = [parsed.buyerName];
+    }
+    if (parsed.sellerName) {
+      updates.seller = parsed.sellerName;
+      updates.sellers = [parsed.sellerName];
+    }
+    if (parsed.buyersAgentName) {
+      updates.buyers_agent_name = parsed.buyersAgentName;
+    }
+    if (parsed.sellersAgentName) {
+      updates.sellers_agent_name = parsed.sellersAgentName;
+    }
+    if (parsed.buyerBrokerage) {
+      updates.buyer_brokerage = parsed.buyerBrokerage;
+    }
+    if (parsed.sellerBrokerage) {
+      updates.seller_brokerage = parsed.sellerBrokerage;
+    }
+    if (parsed.closingTitleCompany) {
+      updates.closing_title_company = parsed.closingTitleCompany;
+    }
+    if (parsed.financingCommitmentDate) {
+      updates.financing_deadline = parsed.financingCommitmentDate;
+    }
 
-    // Only compute offset-based deadlines if effectiveDate exists
-    const base = parsed.effectiveDate;
-    if (base) {
+    // Calculate offset-based deadlines ONLY when effectiveDate exists
+    if (parsed.effectiveDate) {
       try {
-        if (parsed.earnestMoneyDays != null)
-          updates.earnest_money_deadline = format(addDays(parseISO(base), parsed.earnestMoneyDays), "yyyy-MM-dd");
-        if (parsed.inspectionDays != null)
-          updates.inspection_deadline = format(addDays(parseISO(base), parsed.inspectionDays), "yyyy-MM-dd");
-        if (parsed.dueDiligenceDays != null)
-          updates.due_diligence_deadline = format(addDays(parseISO(base), parsed.dueDiligenceDays), "yyyy-MM-dd");
+        const baseDate = parseISO(parsed.effectiveDate);
+        
+        if (parsed.earnestMoneyDays != null && parsed.earnestMoneyDays > 0) {
+          updates.earnest_money_deadline = format(addDays(baseDate, parsed.earnestMoneyDays), "yyyy-MM-dd");
+        }
+        if (parsed.inspectionDays != null && parsed.inspectionDays > 0) {
+          updates.inspection_deadline = format(addDays(baseDate, parsed.inspectionDays), "yyyy-MM-dd");
+        }
+        if (parsed.dueDiligenceDays != null && parsed.dueDiligenceDays > 0) {
+          updates.due_diligence_deadline = format(addDays(baseDate, parsed.dueDiligenceDays), "yyyy-MM-dd");
+        }
       } catch (err) {
         console.warn("Failed to calculate deadline offsets:", err);
       }
