@@ -21,6 +21,8 @@ const initialForm = {
   address: "",
   buyer: "",
   seller: "",
+  buyers: [""],
+  sellers: [""],
   buyers_agent_name: "",
   sellers_agent_name: "",
   buyer_brokerage: "",
