@@ -6,10 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
-import {
-  Upload, FileText, Trash2, Download, Loader2, FolderOpen,
-  ClipboardCheck,
-} from "lucide-react";
+import { Upload, FileText, Trash2, Download, Loader2, FolderOpen, ClipboardCheck } from "lucide-react";
 import { format } from "date-fns";
 import { writeAuditLog } from "../utils/tenantUtils";
 import DocChecklistPanel from "./DocChecklistPanel";
@@ -67,7 +64,6 @@ export default function TransactionDocumentsTab({ transaction, currentUser }) {
       uploaded_by_role: currentUser?.role || "agent",
     });
 
-    // Auto-link to checklist item if matching doc type + missing
     const matchingItem = checklistItems.find(
       (ci) => ci.doc_type === selectedDocType && ci.status === "missing"
     );
@@ -98,7 +94,6 @@ export default function TransactionDocumentsTab({ transaction, currentUser }) {
 
   return (
     <div className="space-y-5">
-      {/* Upload */}
       <Card className="shadow-sm border-gray-100">
         <CardHeader className="pb-3">
           <CardTitle className="text-sm font-semibold flex items-center gap-2">
@@ -130,7 +125,6 @@ export default function TransactionDocumentsTab({ transaction, currentUser }) {
         </CardContent>
       </Card>
 
-      {/* Compliance checklist */}
       {checklistItems.length > 0 && (
         <Card className="shadow-sm border-gray-100">
           <CardHeader className="pb-3">
@@ -154,7 +148,6 @@ export default function TransactionDocumentsTab({ transaction, currentUser }) {
         </Card>
       )}
 
-      {/* Uploaded documents */}
       <Card className="shadow-sm border-gray-100">
         <CardHeader className="pb-3">
           <CardTitle className="text-sm font-semibold flex items-center gap-2">
@@ -184,7 +177,7 @@ export default function TransactionDocumentsTab({ transaction, currentUser }) {
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-medium text-gray-900 truncate">{doc.file_name || "Document"}</p>
                     <p className="text-xs text-gray-400">
-                      Uploaded by {doc.uploaded_by || "unknown"}
+                      {doc.uploaded_by || "unknown"}
                       {doc.created_date ? ` · ${format(new Date(doc.created_date), "MMM d, yyyy")}` : ""}
                     </p>
                   </div>
