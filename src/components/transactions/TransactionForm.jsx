@@ -73,8 +73,8 @@ export default function TransactionForm({ onSubmit, isSubmitting }) {
     if (parsed.closingDate || parsed.transferOfTitleDate)
       updates.closing_date = parsed.closingDate || parsed.transferOfTitleDate;
     if (parsed.propertyAddress) updates.address = parsed.propertyAddress;
-    if (parsed.buyerName) updates.buyer = parsed.buyerName;
-    if (parsed.sellerName) updates.seller = parsed.sellerName;
+    if (parsed.buyerName) { updates.buyer = parsed.buyerName; updates.buyers = [parsed.buyerName]; }
+    if (parsed.sellerName) { updates.seller = parsed.sellerName; updates.sellers = [parsed.sellerName]; }
     if (parsed.buyersAgentName) updates.buyers_agent_name = parsed.buyersAgentName;
     if (parsed.sellersAgentName) updates.sellers_agent_name = parsed.sellersAgentName;
     if (parsed.buyerBrokerage) updates.buyer_brokerage = parsed.buyerBrokerage;
