@@ -56,9 +56,10 @@ export default function PurchaseAgreementUpload({ onParsed }) {
 
     // 2. Send to LLM for extraction
     const result = await base44.integrations.Core.InvokeLLM({
+      model: "claude_sonnet_4_6",
       prompt: `You are a real estate contract parser specializing in the New Hampshire Association of REALTORS® (NHAR) Purchase and Sales Agreement.
 
-Analyze this document and extract the following fields. Return ONLY valid JSON, no explanation.
+Analyze this document carefully and extract the following fields. Return ONLY valid JSON, no explanation.
 
 Fields to extract:
 - effectiveDate: ISO date string (YYYY-MM-DD) or null
@@ -76,10 +77,10 @@ Fields to extract:
 - purchasePrice: number or null
 - buyerName: string or null (full name of buyer(s))
 - sellerName: string or null (full name of seller(s))
-- buyersAgentName: string or null
-- sellersAgentName: string or null
-- buyerBrokerage: string or null
-- sellerBrokerage: string or null
+- buyersAgentName: string or null (the agent representing the BUYER — look for fields labeled "Buyer's Agent", "Buyer Agent", "Selling Agent", "BA:", or any agent name in the Buyer's Brokerage section)
+- sellersAgentName: string or null (the agent representing the SELLER — look for fields labeled "Seller's Agent", "Listing Agent", "LA:", or any agent name in the Listing Brokerage / Seller's Brokerage section)
+- buyerBrokerage: string or null (the brokerage firm representing the buyer — look for "Buyer's Brokerage", "Selling Brokerage", "Buyer Broker", firm name near the buyer's agent signature block)
+- sellerBrokerage: string or null (the brokerage firm representing the seller — look for "Listing Brokerage", "Seller's Brokerage", "Listing Broker", firm name near the seller's agent signature block)
 - closingTitleCompany: string or null
 - propertyAddress: string or null
 - section20AdditionalProvisions: string or null (verbatim text from "Additional Provisions" section)
@@ -91,6 +92,13 @@ Fields to extract:
 - sellerConcessionAmount: number or null (flat dollar amount of any seller concession found)
 - sellerConcessionPercent: number or null (percent-based concession if applicable)
 - additionalCompensationNotes: string or null (any other free-text compensation language detected)
+
+IMPORTANT — Agent and Brokerage extraction tips:
+- In NHAR P&S agreements, there are typically two signature/info blocks at the end: one for the Buyer's agent and one for the Seller's/Listing agent.
+- Look for printed name lines, license number fields, and company/firm name fields near each signature block.
+- Agent names may appear as: "Licensee Name:", "Agent Name:", "Printed Name:", "Salesperson:", or simply a filled-in line.
+- Brokerage names may appear as: "Company:", "Firm:", "Brokerage:", "Office:", or as a pre-printed header above a signature block.
+- Do NOT confuse the buyer or seller name with the agent name.
 
 Look for patterns like:
 - "EFFECTIVE DATE", "Effective Date of this Agreement"
@@ -104,9 +112,9 @@ Look for patterns like:
 - "Due Diligence"
 - "Financing Deadline", "Financing Commitment", "Financial Commitment Date"
 - "PURCHASE PRICE"
-- "Buyer's Agent", "Listing Agent", "Seller's Agent"
+- "Buyer's Agent", "Listing Agent", "Seller's Agent", "Selling Agent"
 - "Closing Agent", "Title Company", "Settlement Agent"
-- Brokerage names near agent names
+- Brokerage/firm names in signature blocks
 - Section 20: "ADDITIONAL PROVISIONS", "CONCESSIONS", "PROFESSIONAL FEE"
 - Financial patterns: "X% of the net contract price", "X% commission", "Seller shall pay", "buyer broker", "$X,XXX", "X% of sale price"
 - Concession patterns: "seller concession", "closing cost credit", "seller to pay"
