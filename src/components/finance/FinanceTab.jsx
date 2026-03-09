@@ -117,6 +117,16 @@ export default function FinanceTab({ transaction, currentUser, parsedPsData }) {
   const set = (field, val) => setForm((prev) => ({ ...prev, [field]: val }));
   const setNum = (field, val) => setForm((prev) => ({ ...prev, [field]: parseFloat(val) || 0 }));
 
+  const handleSection20Apply = ({ professionalFeeType, professionalFeeValue, professionalFeeAmount, sellerConcessionAmount }) => {
+    setForm((prev) => ({
+      ...prev,
+      professional_fee_type: professionalFeeType,
+      professional_fee_value: professionalFeeValue,
+      professional_fee_amount: professionalFeeAmount,
+      seller_concession_amount: sellerConcessionAmount,
+    }));
+  };
+
   const computed = calcFinancials({ ...form, expenses_total: expensesTotal });
 
   const handleSave = () => {
