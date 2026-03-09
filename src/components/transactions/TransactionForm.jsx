@@ -11,7 +11,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Loader2, Plus, FileSearch } from "lucide-react";
+import { Loader2, Plus, FileSearch, X, UserPlus } from "lucide-react";
 import { addDays, format, parseISO } from "date-fns";
 import PurchaseAgreementUpload from "../forms/PurchaseAgreementUpload";
 import ParsedDeadlinesPreview from "../forms/ParsedDeadlinesPreview";
