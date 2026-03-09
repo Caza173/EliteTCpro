@@ -138,9 +138,10 @@ export default function TransactionForm({ onSubmit, isSubmitting }) {
       {/* Property */}
       <div>
         <Label htmlFor="address" className="text-sm font-medium text-gray-700">Property Address *</Label>
-        <AddressAutocomplete
+        <Input
+          id="address"
           value={form.address}
-          onChange={(val) => handleChange("address", val)}
+          onChange={(e) => handleChange("address", e.target.value)}
           placeholder="123 Main Street, City, NH 00000"
           required
           className="mt-1.5"
