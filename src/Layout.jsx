@@ -119,15 +119,19 @@ export default function Layout({ children, currentPageName }) {
                 key={item.page}
                 to={createPageUrl(item.page)}
                 onClick={() => setSidebarOpen(false)}
-                className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-200 group ${
-                  isActive
-                    ? "bg-blue-500/15 text-blue-400"
-                    : "text-slate-400 hover:text-white hover:bg-white/5"
-                }`}
+                style={isActive ? {
+                  backgroundColor: "var(--sidebar-item-active)",
+                  color: "var(--sidebar-accent)",
+                } : {
+                  color: "var(--sidebar-text)",
+                }}
+                className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-200 group sidebar-nav-item"
+                onMouseEnter={e => { if (!isActive) { e.currentTarget.style.backgroundColor = "var(--sidebar-item-hover)"; e.currentTarget.style.color = "var(--sidebar-text-active)"; }}}
+                onMouseLeave={e => { if (!isActive) { e.currentTarget.style.backgroundColor = ""; e.currentTarget.style.color = "var(--sidebar-text)"; }}}
               >
-                <Icon className={`w-[18px] h-[18px] ${isActive ? "text-blue-400" : "text-slate-500 group-hover:text-slate-300"}`} />
+                <Icon className="w-[18px] h-[18px]" style={{ color: isActive ? "var(--sidebar-accent)" : "inherit" }} />
                 {item.label}
-                {isActive && <ChevronRight className="w-4 h-4 ml-auto text-blue-400/60" />}
+                {isActive && <ChevronRight className="w-4 h-4 ml-auto opacity-50" />}
               </Link>
             );
           })}
