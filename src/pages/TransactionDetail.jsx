@@ -546,6 +546,11 @@ TC Manager
         </Card>
       )}
 
+      {/* Tab: Documents */}
+      {activeTab === "documents" && (
+        <TransactionDocumentsTab transaction={transaction} currentUser={currentUser} />
+      )}
+
       {/* Tab: Finance */}
       {activeTab === "finance" && (
         <FinanceTab transaction={transaction} currentUser={currentUser} />
