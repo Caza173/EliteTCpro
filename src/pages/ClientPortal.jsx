@@ -139,32 +139,13 @@ export default function ClientPortal() {
               </Card>
             )}
 
-            {/* Documents */}
-            <Card className="shadow-sm border-gray-100">
-              <CardHeader>
-                <div className="flex items-center justify-between">
+            {/* Documents (read-only for clients) */}
+            {txDocs.length > 0 && (
+              <Card className="shadow-sm border-gray-100">
+                <CardHeader className="pb-2">
                   <CardTitle className="text-base font-semibold">Documents</CardTitle>
-                  <div className="flex items-center gap-2">
-                    <Select value={docType} onValueChange={setDocType}>
-                      <SelectTrigger className="w-32 h-8 text-xs"><SelectValue /></SelectTrigger>
-                      <SelectContent>
-                        {["contract","disclosures","inspection","appraisal","title","lender","closing","other"].map((t) => (
-                          <SelectItem key={t} value={t} className="capitalize text-xs">{t}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    <input type="file" className="hidden" ref={fileInputRef} onChange={(e) => handleFileUpload(tx.id, e)} />
-                    <Button size="sm" onClick={() => fileInputRef.current?.click()} disabled={uploading} className="bg-blue-600 hover:bg-blue-700 h-8 text-xs">
-                      {uploading ? <Loader2 className="w-3 h-3 animate-spin mr-1" /> : <Upload className="w-3 h-3 mr-1" />}
-                      Upload
-                    </Button>
-                  </div>
-                </div>
-              </CardHeader>
-              <CardContent>
-                {txDocs.length === 0 ? (
-                  <p className="text-sm text-gray-400 text-center py-6">No documents yet.</p>
-                ) : (
+                </CardHeader>
+                <CardContent>
                   <div className="space-y-2">
                     {txDocs.map((doc) => (
                       <div key={doc.id} className="flex items-center gap-3 p-2.5 rounded-lg bg-gray-50">
@@ -179,9 +160,9 @@ export default function ClientPortal() {
                       </div>
                     ))}
                   </div>
-                )}
-              </CardContent>
-            </Card>
+                </CardContent>
+              </Card>
+            )}
           </div>
         );
       })}
