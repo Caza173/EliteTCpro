@@ -1,23 +1,27 @@
 let _id = 1;
 const uid = () => `task-${_id++}-${Date.now()}`;
 
+// Phases 1 & 2 (Pre-Contract, Offer Drafting) are handled by the agent side.
+// TC workflow starts at Phase 3 (Offer Accepted).
+// Phase 4 tasks are merged into Phase 3. Phase 6 tasks are merged into Phase 5.
 const PHASE_TASKS = {
-  1: ["Review pre-contract checklist", "Confirm client representation"],
-  2: ["Draft offer documents", "Confirm offer terms with agent"],
   3: [
     "Send contract to title company",
     "Send introduction email to all parties",
     "Open transaction file",
     "Confirm escrow deposit",
+    "Verify escrow opened",
+    "Confirm earnest money received",
   ],
-  4: ["Verify escrow opened", "Confirm earnest money received"],
   5: [
     "Schedule inspection",
     "Track inspection deadline",
     "Upload inspection report",
     "Send inspection results to agent",
+    "Review repair requests",
+    "Negotiate repair addendum",
+    "Upload signed addendum",
   ],
-  6: ["Review repair requests", "Negotiate repair addendum", "Upload signed addendum"],
   7: [
     "Confirm appraisal ordered",
     "Track appraisal deadline",
