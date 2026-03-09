@@ -73,7 +73,7 @@ export default function AddTransaction() {
     createMutation.mutate({
       ...templateDeadlines,
       ...data,
-      brokerage_id: currentUser?.brokerage_id,
+      brokerage_id: brokerageId,
       template_id: defaultTemplate?.id,
       phase: 1,
       phases_completed: [],
