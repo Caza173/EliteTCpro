@@ -472,17 +472,28 @@ TC Manager
 
       {/* Tab: Timeline */}
       {activeTab === "timeline" && (
-        <Card className="shadow-sm border-gray-100">
-          <CardHeader className="pb-2">
-            <CardTitle className="text-base font-semibold">Transaction Timeline</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <TransactionTimeline
-              phasesCompleted={transaction.phases_completed || []}
-              currentPhase={transaction.phase || 1}
-            />
-          </CardContent>
-        </Card>
+        <div className="space-y-5">
+          <Card className="shadow-sm border-gray-100">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-base font-semibold">Phase Progress</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <TransactionTimeline
+                phasesCompleted={transaction.phases_completed || []}
+                currentPhase={transaction.phase || 1}
+              />
+            </CardContent>
+          </Card>
+          <Card className="shadow-sm border-gray-100">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-base font-semibold">Activity History</CardTitle>
+              <p className="text-sm text-gray-500">All recorded events for this transaction</p>
+            </CardHeader>
+            <CardContent>
+              <TransactionActivityFeed transactionId={transaction.id} />
+            </CardContent>
+          </Card>
+        </div>
       )}
 
       {/* Tab: Deadlines */}
