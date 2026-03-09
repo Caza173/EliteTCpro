@@ -210,10 +210,29 @@ export default function AgentIntake() {
 
             {/* Buyer side */}
             <Section label="Buyer Side">
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <F label="Buyer Name(s) *" id="buyer">
-                  <Input id="buyer" value={form.buyer} onChange={(e) => set("buyer", e.target.value)} placeholder="John & Jane Smith" required className="mt-1.5" />
-                </F>
+              <div className="space-y-2">
+                <Label className="text-sm font-medium text-gray-700">Buyer Name(s) *</Label>
+                {buyers.map((b, i) => (
+                  <div key={i} className="flex gap-2 items-center">
+                    <Input
+                      value={b}
+                      onChange={(e) => { const n = [...buyers]; n[i] = e.target.value; setBuyers(n); }}
+                      placeholder={i === 0 ? "John Smith" : "Additional buyer name"}
+                      required={i === 0}
+                      className="flex-1"
+                    />
+                    {buyers.length > 1 && (
+                      <Button type="button" variant="ghost" size="icon" className="h-9 w-9 text-gray-400 hover:text-red-500" onClick={() => setBuyers(buyers.filter((_, idx) => idx !== i))}>
+                        <X className="w-4 h-4" />
+                      </Button>
+                    )}
+                  </div>
+                ))}
+                <Button type="button" variant="outline" size="sm" className="text-xs h-8 mt-1" onClick={() => setBuyers([...buyers, ""])}>
+                  <Plus className="w-3 h-3 mr-1" /> Add Buyer
+                </Button>
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-2">
                 <F label="Buyer's Agent Name" id="buyers_agent_name">
                   <Input id="buyers_agent_name" value={form.buyers_agent_name} onChange={(e) => set("buyers_agent_name", e.target.value)} placeholder="Agent full name" className="mt-1.5" />
                 </F>
