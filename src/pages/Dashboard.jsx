@@ -38,6 +38,8 @@ export default function Dashboard() {
   const { data: checklistItems = [] } = useQuery({
     queryKey: ["allChecklist"],
     queryFn: () => base44.entities.DocumentChecklistItem.list(),
+    enabled: !!currentUser,
+    staleTime: 30_000,
   });
 
   const activeTransactions = transactions.filter((t) => t.status === "active");
