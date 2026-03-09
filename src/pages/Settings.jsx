@@ -213,6 +213,49 @@ export default function Settings() {
         </Card>
       )}
 
+      {/* Finance Defaults */}
+      <Card className="shadow-sm border-gray-100">
+        <CardHeader className="pb-3">
+          <CardTitle className="text-base font-semibold flex items-center gap-2">
+            <DollarSign className="w-4 h-4 text-emerald-500" /> Finance Defaults
+          </CardTitle>
+          <p className="text-xs text-gray-400 mt-0.5">These values auto-populate the Finance tab on each transaction.</p>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
+            {[
+              { label: "Broker Split %", field: "broker_split_percent" },
+              { label: "Franchise Fee %", field: "franchise_fee_percent" },
+              { label: "Transaction Fee ($)", field: "transaction_fee" },
+              { label: "E&O Fee ($)", field: "eo_fee" },
+              { label: "Broker Cap ($)", field: "broker_cap" },
+            ].map(({ label, field }) => (
+              <div key={field}>
+                <Label className="text-xs text-gray-500 mb-1 block">{label}</Label>
+                <Input
+                  type="number"
+                  step="0.1"
+                  value={financeForm[field]}
+                  onChange={(e) => setFinanceForm((prev) => ({ ...prev, [field]: parseFloat(e.target.value) || 0 }))}
+                  className="h-8 text-sm"
+                />
+              </div>
+            ))}
+          </div>
+          <div className="mt-4">
+            <Button
+              size="sm"
+              className="bg-emerald-600 hover:bg-emerald-700"
+              onClick={() => saveFinanceMutation.mutate(financeForm)}
+              disabled={saveFinanceMutation.isPending}
+            >
+              {financeSaved ? <CheckCircle className="w-4 h-4 mr-1.5" /> : <DollarSign className="w-4 h-4 mr-1.5" />}
+              {financeSaved ? "Saved!" : "Save Finance Defaults"}
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+
       {/* Placeholders */}
       <Card className="shadow-sm border-gray-100 opacity-70">
         <CardHeader className="flex flex-row items-center gap-4 py-4">
