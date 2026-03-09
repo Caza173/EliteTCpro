@@ -19,10 +19,6 @@ const PHASES = [
 
 export default function ClientPortal() {
   const { data: currentUser, isLoading: userLoading } = useCurrentUser();
-  const [docType, setDocType] = useState("other");
-  const [uploading, setUploading] = useState(false);
-  const fileInputRef = useRef(null);
-  const queryClient = useQueryClient();
 
   const { data: transactions = [], isLoading: txLoading } = useQuery({
     queryKey: ["transactions"],
@@ -34,31 +30,14 @@ export default function ClientPortal() {
     queryFn: () => base44.entities.Document.list("-created_date"),
   });
 
-  // Filter to transactions where client_email matches current user
+  // Only show transactions where client_email matches current user
   const myTransactions = transactions.filter(
-    (tx) => tx.client_email === currentUser?.email || tx.agent_email === currentUser?.email
+    (tx) => tx.client_email === currentUser?.email
   );
 
   const myDocs = documents.filter((d) =>
     myTransactions.some((tx) => tx.id === d.transaction_id)
   );
-
-  const handleFileUpload = async (txId, e) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    setUploading(true);
-    const { file_url } = await base44.integrations.Core.UploadFile({ file });
-    await base44.entities.Document.create({
-      transaction_id: txId,
-      doc_type: docType,
-      file_url,
-      file_name: file.name,
-      uploaded_by: currentUser?.email || "client",
-      uploaded_by_role: "client",
-    });
-    queryClient.invalidateQueries({ queryKey: ["documents"] });
-    setUploading(false);
-  };
 
   if (userLoading || txLoading) {
     return (
