@@ -62,6 +62,8 @@ export default function AgentIntake() {
       queryClient.invalidateQueries({ queryKey: ["transactions"] });
       setSubmitted(true);
       setForm(initial);
+      setBuyers([""]);
+      setSellers([""]);
       setParsedData(null);
     },
   });
