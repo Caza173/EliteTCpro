@@ -75,8 +75,8 @@ export default function AgentIntake() {
     if (parsed.closingDate || parsed.transferOfTitleDate)
       u.closing_date = parsed.closingDate || parsed.transferOfTitleDate;
     if (parsed.propertyAddress) u.address = parsed.propertyAddress;
-    if (parsed.buyerName) u.buyer = parsed.buyerName;
-    if (parsed.sellerName) u.seller = parsed.sellerName;
+    if (parsed.buyerName) { u.buyer = parsed.buyerName; setBuyers([parsed.buyerName]); }
+    if (parsed.sellerName) { u.seller = parsed.sellerName; setSellers([parsed.sellerName]); }
     if (parsed.financingCommitmentDate) u.financing_deadline = parsed.financingCommitmentDate;
     const base = parsed.effectiveDate;
     if (base) {
