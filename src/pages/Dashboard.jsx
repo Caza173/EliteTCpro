@@ -18,6 +18,7 @@ import { useCurrentUser, isOwnerOrAdmin } from "../components/auth/useCurrentUse
 import { computeHealthScore, RISK_STYLES } from "../components/utils/tenantUtils";
 import AddendumAlertChecker from "../components/dashboard/AddendumAlertChecker";
 import TCAnalyticsDashboard from "../components/dashboard/TCAnalyticsDashboard";
+import FinanceDashboardMetrics from "../components/finance/FinanceDashboardMetrics";
 
 export default function Dashboard() {
   const [deadlineView, setDeadlineView] = useState("list"); // "list" | "calendar"
@@ -106,6 +107,11 @@ export default function Dashboard() {
       {/* TC Analytics — owner/admin only */}
       {(currentUser?.role === "owner" || currentUser?.role === "admin") && !isLoading && (
         <TCAnalyticsDashboard transactions={transactions} />
+      )}
+
+      {/* Finance Metrics */}
+      {!isLoading && transactions.length > 0 && (
+        <FinanceDashboardMetrics transactions={transactions} />
       )}
 
       {/* Stats */}
