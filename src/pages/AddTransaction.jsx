@@ -15,10 +15,12 @@ export default function AddTransaction() {
   const queryClient = useQueryClient();
   const { data: currentUser } = useCurrentUser();
 
+  const brokerageId = currentUser?.data?.brokerage_id;
+
   const { data: templates = [] } = useQuery({
-    queryKey: ["templates", currentUser?.brokerage_id],
-    queryFn: () => base44.entities.WorkflowTemplate.filter({ brokerage_id: currentUser?.brokerage_id }),
-    enabled: !!currentUser?.brokerage_id,
+    queryKey: ["templates", brokerageId],
+    queryFn: () => base44.entities.WorkflowTemplate.filter({ brokerage_id: brokerageId }),
+    enabled: !!brokerageId,
   });
 
   const defaultTemplate = templates.find((t) => t.is_default) || templates[0];
