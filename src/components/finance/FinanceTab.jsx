@@ -10,6 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { DollarSign, TrendingUp, PieChart, Receipt, Minus, Plus, Save, RefreshCw } from "lucide-react";
 import DealExpenseTable from "./DealExpenseTable";
 import CommissionBreakdown from "./CommissionBreakdown";
+import Section20ReviewPanel from "./Section20ReviewPanel";
 import { isOwnerOrAdmin } from "../auth/useCurrentUser";
 
 const fmt = (n) => new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 0 }).format(n || 0);
