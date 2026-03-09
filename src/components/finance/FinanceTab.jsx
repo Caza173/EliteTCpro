@@ -7,7 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { DollarSign, TrendingUp, PieChart, Receipt, Minus, Plus, Save, RefreshCw } from "lucide-react";
+import { DollarSign, TrendingUp, PieChart, Receipt, Minus, Plus, Save, RefreshCw, FileSearch } from "lucide-react";
 import DealExpenseTable from "./DealExpenseTable";
 import CommissionBreakdown from "./CommissionBreakdown";
 import Section20ReviewPanel from "./Section20ReviewPanel";
