@@ -61,6 +61,10 @@ export default function FinanceTab({ transaction, currentUser, parsedPsData }) {
     transaction_fee: 0,
     eo_fee: 0,
     other_brokerage_fees: 0,
+    professional_fee_amount: 0,
+    professional_fee_type: "percent",
+    professional_fee_value: 0,
+    seller_concession_amount: 0,
   });
 
   // Populate from user profile defaults + existing finance record
