@@ -21,6 +21,8 @@ import {
   Workflow
 } from "lucide-react";
 import NotificationBell from "./components/dashboard/NotificationBell";
+import { ThemeProvider } from "./components/theme/ThemeContext";
+import ThemeToggle from "./components/theme/ThemeToggle";
 
 const TC_NAV = [
   { label: "Dashboard", page: "Dashboard", icon: LayoutDashboard },
