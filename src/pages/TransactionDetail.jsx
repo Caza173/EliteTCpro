@@ -42,12 +42,15 @@ import HealthScoreBadge from "../components/dashboard/HealthScoreBadge";
 import { useCurrentUser } from "../components/auth/useCurrentUser";
 import { writeAuditLog, computeHealthScore } from "../components/utils/tenantUtils";
 import FinanceTab from "../components/finance/FinanceTab";
+import TransactionActivityFeed from "../components/transactions/TransactionActivityFeed";
+import TransactionDocumentsTab from "../components/transactions/TransactionDocumentsTab";
 
 const TX_TABS = [
   { id: "overview", label: "Overview", icon: LayoutDashboard },
   { id: "timeline", label: "Timeline", icon: GitBranch },
   { id: "deadlines", label: "Deadlines", icon: Clock },
   { id: "tasks", label: "Tasks", icon: ListChecks },
+  { id: "documents", label: "Documents", icon: DollarSign },
   { id: "finance", label: "Finance", icon: DollarSign },
 ];
 
