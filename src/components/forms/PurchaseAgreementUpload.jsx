@@ -221,7 +221,7 @@ If a field is not found, return null for that field.`,
       {status === "parsing" && (
         <div className="flex items-center gap-2 text-sm text-blue-600">
           <Loader2 className="w-4 h-4 animate-spin" />
-          Scanning Purchase &amp; Sales Agreement for deadlines...
+          Scanning P&amp;S Agreement for deadlines, fees &amp; Section 20 clauses...
         </div>
       )}
       {status === "done" && (
