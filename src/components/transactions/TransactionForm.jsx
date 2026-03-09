@@ -192,6 +192,7 @@ export default function TransactionForm({ onSubmit, isSubmitting }) {
           {field("earnest_money_deadline", "Earnest Money Deadline", "date")}
           {field("inspection_deadline", "Inspection Deadline", "date")}
           {field("due_diligence_deadline", "Due Diligence Deadline", "date")}
+          {field("appraisal_deadline", "Appraisal Deadline", "date")}
           {!form.is_cash_transaction && field("financing_deadline", "Financing Commitment Date", "date")}
         </div>
       </div>
