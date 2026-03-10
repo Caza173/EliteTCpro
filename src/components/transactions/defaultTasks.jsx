@@ -1,100 +1,87 @@
+import { addDays, format, parseISO } from "date-fns";
+
 let _id = 1;
 const uid = () => `task-${_id++}-${Date.now()}`;
 
-// Phases 1 & 2 (Pre-Contract, Offer Drafting) are handled by the agent side.
-// TC workflow starts at Phase 3 (Offer Accepted).
-const PHASE_TASKS = {
-  3: [
-    "Send contract to title company",
-    "Send introduction email to all parties",
-    "Open transaction file",
-    "Confirm escrow deposit",
-    "Verify escrow opened",
-    "Confirm earnest money received",
-  ],
-  5: [
-    "Schedule inspection",
-    "Track inspection deadline",
-    "Upload inspection report",
-    "Send inspection results to agent",
-    "Review repair requests",
-    "Negotiate repair addendum",
-    "Upload signed addendum",
-  ],
-  7: [
-    "Confirm appraisal ordered",
-    "Track appraisal deadline",
-    "Upload appraisal report",
-  ],
-  8: ["Verify loan in processing", "Follow up with lender", "Track loan commitment date"],
-  9: ["Confirm Clear to Close received", "Notify all parties of CTC"],
-  10: ["Schedule final walkthrough", "Confirm walkthrough completed"],
-  11: [
-    "Confirm closing time and location",
-    "Send final reminders to all parties",
-    "Verify settlement statement",
-    "Confirm funds wired",
-  ],
-  12: ["Upload closing documents", "Send thank you emails", "Archive transaction file"],
-};
-
-// Contingency-based tasks generated from P&S extraction data
-const INSPECTION_CONTINGENCY_TASKS = [
-  "Schedule building inspection",
-  "Confirm inspection completed",
-  "Upload inspection report",
-  "Review repair requests",
+/**
+ * Relative task templates linked to deadline anchors.
+ * linked_deadline maps to a transaction field key.
+ * offset_days: positive = after deadline, negative = before.
+ */
+const LINKED_TASK_TEMPLATES = [
+  // Effective Date anchored
+  { name: "Send contract to title company",       phase: 3, linked_deadline: "contract_date",         offset_days: 1  },
+  { name: "Send introduction email to all parties", phase: 3, linked_deadline: "contract_date",       offset_days: 1  },
+  { name: "Open transaction file",                phase: 3, linked_deadline: "contract_date",         offset_days: 1  },
+  { name: "Verify earnest money received",        phase: 3, linked_deadline: "earnest_money_deadline", offset_days: 0  },
+  { name: "Confirm escrow deposit",               phase: 3, linked_deadline: "earnest_money_deadline", offset_days: 1  },
+  // Inspection anchored
+  { name: "Schedule inspection",                  phase: 5, linked_deadline: "inspection_deadline",   offset_days: -7 },
+  { name: "Send inspection reminder to agent",    phase: 5, linked_deadline: "inspection_deadline",   offset_days: -2 },
+  { name: "Upload inspection report",             phase: 5, linked_deadline: "inspection_deadline",   offset_days: 2  },
+  { name: "Review repair requests",               phase: 5, linked_deadline: "inspection_deadline",   offset_days: 4  },
+  // Appraisal anchored
+  { name: "Confirm appraisal ordered",            phase: 7, linked_deadline: "appraisal_deadline",    offset_days: -14 },
+  { name: "Upload appraisal report",              phase: 7, linked_deadline: "appraisal_deadline",    offset_days: 1   },
+  // Financing anchored
+  { name: "Verify loan in processing",            phase: 8, linked_deadline: "financing_deadline",    offset_days: -14 },
+  { name: "Follow up with lender",                phase: 8, linked_deadline: "financing_deadline",    offset_days: -7  },
+  { name: "Confirm financing commitment received",phase: 8, linked_deadline: "financing_deadline",    offset_days: -3  },
+  // Closing anchored
+  { name: "Prepare closing docs",                 phase: 11, linked_deadline: "closing_date",         offset_days: -7 },
+  { name: "Confirm Clear to Close received",      phase: 9,  linked_deadline: "closing_date",         offset_days: -5 },
+  { name: "Schedule final walkthrough",           phase: 10, linked_deadline: "closing_date",         offset_days: -3 },
+  { name: "Send final reminders to all parties",  phase: 11, linked_deadline: "closing_date",         offset_days: -1 },
+  { name: "Confirm closing time and location",    phase: 11, linked_deadline: "closing_date",         offset_days: -2 },
+  { name: "Verify settlement statement",          phase: 11, linked_deadline: "closing_date",         offset_days: -1 },
+  // Post closing (no anchor)
+  { name: "Upload closing documents",             phase: 12 },
+  { name: "Send thank you emails",                phase: 12 },
+  { name: "Archive transaction file",             phase: 12 },
 ];
 
-const FINANCING_CONTINGENCY_TASKS = [
-  "Send contract to lender",
-  "Confirm loan application submitted",
-  "Verify appraisal ordered",
-  "Confirm financing commitment received",
-];
-
-function makeTask(name, phase) {
-  return { id: uid(), name, phase, completed: false, assigned_to: "", due_date: "" };
+function makeTask(template, transactionFields = {}) {
+  let due_date = "";
+  if (template.linked_deadline && template.offset_days != null && transactionFields[template.linked_deadline]) {
+    try {
+      const base = parseISO(transactionFields[template.linked_deadline]);
+      due_date = format(addDays(base, template.offset_days), "yyyy-MM-dd");
+    } catch {}
+  }
+  return {
+    id: uid(),
+    name: template.name,
+    phase: template.phase,
+    completed: false,
+    assigned_to: "",
+    due_date,
+    linked_deadline: template.linked_deadline || null,
+    offset_days: template.offset_days ?? null,
+  };
 }
 
-export function generateDefaultTasks() {
-  const tasks = [];
-  Object.entries(PHASE_TASKS).forEach(([phase, names]) => {
-    names.forEach((name) => {
-      tasks.push(makeTask(name, Number(phase)));
-    });
-  });
-  return tasks;
+export function generateDefaultTasks(transactionFields = {}) {
+  return LINKED_TASK_TEMPLATES.map((t) => makeTask(t, transactionFields));
 }
 
 /**
  * Generate smart tasks based on P&S extraction data.
- * Merges contingency-specific tasks with the default task set.
- * @param {object} parsedData - normalized extraction output from normalizeV2()
- * @param {boolean} isCash - whether this is a cash transaction
  */
-export function generateSmartTasks(parsedData, isCash = false) {
-  const tasks = generateDefaultTasks();
+export function generateSmartTasks(parsedData, isCash = false, transactionFields = {}) {
+  let templates = [...LINKED_TASK_TEMPLATES];
 
-  const hasInspection = parsedData?.inspectionDeadline || parsedData?.inspectionDays != null;
-  const hasFinancing = !isCash && (parsedData?.financingCommitmentDate || parsedData?.financingDeadline);
-
-  if (hasInspection) {
-    INSPECTION_CONTINGENCY_TASKS.forEach((name) => {
-      // Only add if not already present (avoid duplication with phase 5 tasks)
-      if (!tasks.find((t) => t.name.toLowerCase().includes(name.toLowerCase().split(" ")[0]))) {
-        tasks.push(makeTask(name, 5));
-      }
-    });
+  // Remove financing tasks for cash transactions
+  if (isCash) {
+    templates = templates.filter((t) => t.linked_deadline !== "financing_deadline");
   }
 
-  if (hasFinancing) {
-    FINANCING_CONTINGENCY_TASKS.forEach((name) => {
-      if (!tasks.find((t) => t.name.toLowerCase().includes(name.toLowerCase().split(" ")[0]))) {
-        tasks.push(makeTask(name, 8));
-      }
-    });
-  }
+  // Deduplicate
+  const seen = new Set();
+  const unique = templates.filter((t) => {
+    if (seen.has(t.name)) return false;
+    seen.add(t.name);
+    return true;
+  });
 
-  return tasks;
+  return unique.map((t) => makeTask(t, transactionFields));
 }
