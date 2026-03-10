@@ -322,23 +322,6 @@ export default function FinanceTab({ transaction, currentUser, parsedPsData }) {
       {/* Commission Breakdown */}
       <CommissionBreakdown computed={computed} form={form} />
 
-      {/* Expenses */}
-      <Card className="border-gray-100 shadow-sm">
-        <CardHeader className="pb-3">
-          <CardTitle className="text-sm font-semibold flex items-center gap-2">
-            <Receipt className="w-4 h-4 text-rose-500" /> Deal Expenses
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <DealExpenseTable
-            transactionId={transaction.id}
-            brokerageId={transaction.brokerage_id}
-            expenses={expenses}
-            expensesTotal={expensesTotal}
-          />
-        </CardContent>
-      </Card>
-
       {/* Net Deal Profit */}
       <Card className="border-0 bg-gradient-to-br from-slate-800 to-slate-900 text-white shadow-lg">
         <CardContent className="pt-6 pb-6">
