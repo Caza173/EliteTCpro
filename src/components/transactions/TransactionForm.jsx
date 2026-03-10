@@ -67,71 +67,26 @@ export default function TransactionForm({ onSubmit, isSubmitting }) {
   };
 
   const handleParsed = (parsed) => {
-    // Guard: ensure parsed data exists
-    if (!parsed) {
-      console.warn("P&S parser returned no data");
-      return;
-    }
-    
+    if (!parsed) return;
     setParsedData(parsed);
     const updates = {};
-    
-    // Safe population of all fields — only if they exist
-    if (parsed.effectiveDate) {
-      updates.contract_date = parsed.effectiveDate;
-    }
-    if (parsed.closingDate || parsed.transferOfTitleDate) {
-      updates.closing_date = parsed.closingDate || parsed.transferOfTitleDate;
-    }
-    if (parsed.propertyAddress) {
-      updates.address = parsed.propertyAddress;
-    }
-    if (parsed.buyerName) {
-      updates.buyer = parsed.buyerName;
-      updates.buyers = [parsed.buyerName];
-    }
-    if (parsed.sellerName) {
-      updates.seller = parsed.sellerName;
-      updates.sellers = [parsed.sellerName];
-    }
-    if (parsed.buyersAgentName) {
-      updates.buyers_agent_name = parsed.buyersAgentName;
-    }
-    if (parsed.sellersAgentName) {
-      updates.sellers_agent_name = parsed.sellersAgentName;
-    }
-    if (parsed.buyerBrokerage) {
-      updates.buyer_brokerage = parsed.buyerBrokerage;
-    }
-    if (parsed.sellerBrokerage) {
-      updates.seller_brokerage = parsed.sellerBrokerage;
-    }
-    if (parsed.closingTitleCompany) {
-      updates.closing_title_company = parsed.closingTitleCompany;
-    }
-    if (parsed.financingCommitmentDate) {
-      updates.financing_deadline = parsed.financingCommitmentDate;
-    }
 
-    // Prefer direct AI-returned deadline dates; fall back to offset calculation
-    const base = parsed.effectiveDate;
-    try {
-      const baseDate = base ? parseISO(base) : null;
-      updates.earnest_money_deadline = parsed.earnestMoneyDeadline
-        || (baseDate && parsed.earnestMoneyDays > 0 ? format(addDays(baseDate, parsed.earnestMoneyDays), "yyyy-MM-dd") : null)
-        || null;
-      updates.inspection_deadline = parsed.inspectionDeadline
-        || (baseDate && parsed.inspectionDays > 0 ? format(addDays(baseDate, parsed.inspectionDays), "yyyy-MM-dd") : null)
-        || null;
-      updates.due_diligence_deadline = parsed.dueDiligenceDeadline
-        || (baseDate && parsed.dueDiligenceDays > 0 ? format(addDays(baseDate, parsed.dueDiligenceDays), "yyyy-MM-dd") : null)
-        || null;
-    } catch (err) {
-      console.warn("Failed to calculate deadline offsets:", err);
-    }
-    // Remove null/empty updates so we don't overwrite existing values
+    if (parsed.effectiveDate)       updates.contract_date           = parsed.effectiveDate;
+    if (parsed.closingDate)         updates.closing_date            = parsed.closingDate;
+    if (parsed.propertyAddress)     updates.address                 = parsed.propertyAddress;
+    if (parsed.buyerName)           { updates.buyer = parsed.buyerName; updates.buyers = [parsed.buyerName]; }
+    if (parsed.sellerName)          { updates.seller = parsed.sellerName; updates.sellers = [parsed.sellerName]; }
+    if (parsed.buyersAgentName)     updates.buyers_agent_name       = parsed.buyersAgentName;
+    if (parsed.sellersAgentName)    updates.sellers_agent_name      = parsed.sellersAgentName;
+    if (parsed.buyerBrokerage)      updates.buyer_brokerage         = parsed.buyerBrokerage;
+    if (parsed.sellerBrokerage)     updates.seller_brokerage        = parsed.sellerBrokerage;
+    if (parsed.closingTitleCompany) updates.closing_title_company   = parsed.closingTitleCompany;
+    if (parsed.financingCommitmentDate) updates.financing_deadline  = parsed.financingCommitmentDate;
+    if (parsed.inspectionDeadline)   updates.inspection_deadline    = parsed.inspectionDeadline;
+    if (parsed.earnestMoneyDeadline) updates.earnest_money_deadline = parsed.earnestMoneyDeadline;
+    if (parsed.dueDiligenceDeadline) updates.due_diligence_deadline = parsed.dueDiligenceDeadline;
+
     Object.keys(updates).forEach(k => { if (!updates[k]) delete updates[k]; });
-    
     setForm((prev) => ({ ...prev, ...updates }));
   };
 
