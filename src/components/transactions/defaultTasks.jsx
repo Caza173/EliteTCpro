@@ -3,7 +3,6 @@ const uid = () => `task-${_id++}-${Date.now()}`;
 
 // Phases 1 & 2 (Pre-Contract, Offer Drafting) are handled by the agent side.
 // TC workflow starts at Phase 3 (Offer Accepted).
-// Phase 4 tasks are merged into Phase 3. Phase 6 tasks are merged into Phase 5.
 const PHASE_TASKS = {
   3: [
     "Send contract to title company",
@@ -39,19 +38,63 @@ const PHASE_TASKS = {
   12: ["Upload closing documents", "Send thank you emails", "Archive transaction file"],
 };
 
+// Contingency-based tasks generated from P&S extraction data
+const INSPECTION_CONTINGENCY_TASKS = [
+  "Schedule building inspection",
+  "Confirm inspection completed",
+  "Upload inspection report",
+  "Review repair requests",
+];
+
+const FINANCING_CONTINGENCY_TASKS = [
+  "Send contract to lender",
+  "Confirm loan application submitted",
+  "Verify appraisal ordered",
+  "Confirm financing commitment received",
+];
+
+function makeTask(name, phase) {
+  return { id: uid(), name, phase, completed: false, assigned_to: "", due_date: "" };
+}
+
 export function generateDefaultTasks() {
   const tasks = [];
   Object.entries(PHASE_TASKS).forEach(([phase, names]) => {
     names.forEach((name) => {
-      tasks.push({
-        id: uid(),
-        name,
-        phase: Number(phase),
-        completed: false,
-        assigned_to: "",
-        due_date: "",
-      });
+      tasks.push(makeTask(name, Number(phase)));
     });
   });
+  return tasks;
+}
+
+/**
+ * Generate smart tasks based on P&S extraction data.
+ * Merges contingency-specific tasks with the default task set.
+ * @param {object} parsedData - normalized extraction output from normalizeV2()
+ * @param {boolean} isCash - whether this is a cash transaction
+ */
+export function generateSmartTasks(parsedData, isCash = false) {
+  const tasks = generateDefaultTasks();
+
+  const hasInspection = parsedData?.inspectionDeadline || parsedData?.inspectionDays != null;
+  const hasFinancing = !isCash && (parsedData?.financingCommitmentDate || parsedData?.financingDeadline);
+
+  if (hasInspection) {
+    INSPECTION_CONTINGENCY_TASKS.forEach((name) => {
+      // Only add if not already present (avoid duplication with phase 5 tasks)
+      if (!tasks.find((t) => t.name.toLowerCase().includes(name.toLowerCase().split(" ")[0]))) {
+        tasks.push(makeTask(name, 5));
+      }
+    });
+  }
+
+  if (hasFinancing) {
+    FINANCING_CONTINGENCY_TASKS.forEach((name) => {
+      if (!tasks.find((t) => t.name.toLowerCase().includes(name.toLowerCase().split(" ")[0]))) {
+        tasks.push(makeTask(name, 8));
+      }
+    });
+  }
+
   return tasks;
 }
