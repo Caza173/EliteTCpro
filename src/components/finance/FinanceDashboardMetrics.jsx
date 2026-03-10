@@ -1,9 +1,8 @@
 import React from "react";
 import { Card, CardContent } from "@/components/ui/card";
-import { DollarSign, TrendingUp, BarChart3, Briefcase } from "lucide-react";
-import { useQuery } from "@tanstack/react-query";
-import { base44 } from "@/api/base44Client";
+import { DollarSign, TrendingUp, CheckCircle, Clock } from "lucide-react";
 
+const TC_FEE = 350;
 const fmt = (n) =>
   new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 0 }).format(n || 0);
 
@@ -27,64 +26,46 @@ function MetricCard({ label, value, sub, icon: IconComp, color }) {
 }
 
 export default function FinanceDashboardMetrics({ transactions }) {
-  const { data: allFinance = [] } = useQuery({
-    queryKey: ["allFinance"],
-    queryFn: () => base44.entities.TransactionFinance.list(),
-  });
-
-  const { data: allExpenses = [] } = useQuery({
-    queryKey: ["allExpenses"],
-    queryFn: () => base44.entities.DealExpense.list(),
-  });
-
-  const pendingTx = transactions.filter((t) => t.status === "active" || t.status === "pending");
   const closedTx = transactions.filter((t) => t.status === "closed");
+  const activeTx = transactions.filter((t) => t.status === "active" || t.status === "pending");
 
-  const getFinance = (txId) => allFinance.find((f) => f.transaction_id === txId);
-  const getTxExpenses = (txId) => allExpenses.filter((e) => e.transaction_id === txId).reduce((s, e) => s + (e.amount || 0), 0);
-
-  const calcNet = (txId) => {
-    const f = getFinance(txId);
-    if (!f) return 0;
-    const gross = f.gross_commission || 0;
-    const referral = f.referral_amount || 0;
-    const afterReferral = gross - referral;
-    const brokerSplit = afterReferral * ((f.broker_split_percent || 0) / 100);
-    const agentAfterSplit = afterReferral - brokerSplit;
-    const franchiseFee = agentAfterSplit * ((f.franchise_fee_percent || 0) / 100);
-    const fees = (f.transaction_fee || 0) + (f.eo_fee || 0) + (f.other_brokerage_fees || 0);
-    const expenses = getTxExpenses(txId);
-    return agentAfterSplit - franchiseFee - fees - expenses;
-  };
-
-  const grossPending = pendingTx.reduce((s, t) => s + (getFinance(t.id)?.gross_commission || 0), 0);
-  const netPending = pendingTx.reduce((s, t) => s + calcNet(t.id), 0);
-  const grossClosed = closedTx.reduce((s, t) => s + (getFinance(t.id)?.gross_commission || 0), 0);
-  const netClosed = closedTx.reduce((s, t) => s + calcNet(t.id), 0);
-  const totalExpenses = allExpenses.reduce((s, e) => s + (e.amount || 0), 0);
-  const avgCommission = allFinance.length > 0
-    ? allFinance.reduce((s, f) => s + (f.gross_commission || 0), 0) / allFinance.length
-    : 0;
-  const avgSalePrice = allFinance.length > 0
-    ? allFinance.reduce((s, f) => s + (f.sale_price || 0), 0) / allFinance.length
-    : 0;
+  const earnedIncome = closedTx.length * TC_FEE;
+  const projectedIncome = activeTx.length * TC_FEE;
+  const totalProjected = earnedIncome + projectedIncome;
 
   return (
     <div className="space-y-3">
       <h3 className="text-sm font-semibold text-gray-700 flex items-center gap-2">
-        <DollarSign className="w-4 h-4 text-emerald-500" /> Financial Overview
+        <DollarSign className="w-4 h-4 text-emerald-500" /> TC Income Tracker
+        <span className="text-xs font-normal text-gray-400 ml-1">${TC_FEE}/transaction</span>
       </h3>
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-        <MetricCard label="Pending Deals" value={pendingTx.length} sub="active + pending" icon={Briefcase} />
-        <MetricCard label="Closed Deals" value={closedTx.length} sub="YTD" icon={BarChart3} />
-        <MetricCard label="Net Income Pending" value={fmt(netPending)} sub="projected" icon={TrendingUp} color="text-emerald-600" />
-        <MetricCard label="Net Income Closed" value={fmt(netClosed)} sub="YTD" icon={DollarSign} color="text-blue-600" />
-      </div>
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-        <MetricCard label="Gross Pending" value={fmt(grossPending)} icon={DollarSign} />
-        <MetricCard label="Gross Closed YTD" value={fmt(grossClosed)} icon={DollarSign} />
-        <MetricCard label="Total Deal Expenses" value={fmt(totalExpenses)} icon={TrendingUp} color="text-rose-600" />
-        <MetricCard label="Avg Commission" value={fmt(avgCommission)} sub={`avg sale: ${fmt(avgSalePrice)}`} icon={BarChart3} />
+        <MetricCard
+          label="Closed Transactions"
+          value={closedTx.length}
+          sub="all time"
+          icon={CheckCircle}
+        />
+        <MetricCard
+          label="Income Earned"
+          value={fmt(earnedIncome)}
+          sub={`${closedTx.length} closed × $${TC_FEE}`}
+          icon={DollarSign}
+          color="text-emerald-600"
+        />
+        <MetricCard
+          label="Active Transactions"
+          value={activeTx.length}
+          sub="in progress"
+          icon={Clock}
+        />
+        <MetricCard
+          label="Projected Income"
+          value={fmt(totalProjected)}
+          sub={`${activeTx.length} active + ${closedTx.length} closed`}
+          icon={TrendingUp}
+          color="text-blue-600"
+        />
       </div>
     </div>
   );
