@@ -10,7 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Separator } from "@/components/ui/separator";
 import { Loader2, Send, CheckCircle, FileSearch, Building2, Link2, Copy, Plus, X } from "lucide-react";
 import { addDays, format, parseISO } from "date-fns";
-import { generateDefaultTasks } from "../components/transactions/defaultTasks";
+import { generateSmartTasks } from "../components/transactions/defaultTasks";
 import PurchaseAgreementUpload from "../components/forms/PurchaseAgreementUpload";
 import ParsedDeadlinesPreview from "../components/forms/ParsedDeadlinesPreview";
 
