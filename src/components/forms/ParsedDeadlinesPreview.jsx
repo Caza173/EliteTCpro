@@ -3,12 +3,12 @@ import { format, addDays, parseISO } from "date-fns";
 import { Calendar, CheckCircle2, AlertCircle } from "lucide-react";
 
 const TIMELINE_ITEMS = [
-  { key: "effectiveDate", label: "Effective Date", type: "date" },
-  { key: "earnestMoneyDays", label: "Earnest Money Due", type: "offset", anchor: "effectiveDate" },
-  { key: "inspectionDays", label: "Inspection Deadline", type: "offset", anchor: "effectiveDate" },
-  { key: "dueDiligenceDays", label: "Due Diligence Deadline", type: "offset", anchor: "effectiveDate" },
-  { key: "financingCommitmentDate", label: "Financing Commitment", type: "date" },
-  { key: "closingDate", label: "Closing Date", type: "date" },
+  { key: "effectiveDate",           label: "Effective Date",           type: "date" },
+  { key: "earnestMoneyDeadline",    label: "Earnest Money Due",        type: "date" },
+  { key: "inspectionDeadline",      label: "Inspection Deadline",      type: "date" },
+  { key: "dueDiligenceDeadline",    label: "Due Diligence Deadline",   type: "date" },
+  { key: "financingCommitmentDate", label: "Financing Commitment",     type: "date" },
+  { key: "closingDate",             label: "Closing Date",             type: "date" },
 ];
 
 function resolveDate(item, parsed) {
