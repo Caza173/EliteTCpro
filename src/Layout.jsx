@@ -157,7 +157,7 @@ export default function Layout({ children, currentPageName }) {
           <h2 className="text-lg font-semibold tracking-tight" style={{ color: "var(--text-primary)" }}>
             {currentPageName === "TransactionDetail" ? "Transaction Detail" : 
              currentPageName === "AddTransaction" ? "New Transaction" :
-             currentPageName === "AgentIntake" ? "Agent Intake" :
+             currentPageName === "AgentIntake" ? "Deal Intake" :
              currentPageName === "ClientPortal" ? "My Transaction" :
              currentPageName === "Documents" ? "Documents" :
              currentPageName === "AuditLog" ? "Audit Log" :
