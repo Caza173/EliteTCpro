@@ -113,24 +113,24 @@ export default function TransactionForm({ onSubmit, isSubmitting }) {
       updates.financing_deadline = parsed.financingCommitmentDate;
     }
 
-    // Calculate offset-based deadlines ONLY when effectiveDate exists
-    if (parsed.effectiveDate) {
-      try {
-        const baseDate = parseISO(parsed.effectiveDate);
-        
-        if (parsed.earnestMoneyDays != null && parsed.earnestMoneyDays > 0) {
-          updates.earnest_money_deadline = format(addDays(baseDate, parsed.earnestMoneyDays), "yyyy-MM-dd");
-        }
-        if (parsed.inspectionDays != null && parsed.inspectionDays > 0) {
-          updates.inspection_deadline = format(addDays(baseDate, parsed.inspectionDays), "yyyy-MM-dd");
-        }
-        if (parsed.dueDiligenceDays != null && parsed.dueDiligenceDays > 0) {
-          updates.due_diligence_deadline = format(addDays(baseDate, parsed.dueDiligenceDays), "yyyy-MM-dd");
-        }
-      } catch (err) {
-        console.warn("Failed to calculate deadline offsets:", err);
-      }
+    // Prefer direct AI-returned deadline dates; fall back to offset calculation
+    const base = parsed.effectiveDate;
+    try {
+      const baseDate = base ? parseISO(base) : null;
+      updates.earnest_money_deadline = parsed.earnestMoneyDeadline
+        || (baseDate && parsed.earnestMoneyDays > 0 ? format(addDays(baseDate, parsed.earnestMoneyDays), "yyyy-MM-dd") : null)
+        || null;
+      updates.inspection_deadline = parsed.inspectionDeadline
+        || (baseDate && parsed.inspectionDays > 0 ? format(addDays(baseDate, parsed.inspectionDays), "yyyy-MM-dd") : null)
+        || null;
+      updates.due_diligence_deadline = parsed.dueDiligenceDeadline
+        || (baseDate && parsed.dueDiligenceDays > 0 ? format(addDays(baseDate, parsed.dueDiligenceDays), "yyyy-MM-dd") : null)
+        || null;
+    } catch (err) {
+      console.warn("Failed to calculate deadline offsets:", err);
     }
+    // Remove null/empty updates so we don't overwrite existing values
+    Object.keys(updates).forEach(k => { if (!updates[k]) delete updates[k]; });
     
     setForm((prev) => ({ ...prev, ...updates }));
   };
