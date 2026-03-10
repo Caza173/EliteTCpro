@@ -89,6 +89,20 @@ const SCHEMA = {
 
 // Map AI output (snake_case) → app fields (camelCase)
 function normalizeExtracted(src) {
+  const effectiveDate = src.acceptance_date || null;
+  const inspectionDeadline = src.inspection_deadline || null;
+  const financingDeadline = src.financing_commitment_date || null;
+
+  // If the AI returned day offsets but no computed dates, calculate them here
+  const calcDate = (base, days) => {
+    if (!base || days == null) return null;
+    try {
+      const d = new Date(base);
+      d.setDate(d.getDate() + Number(days));
+      return d.toISOString().split("T")[0];
+    } catch { return null; }
+  };
+
   return {
     // Parties
     buyerName:               src.buyer_names               || null,
@@ -99,10 +113,13 @@ function normalizeExtracted(src) {
     purchasePrice:           src.purchase_price            ?? null,
     depositAmount:           src.deposit_amount            ?? null,
     // Dates
-    effectiveDate:           src.acceptance_date           || null,
+    effectiveDate,
     closingDate:             src.closing_date              || null,
-    inspectionDeadline:      src.inspection_deadline       || null,
-    financingCommitmentDate: src.financing_commitment_date || null,
+    // Deadlines — prefer direct AI date, fall back to offset calculation
+    inspectionDeadline:      inspectionDeadline            || calcDate(effectiveDate, src.inspection_days),
+    financingCommitmentDate: financingDeadline,
+    earnestMoneyDeadline:    calcDate(effectiveDate, src.earnest_money_days),
+    dueDiligenceDeadline:    calcDate(effectiveDate, src.due_diligence_days),
     // Agents
     buyersAgentName:         src.buyer_agent               || null,
     sellersAgentName:        src.seller_agent              || null,
