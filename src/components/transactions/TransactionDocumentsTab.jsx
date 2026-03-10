@@ -48,13 +48,8 @@ export default function TransactionDocumentsTab({ transaction, currentUser }) {
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["tx-documents", transaction.id] }),
   });
 
-  const handleUpload = async (e) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    setUploading(true);
-
+  const uploadFile = async (file) => {
     const { file_url } = await base44.integrations.Core.UploadFile({ file });
-
     const doc = await base44.entities.Document.create({
       brokerage_id: transaction.brokerage_id,
       transaction_id: transaction.id,
@@ -64,7 +59,6 @@ export default function TransactionDocumentsTab({ transaction, currentUser }) {
       uploaded_by: currentUser?.email || "unknown",
       uploaded_by_role: currentUser?.role || "agent",
     });
-
     const matchingItem = checklistItems.find(
       (ci) => ci.doc_type === selectedDocType && ci.status === "missing"
     );
@@ -75,7 +69,6 @@ export default function TransactionDocumentsTab({ transaction, currentUser }) {
       });
       queryClient.invalidateQueries({ queryKey: ["checklist", transaction.id] });
     }
-
     await writeAuditLog({
       brokerageId: transaction.brokerage_id,
       transactionId: transaction.id,
@@ -85,10 +78,27 @@ export default function TransactionDocumentsTab({ transaction, currentUser }) {
       entityId: doc.id,
       description: `${currentUser?.email} uploaded ${file.name} (${selectedDocType})`,
     });
+  };
 
+  const handleUpload = async (e) => {
+    const files = Array.from(e.target.files || []);
+    if (!files.length) return;
+    setUploading(true);
+    for (const file of files) await uploadFile(file);
     queryClient.invalidateQueries({ queryKey: ["tx-documents", transaction.id] });
     setUploading(false);
     if (fileInputRef.current) fileInputRef.current.value = "";
+  };
+
+  const handleDrop = async (e) => {
+    e.preventDefault();
+    setDragOver(false);
+    const files = Array.from(e.dataTransfer.files || []);
+    if (!files.length) return;
+    setUploading(true);
+    for (const file of files) await uploadFile(file);
+    queryClient.invalidateQueries({ queryKey: ["tx-documents", transaction.id] });
+    setUploading(false);
   };
 
   const canDelete = ["tc", "admin", "owner"].includes(currentUser?.role);
