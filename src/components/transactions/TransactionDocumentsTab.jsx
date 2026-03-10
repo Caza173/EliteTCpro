@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Upload, FileText, Trash2, Download, Loader2, FolderOpen, ClipboardCheck } from "lucide-react";
+import { Upload, FileText, Trash2, Download, Loader2, FolderOpen, ClipboardCheck, Scan } from "lucide-react";
 import { format } from "date-fns";
 import { writeAuditLog } from "../utils/tenantUtils";
 import DocChecklistPanel from "./DocChecklistPanel";
@@ -78,6 +78,22 @@ export default function TransactionDocumentsTab({ transaction, currentUser }) {
       entityId: doc.id,
       description: `${currentUser?.email} uploaded ${file.name} (${selectedDocType})`,
     });
+
+    // Auto-trigger compliance scan in the background
+    base44.functions.invoke('complianceEngine', {
+      document_url: file_url,
+      file_name: file.name,
+      document_id: doc.id,
+      transaction_id: transaction.id,
+      brokerage_id: transaction.brokerage_id,
+      transaction_data: {
+        address: transaction.address,
+        transaction_type: transaction.transaction_type,
+        is_cash_transaction: transaction.is_cash_transaction,
+      }
+    }).then(() => {
+      queryClient.invalidateQueries({ queryKey: ["compliance-reports", transaction.id] });
+    }).catch(() => {});
   };
 
   const handleUpload = async (e) => {
