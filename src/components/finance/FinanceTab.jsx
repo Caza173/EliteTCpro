@@ -88,12 +88,12 @@ export default function FinanceTab({ transaction, currentUser, parsedPsData }) {
         seller_concession_amount: finance.seller_concession_amount ?? 0,
       });
     } else {
-      // Pre-populate from transaction
+      // Pre-populate from transaction — including data extracted from P&S
       setForm((prev) => ({
         ...prev,
         ...defaults,
         sale_price: transaction.sale_price || "",
-        commission_percent: transaction.commission ? parseFloat(transaction.commission) || "" : "",
+        commission_percent: transaction.commission_percent || (transaction.commission ? parseFloat(transaction.commission) || "" : ""),
       }));
     }
   }, [finance, currentUser, transaction]);
