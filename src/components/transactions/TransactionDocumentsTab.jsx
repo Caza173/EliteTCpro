@@ -28,6 +28,7 @@ export default function TransactionDocumentsTab({ transaction, currentUser }) {
   const queryClient = useQueryClient();
   const [selectedDocType, setSelectedDocType] = useState("other");
   const [uploading, setUploading] = useState(false);
+  const [dragOver, setDragOver] = useState(false);
   const fileInputRef = useRef(null);
 
   const { data: documents = [], isLoading } = useQuery({
