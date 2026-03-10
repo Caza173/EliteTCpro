@@ -40,13 +40,8 @@ export default function FinanceTab({ transaction, currentUser, parsedPsData }) {
     queryFn: () => base44.entities.TransactionFinance.filter({ transaction_id: transaction.id }),
   });
 
-  const { data: expenses = [] } = useQuery({
-    queryKey: ["expenses", transaction.id],
-    queryFn: () => base44.entities.DealExpense.filter({ transaction_id: transaction.id }),
-  });
-
   const finance = financeRecords[0];
-  const expensesTotal = expenses.reduce((s, e) => s + (e.amount || 0), 0);
+  const expensesTotal = 0;
 
   // Local form state
   const [form, setForm] = useState({
