@@ -93,9 +93,21 @@ Deno.serve(async (req) => {
     if (!user) return Response.json({ error: "Unauthorized" }, { status: 401 });
 
     const body = await req.json();
-    const { text } = body;
+    let { text, file_url } = body;
 
-    if (!text) return Response.json({ error: "No text provided" }, { status: 400 });
+    if (!text && !file_url) return Response.json({ error: "No text or file_url provided" }, { status: 400 });
+
+    // If a file URL is provided, extract the raw text from it first using Claude vision
+    if (file_url && !text) {
+      console.log("Extracting text from file via Claude...");
+      const extracted = await base44.integrations.Core.InvokeLLM({
+        model: "claude_sonnet_4_6",
+        prompt: `Extract ALL text from this document verbatim, preserving the structure, section numbers, and layout as closely as possible. Include every page. Preserve numbered headings like "1.", "2.", "3." etc. Output only the raw text — no commentary.`,
+        file_urls: [file_url],
+      });
+      text = typeof extracted === "string" ? extracted : JSON.stringify(extracted);
+      console.log("Text extracted, length:", text.length);
+    }
 
     console.log("Stage 1: Splitting document into sections...");
     const sections = splitIntoSections(text);
