@@ -5,21 +5,23 @@ import { Label } from "@/components/ui/label";
 import { CheckCircle2, AlertCircle, Edit3 } from "lucide-react";
 
 const FIELDS = [
-  { key: "propertyAddress",        label: "Property Address" },
-  { key: "buyerName",              label: "Buyer Name(s)" },
-  { key: "sellerName",             label: "Seller Name(s)" },
-  { key: "effectiveDate",          label: "Acceptance / Effective Date",  type: "date" },
-  { key: "closingDate",            label: "Closing / Transfer of Title",  type: "date" },
-  { key: "inspectionDeadline",     label: "Inspection Deadline",          type: "date" },
-  { key: "financingCommitmentDate",label: "Financing Commitment Date",    type: "date" },
-  { key: "earnestMoneyDeadline",   label: "Earnest Money Due Date",       type: "date" },
-  { key: "dueDiligenceDeadline",   label: "Due Diligence Deadline",       type: "date" },
-  { key: "purchasePrice",          label: "Purchase Price",               type: "number" },
-  { key: "buyersAgentName",        label: "Buyer's Agent" },
-  { key: "buyerBrokerage",         label: "Buyer Brokerage" },
-  { key: "sellersAgentName",       label: "Seller's Agent" },
-  { key: "sellerBrokerage",        label: "Seller Brokerage" },
-  { key: "closingTitleCompany",    label: "Title / Closing Company" },
+  { key: "property_address",          label: "Property Address" },
+  { key: "buyer_names",               label: "Buyer Name(s)" },
+  { key: "seller_names",              label: "Seller Name(s)" },
+  { key: "acceptance_date",           label: "Acceptance / Effective Date",  type: "date" },
+  { key: "closing_date",              label: "Closing / Transfer of Title",  type: "date" },
+  { key: "financing_commitment_date", label: "Financing Commitment Date",    type: "date" },
+  { key: "purchase_price",            label: "Purchase Price",               type: "number" },
+  { key: "deposit_amount",            label: "Deposit / Earnest Money",      type: "number" },
+  { key: "inspection_days",           label: "Inspection Period (days)",     type: "number" },
+  { key: "due_diligence_days",        label: "Due Diligence (days)",         type: "number" },
+  { key: "earnest_money_days",        label: "Earnest Money Deposit (days)", type: "number" },
+  { key: "buyer_agent_name",          label: "Buyer's Agent" },
+  { key: "buyer_brokerage",           label: "Buyer Brokerage" },
+  { key: "seller_agent_name",         label: "Seller's Agent" },
+  { key: "seller_brokerage",          label: "Seller Brokerage" },
+  { key: "buyer_agent_commission_percent", label: "Buyer Agent Commission (%)", type: "number" },
+  { key: "seller_concession_amount",  label: "Seller Concession ($)",        type: "number" },
 ];
 
 export default function PSReviewModal({ extracted, onConfirm, onCancel }) {
