@@ -100,6 +100,7 @@ export default function AgentIntake() {
     const sellerList = sellers.filter(Boolean);
     createMutation.mutate({
       ...form,
+      brokerage_id: currentUser?.data?.brokerage_id,
       buyer: buyerList.join(" & "),
       seller: sellerList.join(" & "),
       buyers: buyerList,
