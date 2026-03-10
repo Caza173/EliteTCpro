@@ -1,14 +1,10 @@
-import { addDays, format } from "date-fns";
+import { addDays, format, parseISO } from "date-fns";
 
 /**
  * Generate standard transaction deadlines based on contract date.
- * @param {string} contractDate - ISO date string
- * @param {string} [closingDate] - ISO date string (optional override)
- * @returns {object} deadline fields to spread onto transaction
  */
 export function generateDeadlines(contractDate, closingDate) {
   const base = new Date(contractDate);
-
   return {
     inspection_deadline: format(addDays(base, 10), "yyyy-MM-dd"),
     appraisal_deadline: format(addDays(base, 21), "yyyy-MM-dd"),
@@ -16,6 +12,29 @@ export function generateDeadlines(contractDate, closingDate) {
     ctc_target: format(addDays(base, 45), "yyyy-MM-dd"),
     ...(closingDate ? { closing_date: closingDate } : {}),
   };
+}
+
+/**
+ * Recalculate due_dates for all tasks that have a linked_deadline + offset_days.
+ * Call this whenever a deadline date changes.
+ *
+ * @param {Array} tasks - current task array from transaction
+ * @param {object} transactionFields - the transaction object (has deadline date strings)
+ * @returns {Array} updated tasks with recalculated due_dates
+ */
+export function recalculateTaskDueDates(tasks, transactionFields) {
+  return tasks.map((task) => {
+    if (!task.linked_deadline || task.offset_days == null) return task;
+    const anchorDate = transactionFields[task.linked_deadline];
+    if (!anchorDate) return task;
+    try {
+      const base = parseISO(anchorDate);
+      const due = addDays(base, task.offset_days);
+      return { ...task, due_date: format(due, "yyyy-MM-dd") };
+    } catch {
+      return task;
+    }
+  });
 }
 
 /**
