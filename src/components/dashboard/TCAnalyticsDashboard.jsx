@@ -117,45 +117,6 @@ export default function TCAnalyticsDashboard({ transactions = [] }) {
           </CardContent>
         </Card>
 
-        {/* Bottleneck Phases */}
-        <Card className="shadow-sm border-gray-100">
-          <CardHeader className="pb-2">
-            <div className="flex items-center gap-1.5">
-              <AlertCircle className="w-4 h-4 text-amber-500" />
-              <CardTitle className="text-sm font-semibold text-gray-600">Phase Bottlenecks</CardTitle>
-            </div>
-          </CardHeader>
-          <CardContent>
-            {bottleneckData.length === 0 ? (
-              <p className="text-sm text-gray-400 text-center mt-4">No active transactions</p>
-            ) : (
-              <div className="space-y-2">
-                {bottleneckData.slice(0, 5).map((d, i) => (
-                  <div key={d.phase} className="flex items-center gap-2">
-                    <div className="flex-1 min-w-0">
-                      <p className="text-xs font-medium text-gray-700 truncate">{d.phase}</p>
-                    </div>
-                    <div className="flex items-center gap-1.5 flex-shrink-0">
-                      <div className="h-2 rounded-full bg-amber-100 w-20 overflow-hidden">
-                        <div
-                          className="h-2 rounded-full bg-amber-400"
-                          style={{ width: `${(d.count / bottleneckData[0].count) * 100}%` }}
-                        />
-                      </div>
-                      <span className="text-xs font-semibold text-gray-600 w-4 text-right">{d.count}</span>
-                    </div>
-                  </div>
-                ))}
-                {topBottleneck && (
-                  <p className="text-xs text-amber-600 mt-2 pt-2 border-t border-gray-100">
-                    Most stuck: <strong>{topBottleneck.phase}</strong> ({topBottleneck.count} txn{topBottleneck.count > 1 ? "s" : ""})
-                  </p>
-                )}
-              </div>
-            )}
-          </CardContent>
-        </Card>
-
       </div>
     </div>
   );
