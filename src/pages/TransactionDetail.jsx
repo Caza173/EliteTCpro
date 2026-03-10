@@ -48,6 +48,7 @@ import TransactionActivityFeed from "../components/transactions/TransactionActiv
 import TransactionDocumentsTab from "../components/transactions/TransactionDocumentsTab";
 import ContractTimeline from "../components/transactions/ContractTimeline";
 import EditableDeadlinePanel from "../components/transactions/EditableDeadlinePanel";
+import ComplianceScanPanel from "../components/compliance/ComplianceScanPanel";
 
 const TX_TABS = [
   { id: "overview", label: "Overview", icon: LayoutDashboard },
@@ -56,6 +57,7 @@ const TX_TABS = [
   { id: "tasks", label: "Tasks", icon: ListChecks },
   { id: "documents", label: "Documents", icon: FolderOpen },
   { id: "finance", label: "Finance", icon: DollarSign },
+  { id: "compliance", label: "Compliance", icon: ShieldCheck },
 ];
 
 const PHASES = [
@@ -577,6 +579,11 @@ TC Manager
       {/* Tab: Finance */}
       {activeTab === "finance" && (
         <FinanceTab transaction={transaction} currentUser={currentUser} />
+      )}
+
+      {/* Tab: Compliance */}
+      {activeTab === "compliance" && (
+        <ComplianceScanPanel transaction={transaction} currentUser={currentUser} />
       )}
     </div>
   );
