@@ -79,18 +79,29 @@ export default function AgentIntake() {
     if (parsed.propertyAddress) u.address = parsed.propertyAddress;
     if (parsed.buyerName) { u.buyer = parsed.buyerName; setBuyers([parsed.buyerName]); }
     if (parsed.sellerName) { u.seller = parsed.sellerName; setSellers([parsed.sellerName]); }
+    if (parsed.buyersAgentName) u.buyers_agent_name = parsed.buyersAgentName;
+    if (parsed.sellersAgentName) u.sellers_agent_name = parsed.sellersAgentName;
+    if (parsed.buyerBrokerage) u.buyer_brokerage = parsed.buyerBrokerage;
+    if (parsed.sellerBrokerage) u.seller_brokerage = parsed.sellerBrokerage;
+    if (parsed.closingTitleCompany) u.closing_title_company = parsed.closingTitleCompany;
     if (parsed.financingCommitmentDate) u.financing_deadline = parsed.financingCommitmentDate;
+
+    // Prefer direct deadline dates returned by AI; fall back to day-offset calculation
     const base = parsed.effectiveDate;
-    if (base) {
-      try {
-        if (parsed.earnestMoneyDays != null)
-          u.earnest_money_deadline = format(addDays(parseISO(base), parsed.earnestMoneyDays), "yyyy-MM-dd");
-        if (parsed.inspectionDays != null)
-          u.inspection_deadline = format(addDays(parseISO(base), parsed.inspectionDays), "yyyy-MM-dd");
-        if (parsed.dueDiligenceDays != null)
-          u.due_diligence_deadline = format(addDays(parseISO(base), parsed.dueDiligenceDays), "yyyy-MM-dd");
-      } catch {}
-    }
+    try {
+      u.earnest_money_deadline = parsed.earnestMoneyDeadline
+        || (base && parsed.earnestMoneyDays != null ? format(addDays(parseISO(base), parsed.earnestMoneyDays), "yyyy-MM-dd") : null)
+        || u.earnest_money_deadline;
+      u.inspection_deadline = parsed.inspectionDeadline
+        || (base && parsed.inspectionDays != null ? format(addDays(parseISO(base), parsed.inspectionDays), "yyyy-MM-dd") : null)
+        || u.inspection_deadline;
+      u.due_diligence_deadline = parsed.dueDiligenceDeadline
+        || (base && parsed.dueDiligenceDays != null ? format(addDays(parseISO(base), parsed.dueDiligenceDays), "yyyy-MM-dd") : null)
+        || u.due_diligence_deadline;
+    } catch {}
+
+    // Remove nulls so we don't overwrite existing values
+    Object.keys(u).forEach(k => { if (!u[k]) delete u[k]; });
     setForm((p) => ({ ...p, ...u }));
   };
 
