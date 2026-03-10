@@ -332,7 +332,6 @@ export default function FinanceTab({ transaction, currentUser, parsedPsData }) {
               <div className="text-xs text-slate-400">Referral <span className="text-orange-400 font-medium ml-2">-{fmt(computed.referralAmt)}</span></div>
               <div className="text-xs text-slate-400">Broker Split <span className="text-red-400 font-medium ml-2">-{fmt(computed.brokerSplitAmt)}</span></div>
               <div className="text-xs text-slate-400">Fees <span className="text-red-400 font-medium ml-2">-{fmt(computed.franchiseFeeAmt + computed.txFee + computed.eoFee + computed.otherFees)}</span></div>
-              <div className="text-xs text-slate-400">Expenses <span className="text-red-400 font-medium ml-2">-{fmt(expensesTotal)}</span></div>
             </div>
           </div>
         </CardContent>
