@@ -10,105 +10,107 @@ function formatBytes(bytes) {
   return (bytes / (1024 * 1024)).toFixed(1) + " MB";
 }
 
-const PS_PROMPT = `You are reading a New Hampshire Association of REALTORS Purchase and Sales Agreement.
+// Precise NHAR P&S extraction prompt — section-by-section
+const PS_PROMPT = `You are a real estate document analyst reading a New Hampshire Purchase and Sales Agreement (NHAR form).
 
-This document follows the standard NHAR structure with numbered sections. Extract key transaction data by reading the specific sections listed below.
+READ THE ENTIRE DOCUMENT — all pages, including signature blocks, addenda, and Section 20.
 
-Do not guess values. Return null for any field not explicitly found in the document.
+Extract the following fields and return a single JSON object. All dates must be ISO format (YYYY-MM-DD). Numbers must be plain numbers (not strings). Return null for any field not explicitly found — do NOT guess.
 
-SECTION 1 – PARTIES
-Find the names labeled (SELLER) and (BUYER).
-- buyer_names: full name(s) of buyer(s)
-- seller_names: full name(s) of seller(s)
+FIELDS TO EXTRACT:
 
-PROPERTY INFORMATION
-Locate the line containing "located at".
-- property_address: full street address including city, state, zip
+buyer_names
+  - Full name(s) of the buyer(s). Usually found near "BUYER:" or "This agreement is between [BUYER] and [SELLER]".
 
-SECTION 3 – SELLING PRICE
-Locate "The SELLING PRICE is" — extract purchase_price as a number.
-Locate "deposit of earnest money" — extract deposit_amount as a number.
+seller_names
+  - Full name(s) of the seller(s). Found near "SELLER:".
 
-SECTION 5 – TRANSFER OF TITLE
-Find "TRANSFER OF TITLE" — extract closing_date as ISO date (YYYY-MM-DD).
-Also extract closing_location if stated.
+property_address
+  - Full street address of the property including city, state, and zip. Usually near "located at" or "Property Address".
 
-SECTION 7 – REPRESENTATION
-Extract agent information:
-- buyer_agent_name: agent representing the buyer
-- buyer_brokerage: brokerage firm representing the buyer
-- seller_agent_name: agent representing the seller (listing agent)
-- seller_brokerage: brokerage firm representing the seller
+purchase_price
+  - The agreed sale price. Usually labeled "SELLING PRICE" or "Purchase Price". Return as a number.
 
-SECTION 15 – INSPECTIONS
-If inspection timelines are written as "within X days" — extract inspection_days as integer.
-Also extract if present: general_building_inspection_days, sewage_inspection_days, water_quality_inspection_days, radon_inspection_days.
+deposit_amount
+  - The earnest money / initial deposit amount. Return as a number.
 
-SECTION 16 – DUE DILIGENCE
-Find "within X days from the effective date" — extract due_diligence_days as integer.
+acceptance_date
+  - The Effective Date or Acceptance Date of the agreement. Often found near the signature block or labeled "Effective Date".
 
-SECTION 19 – FINANCING
-Find "Financing Deadline" — extract financing_commitment_date as ISO date.
-Also extract: loan_amount (number), loan_type (string), loan_term (string).
+closing_date
+  - The Transfer of Title / Closing Date. Usually in a section labeled "TRANSFER OF TITLE" or "Closing Date".
 
-SECTION 20 – ADDITIONAL PROVISIONS
-Extract the full text under PROFESSIONAL FEE — return as commission_terms_raw.
-Also interpret:
-- buyer_agent_commission_percent: numeric percent if found (e.g. 2.5 for "2.5%")
-- buyer_agent_commission_amount: flat dollar amount if found
-- seller_concession_amount: any seller concession dollar amount
-- section_20_full_text: verbatim full text of the entire Section 20
+inspection_deadline
+  - The actual calendar date (ISO) by which inspections must be completed. If stated as "within X days of the effective date", calculate it: effective_date + X days. Return the computed ISO date.
 
-EFFECTIVE DATE
-Locate the date near the signature block or page 1 labeled "EFFECTIVE DATE" — extract as acceptance_date (ISO date YYYY-MM-DD).
+financing_commitment_date
+  - The Financing Commitment / Financial Commitment Deadline. Return as ISO date.
 
-Also extract earnest_money_days: integer days from effective date for deposit due (if stated as offset rather than a fixed date).
+buyer_agent
+  - Full name of the agent representing the BUYER. Look for "Buyer's Agent", "Selling Agent", or in the Buyer's Brokerage signature block.
 
-Return as a single flat JSON object. All dates must be ISO format (YYYY-MM-DD). Numbers must be plain numbers, not strings.`;
+seller_agent
+  - Full name of the agent representing the SELLER. Look for "Listing Agent", "Seller's Agent", or in the Listing Brokerage signature block.
 
+buyer_brokerage
+  - Name of the brokerage firm representing the BUYER.
 
+seller_brokerage
+  - Name of the brokerage firm representing the SELLER.
+
+title_company
+  - Name of the title company, closing attorney, or settlement agent handling the closing.
+
+IMPORTANT NOTES:
+- If a deadline is written as "within X days of the effective date", compute the actual calendar date and return it as an ISO date.
+- Do not return day-offset integers — always return computed ISO dates.
+- Scan every page. Agent and brokerage information often appears on the last pages in signature blocks.
+- Section 20 may contain additional commission or concession terms — include any relevant compensation in the closest matching field.`;
 
 const SCHEMA = {
   type: "object",
   properties: {
-    // Parties
-    buyer_names: { type: "string" },
-    seller_names: { type: "string" },
-    // Property
-    property_address: { type: "string" },
-    // Financials
-    purchase_price: { type: "number" },
-    deposit_amount: { type: "number" },
-    // Dates
-    acceptance_date: { type: "string" },
-    closing_date: { type: "string" },
-    closing_location: { type: "string" },
+    buyer_names:               { type: "string" },
+    seller_names:              { type: "string" },
+    property_address:          { type: "string" },
+    purchase_price:            { type: "number" },
+    deposit_amount:            { type: "number" },
+    acceptance_date:           { type: "string" },
+    closing_date:              { type: "string" },
+    inspection_deadline:       { type: "string" },
     financing_commitment_date: { type: "string" },
-    // Deadlines (days offsets)
-    earnest_money_days: { type: "number" },
-    inspection_days: { type: "number" },
-    due_diligence_days: { type: "number" },
-    general_building_inspection_days: { type: "number" },
-    sewage_inspection_days: { type: "number" },
-    water_quality_inspection_days: { type: "number" },
-    radon_inspection_days: { type: "number" },
-    // Agents
-    buyer_agent_name: { type: "string" },
-    buyer_brokerage: { type: "string" },
-    seller_agent_name: { type: "string" },
-    seller_brokerage: { type: "string" },
-    // Financing
-    loan_amount: { type: "number" },
-    loan_type: { type: "string" },
-    loan_term: { type: "string" },
-    // Commission / Section 20
-    commission_terms_raw: { type: "string" },
-    buyer_agent_commission_percent: { type: "number" },
-    buyer_agent_commission_amount: { type: "number" },
-    seller_concession_amount: { type: "number" },
-    section_20_full_text: { type: "string" },
+    buyer_agent:               { type: "string" },
+    seller_agent:              { type: "string" },
+    buyer_brokerage:           { type: "string" },
+    seller_brokerage:          { type: "string" },
+    title_company:             { type: "string" },
   },
 };
+
+// Map AI output (snake_case) → app fields (camelCase)
+function normalizeExtracted(src) {
+  return {
+    // Parties
+    buyerName:               src.buyer_names               || null,
+    sellerName:              src.seller_names              || null,
+    // Property
+    propertyAddress:         src.property_address          || null,
+    // Financials
+    purchasePrice:           src.purchase_price            ?? null,
+    depositAmount:           src.deposit_amount            ?? null,
+    // Dates
+    effectiveDate:           src.acceptance_date           || null,
+    closingDate:             src.closing_date              || null,
+    inspectionDeadline:      src.inspection_deadline       || null,
+    financingCommitmentDate: src.financing_commitment_date || null,
+    // Agents
+    buyersAgentName:         src.buyer_agent               || null,
+    sellersAgentName:        src.seller_agent              || null,
+    buyerBrokerage:          src.buyer_brokerage           || null,
+    sellerBrokerage:         src.seller_brokerage          || null,
+    closingTitleCompany:     src.title_company             || null,
+  };
+}
 
 export default function PurchaseAgreementUpload({ onParsed }) {
   const [file, setFile] = useState(null);
@@ -120,10 +122,15 @@ export default function PurchaseAgreementUpload({ onParsed }) {
 
   const handleFile = (f) => {
     if (!f) return;
-    const allowed = ["application/pdf", "image/jpeg", "image/png", "image/webp",
-      "application/vnd.openxmlformats-officedocument.wordprocessingml.document"];
+    const allowed = [
+      "application/pdf",
+      "image/jpeg",
+      "image/png",
+      "image/webp",
+      "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+    ];
     if (!allowed.includes(f.type)) {
-      setErrorMsg("Accepted: PDF, images (JPG/PNG), or DOCX files.");
+      setErrorMsg("Accepted: PDF, images (JPG/PNG/WebP), or DOCX files.");
       setStatus("error");
       return;
     }
@@ -143,11 +150,12 @@ export default function PurchaseAgreementUpload({ onParsed }) {
     setStatus("uploading");
     setErrorMsg("");
 
-    // 1. Upload file to get a URL
+    // 1. Upload the file — get a permanent URL
     const { file_url } = await base44.integrations.Core.UploadFile({ file });
     setStatus("parsing");
 
-    // 2. Send to Base44 AI with file_urls (native document reading)
+    // 2. Pass the URL directly to Claude — it reads PDFs natively, including all pages.
+    //    If the PDF has no text layer (scanned), Claude uses built-in OCR automatically.
     const result = await base44.integrations.Core.InvokeLLM({
       model: "claude_sonnet_4_6",
       prompt: PS_PROMPT,
@@ -155,11 +163,11 @@ export default function PurchaseAgreementUpload({ onParsed }) {
       response_json_schema: SCHEMA,
     });
 
-    const data = result.data || result;
-    console.log("P&S AI Extraction result:", data);
+    const data = result?.data || result;
+    console.log("P&S AI extraction:", data);
 
     if (!data || typeof data !== "object") {
-      setErrorMsg("Could not read this document. Please enter details manually.");
+      setErrorMsg("Could not extract data from this document. Please check the file and try again.");
       setStatus("error");
       return;
     }
@@ -170,54 +178,9 @@ export default function PurchaseAgreementUpload({ onParsed }) {
 
   const handleConfirm = (reviewedFields) => {
     const src = { ...extractedData, ...reviewedFields };
-    // Normalize snake_case AI output → camelCase fields used by the rest of the app
-    const normalized = {
-      // Parties
-      buyerName:                src.buyer_names               || src.buyerName               || null,
-      sellerName:               src.seller_names              || src.sellerName              || null,
-      // Property
-      propertyAddress:          src.property_address          || src.propertyAddress          || null,
-      // Dates
-      effectiveDate:            src.acceptance_date           || src.effectiveDate            || null,
-      closingDate:              src.closing_date              || src.closingDate              || null,
-      closingLocation:          src.closing_location          || null,
-      financingCommitmentDate:  src.financing_commitment_date || src.financingCommitmentDate  || null,
-      // Direct deadline dates (if AI returned them)
-      inspectionDeadline:       src.inspectionDeadline        || null,
-      earnestMoneyDeadline:     src.earnestMoneyDeadline      || null,
-      dueDiligenceDeadline:     src.dueDiligenceDeadline      || null,
-      // Day offsets
-      earnestMoneyDays:         src.earnest_money_days        ?? src.earnestMoneyDays         ?? null,
-      inspectionDays:           src.inspection_days           ?? src.inspectionDays           ?? null,
-      dueDiligenceDays:         src.due_diligence_days        ?? src.dueDiligenceDays         ?? null,
-      generalBuildingInspectionDays: src.general_building_inspection_days ?? src.generalBuildingInspectionDays ?? null,
-      sewageInspectionDays:     src.sewage_inspection_days    ?? src.sewageInspectionDays     ?? null,
-      waterQualityInspectionDays: src.water_quality_inspection_days ?? src.waterQualityInspectionDays ?? null,
-      radonInspectionDays:      src.radon_inspection_days     ?? src.radonInspectionDays      ?? null,
-      // Financials
-      purchasePrice:            src.purchase_price            ?? src.purchasePrice            ?? null,
-      depositAmount:            src.deposit_amount            ?? src.depositAmount            ?? null,
-      // Agents
-      buyersAgentName:          src.buyer_agent_name          || src.buyersAgentName          || null,
-      sellersAgentName:         src.seller_agent_name         || src.sellersAgentName         || null,
-      buyerBrokerage:           src.buyer_brokerage           || src.buyerBrokerage           || null,
-      sellerBrokerage:          src.seller_brokerage          || src.sellerBrokerage          || null,
-      closingTitleCompany:      src.closingTitleCompany       || null,
-      // Financing details
-      loanAmount:               src.loan_amount               || null,
-      loanType:                 src.loan_type                 || null,
-      loanTerm:                 src.loan_term                 || null,
-      // Section 20 / Commission
-      section20ProfessionalFee:       src.commission_terms_raw        || src.section20ProfessionalFee      || null,
-      section20AdditionalProvisions:  src.section_20_full_text        || src.section20AdditionalProvisions || null,
-      professionalFeeValue:           src.buyer_agent_commission_percent ?? src.professionalFeeValue ?? null,
-      professionalFeeType:            src.buyer_agent_commission_percent != null ? "percent" : (src.buyer_agent_commission_amount != null ? "flat" : null),
-      sellerConcessionAmount:         src.seller_concession_amount    ?? src.sellerConcessionAmount        ?? null,
-      additionalCompensationNotes:    src.commission_terms_raw        || null,
-    };
     setStatus("done");
     setExtractedData(null);
-    onParsed(normalized);
+    onParsed(normalizeExtracted(src));
   };
 
   const handleCancelReview = () => {
@@ -245,7 +208,9 @@ export default function PurchaseAgreementUpload({ onParsed }) {
             onDrop={handleDrop}
             onClick={() => inputRef.current?.click()}
             className={`border-2 border-dashed rounded-xl p-8 flex flex-col items-center justify-center gap-3 cursor-pointer transition-colors ${
-              dragging ? "border-blue-400 bg-blue-50" : "border-gray-200 bg-gray-50 hover:border-blue-300 hover:bg-blue-50/40"
+              dragging
+                ? "border-blue-400 bg-blue-50"
+                : "border-gray-200 bg-gray-50 hover:border-blue-300 hover:bg-blue-50/40"
             }`}
           >
             <div className="w-12 h-12 rounded-full bg-blue-100 flex items-center justify-center">
@@ -294,7 +259,7 @@ export default function PurchaseAgreementUpload({ onParsed }) {
         {status === "parsing" && (
           <div className="flex items-center gap-2 text-sm text-blue-600">
             <Loader2 className="w-4 h-4 animate-spin" />
-            AI is reading your P&amp;S — extracting deadlines, parties &amp; Section 20...
+            AI is reading your P&amp;S — extracting all pages, parties &amp; deadlines...
           </div>
         )}
         {status === "done" && (
@@ -310,11 +275,12 @@ export default function PurchaseAgreementUpload({ onParsed }) {
           </div>
         )}
 
-        {/* Scan button */}
+        {/* Process button */}
         {file && status === "idle" && (
           <Button
             type="button"
             onClick={handleProcess}
+            disabled={isProcessing}
             className="w-full bg-blue-600 hover:bg-blue-700"
           >
             <FileText className="w-4 h-4 mr-2" />
