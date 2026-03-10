@@ -39,8 +39,8 @@ function normalizeV2(src) {
     // Deadlines
     inspectionDeadline:      src.inspection_deadline       || calcDate(acceptanceDate, src.inspection_days),
     financingCommitmentDate: src.financing_commitment_date || null,
-    earnestMoneyDeadline:    src.earnest_money_deadline    || calcDate(acceptanceDate, src.earnest_money_days),
-    dueDiligenceDeadline:    src.due_diligence_deadline    || calcDate(acceptanceDate, src.due_diligence_days),
+    earnestMoneyDeadline:    src.earnest_money_deadline    || src.earnestMoneyDeadline    || calcDate(acceptanceDate, src.earnest_money_days),
+    dueDiligenceDeadline:    src.due_diligence_deadline    || src.dueDiligenceDeadline    || calcDate(acceptanceDate, src.due_diligence_days),
     // Agents
     buyersAgentName:         src.buyer_agent               || null,
     sellersAgentName:        src.seller_agent              || null,
