@@ -62,7 +62,7 @@ export default function TCAnalyticsDashboard({ transactions = [] }) {
         <h2 className="text-base font-semibold text-gray-800">Brokerage Analytics</h2>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
 
         {/* Avg Closing Time */}
         <Card className="shadow-sm border-gray-100">
