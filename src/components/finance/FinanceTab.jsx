@@ -339,7 +339,8 @@ export default function FinanceTab({ transaction, currentUser, parsedPsData }) {
       </Card>
 
       {/* Save */}
-      <div className="flex justify-end gap-3">
+      <div className="flex flex-wrap justify-end gap-3">
+        <CommissionStatementButton transaction={transaction} financeData={finance} />
         <Button
           variant="outline"
           onClick={() => queryClient.invalidateQueries({ queryKey: ["finance", transaction.id] })}
