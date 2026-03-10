@@ -169,11 +169,55 @@ export default function PurchaseAgreementUpload({ onParsed }) {
   };
 
   const handleConfirm = (reviewedFields) => {
-    // Merge reviewed fields back into the full extracted object
-    const merged = { ...extractedData, ...reviewedFields };
+    const src = { ...extractedData, ...reviewedFields };
+    // Normalize snake_case AI output → camelCase fields used by the rest of the app
+    const normalized = {
+      // Parties
+      buyerName:                src.buyer_names               || src.buyerName               || null,
+      sellerName:               src.seller_names              || src.sellerName              || null,
+      // Property
+      propertyAddress:          src.property_address          || src.propertyAddress          || null,
+      // Dates
+      effectiveDate:            src.acceptance_date           || src.effectiveDate            || null,
+      closingDate:              src.closing_date              || src.closingDate              || null,
+      closingLocation:          src.closing_location          || null,
+      financingCommitmentDate:  src.financing_commitment_date || src.financingCommitmentDate  || null,
+      // Direct deadline dates (if AI returned them)
+      inspectionDeadline:       src.inspectionDeadline        || null,
+      earnestMoneyDeadline:     src.earnestMoneyDeadline      || null,
+      dueDiligenceDeadline:     src.dueDiligenceDeadline      || null,
+      // Day offsets
+      earnestMoneyDays:         src.earnest_money_days        ?? src.earnestMoneyDays         ?? null,
+      inspectionDays:           src.inspection_days           ?? src.inspectionDays           ?? null,
+      dueDiligenceDays:         src.due_diligence_days        ?? src.dueDiligenceDays         ?? null,
+      generalBuildingInspectionDays: src.general_building_inspection_days ?? src.generalBuildingInspectionDays ?? null,
+      sewageInspectionDays:     src.sewage_inspection_days    ?? src.sewageInspectionDays     ?? null,
+      waterQualityInspectionDays: src.water_quality_inspection_days ?? src.waterQualityInspectionDays ?? null,
+      radonInspectionDays:      src.radon_inspection_days     ?? src.radonInspectionDays      ?? null,
+      // Financials
+      purchasePrice:            src.purchase_price            ?? src.purchasePrice            ?? null,
+      depositAmount:            src.deposit_amount            ?? src.depositAmount            ?? null,
+      // Agents
+      buyersAgentName:          src.buyer_agent_name          || src.buyersAgentName          || null,
+      sellersAgentName:         src.seller_agent_name         || src.sellersAgentName         || null,
+      buyerBrokerage:           src.buyer_brokerage           || src.buyerBrokerage           || null,
+      sellerBrokerage:          src.seller_brokerage          || src.sellerBrokerage          || null,
+      closingTitleCompany:      src.closingTitleCompany       || null,
+      // Financing details
+      loanAmount:               src.loan_amount               || null,
+      loanType:                 src.loan_type                 || null,
+      loanTerm:                 src.loan_term                 || null,
+      // Section 20 / Commission
+      section20ProfessionalFee:       src.commission_terms_raw        || src.section20ProfessionalFee      || null,
+      section20AdditionalProvisions:  src.section_20_full_text        || src.section20AdditionalProvisions || null,
+      professionalFeeValue:           src.buyer_agent_commission_percent ?? src.professionalFeeValue ?? null,
+      professionalFeeType:            src.buyer_agent_commission_percent != null ? "percent" : (src.buyer_agent_commission_amount != null ? "flat" : null),
+      sellerConcessionAmount:         src.seller_concession_amount    ?? src.sellerConcessionAmount        ?? null,
+      additionalCompensationNotes:    src.commission_terms_raw        || null,
+    };
     setStatus("done");
     setExtractedData(null);
-    onParsed(merged);
+    onParsed(normalized);
   };
 
   const handleCancelReview = () => {
