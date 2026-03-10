@@ -28,7 +28,7 @@ import ThemeToggle from "./components/theme/ThemeToggle";
 const TC_NAV = [
   { label: "Dashboard", page: "Dashboard", icon: LayoutDashboard },
   { label: "Transactions", page: "Transactions", icon: FileText },
-  { label: "Agent Intake", page: "AgentIntake", icon: UserPlus },
+  { label: "Deal Intake", page: "AgentIntake", icon: UserPlus },
   { label: "Deadlines", page: "Deadlines", icon: Clock },
   { label: "Tasks", page: "Tasks", icon: ClipboardList },
   { label: "Documents", page: "Documents", icon: FolderOpen },
@@ -39,7 +39,7 @@ const TC_NAV = [
 const OWNER_NAV = [
   { label: "Dashboard", page: "Dashboard", icon: LayoutDashboard },
   { label: "Transactions", page: "Transactions", icon: FileText },
-  { label: "Agent Intake", page: "AgentIntake", icon: UserPlus },
+  { label: "Deal Intake", page: "AgentIntake", icon: UserPlus },
   { label: "Deadlines", page: "Deadlines", icon: Clock },
   { label: "Tasks", page: "Tasks", icon: ClipboardList },
   { label: "Documents", page: "Documents", icon: FolderOpen },
