@@ -5,23 +5,20 @@ import { Label } from "@/components/ui/label";
 import { CheckCircle2, AlertCircle, Edit3 } from "lucide-react";
 
 const FIELDS = [
-  { key: "property_address",          label: "Property Address" },
+  { key: "property_address",          label: "Property Address",              span: true },
   { key: "buyer_names",               label: "Buyer Name(s)" },
   { key: "seller_names",              label: "Seller Name(s)" },
-  { key: "acceptance_date",           label: "Acceptance / Effective Date",  type: "date" },
-  { key: "closing_date",              label: "Closing / Transfer of Title",  type: "date" },
-  { key: "financing_commitment_date", label: "Financing Commitment Date",    type: "date" },
-  { key: "purchase_price",            label: "Purchase Price",               type: "number" },
-  { key: "deposit_amount",            label: "Deposit / Earnest Money",      type: "number" },
-  { key: "inspection_days",           label: "Inspection Period (days)",     type: "number" },
-  { key: "due_diligence_days",        label: "Due Diligence (days)",         type: "number" },
-  { key: "earnest_money_days",        label: "Earnest Money Deposit (days)", type: "number" },
-  { key: "buyer_agent_name",          label: "Buyer's Agent" },
+  { key: "acceptance_date",           label: "Acceptance / Effective Date",   type: "date" },
+  { key: "closing_date",              label: "Closing Date",                  type: "date" },
+  { key: "inspection_deadline",       label: "Inspection Deadline",           type: "date" },
+  { key: "financing_commitment_date", label: "Financing Commitment Date",     type: "date" },
+  { key: "purchase_price",            label: "Purchase Price",                type: "number" },
+  { key: "deposit_amount",            label: "Deposit / Earnest Money",       type: "number" },
+  { key: "buyer_agent",               label: "Buyer's Agent" },
   { key: "buyer_brokerage",           label: "Buyer Brokerage" },
-  { key: "seller_agent_name",         label: "Seller's Agent" },
+  { key: "seller_agent",              label: "Seller's Agent" },
   { key: "seller_brokerage",          label: "Seller Brokerage" },
-  { key: "buyer_agent_commission_percent", label: "Buyer Agent Commission (%)", type: "number" },
-  { key: "seller_concession_amount",  label: "Seller Concession ($)",        type: "number" },
+  { key: "title_company",             label: "Title / Closing Company" },
 ];
 
 export default function PSReviewModal({ extracted, onConfirm, onCancel }) {
