@@ -10,62 +10,61 @@ function formatBytes(bytes) {
   return (bytes / (1024 * 1024)).toFixed(1) + " MB";
 }
 
-// Precise NHAR P&S extraction prompt — section-by-section
-const PS_PROMPT = `You are a real estate document analyst reading a New Hampshire Purchase and Sales Agreement (NHAR form).
+// Precise NHAR P&S extraction prompt
+const PS_PROMPT = `You are extracting structured data from a New Hampshire Purchase and Sales Agreement (NHAR standard form).
 
-READ THE ENTIRE DOCUMENT — all pages, including signature blocks, addenda, and Section 20.
+READ EVERY PAGE of the document carefully before responding.
 
-Extract the following fields and return a single JSON object. All dates must be ISO format (YYYY-MM-DD). Numbers must be plain numbers (not strings). Return null for any field not explicitly found — do NOT guess.
+Return a single JSON object with these exact fields. Dates must be ISO format (YYYY-MM-DD). Numbers must be plain numbers. Return null for missing fields — do NOT guess.
 
-FIELDS TO EXTRACT:
+---
 
-buyer_names
-  - Full name(s) of the buyer(s). Usually found near "BUYER:" or "This agreement is between [BUYER] and [SELLER]".
+buyer_names: The BUYER name(s) from Section 1. In this form the layout is:
+  "THIS AGREEMENT made this [day] day of [month], [year] between [SELLER NAME] ("SELLER") ... and [BUYER NAME] ("BUYER")"
+  The SELLER appears FIRST, the BUYER appears SECOND after "and".
+  Example: if you see "Roger Perry Jr. (SELLER)... and Elizabeth Todd (BUYER)" → buyer_names = "Elizabeth Todd", seller_names = "Roger Perry Jr."
 
-seller_names
-  - Full name(s) of the seller(s). Found near "SELLER:".
+seller_names: The SELLER name(s) from Section 1. See above — SELLER appears first in the agreement text.
 
-property_address
-  - Full street address of the property including city, state, and zip. Usually near "located at" or "Property Address".
+property_address: Full property address from Section 2. Look for "located at [address]" in the WITNESSETH clause. Include city and state.
 
-purchase_price
-  - The agreed sale price. Usually labeled "SELLING PRICE" or "Purchase Price". Return as a number.
+purchase_price: Dollar amount from Section 3. "The SELLING PRICE is [words] Dollars $[number]" → return as a number (e.g. 540000).
 
-deposit_amount
-  - The earnest money / initial deposit amount. Return as a number.
+deposit_amount: Initial earnest money deposit from Section 3. "a deposit of earnest money in the amount of $[number]" → return as a number.
 
-acceptance_date
-  - The Effective Date or Acceptance Date of the agreement. Often found near the signature block or labeled "Effective Date".
+earnest_money_days: Number of days from the effective date for the deposit to be delivered. "within [X] days of the EFFECTIVE DATE" in Section 3 → return the integer X.
 
-closing_date
-  - The Transfer of Title / Closing Date. Usually in a section labeled "TRANSFER OF TITLE" or "Closing Date".
+acceptance_date: The EFFECTIVE DATE shown in the top-right box on page 1, labeled "EFFECTIVE DATE". Return as ISO date.
 
-inspection_deadline
-  - The actual calendar date (ISO) by which inspections must be completed. If stated as "within X days of the effective date", calculate it: effective_date + X days. Return the computed ISO date.
+closing_date: The date from Section 5 "TRANSFER OF TITLE: On or before [date]". Return as ISO date.
 
-financing_commitment_date
-  - The Financing Commitment / Financial Commitment Deadline. Return as ISO date.
+inspection_deadline: COMPUTE this. Look in Section 15 for "General Building within [X] days". Add X days to the acceptance_date and return the resulting ISO date.
 
-buyer_agent
-  - Full name of the agent representing the BUYER. Look for "Buyer's Agent", "Selling Agent", or in the Buyer's Brokerage signature block.
+inspection_days: The number of days for the General Building inspection from Section 15. Return as integer.
 
-seller_agent
-  - Full name of the agent representing the SELLER. Look for "Listing Agent", "Seller's Agent", or in the Listing Brokerage signature block.
+due_diligence_days: From Section 16 "BUYER must notify SELLER in writing within [X] days". Return as integer.
 
-buyer_brokerage
-  - Name of the brokerage firm representing the BUYER.
+financing_commitment_date: From Section 19 "Financing Deadline" date. Return as ISO date.
 
-seller_brokerage
-  - Name of the brokerage firm representing the SELLER.
+buyer_agent: From Section 7 REPRESENTATION. The agent checked as "buyer agent". 
+  In NHAR form, each agent line says "[Name] of [Firm] is a [seller agent / buyer agent / ...]"
+  Return the name of whichever agent is checked as "buyer agent".
 
-title_company
-  - Name of the title company, closing attorney, or settlement agent handling the closing.
+seller_agent: From Section 7. The agent checked as "seller agent". Return their name.
 
-IMPORTANT NOTES:
-- If a deadline is written as "within X days of the effective date", compute the actual calendar date and return it as an ISO date.
-- Do not return day-offset integers — always return computed ISO dates.
-- Scan every page. Agent and brokerage information often appears on the last pages in signature blocks.
-- Section 20 may contain additional commission or concession terms — include any relevant compensation in the closest matching field.`;
+buyer_brokerage: The firm associated with the buyer agent from Section 7.
+
+seller_brokerage: The firm associated with the seller agent from Section 7.
+
+title_company: The escrow/closing company. Look for "ESCROW AGENT" in Section 3 or the closing location in Section 5.
+
+---
+
+CRITICAL REMINDERS:
+- In NHAR form: SELLER is listed FIRST, BUYER is listed SECOND (after "and"). Do not mix them up.
+- The EFFECTIVE DATE box is in the top-right of page 1.
+- inspection_deadline must be a computed ISO date (acceptance_date + inspection_days), not just the number of days.
+- Return all values in a flat JSON object with the exact field names listed above.`;
 
 const SCHEMA = {
   type: "object",
