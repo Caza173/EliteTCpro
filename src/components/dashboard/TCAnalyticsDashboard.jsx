@@ -2,7 +2,7 @@ import React, { useMemo } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell } from "recharts";
 import { differenceInCalendarDays, parseISO } from "date-fns";
-import { TrendingUp, Users, AlertCircle } from "lucide-react";
+import { TrendingUp, Users } from "lucide-react";
 
 const PHASES = [
   "Pre-Contract", "Offer Drafting", "Offer Accepted", "Escrow Opened",
