@@ -46,6 +46,8 @@ import { writeAuditLog, computeHealthScore } from "../components/utils/tenantUti
 import FinanceTab from "../components/finance/FinanceTab";
 import TransactionActivityFeed from "../components/transactions/TransactionActivityFeed";
 import TransactionDocumentsTab from "../components/transactions/TransactionDocumentsTab";
+import ContractTimeline from "../components/transactions/ContractTimeline";
+import EditableDeadlinePanel from "../components/transactions/EditableDeadlinePanel";
 
 const TX_TABS = [
   { id: "overview", label: "Overview", icon: LayoutDashboard },
