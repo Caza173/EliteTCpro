@@ -95,7 +95,7 @@ export default function AgentIntake() {
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    const tasks = generateSmartTasks(parsedData, form.is_cash_transaction);
+    const tasks = generateSmartTasks(parsedData, form.is_cash_transaction, form);
     const buyerList = buyers.filter(Boolean);
     const sellerList = sellers.filter(Boolean);
     createMutation.mutate({
