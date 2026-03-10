@@ -10,53 +10,63 @@ function formatBytes(bytes) {
   return (bytes / (1024 * 1024)).toFixed(1) + " MB";
 }
 
-const PS_PROMPT = `You are a real estate contract analyst specializing in New Hampshire Purchase and Sales Agreements (NHAR P&S).
+const PS_PROMPT = `You are reading a New Hampshire Association of REALTORS Purchase and Sales Agreement.
 
-Read this document carefully and extract all of the following fields. Be thorough — scan every page including signature blocks and section 20.
+This document follows the standard NHAR structure with numbered sections. Extract key transaction data by reading the specific sections listed below.
 
-Return a single JSON object. If a field is not found, return null. Do NOT guess or invent values.
+Do not guess values. Return null for any field not explicitly found in the document.
 
-Fields:
-- effectiveDate: ISO date (YYYY-MM-DD) — the Acceptance Date or Effective Date of the agreement
-- closingDate: ISO date — the Closing Date or Transfer of Title date
-- transferOfTitleDate: ISO date — if explicitly stated separately from closingDate
-- inspectionDeadline: ISO date — the actual calendar date for the inspection deadline (calculate from effective date + days if given as offset)
-- earnestMoneyDeadline: ISO date — the actual calendar date earnest money deposit is due
-- dueDiligenceDeadline: ISO date — the actual calendar date for due diligence
-- financingCommitmentDate: ISO date — Financing Commitment / Financial Commitment Date
-- earnestMoneyDays: integer — days from effective date for earnest money (if no absolute date is given)
-- inspectionDays: integer — days from effective date for inspection period
-- dueDiligenceDays: integer — days from effective date for due diligence
-- generalBuildingInspectionDays: integer
-- sewageInspectionDays: integer
-- waterQualityInspectionDays: integer
-- radonInspectionDays: integer
-- purchasePrice: number — the sale price
-- depositAmount: number — the deposit/earnest money amount
-- buyerName: string — full buyer name(s) from Section 1 (e.g. "John Smith and Jane Smith")
-- sellerName: string — full seller name(s) from Section 1
-- propertyAddress: string — full street address of the property
-- buyersAgentName: string — agent representing BUYER. Look for "Buyer's Agent", "Selling Agent", "BA:", or the agent in the Buyer's Brokerage signature block
-- sellersAgentName: string — agent representing SELLER. Look for "Listing Agent", "Seller's Agent", "LA:", or agent in Listing Brokerage block
-- buyerBrokerage: string — brokerage firm representing the buyer
-- sellerBrokerage: string — brokerage firm representing the seller
-- closingTitleCompany: string — title company, closing attorney, or settlement agent
-- section20AdditionalProvisions: string — verbatim text from the "Additional Provisions" section of Section 20
-- section20Concessions: string — verbatim text from "Concessions" in Section 20
-- section20ProfessionalFee: string — verbatim text from "Professional Fee" in Section 20
-- professionalFeeType: "percent" or "flat" or null
-- professionalFeeValue: number — e.g. 2 for "2%" or 5000 for "$5,000"
-- professionalFeeBase: "contract_price" or "sale_price" or "flat" or null
-- sellerConcessionAmount: number — flat dollar concession from seller
-- sellerConcessionPercent: number — percent-based concession
-- additionalCompensationNotes: string — any other compensation language
+SECTION 1 – PARTIES
+Find the names labeled (SELLER) and (BUYER).
+- buyer_names: full name(s) of buyer(s)
+- seller_names: full name(s) of seller(s)
 
-Extraction tips:
-- Dates formatted as "within X days of the EFFECTIVE DATE" should be converted to actual ISO dates using the effectiveDate
-- Look for buyer/seller names in "This Agreement is between [BUYER NAME] (Buyer) and [SELLER NAME] (Seller)"
-- Agent signature blocks typically appear at the end of the document
-- Section 20 often contains critical commission and concession language
-`;
+PROPERTY INFORMATION
+Locate the line containing "located at".
+- property_address: full street address including city, state, zip
+
+SECTION 3 – SELLING PRICE
+Locate "The SELLING PRICE is" — extract purchase_price as a number.
+Locate "deposit of earnest money" — extract deposit_amount as a number.
+
+SECTION 5 – TRANSFER OF TITLE
+Find "TRANSFER OF TITLE" — extract closing_date as ISO date (YYYY-MM-DD).
+Also extract closing_location if stated.
+
+SECTION 7 – REPRESENTATION
+Extract agent information:
+- buyer_agent_name: agent representing the buyer
+- buyer_brokerage: brokerage firm representing the buyer
+- seller_agent_name: agent representing the seller (listing agent)
+- seller_brokerage: brokerage firm representing the seller
+
+SECTION 15 – INSPECTIONS
+If inspection timelines are written as "within X days" — extract inspection_days as integer.
+Also extract if present: general_building_inspection_days, sewage_inspection_days, water_quality_inspection_days, radon_inspection_days.
+
+SECTION 16 – DUE DILIGENCE
+Find "within X days from the effective date" — extract due_diligence_days as integer.
+
+SECTION 19 – FINANCING
+Find "Financing Deadline" — extract financing_commitment_date as ISO date.
+Also extract: loan_amount (number), loan_type (string), loan_term (string).
+
+SECTION 20 – ADDITIONAL PROVISIONS
+Extract the full text under PROFESSIONAL FEE — return as commission_terms_raw.
+Also interpret:
+- buyer_agent_commission_percent: numeric percent if found (e.g. 2.5 for "2.5%")
+- buyer_agent_commission_amount: flat dollar amount if found
+- seller_concession_amount: any seller concession dollar amount
+- section_20_full_text: verbatim full text of the entire Section 20
+
+EFFECTIVE DATE
+Locate the date near the signature block or page 1 labeled "EFFECTIVE DATE" — extract as acceptance_date (ISO date YYYY-MM-DD).
+
+Also extract earnest_money_days: integer days from effective date for deposit due (if stated as offset rather than a fixed date).
+
+Return as a single flat JSON object. All dates must be ISO format (YYYY-MM-DD). Numbers must be plain numbers, not strings.`;
+
+
 
 const SCHEMA = {
   type: "object",
