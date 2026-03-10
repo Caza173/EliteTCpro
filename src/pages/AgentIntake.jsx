@@ -95,7 +95,7 @@ export default function AgentIntake() {
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    const tasks = generateDefaultTasks();
+    const tasks = generateSmartTasks(parsedData, form.is_cash_transaction);
     const buyerList = buyers.filter(Boolean);
     const sellerList = sellers.filter(Boolean);
     createMutation.mutate({
@@ -105,6 +105,8 @@ export default function AgentIntake() {
       seller: sellerList.join(" & "),
       buyers: buyerList,
       sellers: sellerList,
+      // Store financials from extraction so FinanceTab auto-populates
+      sale_price: parsedData?.purchasePrice || form.sale_price || undefined,
       phase: 1, phases_completed: [], status: "active", tasks
     });
   };
