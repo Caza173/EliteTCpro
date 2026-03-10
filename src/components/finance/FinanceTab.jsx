@@ -33,33 +33,6 @@ function calcFinancials(f) {
 
 export default function FinanceTab({ transaction, currentUser, parsedPsData }) {
   const queryClient = useQueryClient();
-  const [generatingPdf, setGeneratingPdf] = React.useState(false);
-
-  const handleGenerateStatement = async () => {
-    setGeneratingPdf(true);
-    try {
-      const response = await base44.functions.invoke("generateCommissionStatement", { transaction_id: transaction.id });
-      // response.data is the PDF bytes — download it
-      // For PDF responses we fetch directly via a link trick
-      const res = await fetch(`/api/v1/functions/generateCommissionStatement`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json", Authorization: `Bearer ${(await base44.auth.me()).__token}` },
-        body: JSON.stringify({ transaction_id: transaction.id }),
-      });
-      if (res.ok) {
-        const blob = await res.blob();
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement("a");
-        a.href = url;
-        a.download = `commission-statement-${transaction.address?.replace(/\s+/g, "-")}.pdf`;
-        a.click();
-        URL.revokeObjectURL(url);
-      }
-    } catch (e) {
-      console.error("PDF generation failed:", e);
-    }
-    setGeneratingPdf(false);
-  };
   const canEditCommission = isOwnerOrAdmin(currentUser) || currentUser?.role === "agent";
 
   const { data: financeRecords = [], isLoading } = useQuery({
