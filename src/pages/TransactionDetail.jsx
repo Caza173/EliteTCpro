@@ -514,7 +514,7 @@ TC Manager
             <div className="flex items-center justify-between">
               <div>
                 <CardTitle className="text-base font-semibold">Key Deadlines</CardTitle>
-                <p className="text-sm text-gray-500">Contract milestones and critical dates</p>
+                <p className="text-sm text-gray-500">Click the pencil to edit any date — linked tasks auto-recalculate</p>
               </div>
               <Button
                 size="sm"
@@ -529,7 +529,10 @@ TC Manager
             </div>
           </CardHeader>
           <CardContent>
-            <DeadlineDashboard transaction={transaction} />
+            <EditableDeadlinePanel
+              transaction={transaction}
+              onSave={(changes) => updateMutation.mutate({ id: transaction.id, data: { ...changes, last_activity_at: new Date().toISOString() } })}
+            />
           </CardContent>
         </Card>
       )}
