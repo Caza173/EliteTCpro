@@ -62,7 +62,7 @@ export default function PSReviewModal({ extracted, onConfirm, onCancel }) {
         {/* Scrollable fields */}
         <div className="flex-1 overflow-y-auto px-6 py-4 space-y-3">
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            {FIELDS.map(({ key, label, type }) => (
+            {FIELDS.map(({ key, label, type, span }) => (
               <div key={key} className={span ? "sm:col-span-2" : ""}>
                 <Label className="text-xs font-medium text-gray-600">{label}</Label>
                 <Input
