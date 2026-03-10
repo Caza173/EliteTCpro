@@ -112,26 +112,41 @@ export default function TransactionDocumentsTab({ transaction, currentUser }) {
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="flex flex-col sm:flex-row gap-3">
-            <Select value={selectedDocType} onValueChange={setSelectedDocType}>
-              <SelectTrigger className="flex-1">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {DOC_TYPES.map((t) => (
-                  <SelectItem key={t} value={t} className="capitalize">{t}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            <input ref={fileInputRef} type="file" className="hidden" onChange={handleUpload} />
-            <Button
+          <div className="flex flex-col gap-3">
+            <div className="flex flex-col sm:flex-row gap-3">
+              <Select value={selectedDocType} onValueChange={setSelectedDocType}>
+                <SelectTrigger className="flex-1">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {DOC_TYPES.map((t) => (
+                    <SelectItem key={t} value={t} className="capitalize">{t}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <input ref={fileInputRef} type="file" multiple className="hidden" onChange={handleUpload} />
+              <Button
+                onClick={() => fileInputRef.current?.click()}
+                disabled={uploading}
+                className="bg-blue-600 hover:bg-blue-700"
+              >
+                {uploading ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Upload className="w-4 h-4 mr-2" />}
+                {uploading ? "Uploading..." : "Upload File"}
+              </Button>
+            </div>
+            <div
+              onDragOver={(e) => { e.preventDefault(); setDragOver(true); }}
+              onDragLeave={() => setDragOver(false)}
+              onDrop={handleDrop}
               onClick={() => fileInputRef.current?.click()}
-              disabled={uploading}
-              className="bg-blue-600 hover:bg-blue-700"
+              className={`border-2 border-dashed rounded-lg px-4 py-6 text-center cursor-pointer transition-colors ${
+                dragOver ? "border-blue-400 bg-blue-50" : "border-gray-200 hover:border-blue-300 hover:bg-gray-50"
+              }`}
             >
-              {uploading ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Upload className="w-4 h-4 mr-2" />}
-              {uploading ? "Uploading..." : "Upload File"}
-            </Button>
+              <Upload className="w-6 h-6 text-gray-300 mx-auto mb-1" />
+              <p className="text-sm text-gray-400">Drag & drop files here, or <span className="text-blue-500">browse</span></p>
+              <p className="text-xs text-gray-300 mt-0.5">Supports multiple files</p>
+            </div>
           </div>
         </CardContent>
       </Card>
