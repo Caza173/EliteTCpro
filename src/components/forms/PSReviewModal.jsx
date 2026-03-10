@@ -76,15 +76,7 @@ export default function PSReviewModal({ extracted, onConfirm, onCancel }) {
             ))}
           </div>
 
-          {/* Section 20 raw text if available */}
-          {(extracted?.section_20_full_text || extracted?.commission_terms_raw) && (
-            <div className="mt-2 p-3 bg-amber-50 border border-amber-100 rounded-lg">
-              <p className="text-xs font-semibold text-amber-800 mb-1">Section 20 — Commission Terms (raw)</p>
-              <p className="text-xs text-amber-700 whitespace-pre-wrap line-clamp-6">
-                {extracted.section_20_full_text || extracted.commission_terms_raw}
-              </p>
-            </div>
-          )}
+
         </div>
 
         {/* Actions */}
