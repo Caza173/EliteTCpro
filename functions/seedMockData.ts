@@ -7,13 +7,14 @@ Deno.serve(async (req) => {
         return Response.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    // Update the current user with brokerage_id and owner role
+    // Patch flat fields on the user record directly
     await base44.asServiceRole.entities.User.update(user.id, {
-        data: { role: "owner", brokerage_id: "69af731d6de2faa420d7aace" }
+        role: "owner",
+        brokerage_id: "69af731d6de2faa420d7aace"
     });
 
     return Response.json({
         success: true,
-        message: "User updated with brokerage_id. Please refresh the app."
+        message: "User role and brokerage_id set. Please refresh the app."
     });
 });
