@@ -1,7 +1,7 @@
 import React, { useState, useRef } from "react";
 import { base44 } from "@/api/base44Client";
 import { Button } from "@/components/ui/button";
-import { Upload, FileText, CheckCircle2, AlertCircle, Loader2, X } from "lucide-react";
+import { Upload, FileText, CheckCircle2, AlertCircle, Loader2, X, Zap } from "lucide-react";
 import PSReviewModal from "./PSReviewModal";
 
 function formatBytes(bytes) {
@@ -10,100 +10,18 @@ function formatBytes(bytes) {
   return (bytes / (1024 * 1024)).toFixed(1) + " MB";
 }
 
-// Precise NHAR P&S extraction prompt
-const PS_PROMPT = `You are extracting structured data from a New Hampshire Purchase and Sales Agreement (NHAR standard form).
-
-READ EVERY PAGE of the document carefully before responding.
-
-Return a single JSON object with these exact fields. Dates must be ISO format (YYYY-MM-DD). Numbers must be plain numbers. Return null for missing fields — do NOT guess.
-
----
-
-buyer_names: The BUYER name(s) from Section 1. In this form the layout is:
-  "THIS AGREEMENT made this [day] day of [month], [year] between [SELLER NAME] ("SELLER") ... and [BUYER NAME] ("BUYER")"
-  The SELLER appears FIRST, the BUYER appears SECOND after "and".
-  Example: if you see "Roger Perry Jr. (SELLER)... and Elizabeth Todd (BUYER)" → buyer_names = "Elizabeth Todd", seller_names = "Roger Perry Jr."
-
-seller_names: The SELLER name(s) from Section 1. See above — SELLER appears first in the agreement text.
-
-property_address: Full property address from Section 2. Look for "located at [address]" in the WITNESSETH clause. Include city and state.
-
-purchase_price: Dollar amount from Section 3. "The SELLING PRICE is [words] Dollars $[number]" → return as a number (e.g. 540000).
-
-deposit_amount: Initial earnest money deposit from Section 3. "a deposit of earnest money in the amount of $[number]" → return as a number.
-
-earnest_money_days: Number of days from the effective date for the deposit to be delivered. "within [X] days of the EFFECTIVE DATE" in Section 3 → return the integer X.
-
-acceptance_date: The EFFECTIVE DATE shown in the top-right box on page 1, labeled "EFFECTIVE DATE". Return as ISO date.
-
-closing_date: The date from Section 5 "TRANSFER OF TITLE: On or before [date]". Return as ISO date.
-
-inspection_deadline: COMPUTE this. Look in Section 15 for "General Building within [X] days". Add X days to the acceptance_date and return the resulting ISO date.
-
-inspection_days: The number of days for the General Building inspection from Section 15. Return as integer.
-
-due_diligence_days: From Section 16 "BUYER must notify SELLER in writing within [X] days". Return as integer.
-
-financing_commitment_date: From Section 19 "Financing Deadline" date. Return as ISO date.
-
-buyer_agent: From Section 7 REPRESENTATION. The agent checked as "buyer agent". 
-  In NHAR form, each agent line says "[Name] of [Firm] is a [seller agent / buyer agent / ...]"
-  Return the name of whichever agent is checked as "buyer agent".
-
-seller_agent: From Section 7. The agent checked as "seller agent". Return their name.
-
-buyer_brokerage: The firm associated with the buyer agent from Section 7.
-
-seller_brokerage: The firm associated with the seller agent from Section 7.
-
-title_company: The escrow/closing company. Look for "ESCROW AGENT" in Section 3 or the closing location in Section 5.
-
----
-
-CRITICAL REMINDERS:
-- In NHAR form: SELLER is listed FIRST, BUYER is listed SECOND (after "and"). Do not mix them up.
-- The EFFECTIVE DATE box is in the top-right of page 1.
-- inspection_deadline must be a computed ISO date (acceptance_date + inspection_days), not just the number of days.
-- Return all values in a flat JSON object with the exact field names listed above.`;
-
-const SCHEMA = {
-  type: "object",
-  properties: {
-    buyer_names:               { type: "string" },
-    seller_names:              { type: "string" },
-    property_address:          { type: "string" },
-    purchase_price:            { type: "number" },
-    deposit_amount:            { type: "number" },
-    acceptance_date:           { type: "string" },
-    closing_date:              { type: "string" },
-    inspection_deadline:       { type: "string" },
-    inspection_days:           { type: "number" },
-    earnest_money_days:        { type: "number" },
-    due_diligence_days:        { type: "number" },
-    financing_commitment_date: { type: "string" },
-    buyer_agent:               { type: "string" },
-    seller_agent:              { type: "string" },
-    buyer_brokerage:           { type: "string" },
-    seller_brokerage:          { type: "string" },
-    title_company:             { type: "string" },
-  },
-};
-
-// Map AI output (snake_case) → app fields (camelCase)
-function normalizeExtracted(src) {
-  const effectiveDate = src.acceptance_date || null;
-  const inspectionDeadline = src.inspection_deadline || null;
-  const financingDeadline = src.financing_commitment_date || null;
-
-  // If the AI returned day offsets but no computed dates, calculate them here
+// Map V2 API output → app camelCase fields
+function normalizeV2(src) {
   const calcDate = (base, days) => {
     if (!base || days == null) return null;
     try {
-      const d = new Date(base);
-      d.setDate(d.getDate() + Number(days));
+      const d = new Date(base + "T12:00:00Z");
+      d.setUTCDate(d.getUTCDate() + Math.round(Number(days)));
       return d.toISOString().split("T")[0];
     } catch { return null; }
   };
+
+  const acceptanceDate = src.acceptance_date || null;
 
   return {
     // Parties
@@ -114,38 +32,52 @@ function normalizeExtracted(src) {
     // Financials
     purchasePrice:           src.purchase_price            ?? null,
     depositAmount:           src.deposit_amount            ?? null,
+    commission:              src.commission_percent        ?? null,
     // Dates
-    effectiveDate,
+    effectiveDate:           acceptanceDate,
     closingDate:             src.closing_date              || null,
-    // Deadlines — prefer direct AI date, fall back to offset calculation
-    inspectionDeadline:      inspectionDeadline            || calcDate(effectiveDate, src.inspection_days),
-    financingCommitmentDate: financingDeadline,
-    earnestMoneyDeadline:    calcDate(effectiveDate, src.earnest_money_days),
-    dueDiligenceDeadline:    calcDate(effectiveDate, src.due_diligence_days),
+    // Deadlines
+    inspectionDeadline:      src.inspection_deadline       || calcDate(acceptanceDate, src.inspection_days),
+    financingCommitmentDate: src.financing_commitment_date || null,
+    earnestMoneyDeadline:    src.earnest_money_deadline    || calcDate(acceptanceDate, src.earnest_money_days),
+    dueDiligenceDeadline:    src.due_diligence_deadline    || calcDate(acceptanceDate, src.due_diligence_days),
     // Agents
     buyersAgentName:         src.buyer_agent               || null,
     sellersAgentName:        src.seller_agent              || null,
     buyerBrokerage:          src.buyer_brokerage           || null,
     sellerBrokerage:         src.seller_brokerage          || null,
     closingTitleCompany:     src.title_company             || null,
+    // Section 20
+    section20Notes:          src.commission_notes          || null,
+    sellerConcessionAmount:  src.seller_concession_amount  ?? null,
+    professionalFeePercent:  src.professional_fee_percent  ?? null,
+    professionalFeeAmount:   src.professional_fee_amount   ?? null,
   };
 }
 
+const STAGE_LABELS = {
+  uploading:   "Uploading document...",
+  extracting:  "Stage 1: Extracting PDF text...",
+  splitting:   "Stage 2: Identifying sections (1, 2, 3, 5, 7, 15, 16, 19, 20)...",
+  parsing:     "Stage 3: AI extracting each section in parallel...",
+  combining:   "Stage 4: Combining fields & calculating deadlines...",
+};
+
 export default function PurchaseAgreementUpload({ onParsed }) {
-  const [file, setFile] = useState(null);
-  const [status, setStatus] = useState("idle"); // idle | uploading | parsing | review | done | error
-  const [errorMsg, setErrorMsg] = useState("");
-  const [dragging, setDragging] = useState(false);
+  const [file, setFile]               = useState(null);
+  const [status, setStatus]           = useState("idle");
+  const [stageLabel, setStageLabel]   = useState("");
+  const [errorMsg, setErrorMsg]       = useState("");
+  const [dragging, setDragging]       = useState(false);
   const [extractedData, setExtractedData] = useState(null);
+  const [sectionsFound, setSectionsFound] = useState(null);
   const inputRef = useRef();
 
   const handleFile = (f) => {
     if (!f) return;
     const allowed = [
       "application/pdf",
-      "image/jpeg",
-      "image/png",
-      "image/webp",
+      "image/jpeg", "image/png", "image/webp",
       "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
     ];
     if (!allowed.includes(f.type)) {
@@ -166,32 +98,45 @@ export default function PurchaseAgreementUpload({ onParsed }) {
 
   const handleProcess = async () => {
     if (!file) return;
-    setStatus("uploading");
     setErrorMsg("");
 
-    // 1. Upload the file — get a permanent URL
+    // Step 1: Upload
+    setStatus("uploading");
+    setStageLabel(STAGE_LABELS.uploading);
     const { file_url } = await base44.integrations.Core.UploadFile({ file });
+
+    // Step 2: Extract text from PDF via AI vision (Claude reads the file natively)
+    setStatus("extracting");
+    setStageLabel(STAGE_LABELS.extracting);
+
+    // We pass the file URL to the backend function which runs the full pipeline
+    setStatus("splitting");
+    setStageLabel(STAGE_LABELS.splitting);
+
+    // Short pause so user sees the stage message
+    await new Promise(r => setTimeout(r, 400));
+
     setStatus("parsing");
+    setStageLabel(STAGE_LABELS.parsing);
 
-    // 2. Pass the URL directly to Claude — it reads PDFs natively, including all pages.
-    //    If the PDF has no text layer (scanned), Claude uses built-in OCR automatically.
-    const result = await base44.integrations.Core.InvokeLLM({
-      model: "claude_sonnet_4_6",
-      prompt: PS_PROMPT,
-      file_urls: [file_url],
-      response_json_schema: SCHEMA,
-    });
+    // Call the new V2 function — it handles text extraction + section splitting + parallel AI
+    const response = await base44.functions.invoke("parsePurchaseAgreementV2", { file_url });
+    const raw = response?.data;
 
-    const data = result?.data || result;
-    console.log("P&S AI extraction:", data);
-
-    if (!data || typeof data !== "object") {
-      setErrorMsg("Could not extract data from this document. Please check the file and try again.");
+    if (!raw || raw.error) {
+      setErrorMsg(raw?.error || "Extraction failed. Please try again.");
       setStatus("error");
       return;
     }
 
-    setExtractedData(data);
+    setStatus("combining");
+    setStageLabel(STAGE_LABELS.combining);
+    await new Promise(r => setTimeout(r, 300));
+
+    setSectionsFound(raw._sections_found || []);
+    console.log("V2 extraction result:", raw);
+
+    setExtractedData(raw);
     setStatus("review");
   };
 
@@ -199,12 +144,13 @@ export default function PurchaseAgreementUpload({ onParsed }) {
     const src = { ...extractedData, ...reviewedFields };
     setStatus("done");
     setExtractedData(null);
-    onParsed(normalizeExtracted(src));
+    onParsed(normalizeV2(src));
   };
 
   const handleCancelReview = () => {
     setStatus("idle");
     setExtractedData(null);
+    setSectionsFound(null);
   };
 
   const reset = () => {
@@ -212,9 +158,10 @@ export default function PurchaseAgreementUpload({ onParsed }) {
     setStatus("idle");
     setErrorMsg("");
     setExtractedData(null);
+    setSectionsFound(null);
   };
 
-  const isProcessing = status === "uploading" || status === "parsing";
+  const isProcessing = ["uploading","extracting","splitting","parsing","combining"].includes(status);
 
   return (
     <>
@@ -238,6 +185,10 @@ export default function PurchaseAgreementUpload({ onParsed }) {
             <div className="text-center">
               <p className="text-sm font-medium text-gray-700">Upload Purchase &amp; Sales Agreement</p>
               <p className="text-xs text-gray-400 mt-0.5">PDF, image scans, or DOCX — click to browse</p>
+            </div>
+            <div className="flex items-center gap-1.5 text-xs text-emerald-600 bg-emerald-50 px-3 py-1 rounded-full">
+              <Zap className="w-3 h-3" />
+              Section-by-section AI extraction (NHAR optimized)
             </div>
             <input
               ref={inputRef}
@@ -268,20 +219,48 @@ export default function PurchaseAgreementUpload({ onParsed }) {
           </div>
         )}
 
-        {/* Status messages */}
-        {status === "uploading" && (
-          <div className="flex items-center gap-2 text-sm text-blue-600">
-            <Loader2 className="w-4 h-4 animate-spin" />
-            Uploading document...
+        {/* Processing stages */}
+        {isProcessing && (
+          <div className="space-y-2">
+            <div className="flex items-center gap-2 text-sm text-blue-600">
+              <Loader2 className="w-4 h-4 animate-spin flex-shrink-0" />
+              {stageLabel}
+            </div>
+            {/* Stage progress pills */}
+            <div className="flex gap-1.5 flex-wrap">
+              {[
+                { key: "uploading",  label: "Upload" },
+                { key: "extracting", label: "Extract" },
+                { key: "splitting",  label: "Split Sections" },
+                { key: "parsing",    label: "AI Parse" },
+                { key: "combining",  label: "Combine" },
+              ].map(({ key, label }, i) => {
+                const stages = ["uploading","extracting","splitting","parsing","combining"];
+                const currentIdx = stages.indexOf(status);
+                const thisIdx = i;
+                const done = thisIdx < currentIdx;
+                const active = thisIdx === currentIdx;
+                return (
+                  <span key={key} className={`text-xs px-2 py-0.5 rounded-full font-medium ${
+                    done   ? "bg-emerald-100 text-emerald-700" :
+                    active ? "bg-blue-100 text-blue-700 animate-pulse" :
+                             "bg-gray-100 text-gray-400"
+                  }`}>
+                    {done ? "✓ " : ""}{label}
+                  </span>
+                );
+              })}
+            </div>
           </div>
         )}
-        {status === "parsing" && (
-          <div className="flex items-center gap-2 text-sm text-blue-600">
-            <Loader2 className="w-4 h-4 animate-spin" />
-            AI is reading your P&amp;S — extracting all pages, parties &amp; deadlines...
+
+        {status === "done" && sectionsFound && (
+          <div className="flex items-center gap-2 text-sm text-emerald-600">
+            <CheckCircle2 className="w-4 h-4" />
+            Transaction data applied — {sectionsFound.length} sections parsed.
           </div>
         )}
-        {status === "done" && (
+        {status === "done" && !sectionsFound && (
           <div className="flex items-center gap-2 text-sm text-emerald-600">
             <CheckCircle2 className="w-4 h-4" />
             Transaction data applied from P&amp;S.
@@ -299,10 +278,9 @@ export default function PurchaseAgreementUpload({ onParsed }) {
           <Button
             type="button"
             onClick={handleProcess}
-            disabled={isProcessing}
             className="w-full bg-blue-600 hover:bg-blue-700"
           >
-            <FileText className="w-4 h-4 mr-2" />
+            <Zap className="w-4 h-4 mr-2" />
             Scan &amp; Auto-Fill Transaction
           </Button>
         )}
