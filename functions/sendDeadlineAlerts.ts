@@ -70,11 +70,12 @@ Deno.serve(async (req) => {
             deadline_field: field.key,
           });
 
-          // Email notification
-          await base44.asServiceRole.integrations.Core.SendEmail({
-            to: recipient.email,
-            subject: `⚠️ Deadline Alert: ${title} — ${tx.address}`,
-            body: `
+          // Email notification (best-effort — only works for registered app users)
+          try {
+            await base44.asServiceRole.integrations.Core.SendEmail({
+              to: recipient.email,
+              subject: `⚠️ Deadline Alert: ${title} — ${tx.address}`,
+              body: `
 <p>Hello,</p>
 <p>This is an automated reminder from EliteTC.</p>
 <p><strong>${field.label}</strong> for the transaction at <strong>${tx.address}</strong> is coming up in <strong>${days} day${days !== 1 ? "s" : ""}</strong>.</p>
@@ -85,8 +86,11 @@ Deno.serve(async (req) => {
 </ul>
 <p>Please take action before this deadline expires.</p>
 <p>Best regards,<br/>EliteTC — Transaction Coordination</p>
-            `.trim(),
-          });
+              `.trim(),
+            });
+          } catch (emailErr) {
+            console.warn(`Email to ${recipient.email} skipped:`, emailErr.message);
+          }
 
           totalAlerts++;
         }
