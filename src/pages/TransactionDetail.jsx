@@ -60,6 +60,7 @@ const TX_TABS = [
   { id: "documents", label: "Documents", icon: FolderOpen },
   { id: "finance", label: "Finance", icon: DollarSign },
   { id: "compliance", label: "Compliance", icon: ShieldCheck },
+  { id: "ai", label: "AI Assistant", icon: Sparkles },
 ];
 
 const PHASES = [
