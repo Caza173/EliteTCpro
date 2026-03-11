@@ -15,98 +15,61 @@ Deno.serve(async (req) => {
     const user = await base44.auth.me();
     if (!user) return Response.json({ error: "Unauthorized" }, { status: 401 });
 
-    const body = await req.json();
-    const { file_url } = body;
-
+    const { file_url } = await req.json();
     if (!file_url) return Response.json({ error: "No file_url provided" }, { status: 400 });
 
-    console.log("Running single-pass AI extraction on document...");
+    console.log("Extracting data from document...");
 
-    const result = await base44.integrations.Core.InvokeLLM({
-      prompt: `You are parsing a New Hampshire NHAR Purchase & Sales Agreement PDF.
-
-Extract ALL of the following fields from the document in a single pass.
-
-IMPORTANT NHAR form layout notes:
-- Section 1: Parties. Format is "between [SELLER] (SELLER) and [BUYER] (BUYER)". Seller is listed FIRST.
-- Section 2: Property address
-- Section 3: Purchase price, deposit/earnest money amount, earnest money days, title company
-- Section 5: Closing date ("Transfer of Title on or before [date]")
-- Section 7: Agent names and brokerages
-- Section 15: Inspection periods in days from acceptance date
-- Section 16: Due diligence days
-- Section 19: Financing commitment date
-- Section 20: Commission/compensation terms
-
-Return ONLY valid JSON with these exact fields (use null for anything not found):
-{
-  "buyer_names": "string or null",
-  "seller_names": "string or null",
-  "acceptance_date": "YYYY-MM-DD or null",
-  "property_address": "string or null",
-  "purchase_price": "number or null",
-  "deposit_amount": "number or null",
-  "earnest_money_days": "number or null",
-  "closing_date": "YYYY-MM-DD or null",
-  "title_company": "string or null",
-  "buyer_agent": "string or null",
-  "seller_agent": "string or null",
-  "buyer_brokerage": "string or null",
-  "seller_brokerage": "string or null",
-  "inspection_days": "number or null",
-  "sewage_days": "number or null",
-  "water_quality_days": "number or null",
-  "radon_days": "number or null",
-  "due_diligence_days": "number or null",
-  "financing_commitment_date": "YYYY-MM-DD or null",
-  "commission_percent": "number or null",
-  "commission_type": "percent or flat or null",
-  "seller_concession_amount": "number or null",
-  "professional_fee_percent": "number or null",
-  "professional_fee_amount": "number or null",
-  "commission_notes": "string or null"
-}`,
-      file_urls: [file_url],
-      response_json_schema: {
+    const extraction = await base44.integrations.Core.ExtractDataFromUploadedFile({
+      file_url,
+      json_schema: {
         type: "object",
+        description: "New Hampshire NHAR Purchase & Sales Agreement. Section 1: parties (format: 'between [SELLER] (SELLER) and [BUYER] (BUYER)' - seller listed first). Section 3: price/deposit. Section 5: closing date. Section 7: agents. Section 15: inspection days. Section 19: financing date. Section 20: commission.",
         properties: {
-          buyer_names:               { type: "string" },
-          seller_names:              { type: "string" },
-          acceptance_date:           { type: "string" },
-          property_address:          { type: "string" },
-          purchase_price:            { type: "number" },
-          deposit_amount:            { type: "number" },
-          earnest_money_days:        { type: "number" },
-          closing_date:              { type: "string" },
-          title_company:             { type: "string" },
-          buyer_agent:               { type: "string" },
-          seller_agent:              { type: "string" },
-          buyer_brokerage:           { type: "string" },
-          seller_brokerage:          { type: "string" },
-          inspection_days:           { type: "number" },
-          sewage_days:               { type: "number" },
-          water_quality_days:        { type: "number" },
-          radon_days:                { type: "number" },
-          due_diligence_days:        { type: "number" },
-          financing_commitment_date: { type: "string" },
-          commission_percent:        { type: "number" },
-          commission_type:           { type: "string" },
-          seller_concession_amount:  { type: "number" },
-          professional_fee_percent:  { type: "number" },
-          professional_fee_amount:   { type: "number" },
-          commission_notes:          { type: "string" },
+          buyer_names:               { type: "string", description: "Buyer name(s) from Section 1. In NHAR form, BUYER appears AFTER 'and' keyword." },
+          seller_names:              { type: "string", description: "Seller name(s) from Section 1. Appears BEFORE 'and' keyword." },
+          acceptance_date:           { type: "string", description: "Effective/acceptance date in YYYY-MM-DD format" },
+          property_address:          { type: "string", description: "Full property address from Section 2" },
+          purchase_price:            { type: "number", description: "Selling price as a number (no $ sign)" },
+          deposit_amount:            { type: "number", description: "Earnest money deposit amount" },
+          earnest_money_days:        { type: "number", description: "Days from acceptance date to deliver deposit" },
+          closing_date:              { type: "string", description: "Transfer of Title date in YYYY-MM-DD" },
+          title_company:             { type: "string", description: "Closing/escrow/title company name" },
+          buyer_agent:               { type: "string", description: "Buyer agent name from Section 7" },
+          seller_agent:              { type: "string", description: "Seller/listing agent name from Section 7" },
+          buyer_brokerage:           { type: "string", description: "Buyer agent's firm/brokerage" },
+          seller_brokerage:          { type: "string", description: "Seller agent's firm/brokerage" },
+          inspection_days:           { type: "number", description: "General building inspection days from Section 15" },
+          sewage_days:               { type: "number", description: "Sewage/septic inspection days" },
+          water_quality_days:        { type: "number", description: "Water quality inspection days" },
+          radon_days:                { type: "number", description: "Radon inspection days" },
+          due_diligence_days:        { type: "number", description: "Due diligence days from Section 16" },
+          financing_commitment_date: { type: "string", description: "Financing commitment deadline in YYYY-MM-DD from Section 19" },
+          commission_percent:        { type: "number", description: "Commission percentage from Section 20" },
+          commission_type:           { type: "string", description: "'percent' or 'flat'" },
+          seller_concession_amount:  { type: "number", description: "Seller concession dollar amount" },
+          professional_fee_percent:  { type: "number", description: "Professional fee percentage" },
+          professional_fee_amount:   { type: "number", description: "Professional fee dollar amount" },
+          commission_notes:          { type: "string", description: "Summary of Section 20 compensation terms" }
         }
       }
     });
 
-    // Calculate deadline dates from day offsets
+    if (extraction.status === "error") {
+      console.error("Extraction failed:", extraction.details);
+      return Response.json({ error: extraction.details || "Extraction failed" }, { status: 500 });
+    }
+
+    const result = extraction.output || {};
+
+    // Calculate deadline dates from day offsets + acceptance date
     const acceptanceDate = result.acceptance_date || null;
-    result.inspection_deadline    = result.inspection_deadline    || addDays(acceptanceDate, result.inspection_days);
-    result.sewage_deadline        = result.sewage_deadline        || addDays(acceptanceDate, result.sewage_days);
-    result.water_quality_deadline = result.water_quality_deadline || addDays(acceptanceDate, result.water_quality_days);
-    result.radon_deadline         = result.radon_deadline         || addDays(acceptanceDate, result.radon_days);
-    result.earnest_money_deadline = result.earnest_money_deadline || addDays(acceptanceDate, result.earnest_money_days);
-    result.due_diligence_deadline = result.due_diligence_deadline || addDays(acceptanceDate, result.due_diligence_days);
+    result.inspection_deadline    = addDays(acceptanceDate, result.inspection_days);
+    result.sewage_deadline        = addDays(acceptanceDate, result.sewage_days);
+    result.water_quality_deadline = addDays(acceptanceDate, result.water_quality_days);
+    result.radon_deadline         = addDays(acceptanceDate, result.radon_days);
+    result.earnest_money_deadline = addDays(acceptanceDate, result.earnest_money_days);
+    result.due_diligence_deadline = addDays(acceptanceDate, result.due_diligence_days);
 
     console.log("Extraction complete:", {
       buyer: result.buyer_names,
@@ -114,7 +77,6 @@ Return ONLY valid JSON with these exact fields (use null for anything not found)
       address: result.property_address,
       price: result.purchase_price,
       closing: result.closing_date,
-      acceptance: result.acceptance_date,
     });
 
     return Response.json(result);
