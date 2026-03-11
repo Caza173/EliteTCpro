@@ -107,7 +107,7 @@ export default function AgentIntake() {
       buyers: buyerList,
       sellers: sellerList,
       // Store financials from extraction so FinanceTab auto-populates
-      sale_price: parsedData?.purchasePrice || form.sale_price || undefined,
+      sale_price: form.sale_price ? Number(form.sale_price) : (parsedData?.purchasePrice || undefined),
       phase: 1, phases_completed: [], status: "active", tasks
     });
   };
