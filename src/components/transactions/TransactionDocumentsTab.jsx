@@ -50,7 +50,7 @@ export default function TransactionDocumentsTab({ transaction, currentUser }) {
 
   const uploadFile = async (file) => {
     const { file_url } = await base44.integrations.Core.UploadFile({ file });
-    const doc = await base44.entities.Document.create({
+    const response = await base44.functions.invoke('createDocument', {
       brokerage_id: transaction.brokerage_id,
       transaction_id: transaction.id,
       doc_type: selectedDocType,
@@ -59,6 +59,7 @@ export default function TransactionDocumentsTab({ transaction, currentUser }) {
       uploaded_by: currentUser?.email || "unknown",
       uploaded_by_role: currentUser?.role || "agent",
     });
+    const doc = response.data;
     const matchingItem = checklistItems.find(
       (ci) => ci.doc_type === selectedDocType && ci.status === "missing"
     );
