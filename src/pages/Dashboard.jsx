@@ -212,7 +212,7 @@ export default function Dashboard() {
               ) : deadlineView === "calendar" ? (
                 <DeadlineCalendarView transactions={transactions} />
               ) : (
-                <DeadlinePanel transactions={transactions} />
+                <DeadlineSummaryPanel transactions={transactions} compact={true} />
               )}
             </CardContent>
           </Card>
