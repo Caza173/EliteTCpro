@@ -1,69 +1,5 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.20';
 
-// ─── Section Splitter ────────────────────────────────────────────────────────
-// Splits raw PDF text into numbered NHAR sections using section number patterns.
-// Handles both "1." style and "SECTION 1" style headings.
-
-function splitIntoSections(text) {
-  const sections = {};
-
-  // Normalize line endings
-  const lines = text.replace(/\r\n/g, "\n").replace(/\r/g, "\n").split("\n");
-
-  const sectionPattern = /^(?:SECTION\s+)?(\d{1,2})\.\s*(.*)$/i;
-  let currentSection = null;
-  let buffer = [];
-
-  for (const line of lines) {
-    const match = line.trim().match(sectionPattern);
-    if (match) {
-      // Save previous section
-      if (currentSection !== null) {
-        sections[currentSection] = buffer.join(" ").replace(/\s+/g, " ").trim();
-      }
-      currentSection = parseInt(match[1]);
-      buffer = [match[2] || ""];
-    } else {
-      if (currentSection !== null) {
-        buffer.push(line.trim());
-      }
-    }
-  }
-
-  // Save last section
-  if (currentSection !== null) {
-    sections[currentSection] = buffer.join(" ").replace(/\s+/g, " ").trim();
-  }
-
-  // Fallback: if no sections found, try to detect via "1." patterns mid-text
-  if (Object.keys(sections).length === 0) {
-    const inlinePattern = /(?:^|\s)(\d{1,2})\.\s+(?=[A-Z])/gm;
-    let lastIdx = 0;
-    let lastNum = null;
-    let match;
-    const flat = text.replace(/\r\n/g, "\n");
-
-    while ((match = inlinePattern.exec(flat)) !== null) {
-      const num = parseInt(match[1]);
-      if (num >= 1 && num <= 25) {
-        if (lastNum !== null) {
-          sections[lastNum] = flat.slice(lastIdx, match.index).replace(/\s+/g, " ").trim();
-        }
-        lastNum = num;
-        lastIdx = match.index + match[0].length;
-      }
-    }
-    if (lastNum !== null) {
-      sections[lastNum] = flat.slice(lastIdx).replace(/\s+/g, " ").trim();
-    }
-  }
-
-  console.log("Sections found:", Object.keys(sections).sort((a,b) => a-b).join(", "));
-  return sections;
-}
-
-// ─── Date Helpers ────────────────────────────────────────────────────────────
-
 function addDays(isoDate, days) {
   if (!isoDate || days == null) return null;
   try {
@@ -73,19 +9,6 @@ function addDays(isoDate, days) {
   } catch { return null; }
 }
 
-// ─── Per-Section AI Extractions ──────────────────────────────────────────────
-
-async function extractSection(base44, sectionNum, text, schema, prompt) {
-  if (!text || text.length < 10) return {};
-  const result = await base44.integrations.Core.InvokeLLM({
-    prompt: `You are parsing Section ${sectionNum} of a New Hampshire NHAR Purchase & Sales Agreement.\n\n${prompt}\n\nSection ${sectionNum} text:\n"""\n${text.substring(0, 2000)}\n"""\n\nReturn ONLY the JSON fields listed. Use null for missing fields. Dates must be ISO format YYYY-MM-DD. Numbers must be plain numbers.`,
-    response_json_schema: { type: "object", properties: schema },
-  });
-  return result || {};
-}
-
-// ─── Main Handler ─────────────────────────────────────────────────────────────
-
 Deno.serve(async (req) => {
   try {
     const base44 = createClientFromRequest(req);
@@ -93,191 +16,108 @@ Deno.serve(async (req) => {
     if (!user) return Response.json({ error: "Unauthorized" }, { status: 401 });
 
     const body = await req.json();
-    let { text, file_url } = body;
+    const { file_url } = body;
 
-    if (!text && !file_url) return Response.json({ error: "No text or file_url provided" }, { status: 400 });
+    if (!file_url) return Response.json({ error: "No file_url provided" }, { status: 400 });
 
-    // If a file URL is provided, extract the raw text from it first using Claude vision
-    if (file_url && !text) {
-      console.log("Extracting text from file via Claude...");
-      const extracted = await base44.integrations.Core.InvokeLLM({
-        model: "claude_sonnet_4_6",
-        prompt: `Extract ALL text from this document verbatim, preserving the structure, section numbers, and layout as closely as possible. Include every page. Preserve numbered headings like "1.", "2.", "3." etc. Output only the raw text — no commentary.`,
-        file_urls: [file_url],
-      });
-      text = typeof extracted === "string" ? extracted : JSON.stringify(extracted);
-      console.log("Text extracted, length:", text.length);
-    }
+    console.log("Running single-pass AI extraction on document...");
 
-    console.log("Stage 1: Splitting document into sections...");
-    const sections = splitIntoSections(text);
-    const sectionKeys = Object.keys(sections);
-    console.log(`Found ${sectionKeys.length} sections:`, sectionKeys.join(", "));
+    const result = await base44.integrations.Core.InvokeLLM({
+      prompt: `You are parsing a New Hampshire NHAR Purchase & Sales Agreement PDF.
 
-    // If section splitter found very few sections, pass whole text as section context
-    const getSection = (nums) => {
-      for (const n of nums) {
-        if (sections[n] && sections[n].length > 20) return sections[n];
+Extract ALL of the following fields from the document in a single pass.
+
+IMPORTANT NHAR form layout notes:
+- Section 1: Parties. Format is "between [SELLER] (SELLER) and [BUYER] (BUYER)". Seller is listed FIRST.
+- Section 2: Property address
+- Section 3: Purchase price, deposit/earnest money amount, earnest money days, title company
+- Section 5: Closing date ("Transfer of Title on or before [date]")
+- Section 7: Agent names and brokerages
+- Section 15: Inspection periods in days from acceptance date
+- Section 16: Due diligence days
+- Section 19: Financing commitment date
+- Section 20: Commission/compensation terms
+
+Return ONLY valid JSON with these exact fields (use null for anything not found):
+{
+  "buyer_names": "string or null",
+  "seller_names": "string or null",
+  "acceptance_date": "YYYY-MM-DD or null",
+  "property_address": "string or null",
+  "purchase_price": "number or null",
+  "deposit_amount": "number or null",
+  "earnest_money_days": "number or null",
+  "closing_date": "YYYY-MM-DD or null",
+  "title_company": "string or null",
+  "buyer_agent": "string or null",
+  "seller_agent": "string or null",
+  "buyer_brokerage": "string or null",
+  "seller_brokerage": "string or null",
+  "inspection_days": "number or null",
+  "sewage_days": "number or null",
+  "water_quality_days": "number or null",
+  "radon_days": "number or null",
+  "due_diligence_days": "number or null",
+  "financing_commitment_date": "YYYY-MM-DD or null",
+  "commission_percent": "number or null",
+  "commission_type": "percent or flat or null",
+  "seller_concession_amount": "number or null",
+  "professional_fee_percent": "number or null",
+  "professional_fee_amount": "number or null",
+  "commission_notes": "string or null"
+}`,
+      file_urls: [file_url],
+      response_json_schema: {
+        type: "object",
+        properties: {
+          buyer_names:               { type: "string" },
+          seller_names:              { type: "string" },
+          acceptance_date:           { type: "string" },
+          property_address:          { type: "string" },
+          purchase_price:            { type: "number" },
+          deposit_amount:            { type: "number" },
+          earnest_money_days:        { type: "number" },
+          closing_date:              { type: "string" },
+          title_company:             { type: "string" },
+          buyer_agent:               { type: "string" },
+          seller_agent:              { type: "string" },
+          buyer_brokerage:           { type: "string" },
+          seller_brokerage:          { type: "string" },
+          inspection_days:           { type: "number" },
+          sewage_days:               { type: "number" },
+          water_quality_days:        { type: "number" },
+          radon_days:                { type: "number" },
+          due_diligence_days:        { type: "number" },
+          financing_commitment_date: { type: "string" },
+          commission_percent:        { type: "number" },
+          commission_type:           { type: "string" },
+          seller_concession_amount:  { type: "number" },
+          professional_fee_percent:  { type: "number" },
+          professional_fee_amount:   { type: "number" },
+          commission_notes:          { type: "string" },
+        }
       }
-      // fallback: search in full text for the section number
-      return text.substring(0, 8000);
-    };
-
-    console.log("Stage 2: Running parallel AI extractions per section...");
-
-    // Run all section extractions in parallel
-    const [
-      sec1,   // parties + date
-      sec2,   // property address
-      sec3,   // price + deposit + earnest days
-      sec5,   // closing date + title company
-      sec7,   // agents + brokerages
-      sec15,  // inspection days
-      sec16,  // due diligence days
-      sec19,  // financing commitment date
-      sec20,  // commission
-    ] = await Promise.all([
-      extractSection(base44, 1, getSection([1]),
-        {
-          buyer_names:     { type: "string" },
-          seller_names:    { type: "string" },
-          acceptance_date: { type: "string" },
-        },
-        `Extract:
-- buyer_names: The BUYER name(s). In NHAR form layout: "between [SELLER] (SELLER) and [BUYER] (BUYER)". The BUYER appears AFTER "and".
-- seller_names: The SELLER name(s). Appears FIRST before "and".
-- acceptance_date: The EFFECTIVE DATE from the top-right box. Format: YYYY-MM-DD.`
-      ),
-
-      extractSection(base44, 2, getSection([2]),
-        { property_address: { type: "string" } },
-        `Extract:
-- property_address: The full property address including city and state. Look for "located at" or "WITNESSETH" clause.`
-      ),
-
-      extractSection(base44, 3, getSection([3]),
-        {
-          purchase_price:    { type: "number" },
-          deposit_amount:    { type: "number" },
-          earnest_money_days:{ type: "number" },
-          title_company:     { type: "string" },
-        },
-        `Extract:
-- purchase_price: The SELLING PRICE dollar amount (number only, no $ sign, e.g. 540000).
-- deposit_amount: The earnest money deposit amount (number only).
-- earnest_money_days: How many days from EFFECTIVE DATE to deliver the deposit. Look for "within X days".
-- title_company: The ESCROW AGENT or closing company name.`
-      ),
-
-      extractSection(base44, 5, getSection([5]),
-        {
-          closing_date:  { type: "string" },
-          title_company: { type: "string" },
-        },
-        `Extract:
-- closing_date: From "TRANSFER OF TITLE: On or before [date]". Format YYYY-MM-DD.
-- title_company: The closing location or title company mentioned in this section.`
-      ),
-
-      extractSection(base44, 7, getSection([7]),
-        {
-          buyer_agent:      { type: "string" },
-          seller_agent:     { type: "string" },
-          buyer_brokerage:  { type: "string" },
-          seller_brokerage: { type: "string" },
-        },
-        `Extract:
-- buyer_agent: Name of the agent representing the BUYER (labeled as "buyer agent" or "selling agent").
-- seller_agent: Name of the agent representing the SELLER (labeled as "seller agent" or "listing agent").
-- buyer_brokerage: The firm/brokerage of the buyer agent.
-- seller_brokerage: The firm/brokerage of the seller agent.`
-      ),
-
-      extractSection(base44, 15, getSection([15]),
-        {
-          inspection_days:  { type: "number" },
-          sewage_days:      { type: "number" },
-          water_quality_days: { type: "number" },
-          radon_days:       { type: "number" },
-        },
-        `Extract inspection periods (number of days from acceptance date):
-- inspection_days: General Building inspection days. Look for "General Building within X days".
-- sewage_days: Sewage/septic inspection days.
-- water_quality_days: Water quality inspection days.
-- radon_days: Radon inspection days.`
-      ),
-
-      extractSection(base44, 16, getSection([16]),
-        { due_diligence_days: { type: "number" } },
-        `Extract:
-- due_diligence_days: Number of days for due diligence. Look for "BUYER must notify SELLER in writing within X days".`
-      ),
-
-      extractSection(base44, 19, getSection([19]),
-        { financing_commitment_date: { type: "string" } },
-        `Extract:
-- financing_commitment_date: The Financing Deadline or commitment date. Format YYYY-MM-DD.`
-      ),
-
-      extractSection(base44, 20, getSection([20]),
-        {
-          buyer_agent_commission:   { type: "string" },
-          commission_percent:       { type: "number" },
-          commission_type:          { type: "string" },
-          seller_concession_amount: { type: "number" },
-          professional_fee_percent: { type: "number" },
-          professional_fee_amount:  { type: "number" },
-          commission_notes:         { type: "string" },
-        },
-        `Extract commission/compensation terms:
-- commission_percent: The percentage the seller pays to buyer's firm. E.g. "2% of the net contract price" → 2.
-- commission_type: "percent" or "flat".
-- seller_concession_amount: Any seller concession dollar amount.
-- professional_fee_percent: Any professional fee percentage.
-- professional_fee_amount: Any professional fee dollar amount.
-- commission_notes: A brief summary of what Section 20 says about compensation.`
-      ),
-    ]);
-
-    console.log("Stage 3: Combining extracted sections...");
-
-    // Merge all results, with later sources winning on conflicts
-    const combined = {
-      ...sec1, ...sec2, ...sec3, ...sec5, ...sec7,
-      ...sec15, ...sec16, ...sec19, ...sec20,
-    };
-
-    // Title company: prefer Section 5 over Section 3
-    combined.title_company = sec5?.title_company || sec3?.title_company || null;
-
-    // Stage 4: Calculate deadline dates from day offsets + acceptance_date
-    const acceptanceDate = combined.acceptance_date || null;
-
-    combined.inspection_deadline     = addDays(acceptanceDate, combined.inspection_days);
-    combined.sewage_deadline         = addDays(acceptanceDate, combined.sewage_days);
-    combined.water_quality_deadline  = addDays(acceptanceDate, combined.water_quality_days);
-    combined.radon_deadline          = addDays(acceptanceDate, combined.radon_days);
-    combined.earnest_money_deadline  = addDays(acceptanceDate, combined.earnest_money_days);
-    combined.due_diligence_deadline  = addDays(acceptanceDate, combined.due_diligence_days);
-
-    // Include raw sections in response for debugging / review screen
-    combined._sections_found = Object.keys(sections).map(Number).sort((a,b) => a-b);
-    combined._section_count  = sectionKeys.length;
-
-    console.log("Extraction complete:", {
-      buyer: combined.buyer_names,
-      seller: combined.seller_names,
-      address: combined.property_address,
-      price: combined.purchase_price,
-      closing: combined.closing_date,
-      acceptance: combined.acceptance_date,
-      inspection_days: combined.inspection_days,
-      inspection_deadline: combined.inspection_deadline,
-      financing: combined.financing_commitment_date,
-      sections: combined._sections_found,
     });
 
-    return Response.json(combined);
+    // Calculate deadline dates from day offsets
+    const acceptanceDate = result.acceptance_date || null;
+    result.inspection_deadline    = result.inspection_deadline    || addDays(acceptanceDate, result.inspection_days);
+    result.sewage_deadline        = result.sewage_deadline        || addDays(acceptanceDate, result.sewage_days);
+    result.water_quality_deadline = result.water_quality_deadline || addDays(acceptanceDate, result.water_quality_days);
+    result.radon_deadline         = result.radon_deadline         || addDays(acceptanceDate, result.radon_days);
+    result.earnest_money_deadline = result.earnest_money_deadline || addDays(acceptanceDate, result.earnest_money_days);
+    result.due_diligence_deadline = result.due_diligence_deadline || addDays(acceptanceDate, result.due_diligence_days);
+
+    console.log("Extraction complete:", {
+      buyer: result.buyer_names,
+      seller: result.seller_names,
+      address: result.property_address,
+      price: result.purchase_price,
+      closing: result.closing_date,
+      acceptance: result.acceptance_date,
+    });
+
+    return Response.json(result);
   } catch (error) {
     console.error("parsePurchaseAgreementV2 error:", error);
     return Response.json({ error: error.message }, { status: 500 });
