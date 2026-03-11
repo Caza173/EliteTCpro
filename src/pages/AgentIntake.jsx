@@ -98,10 +98,8 @@ export default function AgentIntake() {
     const tasks = generateSmartTasks(parsedData, form.is_cash_transaction, form);
     const buyerList = buyers.filter(Boolean);
     const sellerList = sellers.filter(Boolean);
-    const brokerageId = currentUser?.data?.brokerage_id || brokerages[0]?.id;
     createMutation.mutate({
       ...form,
-      brokerage_id: brokerageId,
       buyer: buyerList.join(" & "),
       seller: sellerList.join(" & "),
       buyers: buyerList,
