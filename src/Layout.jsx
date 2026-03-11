@@ -81,7 +81,12 @@ export default function Layout({ children, currentPageName }) {
       navigate(createPageUrl("PortalSelect"), { replace: true });
       return;
     }
-  }, [currentUser, currentPageName]);
+    // If user is authenticated but on PortalSelect, go to Dashboard
+    if (currentUser !== null && currentPageName === "PortalSelect") {
+      navigate(createPageUrl("Dashboard"), { replace: true });
+      return;
+    }
+  }, [currentUser, currentPageName, navigate]);
 
   // Role-based redirect guard
   useEffect(() => {
