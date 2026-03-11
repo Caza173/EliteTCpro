@@ -77,7 +77,6 @@ export default function PSReviewModal({ extracted, onConfirm, onCancel }) {
                   type={type || "text"}
                   value={fields[key] || ""}
                   onChange={(e) => set(key, e.target.value)}
-                  placeholder={`Enter ${label.toLowerCase()}`}
                   placeholder={isUndetected(key) ? "Not detected — verify manually" : `Enter ${label.toLowerCase()}`}
                   className={`mt-1 h-8 text-sm ${fields[key] ? "border-emerald-300 bg-emerald-50/30" : isUndetected(key) ? "border-amber-300 bg-amber-50/30 placeholder:text-amber-600" : ""}`}
                 />
