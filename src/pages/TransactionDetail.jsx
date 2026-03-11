@@ -50,6 +50,7 @@ import TransactionDocumentsTab from "../components/transactions/TransactionDocum
 import ContractTimeline from "../components/transactions/ContractTimeline";
 import EditableDeadlinePanel from "../components/transactions/EditableDeadlinePanel";
 import ComplianceScanPanel from "../components/compliance/ComplianceScanPanel";
+import TCAIAssistant from "../components/ai/TCAIAssistant";
 
 const TX_TABS = [
   { id: "overview", label: "Overview", icon: LayoutDashboard },
