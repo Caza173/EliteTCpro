@@ -41,7 +41,8 @@ export default function AgentIntake() {
 
   const createMutation = useMutation({
     mutationFn: async (data) => {
-      const tx = await base44.entities.Transaction.create(data);
+      const res = await base44.functions.invoke('createTransaction', data);
+      const tx = res.data;
       if (data.client_email) {
         try { await base44.users.inviteUser(data.client_email, "user"); } catch (_) {}
         const portalUrl = `${window.location.origin}${window.location.pathname}#/ClientPortal?id=${tx.id}`;
