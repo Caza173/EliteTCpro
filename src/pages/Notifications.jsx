@@ -58,14 +58,29 @@ export default function Notifications() {
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["notifications"] }),
   });
 
+  const [addendumForms, setAddendumForms] = React.useState({}); // { [notifId]: { note, verbiage, open } }
+
   const respondMutation = useMutation({
-    mutationFn: ({ id, response }) =>
+    mutationFn: ({ id, response, note, verbiage }) =>
       base44.entities.InAppNotification.update(id, {
         addendum_response: response,
+        addendum_note: note || "",
+        addendum_verbiage: verbiage || "",
         read_at: new Date().toISOString(),
       }),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["notifications"] }),
   });
+
+  const toggleAddendumForm = (id) => {
+    setAddendumForms(prev => ({
+      ...prev,
+      [id]: { note: "", verbiage: "", ...prev[id], open: !prev[id]?.open }
+    }));
+  };
+
+  const updateAddendumField = (id, field, value) => {
+    setAddendumForms(prev => ({ ...prev, [id]: { ...prev[id], [field]: value } }));
+  };
 
   const unreadCount = notifications.filter((n) => !n.read_at).length;
 
