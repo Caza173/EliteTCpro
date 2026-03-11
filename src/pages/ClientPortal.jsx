@@ -39,6 +39,38 @@ export default function ClientPortal() {
     myTransactions.some((tx) => tx.id === d.transaction_id)
   );
 
+  // Mock data for preview when no real transactions exist
+  const MOCK_TRANSACTION = {
+    id: "mock-1",
+    address: "42 Birchwood Lane, Concord, NH 03301",
+    buyer: "Sarah & James Mitchell",
+    seller: "Robert & Carol Hayes",
+    contract_date: "2026-02-15",
+    closing_date: "2026-04-01",
+    status: "active",
+    phase: 6,
+    phases_completed: [1, 2, 3, 4, 5],
+    inspection_deadline: "2026-03-15",
+    financing_deadline: "2026-03-20",
+    appraisal_deadline: "2026-03-22",
+    tasks: [
+      { id: "t1", name: "Sign Purchase & Sale Agreement", completed: true },
+      { id: "t2", name: "Submit Earnest Money Deposit", completed: true },
+      { id: "t3", name: "Schedule Home Inspection", completed: true },
+      { id: "t4", name: "Review Inspection Report", completed: false },
+      { id: "t5", name: "Apply for Mortgage", completed: false },
+      { id: "t6", name: "Order Appraisal", completed: false },
+    ],
+  };
+  const MOCK_DOCS = [
+    { id: "d1", transaction_id: "mock-1", file_name: "Purchase & Sale Agreement.pdf", doc_type: "contract", file_url: "#", uploaded_by: "tc@brokerage.com", created_date: "2026-02-15" },
+    { id: "d2", transaction_id: "mock-1", file_name: "Property Disclosures.pdf", doc_type: "disclosures", file_url: "#", uploaded_by: "tc@brokerage.com", created_date: "2026-02-18" },
+  ];
+
+  const displayTransactions = myTransactions.length > 0 ? myTransactions : [MOCK_TRANSACTION];
+  const displayDocs = myTransactions.length > 0 ? myDocs : MOCK_DOCS;
+  const isMock = myTransactions.length === 0;
+
   if (userLoading || txLoading) {
     return (
       <div className="max-w-3xl mx-auto space-y-4 py-8">
