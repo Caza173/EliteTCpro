@@ -15,7 +15,13 @@ export default function AddTransaction() {
   const queryClient = useQueryClient();
   const { data: currentUser } = useCurrentUser();
 
-  const brokerageId = currentUser?.data?.brokerage_id;
+  const { data: brokerages = [] } = useQuery({
+    queryKey: ["brokerages"],
+    queryFn: () => base44.entities.Brokerage.list(),
+    retry: false,
+  });
+
+  const brokerageId = currentUser?.data?.brokerage_id || brokerages[0]?.id;
 
   const { data: templates = [] } = useQuery({
     queryKey: ["templates", brokerageId],
