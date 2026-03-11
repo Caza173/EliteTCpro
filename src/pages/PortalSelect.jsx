@@ -109,11 +109,11 @@ export default function PortalSelect() {
           AI-Powered Transaction Management
         </div>
 
-        <h1 className="text-5xl sm:text-6xl lg:text-7xl font-extrabold text-white leading-[1.08] tracking-tight mb-6">
-          Transaction Coordination
-          <br />
-          <span style={{ color: "#c9a227" }}>Reimagined with AI</span>
-        </h1>
+        <h1 className="text-5xl sm:text-6xl lg:text-7xl font-extrabold text-white leading-[1.08] tracking-tight mb-6" style={{ fontFamily: "'Playfair Display', serif" }}>
+           Transaction Coordination
+           <br />
+           <span style={{ color: "#c9a227" }}>Reimagined with AI</span>
+         </h1>
 
         <p className="text-lg sm:text-xl text-slate-400 max-w-2xl mx-auto mb-10 leading-relaxed">
           EliteTC automatically extracts data from Purchase &amp; Sale agreements, generates transaction
