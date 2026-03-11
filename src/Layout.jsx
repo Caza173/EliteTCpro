@@ -19,7 +19,8 @@ import {
   Home,
   CreditCard,
   Shield,
-  Workflow
+  Workflow,
+  LogOut
 } from "lucide-react";
 import NotificationBell from "./components/dashboard/NotificationBell";
 import { ThemeProvider } from "./components/theme/ThemeContext";
