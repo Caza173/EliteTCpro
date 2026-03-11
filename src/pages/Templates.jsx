@@ -96,10 +96,15 @@ export default function Templates() {
           <h1 className="text-2xl font-bold text-gray-900 tracking-tight">Workflow Templates</h1>
           <p className="text-sm text-gray-500 mt-0.5">Define tasks, deadlines, and doc checklists per transaction type.</p>
         </div>
-        <div className="flex gap-2">
+        <div className="flex gap-2 flex-wrap">
           {templates.length === 0 && (
             <Button variant="outline" onClick={handleSeedDefault} disabled={createMutation.isPending}>
-              <Plus className="w-4 h-4 mr-2" /> Seed NH Default
+              <Plus className="w-4 h-4 mr-2" /> Seed NH Buyer
+            </Button>
+          )}
+          {templates.filter(t => t.transaction_type === "seller").length === 0 && (
+            <Button variant="outline" onClick={handleSeedSellerTemplate} disabled={createMutation.isPending}>
+              <Plus className="w-4 h-4 mr-2" /> Seed NH Seller
             </Button>
           )}
           <Button onClick={() => setCreating(true)} className="bg-blue-600 hover:bg-blue-700">
