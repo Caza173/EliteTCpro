@@ -37,8 +37,6 @@ export default function AgentIntake() {
   const [submitted, setSubmitted] = useState(false);
   const queryClient = useQueryClient();
   const { data: currentUser } = useQuery({ queryKey: ["currentUser"], queryFn: () => base44.auth.me(), retry: false });
-  const { data: brokerages = [] } = useQuery({ queryKey: ["brokerages"], queryFn: () => base44.entities.Brokerage.list(), retry: false });
-
   const createMutation = useMutation({
     mutationFn: async (data) => {
       const res = await base44.functions.invoke('createTransaction', data);
