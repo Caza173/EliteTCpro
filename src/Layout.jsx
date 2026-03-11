@@ -71,6 +71,15 @@ export default function Layout({ children, currentPageName }) {
 
   const navigate = useNavigate();
 
+  // Redirect unauthenticated users to landing page
+  useEffect(() => {
+    if (currentUser === undefined) return; // still loading
+    if (currentUser === null && currentPageName !== "PortalSelect") {
+      navigate(createPageUrl("PortalSelect"), { replace: true });
+      return;
+    }
+  }, [currentUser, currentPageName]);
+
   // Role-based redirect guard
   useEffect(() => {
     if (!currentUser) return;
