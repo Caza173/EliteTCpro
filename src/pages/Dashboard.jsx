@@ -21,6 +21,7 @@ import TCAnalyticsDashboard from "../components/dashboard/TCAnalyticsDashboard";
 import FinanceDashboardMetrics from "../components/finance/FinanceDashboardMetrics";
 import DeadlineRiskPanel from "../components/transactions/DeadlineRiskPanel";
 import TasksDueToday from "../components/dashboard/TasksDueToday";
+import GlobalAIAssistant from "../components/ai/GlobalAIAssistant";
 
 export default function Dashboard() {
   const [deadlineView, setDeadlineView] = useState("list"); // "list" | "calendar"

@@ -49,6 +49,7 @@
  */
 import AddTransaction from './pages/AddTransaction';
 import AgentIntake from './pages/AgentIntake';
+import AgentPortal from './pages/AgentPortal';
 import AuditLog from './pages/AuditLog';
 import Billing from './pages/Billing';
 import BrokerageSetup from './pages/BrokerageSetup';
@@ -62,13 +63,13 @@ import Tasks from './pages/Tasks';
 import Templates from './pages/Templates';
 import TransactionDetail from './pages/TransactionDetail';
 import Transactions from './pages/Transactions';
-import AgentPortal from './pages/AgentPortal';
 import __Layout from './Layout.jsx';
 
 
 export const PAGES = {
     "AddTransaction": AddTransaction,
     "AgentIntake": AgentIntake,
+    "AgentPortal": AgentPortal,
     "AuditLog": AuditLog,
     "Billing": Billing,
     "BrokerageSetup": BrokerageSetup,
@@ -82,7 +83,6 @@ export const PAGES = {
     "Templates": Templates,
     "TransactionDetail": TransactionDetail,
     "Transactions": Transactions,
-    "AgentPortal": AgentPortal,
 }
 
 export const pagesConfig = {
