@@ -37,6 +37,7 @@ export default function AgentIntake() {
   const [submitted, setSubmitted] = useState(false);
   const queryClient = useQueryClient();
   const { data: currentUser } = useQuery({ queryKey: ["currentUser"], queryFn: () => base44.auth.me(), retry: false });
+  const { data: brokerages = [] } = useQuery({ queryKey: ["brokerages"], queryFn: () => base44.entities.Brokerage.list(), retry: false });
 
   const createMutation = useMutation({
     mutationFn: async (data) => {
@@ -98,9 +99,10 @@ export default function AgentIntake() {
     const tasks = generateSmartTasks(parsedData, form.is_cash_transaction, form);
     const buyerList = buyers.filter(Boolean);
     const sellerList = sellers.filter(Boolean);
+    const brokerageId = currentUser?.data?.brokerage_id || brokerages[0]?.id;
     createMutation.mutate({
       ...form,
-      brokerage_id: currentUser?.data?.brokerage_id,
+      brokerage_id: brokerageId,
       buyer: buyerList.join(" & "),
       seller: sellerList.join(" & "),
       buyers: buyerList,
