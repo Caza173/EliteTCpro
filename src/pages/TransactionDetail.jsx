@@ -588,6 +588,11 @@ TC Manager
       {activeTab === "compliance" && (
         <ComplianceScanPanel transaction={transaction} currentUser={currentUser} />
       )}
+
+      {/* Tab: AI Assistant */}
+      {activeTab === "ai" && (
+        <TCAIAssistant transaction={transaction} currentUser={currentUser} />
+      )}
     </div>
   );
 }
