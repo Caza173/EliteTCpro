@@ -159,8 +159,26 @@ export default function Layout({ children, currentPageName }) {
         </nav>
 
         {/* Footer */}
-        <div className="px-4 py-4 border-t" style={{ borderColor: "var(--sidebar-border)" }}>
-          <p className="text-[11px] text-center" style={{ color: "var(--sidebar-text)" }}>EliteTC v1.0</p>
+        <div className="px-4 py-4 border-t space-y-2" style={{ borderColor: "var(--sidebar-border)" }}>
+          {currentUser && (
+            <div className="flex items-center gap-2 px-2 py-1.5 rounded-lg mb-1">
+              <div className="w-7 h-7 rounded-full bg-blue-500/20 flex items-center justify-center text-xs font-bold text-blue-400">
+                {currentUser.full_name?.[0] || currentUser.email?.[0] || "?"}
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-xs font-medium truncate" style={{ color: "var(--sidebar-text-active)" }}>{currentUser.full_name || currentUser.email}</p>
+                <p className="text-[10px] capitalize" style={{ color: "var(--sidebar-text)" }}>{currentUser.role}</p>
+              </div>
+            </div>
+          )}
+          <button
+            onClick={() => base44.auth.logout()}
+            className="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-medium transition-colors hover:bg-red-500/10 hover:text-red-400"
+            style={{ color: "var(--sidebar-text)" }}
+          >
+            <LogOut className="w-4 h-4" />
+            Sign Out
+          </button>
         </div>
       </aside>
 
