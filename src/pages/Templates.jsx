@@ -10,7 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Skeleton } from "@/components/ui/skeleton";
 import { Plus, FileText, ChevronDown, ChevronUp, Trash2, CheckCircle, ClipboardList, Clock } from "lucide-react";
 import { useCurrentUser, isTCOrAdmin } from "../components/auth/useCurrentUser";
-import { DEFAULT_NH_TEMPLATE } from "../components/utils/tenantUtils";
+import { DEFAULT_NH_TEMPLATE, DEFAULT_NH_SELLER_TEMPLATE } from "../components/utils/tenantUtils";
 
 export default function Templates() {
   const { data: currentUser } = useCurrentUser();
