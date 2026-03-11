@@ -174,29 +174,78 @@ export default function Notifications() {
 
                     {/* Action buttons for pending addendum alerts */}
                     {isPending && (
-                      <div className="px-3 pb-3 flex items-center gap-2 border-t border-amber-100 pt-2 mt-0">
-                        <p className="text-xs text-amber-700 font-medium mr-auto">
-                          Do you need an addendum?
-                        </p>
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          className="h-7 text-xs border-green-200 text-green-700 hover:bg-green-50"
-                          disabled={respondMutation.isPending}
-                          onClick={() => respondMutation.mutate({ id: n.id, response: "no" })}
-                        >
-                          <XCircle className="w-3.5 h-3.5 mr-1" />
-                          No, we're good
-                        </Button>
-                        <Button
-                          size="sm"
-                          className="h-7 text-xs bg-amber-500 hover:bg-amber-600 text-white"
-                          disabled={respondMutation.isPending}
-                          onClick={() => respondMutation.mutate({ id: n.id, response: "yes" })}
-                        >
-                          <CheckCircle2 className="w-3.5 h-3.5 mr-1" />
-                          Yes, prepare addendum
-                        </Button>
+                      <div className="border-t border-amber-100 px-3 pt-2 pb-3 space-y-2">
+                        <div className="flex items-center gap-2">
+                          <p className="text-xs text-amber-700 font-medium mr-auto">Do you need an addendum?</p>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="h-7 text-xs border-green-200 text-green-700 hover:bg-green-50"
+                            disabled={respondMutation.isPending}
+                            onClick={() => respondMutation.mutate({ id: n.id, response: "no" })}
+                          >
+                            <XCircle className="w-3.5 h-3.5 mr-1" /> No, we're good
+                          </Button>
+                          <Button
+                            size="sm"
+                            className="h-7 text-xs bg-amber-500 hover:bg-amber-600 text-white"
+                            disabled={respondMutation.isPending}
+                            onClick={() => toggleAddendumForm(n.id)}
+                          >
+                            <CheckCircle2 className="w-3.5 h-3.5 mr-1" /> Yes, prepare addendum
+                            {addendumForms[n.id]?.open ? <ChevronUp className="w-3 h-3 ml-1" /> : <ChevronDown className="w-3 h-3 ml-1" />}
+                          </Button>
+                        </div>
+
+                        {addendumForms[n.id]?.open && (
+                          <div className="space-y-2 bg-amber-50 rounded-lg p-3">
+                            <div>
+                              <label className="text-xs font-medium text-gray-600 mb-1 block">Internal Note</label>
+                              <Textarea
+                                rows={2}
+                                placeholder="Add an internal note for the TC..."
+                                className="text-xs resize-none"
+                                value={addendumForms[n.id]?.note || ""}
+                                onChange={(e) => updateAddendumField(n.id, "note", e.target.value)}
+                              />
+                            </div>
+                            <div>
+                              <label className="text-xs font-medium text-gray-600 mb-1 block">Addendum Verbiage</label>
+                              <Textarea
+                                rows={3}
+                                placeholder="Type the exact verbiage you want in the addendum..."
+                                className="text-xs resize-none"
+                                value={addendumForms[n.id]?.verbiage || ""}
+                                onChange={(e) => updateAddendumField(n.id, "verbiage", e.target.value)}
+                              />
+                            </div>
+                            <Button
+                              size="sm"
+                              className="h-7 text-xs bg-amber-500 hover:bg-amber-600 text-white w-full"
+                              disabled={respondMutation.isPending}
+                              onClick={() => respondMutation.mutate({
+                                id: n.id,
+                                response: "yes",
+                                note: addendumForms[n.id]?.note,
+                                verbiage: addendumForms[n.id]?.verbiage,
+                              })}
+                            >
+                              Submit Addendum Request
+                            </Button>
+                          </div>
+                        )}
+                      </div>
+                    )}
+
+                    {/* Show saved addendum details if responded with yes */}
+                    {responded && n.addendum_response === "yes" && (n.addendum_note || n.addendum_verbiage) && (
+                      <div className="border-t border-amber-100 px-3 pt-2 pb-3 space-y-1">
+                        {n.addendum_note && (
+                          <p className="text-xs text-gray-500"><span className="font-medium text-gray-600">Note:</span> {n.addendum_note}</p>
+                        )}
+                        {n.addendum_verbiage && (
+                          <p className="text-xs text-gray-500"><span className="font-medium text-gray-600">Verbiage:</span> {n.addendum_verbiage}</p>
+                        )}
                       </div>
                     )}
                   </div>
