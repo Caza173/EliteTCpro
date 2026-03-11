@@ -63,9 +63,12 @@ const CLIENT_NAV = [
 
 export default function Layout({ children, currentPageName }) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const { data: currentUser } = useQuery({
+  const { data: currentUser = null } = useQuery({
     queryKey: ["currentUser"],
-    queryFn: () => base44.auth.me(),
+    queryFn: async () => {
+      try { return await base44.auth.me(); }
+      catch { return null; }
+    },
     retry: false,
   });
 
