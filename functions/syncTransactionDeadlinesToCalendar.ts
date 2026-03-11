@@ -49,6 +49,13 @@ Deno.serve(async (req) => {
           },
         };
 
+        // Add agent as attendee if email exists
+        if (transaction.agent_email) {
+          event.attendees = [
+            { email: transaction.agent_email, responseStatus: 'needsAction' }
+          ];
+        }
+
         try {
           // Check if event already exists (search by title and date)
           const existingEvents = await fetch(
