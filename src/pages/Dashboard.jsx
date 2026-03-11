@@ -70,6 +70,11 @@ export default function Dashboard() {
         </Link>
       </div>
 
+      {/* AI Command Center */}
+      {!isLoading && (
+        <GlobalAIAssistant transactions={transactions} checklistItems={checklistItems} />
+      )}
+
       {/* Tasks Due Today — top of dashboard */}
       {!isLoading && (
         <Card className="shadow-sm border-amber-100 bg-amber-50/30">
