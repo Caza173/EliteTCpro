@@ -124,8 +124,7 @@ export default function Dashboard() {
       {/* 24-hour addendum alert checker — silent, runs once per session */}
       {!isLoading && <AddendumAlertChecker transactions={transactions} currentUser={currentUser} />}
 
-      {/* Alerts */}
-      {!isLoading && <DeadlineAlerts transactions={transactions} />}
+
 
       {/* TC Analytics — owner/admin only */}
       {(currentUser?.role === "owner" || currentUser?.role === "admin") && !isLoading && (
