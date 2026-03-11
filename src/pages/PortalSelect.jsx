@@ -179,9 +179,9 @@ export default function PortalSelect() {
       {/* How It Works */}
       <section className="max-w-7xl mx-auto px-6 py-20">
         <div className="text-center mb-12">
-          <h2 className="text-3xl sm:text-4xl font-bold text-white mb-3">How It Works</h2>
-          <p className="text-slate-400 text-base">From upload to close in four simple steps.</p>
-        </div>
+           <h2 className="text-3xl sm:text-4xl font-bold text-white mb-3" style={{ fontFamily: "'Playfair Display', serif" }}>How It Works</h2>
+           <p className="text-slate-400 text-base">From upload to close in four simple steps.</p>
+         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
           {STEPS.map(({ icon: Icon, label, step }, i) => (
