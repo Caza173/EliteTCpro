@@ -23,12 +23,18 @@ const FIELDS = [
   { key: "title_company",             label: "Title / Closing Company" },
 ];
 
+const FINANCIAL_FIELDS = ["purchase_price", "deposit_amount"];
+
 export default function PSReviewModal({ extracted, onConfirm, onCancel }) {
   const [fields, setFields] = useState(() => {
     const init = {};
     FIELDS.forEach(({ key }) => { init[key] = extracted?.[key] ?? ""; });
     return init;
   });
+
+  const isUndetected = (key) => {
+    return FINANCIAL_FIELDS.includes(key) && !fields[key] && extracted?.[`${key}_undetected`];
+  };
 
   const set = (key, val) => setFields(p => ({ ...p, [key]: val }));
 
