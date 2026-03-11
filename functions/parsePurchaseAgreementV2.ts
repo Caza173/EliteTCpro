@@ -62,6 +62,36 @@ Deno.serve(async (req) => {
 
     const result = extraction.output || {};
 
+    // --- Fallback: targeted multi-line extraction for financial fields ---
+    const needsFinancialFallback = !result.purchase_price || !result.deposit_amount;
+    if (needsFinancialFallback) {
+      console.log("Running targeted financial field fallback extraction...");
+      const financialExtraction = await base44.integrations.Core.ExtractDataFromUploadedFile({
+        file_url,
+        json_schema: {
+          type: "object",
+          description: `NHAR P&S Agreement financial field extraction. 
+            RULE 1 - SELLING PRICE: Find the text 'SELLING PRICE'. The dollar amount is often on the NEXT line or up to 3 lines after it. Extract the first value matching $###,### or $######.
+            RULE 2 - EARNEST MONEY: Find the phrase 'deposit of earnest money in the amount of'. The dollar amount is often on the NEXT line or up to 3 lines after it. Extract the first value matching $###,### or $######.
+            Strip $ and commas, return as plain number.`,
+          properties: {
+            purchase_price: { type: "number", description: "Dollar amount found within 3 lines after 'SELLING PRICE' label. Strip $ and commas." },
+            deposit_amount: { type: "number", description: "Dollar amount found within 3 lines after 'deposit of earnest money in the amount of'. Strip $ and commas." },
+          }
+        }
+      });
+
+      if (financialExtraction.status !== "error" && financialExtraction.output) {
+        const fb = financialExtraction.output;
+        if (!result.purchase_price && fb.purchase_price) result.purchase_price = fb.purchase_price;
+        if (!result.deposit_amount && fb.deposit_amount) result.deposit_amount = fb.deposit_amount;
+      }
+    }
+
+    // Mark undetected financial fields with sentinel so UI can show "verify manually"
+    if (!result.purchase_price) result.purchase_price_undetected = true;
+    if (!result.deposit_amount) result.deposit_amount_undetected = true;
+
     // Calculate deadline dates from day offsets + acceptance date
     const acceptanceDate = result.acceptance_date || null;
     result.inspection_deadline    = addDays(acceptanceDate, result.inspection_days);
