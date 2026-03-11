@@ -80,25 +80,20 @@ export default function ClientPortal() {
     );
   }
 
-  if (myTransactions.length === 0) {
-    return (
-      <div className="max-w-3xl mx-auto text-center py-20">
-        <MapPin className="w-12 h-12 text-gray-300 mx-auto mb-4" />
-        <h2 className="text-xl font-semibold text-gray-700 mb-2">No Transaction Found</h2>
-        <p className="text-gray-400 text-sm">Your transaction will appear here once your TC sets it up.</p>
-      </div>
-    );
-  }
-
   return (
     <div className="max-w-4xl mx-auto space-y-6">
       <div>
         <h1 className="text-2xl font-bold text-gray-900 tracking-tight">My Transaction</h1>
         <p className="text-sm text-gray-500 mt-0.5">Track your real estate transaction progress.</p>
+        {isMock && (
+          <div className="mt-2 px-3 py-1.5 bg-amber-50 border border-amber-200 rounded-lg text-xs text-amber-700 inline-block">
+            Preview mode — showing sample data
+          </div>
+        )}
       </div>
 
-      {myTransactions.map((tx) => {
-        const txDocs = myDocs.filter((d) => d.transaction_id === tx.id);
+      {displayTransactions.map((tx) => {
+        const txDocs = displayDocs.filter((d) => d.transaction_id === tx.id);
         return (
           <div key={tx.id} className="space-y-4">
             {/* Summary */}
