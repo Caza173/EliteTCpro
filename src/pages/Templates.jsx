@@ -77,6 +77,14 @@ export default function Templates() {
     });
   };
 
+  const handleSeedSellerTemplate = () => {
+    createMutation.mutate({
+      ...DEFAULT_NH_SELLER_TEMPLATE,
+      brokerage_id: currentUser?.brokerage_id,
+      is_default: false,
+    });
+  };
+
   if (!isTCOrAdmin(currentUser)) {
     return <div className="text-center py-20 text-gray-400">Access restricted to TC / Admin users.</div>;
   }
