@@ -33,6 +33,7 @@ import {
   DollarSign,
   FolderOpen,
   ShieldCheck,
+  Sparkles,
 } from "lucide-react";
 import { format } from "date-fns";
 import PhaseChecklist from "../components/transactions/PhaseChecklist";
