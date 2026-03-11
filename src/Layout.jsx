@@ -119,7 +119,7 @@ export default function Layout({ children, currentPageName }) {
             <Building2 className="w-5 h-5 text-white" />
           </div>
           <div>
-            <h1 className="text-base font-semibold tracking-tight">TC Manager</h1>
+            <h1 className="text-base font-semibold tracking-tight">EliteTC</h1>
             <p className="text-[11px] text-slate-400 font-medium">Transaction Coordinator</p>
           </div>
           <button
