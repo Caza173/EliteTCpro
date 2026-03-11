@@ -205,6 +205,9 @@ export default function AgentIntake() {
                 <F label="MLS Number" id="mls_number">
                   <Input id="mls_number" value={form.mls_number} onChange={(e) => set("mls_number", e.target.value)} placeholder="MLS#" className="mt-1.5" />
                 </F>
+                <F label="Sale Price" id="sale_price">
+                  <Input id="sale_price" type="number" value={form.sale_price} onChange={(e) => set("sale_price", e.target.value)} placeholder="e.g. 600000" className="mt-1.5" />
+                </F>
                 <F label="Commission" id="commission">
                   <Input id="commission" value={form.commission} onChange={(e) => set("commission", e.target.value)} placeholder="3% or $12,000" className="mt-1.5" />
                 </F>
