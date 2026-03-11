@@ -97,8 +97,11 @@ export default function Layout({ children, currentPageName }) {
       navigate(createPageUrl("ClientPortal"), { replace: true });
     } else if (role === "agent" && !isAgentPage && isTCPage) {
       navigate(createPageUrl("AgentPortal"), { replace: true });
+    } else if (!role || role === "user") {
+      // Default TC users (admin, owner, tc role not set) go to Dashboard
+      navigate(createPageUrl("Dashboard"), { replace: true });
     }
-  }, [currentUser]);
+  }, [currentUser, navigate]);
 
   const role = currentUser?.role;
   const navItems = role === "client" ? CLIENT_NAV
