@@ -107,7 +107,12 @@ export default function CommissionStatementButton({ transaction, financeData }) 
       };
 
       tableRow(`Sale Price`, salePrice);
-      tableRow(`Commission Rate`, `${commissionPct}%`, false, false);
+      // Commission Rate row — render as plain text, not currency
+      doc.setFont("helvetica", "normal"); doc.setFontSize(9);
+      doc.setTextColor(15, 23, 42);
+      doc.text("Commission Rate", margin + 2, y);
+      doc.text(`${commissionPct}%`, vCol, y, { align: "right" });
+      y += 7;
       tableRow(`Gross Commission (${commissionPct}% of ${fmt(salePrice)})`, grossCommission, true);
 
       if (fin) {
