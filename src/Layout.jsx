@@ -68,6 +68,25 @@ export default function Layout({ children, currentPageName }) {
     retry: false,
   });
 
+  const navigate = useNavigate();
+
+  // Role-based redirect guard
+  useEffect(() => {
+    if (!currentUser) return;
+    const role = currentUser.role;
+    const path = window.location.hash.replace("#", "") || "/";
+
+    const isClientPage = path.startsWith("/ClientPortal");
+    const isAgentPage  = path.startsWith("/AgentPortal");
+    const isTCPage     = !isClientPage && !isAgentPage && path !== "/PortalSelect";
+
+    if (role === "client" && !isClientPage) {
+      navigate(createPageUrl("ClientPortal"), { replace: true });
+    } else if (role === "agent" && !isAgentPage && isTCPage) {
+      navigate(createPageUrl("AgentPortal"), { replace: true });
+    }
+  }, [currentUser]);
+
   const role = currentUser?.role;
   const navItems = role === "client" ? CLIENT_NAV
     : role === "agent" ? AGENT_NAV
