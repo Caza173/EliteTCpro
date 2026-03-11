@@ -89,6 +89,7 @@ export default function AgentIntake() {
     if (parsed.inspectionDeadline)   u.inspection_deadline    = parsed.inspectionDeadline;
     if (parsed.earnestMoneyDeadline) u.earnest_money_deadline = parsed.earnestMoneyDeadline;
     if (parsed.dueDiligenceDeadline) u.due_diligence_deadline = parsed.dueDiligenceDeadline;
+    if (parsed.purchasePrice)        u.sale_price             = String(parsed.purchasePrice);
 
     Object.keys(u).forEach(k => { if (!u[k]) delete u[k]; });
     setForm((p) => ({ ...p, ...u }));
