@@ -5,7 +5,8 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Bell, CheckCheck, AlertCircle, Clock, FileText, Layers, CheckCircle2, XCircle } from "lucide-react";
+import { Bell, CheckCheck, AlertCircle, Clock, FileText, Layers, CheckCircle2, XCircle, ChevronDown, ChevronUp } from "lucide-react";
+import { Textarea } from "@/components/ui/textarea";
 import { format } from "date-fns";
 import { useCurrentUser } from "../components/auth/useCurrentUser";
 
