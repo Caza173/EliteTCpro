@@ -155,9 +155,9 @@ export default function PortalSelect() {
       {/* Features */}
       <section className="max-w-7xl mx-auto px-6 py-20">
         <div className="text-center mb-12">
-          <h2 className="text-3xl sm:text-4xl font-bold text-white mb-3">Everything you need, built in</h2>
-          <p className="text-slate-400 text-base max-w-xl mx-auto">One platform for the entire transaction lifecycle.</p>
-        </div>
+           <h2 className="text-3xl sm:text-4xl font-bold text-white mb-3" style={{ fontFamily: "'Playfair Display', serif" }}>Everything you need, built in</h2>
+           <p className="text-slate-400 text-base max-w-xl mx-auto">One platform for the entire transaction lifecycle.</p>
+         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
           {FEATURES.map(({ icon: Icon, title, description, color, iconColor, border }) => (
