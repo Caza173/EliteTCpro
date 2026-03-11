@@ -21,6 +21,7 @@ const initial = {
   buyer_brokerage: "", seller_brokerage: "",
   closing_title_company: "",
   address: "", mls_number: "", commission: "",
+  sale_price: "",
   transaction_type: "buyer",
   is_cash_transaction: false,
   client_email: "", client_phone: "",
