@@ -106,6 +106,11 @@ export default function Layout({ children, currentPageName }) {
     : (role === "owner" || role === "admin") ? OWNER_NAV
     : TC_NAV;
 
+  // Render landing page without any chrome
+  if (currentPageName === "PortalSelect") {
+    return <ThemeProvider>{children}</ThemeProvider>;
+  }
+
   return (
     <ThemeProvider>
       <div className="min-h-screen flex" style={{ backgroundColor: "var(--bg-primary)", color: "var(--text-primary)" }}>

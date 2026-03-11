@@ -58,12 +58,12 @@ import Dashboard from './pages/Dashboard';
 import Deadlines from './pages/Deadlines';
 import Documents from './pages/Documents';
 import Notifications from './pages/Notifications';
+import PortalSelect from './pages/PortalSelect';
 import Settings from './pages/Settings';
 import Tasks from './pages/Tasks';
 import Templates from './pages/Templates';
 import TransactionDetail from './pages/TransactionDetail';
 import Transactions from './pages/Transactions';
-import PortalSelect from './pages/PortalSelect';
 import __Layout from './Layout.jsx';
 
 
@@ -79,12 +79,12 @@ export const PAGES = {
     "Deadlines": Deadlines,
     "Documents": Documents,
     "Notifications": Notifications,
+    "PortalSelect": PortalSelect,
     "Settings": Settings,
     "Tasks": Tasks,
     "Templates": Templates,
     "TransactionDetail": TransactionDetail,
     "Transactions": Transactions,
-    "PortalSelect": PortalSelect,
 }
 
 export const pagesConfig = {
