@@ -209,7 +209,7 @@ export default function PortalSelect() {
           className="rounded-3xl p-10 text-center border border-amber-500/20"
           style={{ background: "linear-gradient(135deg, rgba(201,162,39,0.08) 0%, rgba(15,23,42,0.8) 100%)" }}
         >
-          <h2 className="text-3xl sm:text-4xl font-bold text-white mb-3">Ready to streamline your transactions?</h2>
+          <h2 className="text-3xl sm:text-4xl font-bold text-white mb-3" style={{ fontFamily: "'Playfair Display', serif" }}>Ready to streamline your transactions?</h2>
           <p className="text-slate-400 mb-8 max-w-lg mx-auto">Log in to your portal and start closing deals faster with AI-powered coordination.</p>
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
             <button
