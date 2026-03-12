@@ -246,7 +246,7 @@ export default function TransactionDocumentsTab({ transaction, currentUser }) {
                       <Button
                         variant="ghost" size="icon"
                         className="h-8 w-8 text-red-400 hover:text-red-600"
-                        onClick={() => deleteMutation.mutate(doc.id)}
+                        onClick={() => { if (confirm("Delete this document?")) deleteMutation.mutate(doc.id); }}
                       >
                         <Trash2 className="w-4 h-4" />
                       </Button>
