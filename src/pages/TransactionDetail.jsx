@@ -407,7 +407,7 @@ TC Manager
       </Card>
 
       {/* Tab Navigation */}
-      <div className="flex gap-1 bg-gray-100 p-1 rounded-xl overflow-x-auto">
+      <div className="flex gap-1 bg-gray-100 p-1 rounded-xl overflow-x-auto scrollbar-none -mx-1 px-1">
         {TX_TABS.map(({ id, label, icon: Icon }) => (
           <button
             key={id}
@@ -594,7 +594,7 @@ function InfoItem({ icon: Icon, label, value, highlight }) {
       )}
       <div>
         <p className="text-xs text-gray-500 font-medium">{label}</p>
-        <p className={`text-sm font-medium ${highlight ? "text-blue-600" : "text-gray-900"}`}>
+        <p className={`text-sm font-medium break-words ${highlight ? "text-blue-600" : "text-gray-900"}`}>
           {value}
         </p>
       </div>
