@@ -110,7 +110,7 @@ export default function TransactionDetail() {
     onError: (_err, _vars, context) => {
       if (context?.prev) queryClient.setQueryData(["transactions"], context.prev);
     },
-    onSettled: () => queryClient.invalidateQueries({ queryKey: ["transactions"] }),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["transactions"] }),
   });
 
   const deleteMutation = useMutation({
