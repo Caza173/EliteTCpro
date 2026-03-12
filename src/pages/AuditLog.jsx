@@ -48,7 +48,7 @@ export default function AuditLogPage() {
   );
 
   return (
-    <div className="max-w-5xl mx-auto space-y-6">
+    <div className="max-w-5xl mx-auto space-y-6 w-full min-w-0">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <div>
           <h1 className="text-2xl font-bold text-gray-900 tracking-tight flex items-center gap-2">
@@ -56,7 +56,7 @@ export default function AuditLogPage() {
           </h1>
           <p className="text-sm text-gray-500 mt-0.5">All brokerage-level activity and change history.</p>
         </div>
-        <div className="relative w-64">
+        <div className="relative w-full sm:w-64">
           <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
           <Input className="pl-9" placeholder="Search logs…" value={search} onChange={(e) => setSearch(e.target.value)} />
         </div>
