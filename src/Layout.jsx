@@ -103,7 +103,6 @@ export default function Layout({ children, currentPageName }) {
     } else if (role === "agent" && !isAgentPage && isTCPage) {
       navigate(createPageUrl("AgentPortal"), { replace: true });
     } else if (!role || role === "user") {
-      // Default TC users (admin, owner, tc role not set) go to Dashboard
       navigate(createPageUrl("Dashboard"), { replace: true });
     }
   }, [currentUser, navigate]);
@@ -112,6 +111,7 @@ export default function Layout({ children, currentPageName }) {
   const navItems = role === "client" ? CLIENT_NAV
     : role === "agent" ? AGENT_NAV
     : (role === "owner" || role === "admin") ? OWNER_NAV
+    : (role === "tc" || role === "tc_lead") ? TC_NAV
     : TC_NAV;
 
   // Render landing page without any chrome
