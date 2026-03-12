@@ -96,7 +96,7 @@ function IssueCard({ issue, onAddTask, transaction }) {
             </div>
           </div>
         </div>
-        <div className="flex gap-1.5 flex-shrink-0">
+        <div className="flex gap-1.5 flex-shrink-0 flex-wrap justify-end">
           {issue.suggested_task && (
             <Button
               size="sm" variant="outline"
