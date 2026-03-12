@@ -69,9 +69,10 @@ function ScoreRing({ score }) {
   );
 }
 
-function IssueCard({ issue, onAddTask }) {
+function IssueCard({ issue, onAddTask, transaction }) {
   const [emailOpen, setEmailOpen] = useState(false);
   const [taskAdded, setTaskAdded] = useState(false);
+  const [showEmailModal, setShowEmailModal] = useState(false);
   const cfg = SEVERITY_CONFIG[issue.severity] || SEVERITY_CONFIG.info;
   const Icon = cfg.icon;
 
