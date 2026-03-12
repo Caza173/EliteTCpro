@@ -92,6 +92,17 @@ export default function Transactions() {
             <SelectItem value="cancelled">Cancelled</SelectItem>
           </SelectContent>
         </Select>
+        <Select value={phaseFilter} onValueChange={setPhaseFilter}>
+          <SelectTrigger className="w-48">
+            <SelectValue placeholder="All Phases" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All Phases</SelectItem>
+            {Object.entries(PHASE_LABELS).map(([num, label]) => (
+              <SelectItem key={num} value={num}>Phase {num} — {label}</SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
       </div>
 
       {/* Table */}
