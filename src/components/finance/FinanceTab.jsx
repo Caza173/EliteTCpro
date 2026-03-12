@@ -213,11 +213,7 @@ export default function FinanceTab({ transaction, currentUser, parsedPsData }) {
             <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
               {[
                 { label: "Broker Split %", field: "broker_split_percent", suffix: "%" },
-                { label: "Franchise Fee %", field: "franchise_fee_percent", suffix: "%" },
                 { label: "Transaction Fee ($)", field: "transaction_fee", suffix: "$" },
-                { label: "E&O Fee ($)", field: "eo_fee", suffix: "$" },
-                { label: "Broker Cap ($)", field: "broker_cap", suffix: "$" },
-                { label: "Other Fees ($)", field: "other_brokerage_fees", suffix: "$" },
               ].map(({ label, field }) => (
                 <div key={field}>
                   <Label className="text-xs text-gray-500 mb-1 block">{label}</Label>
