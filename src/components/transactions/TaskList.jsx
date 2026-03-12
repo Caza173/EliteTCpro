@@ -14,6 +14,9 @@ const PHASE_LABELS = {
   8: "Closing & Post Closing",
 };
 
+// Remap legacy DB phase numbers (3-12) to new 1-8 numbering
+const PHASE_REMAP = { 3:1, 4:2, 5:3, 6:4, 7:5, 8:6, 9:7, 10:7, 11:8, 12:8 };
+
 export default function TaskList({ tasks = [], onToggleTask }) {
   if (!tasks.length) {
     return (

@@ -99,8 +99,8 @@ export default function TransactionDetail() {
 
   const updateMutation = useMutation({
     mutationFn: ({ id, data }) => base44.entities.Transaction.update(id, data),
-    onMutate: async ({ id: txId, data }) => {
-      await queryClient.cancelQueries({ queryKey: ["transactions"] });
+    onMutate: ({ id: txId, data }) => {
+      queryClient.cancelQueries({ queryKey: ["transactions"] });
       const prev = queryClient.getQueryData(["transactions"]);
       queryClient.setQueryData(["transactions"], (old = []) =>
         old.map((t) => t.id === txId ? { ...t, ...data } : t)
