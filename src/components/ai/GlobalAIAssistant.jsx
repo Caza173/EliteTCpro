@@ -200,7 +200,9 @@ export default function GlobalAIAssistant({ transactions = [], checklistItems = 
   }, [transactions.length]);
 
   useEffect(() => {
-    if (expanded) bottomRef.current?.scrollIntoView({ behavior: "smooth" });
+    if (expanded && messagesContainerRef.current) {
+      messagesContainerRef.current.scrollTop = messagesContainerRef.current.scrollHeight;
+    }
   }, [messages, loading, expanded]);
 
   const sendMessage = async (text) => {
