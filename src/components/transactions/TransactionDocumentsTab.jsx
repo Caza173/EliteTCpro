@@ -159,7 +159,7 @@ export default function TransactionDocumentsTab({ transaction, currentUser }) {
                 </SelectTrigger>
                 <SelectContent>
                   {DOC_TYPES.map((t) => (
-                    <SelectItem key={t} value={t} className="capitalize">{t}</SelectItem>
+                    <SelectItem key={t.value} value={t.value}>{t.label}</SelectItem>
                   ))}
                 </SelectContent>
               </Select>
@@ -246,8 +246,8 @@ export default function TransactionDocumentsTab({ transaction, currentUser }) {
                       {doc.created_date ? ` · ${format(new Date(doc.created_date), "MMM d, yyyy")}` : ""}
                     </p>
                   </div>
-                  <Badge className={`text-xs capitalize hidden sm:inline-flex ${TYPE_COLORS[doc.doc_type] || TYPE_COLORS.other}`}>
-                    {doc.doc_type}
+                  <Badge className={`text-xs hidden sm:inline-flex ${TYPE_COLORS[doc.doc_type] || TYPE_COLORS.other}`}>
+                    {DOC_LABELS[doc.doc_type] || doc.doc_type}
                   </Badge>
                   <div className="flex items-center gap-1">
                     <a href={doc.file_url} target="_blank" rel="noopener noreferrer">
