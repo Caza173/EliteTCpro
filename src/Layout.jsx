@@ -25,6 +25,8 @@ import {
 import NotificationBell from "./components/dashboard/NotificationBell";
 import { ThemeProvider } from "./components/theme/ThemeContext";
 import ThemeToggle from "./components/theme/ThemeToggle";
+import InstallPrompt from "./components/pwa/InstallPrompt";
+import OfflineBanner from "./components/pwa/OfflineBanner";
 
 const TC_NAV = [
   { label: "Dashboard", page: "Dashboard", icon: LayoutDashboard },
