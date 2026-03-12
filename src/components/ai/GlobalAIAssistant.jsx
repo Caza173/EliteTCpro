@@ -279,7 +279,7 @@ export default function GlobalAIAssistant({ transactions = [], checklistItems = 
           </div>
 
           {/* Messages */}
-          <div className="h-96 overflow-y-auto px-4 py-4 space-y-4">
+          <div ref={messagesContainerRef} className="h-96 overflow-y-auto px-4 py-4 space-y-4">
             {messages.map((msg, i) => (
               <div key={i} className={`flex gap-3 ${msg.role === "user" ? "flex-row-reverse" : ""}`}>
                 <div className={`w-7 h-7 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5 ${msg.role === "user" ? "bg-blue-600" : "bg-slate-700"}`}>
