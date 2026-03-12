@@ -14,13 +14,17 @@ Deno.serve(async (req) => {
     const { document_id } = await req.json();
     if (!document_id) return Response.json({ error: 'document_id required' }, { status: 400 });
 
-    await base44.asServiceRole.entities.Document.delete(document_id);
+    try {
+      await base44.asServiceRole.entities.Document.delete(document_id);
+    } catch (deleteErr) {
+      // 404 = already deleted or RLS filtered — treat as success
+      const msg = deleteErr?.message || '';
+      if (!msg.includes('404') && !msg.toLowerCase().includes('not found')) {
+        throw deleteErr;
+      }
+    }
     return Response.json({ success: true });
   } catch (error) {
-    // 404 = already deleted, treat as success
-    if (error?.response?.status === 404 || error?.message?.includes('404')) {
-      return Response.json({ success: true });
-    }
     return Response.json({ error: error.message }, { status: 500 });
   }
 });
