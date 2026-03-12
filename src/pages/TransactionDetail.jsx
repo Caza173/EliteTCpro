@@ -561,29 +561,6 @@ TC Manager
         </Card>
       )}
 
-      {/* Tab: Tasks */}
-      {activeTab === "tasks" && (
-        <Card className="shadow-sm border-gray-100">
-          <CardHeader>
-            <CardTitle className="text-base font-semibold">Tasks</CardTitle>
-            <p className="text-sm text-gray-500">
-              {(transaction.tasks || []).filter((t) => t.completed).length} / {(transaction.tasks || []).length} completed
-            </p>
-          </CardHeader>
-          <CardContent>
-            <TaskList
-              tasks={transaction.tasks || []}
-              onToggleTask={async (taskId) => {
-                const updatedTasks = (transaction.tasks || []).map((task) =>
-                  task.id === taskId ? { ...task, completed: !task.completed } : task
-                );
-                updateMutation.mutate({ id: transaction.id, data: { tasks: updatedTasks, last_activity_at: new Date().toISOString() } });
-              }}
-            />
-          </CardContent>
-        </Card>
-      )}
-
       {/* Tab: Documents */}
       {activeTab === "documents" && (
         <TransactionDocumentsTab transaction={transaction} currentUser={currentUser} />
