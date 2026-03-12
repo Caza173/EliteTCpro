@@ -276,7 +276,7 @@ TC Manager
 
   if (isLoading) {
     return (
-      <div className="max-w-5xl mx-auto space-y-6">
+      <div className="max-w-5xl mx-auto space-y-6 w-full min-w-0">
         <Skeleton className="h-8 w-40" />
         <Skeleton className="h-64 rounded-xl" />
         <Skeleton className="h-96 rounded-xl" />
@@ -286,7 +286,7 @@ TC Manager
 
   if (!transaction) {
     return (
-      <div className="max-w-5xl mx-auto text-center py-20">
+      <div className="max-w-5xl mx-auto text-center py-20 w-full min-w-0">
         <p className="text-gray-500 mb-4">Transaction not found.</p>
         <Link to={createPageUrl("Transactions")}>
           <Button variant="outline">
