@@ -178,12 +178,9 @@ export const DEFAULT_NH_TEMPLATE = {
     { id: "d4", deadline_type: "ctc", due_offset_days: 30, due_anchor: "contract_date" },
   ],
   doc_checklist: [
-    { id: "c1", doc_type: "contract", required: true, required_by_phase: 3, visible_to_client: true },
-    { id: "c2", doc_type: "disclosures", required: true, required_by_phase: 4, visible_to_client: true },
-    { id: "c3", doc_type: "inspection", required: true, required_by_phase: 5, visible_to_client: true },
-    { id: "c4", doc_type: "appraisal", required: true, required_by_phase: 7, visible_to_client: false },
-    { id: "c5", doc_type: "title", required: true, required_by_phase: 9, visible_to_client: false },
-    { id: "c6", doc_type: "closing", required: true, required_by_phase: 11, visible_to_client: true },
+    { id: "c1", doc_type: "purchase_and_sale", required: true, required_by_phase: 3, visible_to_client: false },
+    { id: "c2", doc_type: "buyer_agency_agreement", required: true, required_by_phase: 3, visible_to_client: false },
+    { id: "c3", doc_type: "addendum", required: false, required_by_phase: 3, visible_to_client: false },
   ],
 };
 
@@ -226,11 +223,8 @@ export const DEFAULT_NH_SELLER_TEMPLATE = {
     { id: "sd4", deadline_type: "ctc", due_offset_days: 30, due_anchor: "contract_date" },
   ],
   doc_checklist: [
-    { id: "sc1", doc_type: "contract", required: true, required_by_phase: 3, visible_to_client: true },
-    { id: "sc2", doc_type: "disclosures", required: true, required_by_phase: 3, visible_to_client: true },
-    { id: "sc3", doc_type: "title", required: true, required_by_phase: 9, visible_to_client: false },
-    { id: "sc4", doc_type: "lender", required: false, required_by_phase: 8, visible_to_client: false },
-    { id: "sc5", doc_type: "closing", required: true, required_by_phase: 11, visible_to_client: true },
-    { id: "sc6", doc_type: "other", required: false, required_by_phase: 3, visible_to_client: false },
+    { id: "sc1", doc_type: "purchase_and_sale", required: true, required_by_phase: 3, visible_to_client: false },
+    { id: "sc2", doc_type: "listing_agreement", required: true, required_by_phase: 3, visible_to_client: false },
+    { id: "sc3", doc_type: "addendum", required: false, required_by_phase: 3, visible_to_client: false },
   ],
 };
