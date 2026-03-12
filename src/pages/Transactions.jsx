@@ -21,6 +21,7 @@ import { useCurrentUser, isOwnerOrAdmin } from "../components/auth/useCurrentUse
 export default function Transactions() {
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
+  const [phaseFilter, setPhaseFilter] = useState("all");
   const { data: currentUser } = useCurrentUser();
 
   const { data: transactions = [], isLoading } = useQuery({

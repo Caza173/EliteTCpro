@@ -25,7 +25,18 @@ export default function Tasks() {
 
   const updateMutation = useMutation({
     mutationFn: ({ id, data }) => base44.entities.Transaction.update(id, data),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["transactions"] }),
+    onMutate: async ({ id, data }) => {
+      await queryClient.cancelQueries({ queryKey: ["transactions"] });
+      const prev = queryClient.getQueryData(["transactions", currentUser?.email, currentUser?.role]);
+      queryClient.setQueryData(["transactions", currentUser?.email, currentUser?.role], (old = []) =>
+        old.map((tx) => tx.id === id ? { ...tx, ...data } : tx)
+      );
+      return { prev };
+    },
+    onError: (_err, _vars, context) => {
+      if (context?.prev) queryClient.setQueryData(["transactions", currentUser?.email, currentUser?.role], context.prev);
+    },
+    onSettled: () => queryClient.invalidateQueries({ queryKey: ["transactions"] }),
   });
 
   const activeTransactions = transactions.filter((t) => t.status !== "cancelled");
