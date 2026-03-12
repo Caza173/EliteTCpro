@@ -108,6 +108,14 @@ function IssueCard({ issue, onAddTask, transaction }) {
               {taskAdded ? "Added" : "Task"}
             </Button>
           )}
+          <Button
+            size="sm" variant="outline"
+            className="h-7 text-xs text-blue-600 border-blue-200 hover:bg-blue-50"
+            onClick={() => setShowEmailModal(true)}
+          >
+            <Wand2 className="w-3 h-3 mr-1" />
+            Generate Email
+          </Button>
           {issue.suggested_email_body && (
             <Button
               size="sm" variant="outline"
@@ -115,11 +123,18 @@ function IssueCard({ issue, onAddTask, transaction }) {
               onClick={() => setEmailOpen(!emailOpen)}
             >
               <Mail className="w-3 h-3 mr-1" />
-              Email
+              Draft
               {emailOpen ? <ChevronUp className="w-3 h-3 ml-0.5" /> : <ChevronDown className="w-3 h-3 ml-0.5" />}
             </Button>
           )}
         </div>
+        {showEmailModal && (
+          <EmailGeneratorModal
+            issue={issue}
+            transaction={transaction}
+            onClose={() => setShowEmailModal(false)}
+          />
+        )}
       </div>
 
       {emailOpen && issue.suggested_email_body && (
