@@ -44,7 +44,14 @@ export default function TransactionDocumentsTab({ transaction, currentUser }) {
   });
 
   const deleteMutation = useMutation({
-    mutationFn: (id) => base44.entities.Document.delete(id),
+    mutationFn: async (id) => {
+      try {
+        await base44.entities.Document.delete(id);
+      } catch (err) {
+        // 404 means already deleted — treat as success
+        if (err?.response?.status !== 404) throw err;
+      }
+    },
     onMutate: async (id) => {
       await queryClient.cancelQueries({ queryKey: ["tx-documents", transaction.id] });
       const prev = queryClient.getQueryData(["tx-documents", transaction.id]);
