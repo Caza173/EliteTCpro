@@ -155,7 +155,7 @@ function IssueCard({ issue, onAddTask, transaction }) {
   );
 }
 
-function ReportCard({ report, onRescan, onAddTask, scanning }) {
+function ReportCard({ report, onRescan, onAddTask, scanning, transaction }) {
   const [expanded, setExpanded] = useState(true);
   const [showFields, setShowFields] = useState(false);
 
@@ -222,7 +222,7 @@ function ReportCard({ report, onRescan, onAddTask, scanning }) {
             <div className="space-y-2">
               <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Issues ({report.all_issues.length})</p>
               {(report.all_issues || []).map((issue, i) => (
-                <IssueCard key={issue.id || i} issue={issue} onAddTask={onAddTask} />
+                <IssueCard key={issue.id || i} issue={issue} onAddTask={onAddTask} transaction={transaction} />
               ))}
             </div>
           ) : (
@@ -446,6 +446,7 @@ export default function ComplianceScanPanel({ transaction, currentUser }) {
               onRescan={handleRescan}
               onAddTask={handleAddTask}
               scanning={scanningId === report.document_id}
+              transaction={transaction}
             />
           ))}
         </div>
