@@ -123,7 +123,7 @@ export default function Layout({ children, currentPageName }) {
     <ThemeProvider>
       <OfflineBanner />
       <InstallPrompt />
-      <div className="min-h-screen flex" style={{ backgroundColor: "var(--bg-primary)", color: "var(--text-primary)" }}>
+      <div className="min-h-screen flex overflow-x-hidden w-full" style={{ backgroundColor: "var(--bg-primary)", color: "var(--text-primary)" }}>
 
       {/* Mobile overlay */}
       {sidebarOpen && (
@@ -237,7 +237,7 @@ export default function Layout({ children, currentPageName }) {
         </header>
 
         {/* Page content */}
-        <main className="flex-1 p-4 lg:p-8" style={{ backgroundColor: "var(--bg-primary)" }}>
+        <main className="flex-1 p-4 lg:p-8 min-w-0 overflow-x-hidden" style={{ backgroundColor: "var(--bg-primary)" }}>
           {children}
         </main>
       </div>
