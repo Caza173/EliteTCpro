@@ -11,16 +11,27 @@ import { format } from "date-fns";
 import { writeAuditLog } from "../utils/tenantUtils";
 import DocChecklistPanel from "./DocChecklistPanel";
 
-const DOC_TYPES = ["contract", "disclosures", "inspection", "appraisal", "title", "lender", "closing", "other"];
+const DOC_TYPES = [
+  { value: "purchase_and_sale", label: "Purchase & Sale Agreement" },
+  { value: "listing_agreement", label: "Listing Agreement" },
+  { value: "addendum", label: "Addendum" },
+  { value: "buyer_agency_agreement", label: "Buyer Agency Agreement" },
+  { value: "other", label: "Other" },
+];
+
+const DOC_LABELS = {
+  purchase_and_sale: "Purchase & Sale",
+  listing_agreement: "Listing Agreement",
+  addendum: "Addendum",
+  buyer_agency_agreement: "Buyer Agency Agreement",
+  other: "Other",
+};
 
 const TYPE_COLORS = {
-  contract: "bg-blue-50 text-blue-700",
-  disclosures: "bg-purple-50 text-purple-700",
-  inspection: "bg-orange-50 text-orange-700",
-  appraisal: "bg-cyan-50 text-cyan-700",
-  title: "bg-emerald-50 text-emerald-700",
-  lender: "bg-indigo-50 text-indigo-700",
-  closing: "bg-rose-50 text-rose-700",
+  purchase_and_sale: "bg-blue-50 text-blue-700",
+  listing_agreement: "bg-emerald-50 text-emerald-700",
+  addendum: "bg-amber-50 text-amber-700",
+  buyer_agency_agreement: "bg-purple-50 text-purple-700",
   other: "bg-gray-50 text-gray-600",
 };
 
