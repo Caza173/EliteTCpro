@@ -14,7 +14,15 @@ export function isOwnerOrAdmin(user) {
 }
 
 export function isTCOrAdmin(user) {
-  return user?.role === "tc" || user?.role === "admin" || user?.role === "owner";
+  return ["tc", "tc_lead", "admin", "owner"].includes(user?.role);
+}
+
+export function isTC(user) {
+  return user?.role === "tc" || user?.role === "tc_lead";
+}
+
+export function isTCLead(user) {
+  return user?.role === "tc_lead";
 }
 
 export function isAgent(user) {
@@ -26,7 +34,7 @@ export function isClient(user) {
 }
 
 export function canEdit(user) {
-  return ["owner", "admin", "tc", "agent"].includes(user?.role);
+  return ["owner", "admin", "tc_lead", "tc", "agent"].includes(user?.role);
 }
 
 export function canManageBilling(user) {
