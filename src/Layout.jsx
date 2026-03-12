@@ -121,6 +121,8 @@ export default function Layout({ children, currentPageName }) {
 
   return (
     <ThemeProvider>
+      <OfflineBanner />
+      <InstallPrompt />
       <div className="min-h-screen flex" style={{ backgroundColor: "var(--bg-primary)", color: "var(--text-primary)" }}>
 
       {/* Mobile overlay */}
