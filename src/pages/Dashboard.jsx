@@ -43,6 +43,13 @@ export default function Dashboard() {
     staleTime: 30_000,
   });
 
+  const { data: notifications = [] } = useQuery({
+    queryKey: ["notifications", currentUser?.email],
+    queryFn: () => base44.entities.InAppNotification.filter({ user_email: currentUser.email }),
+    enabled: !!currentUser,
+    staleTime: 30_000,
+  });
+
   const activeTransactions = transactions.filter((t) => t.status === "active");
   const atRiskCount = activeTransactions.filter((tx) => {
     const { risk_level } = computeHealthScore(tx, checklistItems);
@@ -84,7 +91,7 @@ export default function Dashboard() {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <TasksDueToday transactions={transactions} />
+            <TasksDueToday transactions={transactions} notifications={notifications} />
           </CardContent>
         </Card>
       )}
