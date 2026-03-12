@@ -27,9 +27,10 @@ export default function TaskList({ tasks = [], onToggleTask }) {
     );
   }
 
-  // Group by phase
+  // Group by phase, remapping legacy numbers to new 1-8 scheme
   const grouped = tasks.reduce((acc, task) => {
-    const key = task.phase || 0;
+    const raw = task.phase || 0;
+    const key = PHASE_REMAP[raw] ?? raw;
     if (!acc[key]) acc[key] = [];
     acc[key].push(task);
     return acc;
