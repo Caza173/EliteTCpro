@@ -175,6 +175,7 @@ export default function GlobalAIAssistant({ transactions = [], checklistItems = 
   const [loading, setLoading] = useState(false);
   const [expanded, setExpanded] = useState(true);
   const bottomRef = useRef(null);
+  const messagesContainerRef = useRef(null);
 
   const { data: documents = [] } = useQuery({
     queryKey: ["allDocuments"],
