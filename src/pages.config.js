@@ -63,6 +63,7 @@ import Settings from './pages/Settings';
 import Tasks from './pages/Tasks';
 import Templates from './pages/Templates';
 import Transactions from './pages/Transactions';
+import TransactionDetail from './pages/TransactionDetail';
 import __Layout from './Layout.jsx';
 
 
@@ -83,6 +84,7 @@ export const PAGES = {
     "Tasks": Tasks,
     "Templates": Templates,
     "Transactions": Transactions,
+    "TransactionDetail": TransactionDetail,
 }
 
 export const pagesConfig = {
