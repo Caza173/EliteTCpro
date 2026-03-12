@@ -70,12 +70,7 @@ export default function Dashboard() {
           <h1 className="text-2xl font-bold text-gray-900 tracking-tight">Overview</h1>
           <p className="text-sm text-gray-500 mt-0.5">Manage your real estate transactions</p>
         </div>
-        <Link to={createPageUrl("AddTransaction")}>
-          <Button className="bg-blue-600 hover:bg-blue-700">
-            <Plus className="w-4 h-4 mr-2" />
-            New Transaction
-          </Button>
-        </Link>
+
       </div>
 
       {/* AI Command Center */}
