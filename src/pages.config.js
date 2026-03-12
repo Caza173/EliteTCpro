@@ -62,7 +62,6 @@ import PortalSelect from './pages/PortalSelect';
 import Settings from './pages/Settings';
 import Tasks from './pages/Tasks';
 import Templates from './pages/Templates';
-import TransactionDetail from './pages/TransactionDetail';
 import Transactions from './pages/Transactions';
 import __Layout from './Layout.jsx';
 
@@ -83,7 +82,6 @@ export const PAGES = {
     "Settings": Settings,
     "Tasks": Tasks,
     "Templates": Templates,
-    "TransactionDetail": TransactionDetail,
     "Transactions": Transactions,
 }
 
