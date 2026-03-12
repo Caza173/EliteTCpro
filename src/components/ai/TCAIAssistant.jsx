@@ -200,7 +200,7 @@ Respond to the user's latest message. Be helpful, professional, and reference sp
   };
 
   return (
-    <div className="flex flex-col h-[680px] rounded-xl border overflow-hidden" style={{ background: "var(--card-bg)", borderColor: "var(--card-border)" }}>
+    <div className="flex flex-col h-full overflow-hidden" style={{ background: "var(--card-bg)", borderColor: "var(--card-border)" }}>
       {/* Header */}
       <div className="flex items-center justify-between px-5 py-3.5 border-b" style={{ borderColor: "var(--card-border)", background: "var(--bg-tertiary)" }}>
         <div className="flex items-center gap-2.5">

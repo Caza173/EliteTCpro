@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { base44 } from "@/api/base44Client";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -8,39 +8,19 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
+  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
 import {
-  MapPin,
-  User,
-  Users,
-  Mail,
-  Phone,
-  Calendar,
-  ArrowLeft,
-  Trash2,
-  ClipboardCheck,
-  Send,
-  UserPlus,
-  LayoutDashboard,
-  GitBranch,
-  Clock,
-  ListChecks,
-  DollarSign,
-  FolderOpen,
-  ShieldCheck,
-  Sparkles,
+  MapPin, User, Users, Mail, Phone, Calendar, ArrowLeft, Trash2,
+  ClipboardCheck, Send, UserPlus, LayoutDashboard, GitBranch, Clock,
+  DollarSign, FolderOpen, ShieldCheck, PanelLeftClose, PanelLeftOpen,
+  MessageSquare, X,
 } from "lucide-react";
 import { format } from "date-fns";
 import PhaseChecklist from "../components/transactions/PhaseChecklist";
 import TransactionTimeline from "../components/transactions/TransactionTimeline";
 import TaskList from "../components/transactions/TaskList";
 import DocChecklistPanel from "../components/transactions/DocChecklistPanel";
-import DeadlineDashboard from "../components/transactions/DeadlineDashboard";
 import HealthScoreBadge from "../components/dashboard/HealthScoreBadge";
 import { useCurrentUser } from "../components/auth/useCurrentUser";
 import { writeAuditLog, computeHealthScore } from "../components/utils/tenantUtils";
@@ -53,25 +33,24 @@ import ComplianceScanPanel from "../components/compliance/ComplianceScanPanel";
 import TCAIAssistant from "../components/ai/TCAIAssistant";
 
 const TX_TABS = [
-  { id: "overview", label: "Overview", icon: LayoutDashboard },
-  { id: "timeline", label: "Timeline", icon: GitBranch },
-  { id: "deadlines", label: "Deadlines", icon: Clock },
-  { id: "documents", label: "Documents", icon: FolderOpen },
-  { id: "finance", label: "Finance", icon: DollarSign },
-  { id: "compliance", label: "Compliance", icon: ShieldCheck },
-  { id: "ai", label: "AI Assistant", icon: Sparkles },
+  { id: "overview",    label: "Overview",    icon: LayoutDashboard },
+  { id: "timeline",    label: "Timeline",    icon: GitBranch },
+  { id: "deadlines",   label: "Deadlines",   icon: Clock },
+  { id: "documents",   label: "Documents",   icon: FolderOpen },
+  { id: "finance",     label: "Finance",     icon: DollarSign },
+  { id: "compliance",  label: "Compliance",  icon: ShieldCheck },
 ];
 
 const PHASES = [
   "Pre-Contract", "Offer Drafting", "Offer Accepted", "Escrow Opened",
   "Inspection Period", "Repair Negotiation", "Appraisal Ordered",
-  "Loan Processing", "Clear to Close", "Final Walkthrough", "Closing", "Post Closing"
+  "Loan Processing", "Clear to Close", "Final Walkthrough", "Closing", "Post Closing",
 ];
 
 const statusStyles = {
-  active: "bg-emerald-50 text-emerald-700 border-emerald-200",
-  pending: "bg-amber-50 text-amber-700 border-amber-200",
-  closed: "bg-slate-100 text-slate-600 border-slate-200",
+  active:    "bg-emerald-50 text-emerald-700 border-emerald-200",
+  pending:   "bg-amber-50 text-amber-700 border-amber-200",
+  closed:    "bg-slate-100 text-slate-600 border-slate-200",
   cancelled: "bg-red-50 text-red-700 border-red-200",
 };
 
@@ -83,6 +62,38 @@ export default function TransactionDetail() {
   const { data: currentUser } = useCurrentUser();
 
   const [activeTab, setActiveTab] = useState("overview");
+  const [aiCollapsed, setAiCollapsed] = useState(false);
+  const [aiWidth, setAiWidth] = useState(380);
+  const [mobileAIOpen, setMobileAIOpen] = useState(false);
+  const [sendingTimeline, setSendingTimeline] = useState(false);
+  const [invitingClient, setInvitingClient] = useState(false);
+
+  // Resize handle drag
+  const isDragging = useRef(false);
+  const startX = useRef(0);
+  const startWidth = useRef(0);
+
+  const onResizeMouseDown = (e) => {
+    isDragging.current = true;
+    startX.current = e.clientX;
+    startWidth.current = aiWidth;
+    e.preventDefault();
+  };
+
+  useEffect(() => {
+    const onMouseMove = (e) => {
+      if (!isDragging.current) return;
+      const delta = e.clientX - startX.current;
+      setAiWidth(Math.max(320, Math.min(560, startWidth.current + delta)));
+    };
+    const onMouseUp = () => { isDragging.current = false; };
+    document.addEventListener("mousemove", onMouseMove);
+    document.addEventListener("mouseup", onMouseUp);
+    return () => {
+      document.removeEventListener("mousemove", onMouseMove);
+      document.removeEventListener("mouseup", onMouseUp);
+    };
+  }, []);
 
   const { data: transactions = [], isLoading } = useQuery({
     queryKey: ["transactions"],
@@ -103,7 +114,7 @@ export default function TransactionDetail() {
       queryClient.cancelQueries({ queryKey: ["transactions"] });
       const prev = queryClient.getQueryData(["transactions"]);
       queryClient.setQueryData(["transactions"], (old = []) =>
-        old.map((t) => t.id === txId ? { ...t, ...data } : t)
+        old.map((t) => (t.id === txId ? { ...t, ...data } : t))
       );
       return { prev };
     },
@@ -124,13 +135,10 @@ export default function TransactionDetail() {
   const handleTogglePhase = async (phaseNum) => {
     if (!transaction) return;
     const completed = transaction.phases_completed || [];
-    let newCompleted;
     const isCompleting = !completed.includes(phaseNum);
-    if (!isCompleting) {
-      newCompleted = completed.filter((n) => n !== phaseNum);
-    } else {
-      newCompleted = [...completed, phaseNum];
-    }
+    const newCompleted = isCompleting
+      ? [...completed, phaseNum]
+      : completed.filter((n) => n !== phaseNum);
     const maxCompleted = newCompleted.length > 0 ? Math.max(...newCompleted) : 0;
     const newPhase = Math.min(maxCompleted + 1, 12);
 
@@ -149,7 +157,6 @@ export default function TransactionDetail() {
       description: `Phase ${phaseNum} ${isCompleting ? "completed" : "unchecked"}`,
     });
 
-    // Send email notifications when a phase is completed
     if (isCompleting) {
       const phaseName = PHASES[phaseNum - 1];
       const nextPhaseName = PHASES[phaseNum] || null;
@@ -177,15 +184,9 @@ Best regards,
 TC Manager
       `.trim();
 
-      const recipients = [
-        transaction.client_email,
-        transaction.agent_email,
-      ].filter(Boolean);
-
+      const recipients = [transaction.client_email, transaction.agent_email].filter(Boolean);
       await Promise.allSettled(
-        recipients.map((to) =>
-          base44.integrations.Core.SendEmail({ to, subject, body })
-        )
+        recipients.map((to) => base44.integrations.Core.SendEmail({ to, subject, body }))
       );
     }
   };
@@ -193,9 +194,6 @@ TC Manager
   const handleStatusChange = (newStatus) => {
     updateMutation.mutate({ id: transaction.id, data: { status: newStatus, last_activity_at: new Date().toISOString() } });
   };
-
-  const [sendingTimeline, setSendingTimeline] = useState(false);
-  const [invitingClient, setInvitingClient] = useState(false);
 
   const handleInviteClient = async () => {
     if (!transaction?.client_email) {
@@ -220,7 +218,6 @@ TC Manager
   const handleSendTimeline = async () => {
     if (!transaction) return;
     setSendingTimeline(true);
-
     const deadlines = [
       { label: "Earnest Money Deposit", date: transaction.earnest_money_deadline },
       { label: "Inspection Deadline", date: transaction.inspection_deadline },
@@ -259,11 +256,7 @@ TC Manager
     const recipients = [transaction.client_email, transaction.agent_email].filter(Boolean);
     const results = await Promise.allSettled(
       recipients.map((to) =>
-        base44.integrations.Core.SendEmail({
-          to,
-          subject: `Key Deadlines — ${transaction.address}`,
-          body,
-        })
+        base44.integrations.Core.SendEmail({ to, subject: `Key Deadlines — ${transaction.address}`, body })
       )
     );
     setSendingTimeline(false);
@@ -289,297 +282,351 @@ TC Manager
       <div className="max-w-5xl mx-auto text-center py-20 w-full min-w-0">
         <p className="text-gray-500 mb-4">Transaction not found.</p>
         <Link to={createPageUrl("Transactions")}>
-          <Button variant="outline">
-            <ArrowLeft className="w-4 h-4 mr-2" /> Back to Transactions
-          </Button>
+          <Button variant="outline"><ArrowLeft className="w-4 h-4 mr-2" /> Back to Transactions</Button>
         </Link>
       </div>
     );
   }
 
   return (
-    <div className="max-w-5xl mx-auto space-y-6">
-      {/* Back + Actions */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-        <Link to={createPageUrl("Transactions")}>
-          <Button variant="ghost" className="text-gray-600 hover:text-gray-900 -ml-2">
-            <ArrowLeft className="w-4 h-4 mr-1" /> Back
-          </Button>
-        </Link>
-        <div className="flex flex-wrap items-center gap-2">
-          <Select value={transaction.status || "active"} onValueChange={handleStatusChange}>
-            <SelectTrigger className="w-32">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="active">Active</SelectItem>
-              <SelectItem value="pending">Pending</SelectItem>
-              <SelectItem value="closed">Closed</SelectItem>
-              <SelectItem value="cancelled">Cancelled</SelectItem>
-            </SelectContent>
-          </Select>
-          <Button
-            variant="outline"
-            size="sm"
-            className="text-indigo-600 hover:text-indigo-700 hover:bg-indigo-50 border-indigo-200"
-            onClick={handleInviteClient}
-            disabled={invitingClient}
+    <div
+      className="flex -mx-4 -mb-4 lg:-mx-8 lg:-mb-8 overflow-hidden"
+      style={{ height: "calc(100vh - 57px)" }}
+    >
+      {/* ── Mobile AI Drawer ── */}
+      {mobileAIOpen && (
+        <div className="lg:hidden fixed inset-0 z-50">
+          <div className="absolute inset-0 bg-black/50" onClick={() => setMobileAIOpen(false)} />
+          <div
+            className="absolute bottom-0 left-0 right-0 rounded-t-2xl overflow-hidden flex flex-col"
+            style={{ height: "72vh", background: "var(--card-bg)" }}
           >
-            <UserPlus className="w-4 h-4 mr-1" />
-            {invitingClient ? "Sending..." : "Invite Client"}
-          </Button>
-          <Button
-            variant="outline"
-            size="sm"
-            className="text-red-600 hover:text-red-700 hover:bg-red-50 border-red-200"
-            onClick={() => {
-              if (confirm("Delete this transaction?")) {
-                deleteMutation.mutate(transaction.id);
-              }
-            }}
-          >
-            <Trash2 className="w-4 h-4 mr-1" /> Delete
-          </Button>
-        </div>
-      </div>
-
-      {/* Summary Card */}
-      <Card className="shadow-sm border-gray-100">
-        <CardHeader className="pb-3">
-          <div className="flex items-start justify-between">
-            <div className="flex items-center gap-3">
-              <div className="w-11 h-11 rounded-xl bg-blue-50 flex items-center justify-center">
-                <MapPin className="w-5 h-5 text-blue-500" />
-              </div>
-              <div>
-                <CardTitle className="text-xl">{transaction.address}</CardTitle>
-                <div className="flex items-center gap-2 mt-1 flex-wrap">
-                  <Badge variant="outline" className={`text-xs capitalize ${statusStyles[transaction.status] || statusStyles.active}`}>
-                    {transaction.status || "active"}
-                  </Badge>
-                  <Badge variant="outline" className="text-xs capitalize bg-gray-50 text-gray-600">
-                    {transaction.transaction_type || "buyer"}
-                  </Badge>
-                  <HealthScoreBadge
-                    healthScore={transaction.health_score ?? computeHealthScore(transaction, checklistItems).health_score}
-                    riskLevel={transaction.risk_level ?? computeHealthScore(transaction, checklistItems).risk_level}
-                  />
-                </div>
-              </div>
+            <div className="flex items-center justify-between px-4 py-3 border-b flex-shrink-0" style={{ borderColor: "var(--card-border)" }}>
+              <span className="font-semibold text-sm" style={{ color: "var(--text-primary)" }}>AI Assistant · {transaction.address}</span>
+              <button onClick={() => setMobileAIOpen(false)} className="p-1 rounded-lg hover:bg-gray-100">
+                <X className="w-4 h-4 text-gray-500" />
+              </button>
+            </div>
+            <div className="flex-1 overflow-hidden">
+              <TCAIAssistant transaction={transaction} currentUser={currentUser} />
             </div>
           </div>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-            <InfoItem
-              icon={User}
-              label={transaction.buyers?.length > 1 ? "Buyers" : "Buyer"}
-              value={transaction.buyers?.length ? transaction.buyers.join(", ") : (transaction.buyer || "—")}
-            />
-            <InfoItem
-              icon={Users}
-              label={transaction.sellers?.length > 1 ? "Sellers" : "Seller"}
-              value={transaction.sellers?.length ? transaction.sellers.join(", ") : (transaction.seller || "—")}
-            />
-            {transaction.buyers_agent_name && <InfoItem icon={User} label="Buyer's Agent" value={transaction.buyers_agent_name} />}
-            {transaction.buyer_brokerage && <InfoItem icon={User} label="Buyer Brokerage" value={transaction.buyer_brokerage} />}
-            {transaction.sellers_agent_name && <InfoItem icon={User} label="Seller's Agent" value={transaction.sellers_agent_name} />}
-            {transaction.seller_brokerage && <InfoItem icon={User} label="Seller Brokerage" value={transaction.seller_brokerage} />}
-            <InfoItem icon={User} label="Transaction Coordinator" value={transaction.agent} />
-            <InfoItem icon={Mail} label="Client Email" value={transaction.client_email || "—"} />
-            <InfoItem icon={Phone} label="Client Phone" value={transaction.client_phone || "—"} />
-            {transaction.closing_title_company && <InfoItem icon={Calendar} label="Closing / Title Company" value={transaction.closing_title_company} />}
-            <InfoItem
-              icon={Calendar}
-              label="Contract Date"
-              value={transaction.contract_date ? format(new Date(transaction.contract_date), "MMM d, yyyy") : "—"}
-            />
-            <InfoItem
-              label="Current Phase"
-              value={PHASES[(transaction.phase || 1) - 1]}
-              highlight
-            />
-            {transaction.is_cash_transaction && (
-              <InfoItem label="Financing" value="Cash Transaction" />
-            )}
-          </div>
-        </CardContent>
-      </Card>
+        </div>
+      )}
 
-      {/* Tab Navigation */}
-      <div className="flex gap-1 bg-gray-100 p-1 rounded-xl overflow-x-auto scrollbar-none -mx-1 px-1">
-        {TX_TABS.map(({ id, label, icon: Icon }) => (
-          <button
-            key={id}
-            onClick={() => setActiveTab(id)}
-            className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium whitespace-nowrap transition-all ${
-              activeTab === id
-                ? "bg-white shadow-sm text-gray-900"
-                : "text-gray-500 hover:text-gray-700"
-            }`}
+      {/* ── Left AI Panel (Desktop) ── */}
+      {!aiCollapsed && (
+        <aside
+          className="hidden lg:flex flex-col border-r flex-shrink-0 overflow-hidden"
+          style={{ width: aiWidth, borderColor: "var(--card-border)", background: "var(--bg-secondary)" }}
+        >
+          {/* Panel header */}
+          <div
+            className="flex items-center justify-between px-4 py-2.5 border-b flex-shrink-0"
+            style={{ borderColor: "var(--card-border)", background: "var(--bg-tertiary)" }}
           >
-            <Icon className="w-3.5 h-3.5" />
-            {label}
+            <span className="text-xs font-semibold uppercase tracking-wider" style={{ color: "var(--text-muted)" }}>
+              AI Assistant
+            </span>
+            <button
+              onClick={() => setAiCollapsed(true)}
+              className="p-1.5 rounded-lg transition-colors hover:bg-gray-200"
+              title="Collapse AI panel"
+            >
+              <PanelLeftClose className="w-4 h-4" style={{ color: "var(--text-muted)" }} />
+            </button>
+          </div>
+          <div className="flex-1 overflow-hidden">
+            <TCAIAssistant transaction={transaction} currentUser={currentUser} />
+          </div>
+        </aside>
+      )}
+
+      {/* ── Resize Handle ── */}
+      {!aiCollapsed && (
+        <div
+          className="hidden lg:block w-1.5 flex-shrink-0 cursor-col-resize hover:bg-blue-400 active:bg-blue-500 transition-colors"
+          style={{ background: "var(--card-border)" }}
+          onMouseDown={onResizeMouseDown}
+        />
+      )}
+
+      {/* ── Right: Transaction Content ── */}
+      <div className="flex-1 min-w-0 overflow-y-auto p-4 lg:p-8 space-y-6">
+
+        {/* Expand AI button (desktop, when collapsed) */}
+        {aiCollapsed && (
+          <button
+            onClick={() => setAiCollapsed(false)}
+            className="hidden lg:inline-flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-lg border transition-colors hover:bg-blue-50"
+            style={{ borderColor: "var(--accent)", color: "var(--accent)" }}
+          >
+            <PanelLeftOpen className="w-3.5 h-3.5" />
+            Show AI Assistant
           </button>
-        ))}
-      </div>
+        )}
 
-      {/* Tab: Overview */}
-      {activeTab === "overview" && (
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <Card className="shadow-sm border-gray-100">
-            <CardHeader>
-              <CardTitle className="text-base font-semibold">Transaction Phases</CardTitle>
-              <p className="text-sm text-gray-500">Check off phases as completed.</p>
-            </CardHeader>
-            <CardContent>
-              <PhaseChecklist
-                phasesCompleted={transaction.phases_completed || []}
-                currentPhase={transaction.phase || 1}
-                onTogglePhase={handleTogglePhase}
-                tasks={transaction.tasks || []}
-              />
-            </CardContent>
-          </Card>
-
-          <Card className="shadow-sm border-gray-100">
-            <CardHeader>
-              <CardTitle className="text-base font-semibold">Tasks</CardTitle>
-              <p className="text-sm text-gray-500">
-                {(transaction.tasks || []).filter((t) => t.completed).length} / {(transaction.tasks || []).length} completed
-              </p>
-            </CardHeader>
-            <CardContent>
-              <TaskList
-                tasks={transaction.tasks || []}
-                onToggleTask={async (taskId) => {
-                  const updatedTasks = (transaction.tasks || []).map((task) =>
-                    task.id === taskId ? { ...task, completed: !task.completed } : task
-                  );
-                  updateMutation.mutate({ id: transaction.id, data: { tasks: updatedTasks, last_activity_at: new Date().toISOString() } });
-                  await writeAuditLog({
-                    brokerageId: transaction.brokerage_id,
-                    transactionId: transaction.id,
-                    actorEmail: currentUser?.email,
-                    action: "task_completed",
-                    entityType: "task",
-                    entityId: taskId,
-                    description: `Task ${taskId} toggled by ${currentUser?.email}`,
-                  });
-                }}
-              />
-            </CardContent>
-          </Card>
-
-          {checklistItems.length > 0 && (
-            <Card className="shadow-sm border-gray-100 lg:col-span-2">
-              <CardHeader>
-                <div className="flex items-center justify-between">
-                  <CardTitle className="text-base font-semibold flex items-center gap-2">
-                    <ClipboardCheck className="w-4 h-4 text-blue-500" /> Document Checklist
-                  </CardTitle>
-                  <span className="text-xs text-gray-400">
-                    {checklistItems.filter((i) => i.status === "approved").length}/{checklistItems.length} approved
-                  </span>
-                </div>
-              </CardHeader>
-              <CardContent>
-                <DocChecklistPanel
-                  items={checklistItems}
-                  currentUser={currentUser}
-                  transactionId={transaction.id}
-                  brokerageId={transaction.brokerage_id}
-                />
-              </CardContent>
-            </Card>
-          )}
+        {/* Back + Actions */}
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+          <Link to={createPageUrl("Transactions")}>
+            <Button variant="ghost" className="text-gray-600 hover:text-gray-900 -ml-2">
+              <ArrowLeft className="w-4 h-4 mr-1" /> Back
+            </Button>
+          </Link>
+          <div className="flex flex-wrap items-center gap-2">
+            <Select value={transaction.status || "active"} onValueChange={handleStatusChange}>
+              <SelectTrigger className="w-32"><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="active">Active</SelectItem>
+                <SelectItem value="pending">Pending</SelectItem>
+                <SelectItem value="closed">Closed</SelectItem>
+                <SelectItem value="cancelled">Cancelled</SelectItem>
+              </SelectContent>
+            </Select>
+            <Button
+              variant="outline" size="sm"
+              className="text-indigo-600 hover:text-indigo-700 hover:bg-indigo-50 border-indigo-200"
+              onClick={handleInviteClient} disabled={invitingClient}
+            >
+              <UserPlus className="w-4 h-4 mr-1" />
+              {invitingClient ? "Sending..." : "Invite Client"}
+            </Button>
+            <Button
+              variant="outline" size="sm"
+              className="text-red-600 hover:text-red-700 hover:bg-red-50 border-red-200"
+              onClick={() => { if (confirm("Delete this transaction?")) deleteMutation.mutate(transaction.id); }}
+            >
+              <Trash2 className="w-4 h-4 mr-1" /> Delete
+            </Button>
+          </div>
         </div>
-      )}
 
-      {/* Tab: Timeline */}
-      {activeTab === "timeline" && (
-        <div className="space-y-5">
-          <Card className="shadow-sm border-gray-100">
-            <CardHeader className="pb-2">
-              <CardTitle className="text-base font-semibold">Contract Timeline</CardTitle>
-              <p className="text-sm text-gray-500">Deadlines and linked tasks in chronological order</p>
-            </CardHeader>
-            <CardContent>
-              <ContractTimeline transaction={transaction} />
-            </CardContent>
-          </Card>
-          <Card className="shadow-sm border-gray-100">
-            <CardHeader className="pb-2">
-              <CardTitle className="text-base font-semibold">Phase Progress</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <TransactionTimeline
-                phasesCompleted={transaction.phases_completed || []}
-                currentPhase={transaction.phase || 1}
-              />
-            </CardContent>
-          </Card>
-          <Card className="shadow-sm border-gray-100">
-            <CardHeader className="pb-2">
-              <CardTitle className="text-base font-semibold">Activity History</CardTitle>
-              <p className="text-sm text-gray-500">All recorded events for this transaction</p>
-            </CardHeader>
-            <CardContent>
-              <TransactionActivityFeed transactionId={transaction.id} />
-            </CardContent>
-          </Card>
-        </div>
-      )}
-
-      {/* Tab: Deadlines */}
-      {activeTab === "deadlines" && (
+        {/* Summary Card */}
         <Card className="shadow-sm border-gray-100">
-          <CardHeader className="pb-2">
-            <div className="flex items-center justify-between">
-              <div>
-                <CardTitle className="text-base font-semibold">Key Deadlines</CardTitle>
-                <p className="text-sm text-gray-500">Click the pencil to edit any date — linked tasks auto-recalculate</p>
+          <CardHeader className="pb-3">
+            <div className="flex items-start justify-between">
+              <div className="flex items-center gap-3">
+                <div className="w-11 h-11 rounded-xl bg-blue-50 flex items-center justify-center">
+                  <MapPin className="w-5 h-5 text-blue-500" />
+                </div>
+                <div>
+                  <CardTitle className="text-xl">{transaction.address}</CardTitle>
+                  <div className="flex items-center gap-2 mt-1 flex-wrap">
+                    <Badge variant="outline" className={`text-xs capitalize ${statusStyles[transaction.status] || statusStyles.active}`}>
+                      {transaction.status || "active"}
+                    </Badge>
+                    <Badge variant="outline" className="text-xs capitalize bg-gray-50 text-gray-600">
+                      {transaction.transaction_type || "buyer"}
+                    </Badge>
+                    <HealthScoreBadge
+                      healthScore={transaction.health_score ?? computeHealthScore(transaction, checklistItems).health_score}
+                      riskLevel={transaction.risk_level ?? computeHealthScore(transaction, checklistItems).risk_level}
+                    />
+                  </div>
+                </div>
               </div>
-              <Button
-                size="sm"
-                variant="outline"
-                className="text-blue-600 hover:text-blue-700 hover:bg-blue-50 border-blue-200"
-                onClick={handleSendTimeline}
-                disabled={sendingTimeline}
-              >
-                <Send className="w-3.5 h-3.5 mr-1.5" />
-                {sendingTimeline ? "Sending..." : "Send Timeline"}
-              </Button>
             </div>
           </CardHeader>
           <CardContent>
-            <EditableDeadlinePanel
-              transaction={transaction}
-              onSave={(changes) => updateMutation.mutate({ id: transaction.id, data: { ...changes, last_activity_at: new Date().toISOString() } })}
-            />
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+              <InfoItem icon={User} label={transaction.buyers?.length > 1 ? "Buyers" : "Buyer"}
+                value={transaction.buyers?.length ? transaction.buyers.join(", ") : (transaction.buyer || "—")} />
+              <InfoItem icon={Users} label={transaction.sellers?.length > 1 ? "Sellers" : "Seller"}
+                value={transaction.sellers?.length ? transaction.sellers.join(", ") : (transaction.seller || "—")} />
+              {transaction.buyers_agent_name && <InfoItem icon={User} label="Buyer's Agent" value={transaction.buyers_agent_name} />}
+              {transaction.buyer_brokerage && <InfoItem icon={User} label="Buyer Brokerage" value={transaction.buyer_brokerage} />}
+              {transaction.sellers_agent_name && <InfoItem icon={User} label="Seller's Agent" value={transaction.sellers_agent_name} />}
+              {transaction.seller_brokerage && <InfoItem icon={User} label="Seller Brokerage" value={transaction.seller_brokerage} />}
+              <InfoItem icon={User} label="Transaction Coordinator" value={transaction.agent} />
+              <InfoItem icon={Mail} label="Client Email" value={transaction.client_email || "—"} />
+              <InfoItem icon={Phone} label="Client Phone" value={transaction.client_phone || "—"} />
+              {transaction.closing_title_company && (
+                <InfoItem icon={Calendar} label="Closing / Title Company" value={transaction.closing_title_company} />
+              )}
+              <InfoItem
+                icon={Calendar} label="Contract Date"
+                value={transaction.contract_date ? format(new Date(transaction.contract_date), "MMM d, yyyy") : "—"}
+              />
+              <InfoItem label="Current Phase" value={PHASES[(transaction.phase || 1) - 1]} highlight />
+              {transaction.is_cash_transaction && <InfoItem label="Financing" value="Cash Transaction" />}
+            </div>
           </CardContent>
         </Card>
-      )}
 
-      {/* Tab: Documents */}
-      {activeTab === "documents" && (
-        <TransactionDocumentsTab transaction={transaction} currentUser={currentUser} />
-      )}
+        {/* Tab Navigation */}
+        <div className="flex gap-1 bg-gray-100 p-1 rounded-xl overflow-x-auto scrollbar-none -mx-1 px-1">
+          {TX_TABS.map(({ id, label, icon: Icon }) => (
+            <button
+              key={id}
+              onClick={() => setActiveTab(id)}
+              className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium whitespace-nowrap transition-all ${
+                activeTab === id ? "bg-white shadow-sm text-gray-900" : "text-gray-500 hover:text-gray-700"
+              }`}
+            >
+              <Icon className="w-3.5 h-3.5" />
+              {label}
+            </button>
+          ))}
+        </div>
 
-      {/* Tab: Finance */}
-      {activeTab === "finance" && (
-        <FinanceTab transaction={transaction} currentUser={currentUser} />
-      )}
+        {/* Tab: Overview */}
+        {activeTab === "overview" && (
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <Card className="shadow-sm border-gray-100">
+              <CardHeader>
+                <CardTitle className="text-base font-semibold">Transaction Phases</CardTitle>
+                <p className="text-sm text-gray-500">Check off phases as completed.</p>
+              </CardHeader>
+              <CardContent>
+                <PhaseChecklist
+                  phasesCompleted={transaction.phases_completed || []}
+                  currentPhase={transaction.phase || 1}
+                  onTogglePhase={handleTogglePhase}
+                  tasks={transaction.tasks || []}
+                />
+              </CardContent>
+            </Card>
 
-      {/* Tab: Compliance */}
-      {activeTab === "compliance" && (
-        <ComplianceScanPanel transaction={transaction} currentUser={currentUser} />
-      )}
+            <Card className="shadow-sm border-gray-100">
+              <CardHeader>
+                <CardTitle className="text-base font-semibold">Tasks</CardTitle>
+                <p className="text-sm text-gray-500">
+                  {(transaction.tasks || []).filter((t) => t.completed).length} / {(transaction.tasks || []).length} completed
+                </p>
+              </CardHeader>
+              <CardContent>
+                <TaskList
+                  tasks={transaction.tasks || []}
+                  onToggleTask={async (taskId) => {
+                    const updatedTasks = (transaction.tasks || []).map((task) =>
+                      task.id === taskId ? { ...task, completed: !task.completed } : task
+                    );
+                    updateMutation.mutate({ id: transaction.id, data: { tasks: updatedTasks, last_activity_at: new Date().toISOString() } });
+                    await writeAuditLog({
+                      brokerageId: transaction.brokerage_id,
+                      transactionId: transaction.id,
+                      actorEmail: currentUser?.email,
+                      action: "task_completed",
+                      entityType: "task",
+                      entityId: taskId,
+                      description: `Task ${taskId} toggled by ${currentUser?.email}`,
+                    });
+                  }}
+                />
+              </CardContent>
+            </Card>
 
-      {/* Tab: AI Assistant */}
-      {activeTab === "ai" && (
-        <TCAIAssistant transaction={transaction} currentUser={currentUser} />
-      )}
+            {checklistItems.length > 0 && (
+              <Card className="shadow-sm border-gray-100 lg:col-span-2">
+                <CardHeader>
+                  <div className="flex items-center justify-between">
+                    <CardTitle className="text-base font-semibold flex items-center gap-2">
+                      <ClipboardCheck className="w-4 h-4 text-blue-500" /> Document Checklist
+                    </CardTitle>
+                    <span className="text-xs text-gray-400">
+                      {checklistItems.filter((i) => i.status === "approved").length}/{checklistItems.length} approved
+                    </span>
+                  </div>
+                </CardHeader>
+                <CardContent>
+                  <DocChecklistPanel
+                    items={checklistItems}
+                    currentUser={currentUser}
+                    transactionId={transaction.id}
+                    brokerageId={transaction.brokerage_id}
+                  />
+                </CardContent>
+              </Card>
+            )}
+          </div>
+        )}
+
+        {/* Tab: Timeline */}
+        {activeTab === "timeline" && (
+          <div className="space-y-5">
+            <Card className="shadow-sm border-gray-100">
+              <CardHeader className="pb-2">
+                <CardTitle className="text-base font-semibold">Contract Timeline</CardTitle>
+                <p className="text-sm text-gray-500">Deadlines and linked tasks in chronological order</p>
+              </CardHeader>
+              <CardContent><ContractTimeline transaction={transaction} /></CardContent>
+            </Card>
+            <Card className="shadow-sm border-gray-100">
+              <CardHeader className="pb-2">
+                <CardTitle className="text-base font-semibold">Phase Progress</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <TransactionTimeline
+                  phasesCompleted={transaction.phases_completed || []}
+                  currentPhase={transaction.phase || 1}
+                />
+              </CardContent>
+            </Card>
+            <Card className="shadow-sm border-gray-100">
+              <CardHeader className="pb-2">
+                <CardTitle className="text-base font-semibold">Activity History</CardTitle>
+                <p className="text-sm text-gray-500">All recorded events for this transaction</p>
+              </CardHeader>
+              <CardContent><TransactionActivityFeed transactionId={transaction.id} /></CardContent>
+            </Card>
+          </div>
+        )}
+
+        {/* Tab: Deadlines */}
+        {activeTab === "deadlines" && (
+          <Card className="shadow-sm border-gray-100">
+            <CardHeader className="pb-2">
+              <div className="flex items-center justify-between">
+                <div>
+                  <CardTitle className="text-base font-semibold">Key Deadlines</CardTitle>
+                  <p className="text-sm text-gray-500">Click the pencil to edit any date — linked tasks auto-recalculate</p>
+                </div>
+                <Button
+                  size="sm" variant="outline"
+                  className="text-blue-600 hover:text-blue-700 hover:bg-blue-50 border-blue-200"
+                  onClick={handleSendTimeline} disabled={sendingTimeline}
+                >
+                  <Send className="w-3.5 h-3.5 mr-1.5" />
+                  {sendingTimeline ? "Sending..." : "Send Timeline"}
+                </Button>
+              </div>
+            </CardHeader>
+            <CardContent>
+              <EditableDeadlinePanel
+                transaction={transaction}
+                onSave={(changes) =>
+                  updateMutation.mutate({ id: transaction.id, data: { ...changes, last_activity_at: new Date().toISOString() } })
+                }
+              />
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Tab: Documents */}
+        {activeTab === "documents" && (
+          <TransactionDocumentsTab transaction={transaction} currentUser={currentUser} />
+        )}
+
+        {/* Tab: Finance */}
+        {activeTab === "finance" && (
+          <FinanceTab transaction={transaction} currentUser={currentUser} />
+        )}
+
+        {/* Tab: Compliance */}
+        {activeTab === "compliance" && (
+          <ComplianceScanPanel transaction={transaction} currentUser={currentUser} />
+        )}
+      </div>
+
+      {/* ── Mobile floating Ask AI button ── */}
+      <button
+        className="lg:hidden fixed bottom-6 right-6 z-40 flex items-center gap-2 px-4 py-3 rounded-full text-white shadow-lg hover:opacity-90 transition-opacity"
+        style={{ background: "var(--accent)" }}
+        onClick={() => setMobileAIOpen(true)}
+      >
+        <MessageSquare className="w-4 h-4" />
+        <span className="text-sm font-semibold">Ask AI</span>
+      </button>
     </div>
   );
 }
