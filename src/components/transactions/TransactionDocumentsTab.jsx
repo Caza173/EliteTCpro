@@ -45,7 +45,16 @@ export default function TransactionDocumentsTab({ transaction, currentUser }) {
 
   const deleteMutation = useMutation({
     mutationFn: (id) => base44.entities.Document.delete(id),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["tx-documents", transaction.id] }),
+    onMutate: async (id) => {
+      await queryClient.cancelQueries({ queryKey: ["tx-documents", transaction.id] });
+      const prev = queryClient.getQueryData(["tx-documents", transaction.id]);
+      queryClient.setQueryData(["tx-documents", transaction.id], (old = []) => old.filter((d) => d.id !== id));
+      return { prev };
+    },
+    onError: (_err, _id, context) => {
+      if (context?.prev) queryClient.setQueryData(["tx-documents", transaction.id], context.prev);
+    },
+    onSettled: () => queryClient.invalidateQueries({ queryKey: ["tx-documents", transaction.id] }),
   });
 
   const uploadFile = async (file) => {
