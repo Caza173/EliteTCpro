@@ -6,6 +6,14 @@ import { Button } from "@/components/ui/button";
 import { CheckCircle2, XCircle, Upload, Clock, Loader2, FileText } from "lucide-react";
 import { format } from "date-fns";
 
+const DOC_LABELS = {
+  purchase_and_sale: "Purchase & Sale Agreement",
+  listing_agreement: "Listing Agreement",
+  addendum: "Addendum",
+  buyer_agency_agreement: "Buyer Agency Agreement",
+  other: "Other",
+};
+
 const STATUS_STYLES = {
   missing: { badge: "bg-red-50 text-red-600 border-red-200", label: "Missing" },
   uploaded: { badge: "bg-amber-50 text-amber-600 border-amber-200", label: "Uploaded" },
@@ -41,7 +49,7 @@ export default function DocChecklistPanel({ items = [], currentUser, transaction
             <StatusIcon className={`w-4 h-4 flex-shrink-0 ${item.status === "approved" ? "text-emerald-500" : item.status === "missing" || item.status === "rejected" ? "text-red-400" : "text-amber-400"}`} />
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-2">
-                <p className="text-sm font-medium text-gray-800 capitalize">{item.label || item.doc_type}</p>
+                <p className="text-sm font-medium text-gray-800">{item.label || DOC_LABELS[item.doc_type] || item.doc_type}</p>
                 {item.required && <span className="text-red-400 text-xs">*required</span>}
                 {item.visible_to_client && <span className="text-blue-400 text-xs">client-visible</span>}
               </div>
