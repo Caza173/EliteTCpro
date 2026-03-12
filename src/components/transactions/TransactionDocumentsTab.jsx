@@ -127,7 +127,7 @@ export default function TransactionDocumentsTab({ transaction, currentUser }) {
     setUploading(false);
   };
 
-  const canDelete = ["tc", "admin", "owner"].includes(currentUser?.role);
+  const canDelete = ["tc", "tc_lead", "admin", "owner"].includes(currentUser?.role);
 
   return (
     <div className="space-y-5">
