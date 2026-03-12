@@ -62,7 +62,7 @@ export default function TransactionTable({ transactions }) {
                   <div className="w-8 h-8 rounded-lg bg-blue-50 flex items-center justify-center flex-shrink-0">
                     <MapPin className="w-4 h-4 text-blue-500" />
                   </div>
-                  <span className="font-medium text-gray-900 text-sm">{tx.address}</span>
+                  <span className="font-medium text-gray-900 text-sm truncate max-w-[120px] sm:max-w-[200px] block">{tx.address}</span>
                 </div>
               </TableCell>
               <TableCell>

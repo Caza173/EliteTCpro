@@ -306,7 +306,7 @@ TC Manager
             <ArrowLeft className="w-4 h-4 mr-1" /> Back
           </Button>
         </Link>
-        <div className="flex items-center gap-3">
+        <div className="flex flex-wrap items-center gap-2">
           <Select value={transaction.status || "active"} onValueChange={handleStatusChange}>
             <SelectTrigger className="w-32">
               <SelectValue />
