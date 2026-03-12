@@ -47,48 +47,13 @@
  *
  * The mainPage value must match a key in the PAGES object exactly.
  */
-import AddTransaction from './pages/AddTransaction';
-import AgentIntake from './pages/AgentIntake';
-import AgentPortal from './pages/AgentPortal';
-import AuditLog from './pages/AuditLog';
-import Billing from './pages/Billing';
-import BrokerageSetup from './pages/BrokerageSetup';
-import ClientPortal from './pages/ClientPortal';
-import Dashboard from './pages/Dashboard';
-import Deadlines from './pages/Deadlines';
-import Documents from './pages/Documents';
-import Notifications from './pages/Notifications';
-import PortalSelect from './pages/PortalSelect';
-import Settings from './pages/Settings';
-import Tasks from './pages/Tasks';
-import Templates from './pages/Templates';
-import TransactionDetail from './pages/TransactionDetail';
-import Transactions from './pages/Transactions';
 import __Layout from './Layout.jsx';
 
 
 export const PAGES = {
-    "AddTransaction": AddTransaction,
-    "AgentIntake": AgentIntake,
-    "AgentPortal": AgentPortal,
-    "AuditLog": AuditLog,
-    "Billing": Billing,
-    "BrokerageSetup": BrokerageSetup,
-    "ClientPortal": ClientPortal,
-    "Dashboard": Dashboard,
-    "Deadlines": Deadlines,
-    "Documents": Documents,
-    "Notifications": Notifications,
-    "PortalSelect": PortalSelect,
-    "Settings": Settings,
-    "Tasks": Tasks,
-    "Templates": Templates,
-    "TransactionDetail": TransactionDetail,
-    "Transactions": Transactions,
 }
 
 export const pagesConfig = {
-    mainPage: "Dashboard",
     Pages: PAGES,
     Layout: __Layout,
 };
