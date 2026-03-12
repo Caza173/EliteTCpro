@@ -13,7 +13,14 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Plus, Search } from "lucide-react";
+import { Plus, Search, Layers } from "lucide-react";
+
+const PHASE_LABELS = {
+  1: "Pre-Contract", 2: "Offer Drafting", 3: "Offer Accepted & Escrow",
+  4: "Escrow Opened", 5: "Inspection & Repair", 6: "Repair Negotiation",
+  7: "Appraisal Ordered", 8: "Loan Processing", 9: "Clear to Close",
+  10: "Final Walkthrough", 11: "Closing", 12: "Post Closing",
+};
 import { Skeleton } from "@/components/ui/skeleton";
 import TransactionTable from "../components/transactions/TransactionTable";
 import { useCurrentUser, isOwnerOrAdmin } from "../components/auth/useCurrentUser";
