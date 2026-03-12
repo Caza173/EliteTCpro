@@ -183,6 +183,15 @@ export default function Dashboard() {
 
         {/* Right column */}
         <div className="space-y-5">
+          {/* Superagent Activity Log */}
+          {!isLoading && (
+            <Card className="shadow-sm border-gray-100">
+              <CardContent className="pt-4">
+                <AIActivityLogPanel />
+              </CardContent>
+            </Card>
+          )}
+
           {/* Deadline Risk Alerts */}
           {!isLoading && (
             <Card className="shadow-sm border-gray-100">
