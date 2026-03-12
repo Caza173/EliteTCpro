@@ -316,7 +316,7 @@ export default function FinanceTab({ transaction, currentUser, parsedPsData }) {
       {/* Net Deal Profit */}
       <Card className="border-0 bg-gradient-to-br from-slate-800 to-slate-900 text-white shadow-lg">
         <CardContent className="pt-6 pb-6">
-          <div className="flex items-center justify-between">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
             <div>
               <p className="text-slate-400 text-xs font-semibold uppercase tracking-wider mb-1">Net Deal Value</p>
               <p className={`text-4xl font-bold ${computed.net >= 0 ? "text-emerald-400" : "text-red-400"}`}>
@@ -324,11 +324,11 @@ export default function FinanceTab({ transaction, currentUser, parsedPsData }) {
               </p>
               <p className="text-slate-400 text-xs mt-2">After all deductions & expenses</p>
             </div>
-            <div className="text-right space-y-1">
-              <div className="text-xs text-slate-400">Gross Commission <span className="text-white font-medium ml-2">{fmt(computed.gross)}</span></div>
-              <div className="text-xs text-slate-400">Referral <span className="text-orange-400 font-medium ml-2">-{fmt(computed.referralAmt)}</span></div>
-              <div className="text-xs text-slate-400">Broker Split <span className="text-red-400 font-medium ml-2">-{fmt(computed.brokerSplitAmt)}</span></div>
-              <div className="text-xs text-slate-400">Fees <span className="text-red-400 font-medium ml-2">-{fmt(computed.franchiseFeeAmt + computed.txFee + computed.eoFee + computed.otherFees)}</span></div>
+            <div className="space-y-1">
+              <div className="text-xs text-slate-400 flex justify-between gap-4">Gross Commission <span className="text-white font-medium">{fmt(computed.gross)}</span></div>
+              <div className="text-xs text-slate-400 flex justify-between gap-4">Referral <span className="text-orange-400 font-medium">-{fmt(computed.referralAmt)}</span></div>
+              <div className="text-xs text-slate-400 flex justify-between gap-4">Broker Split <span className="text-red-400 font-medium">-{fmt(computed.brokerSplitAmt)}</span></div>
+              <div className="text-xs text-slate-400 flex justify-between gap-4">Fees <span className="text-red-400 font-medium">-{fmt(computed.franchiseFeeAmt + computed.txFee + computed.eoFee + computed.otherFees)}</span></div>
             </div>
           </div>
         </CardContent>
