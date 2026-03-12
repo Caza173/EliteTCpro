@@ -49,7 +49,8 @@ export default function Transactions() {
       tx.buyer?.toLowerCase().includes(search.toLowerCase()) ||
       tx.agent?.toLowerCase().includes(search.toLowerCase());
     const matchesStatus = statusFilter === "all" || tx.status === statusFilter;
-    return matchesSearch && matchesStatus;
+    const matchesPhase = phaseFilter === "all" || String(tx.phase || 1) === phaseFilter;
+    return matchesSearch && matchesStatus && matchesPhase;
   });
 
   return (
