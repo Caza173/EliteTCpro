@@ -8,9 +8,10 @@ import {
   ShieldCheck, ShieldAlert, ShieldX, AlertTriangle,
   Info, Plus, Mail, RefreshCw, Loader2,
   ChevronDown, ChevronUp, FileText, Scan,
-  CheckCircle2, XCircle, MinusCircle
+  CheckCircle2, XCircle, MinusCircle, Wand2
 } from "lucide-react";
 import { format } from "date-fns";
+import EmailGeneratorModal from "./EmailGeneratorModal";
 
 const SEVERITY_CONFIG = {
   blocker: {
