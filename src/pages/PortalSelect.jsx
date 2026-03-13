@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import { base44 } from "@/api/base44Client";
 import { createPageUrl } from "@/utils";
 import {
@@ -14,8 +14,12 @@ import {
   Upload,
   Sparkles,
   CalendarDays,
-  Users
+  Users,
+  MessageSquare,
+  RefreshCw
 } from "lucide-react";
+import ContactModal from "@/components/portal/ContactModal";
+import TransactionUpdateModal from "@/components/portal/TransactionUpdateModal";
 
 const FEATURES = [
   {

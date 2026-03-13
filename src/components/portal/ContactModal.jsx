@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { X, Send, Loader2, CheckCircle } } from "lucide-react";
+import { X, Send, Loader2, CheckCircle } from "lucide-react";
 import { base44 } from "@/api/base44Client";
 
 export default function ContactModal({ onClose }) {
