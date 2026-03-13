@@ -235,6 +235,16 @@ export default function TransactionDetail() {
   return (
     <div className="flex -mx-4 -mb-4 lg:-mx-8 lg:-mb-8 overflow-hidden" style={{ height: "calc(100vh - 57px)" }}>
 
+      <ConfirmDialog
+        open={confirmDelete}
+        title="Delete Transaction"
+        message="Are you sure you want to delete this transaction? This action cannot be undone."
+        confirmText="Delete"
+        cancelText="Cancel"
+        onConfirm={() => deleteMutation.mutate(transaction.id)}
+        onCancel={() => setConfirmDelete(false)}
+      />
+
       {/* Mobile AI Drawer */}
       {mobileAIOpen && (
         <div className="lg:hidden fixed inset-0 z-50">

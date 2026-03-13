@@ -146,6 +146,15 @@ export default function TransactionDocumentsTab({ transaction, currentUser }) {
 
   return (
     <div className="space-y-5">
+      <ConfirmDialog
+        open={!!confirmDeleteDoc}
+        title="Delete Document"
+        message="Are you sure you want to delete this document? This action cannot be undone."
+        confirmText="Delete"
+        cancelText="Cancel"
+        onConfirm={() => deleteMutation.mutate(confirmDeleteDoc)}
+        onCancel={() => setConfirmDeleteDoc(null)}
+      />
       <Card className="shadow-sm border-gray-100">
         <CardHeader className="pb-3">
           <CardTitle className="text-sm font-semibold flex items-center gap-2">
