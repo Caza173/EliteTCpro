@@ -232,9 +232,9 @@ Deno.serve(async (req) => {
       return Response.json({ error: 'transaction_id is required' }, { status: 400 });
     }
 
-    // Fetch the transaction
-    const txList = await base44.asServiceRole.entities.Transaction.filter({ id: transaction_id });
-    const tx = txList[0];
+    // Fetch the transaction by listing and finding by id
+    const allTx = await base44.asServiceRole.entities.Transaction.list();
+    const tx = allTx.find(t => t.id === transaction_id);
     if (!tx) return Response.json({ error: 'Transaction not found' }, { status: 404 });
 
     // Build merge fields
