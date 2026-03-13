@@ -274,12 +274,26 @@ export default function Notifications() {
 
                     {/* Show saved addendum details if responded with yes */}
                     {responded && n.addendum_response === "yes" && (n.addendum_note || n.addendum_verbiage) && (
-                      <div className="border-t border-amber-100 px-3 pt-2 pb-3 space-y-1">
+                      <div className="border-t border-amber-100 px-3 pt-2 pb-3 space-y-2">
                         {n.addendum_note && (
                           <p className="text-xs text-gray-500"><span className="font-medium text-gray-600">Note:</span> {n.addendum_note}</p>
                         )}
                         {n.addendum_verbiage && (
                           <p className="text-xs text-gray-500"><span className="font-medium text-gray-600">Verbiage:</span> {n.addendum_verbiage}</p>
+                        )}
+                        {n.transaction_id && (
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="h-7 text-xs border-amber-200 text-amber-700 hover:bg-amber-50 gap-1.5"
+                            disabled={downloadingDoc === n.id}
+                            onClick={() => downloadAddendum(n)}
+                          >
+                            {downloadingDoc === n.id
+                              ? <><Loader2 className="w-3 h-3 animate-spin" /> Generating…</>
+                              : <><Download className="w-3 h-3" /> Download NHAR Addendum (.docx)</>
+                            }
+                          </Button>
                         )}
                       </div>
                     )}
