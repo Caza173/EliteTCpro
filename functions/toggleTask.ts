@@ -14,7 +14,8 @@ Deno.serve(async (req) => {
         }
 
         // Fetch transaction via service role to bypass RLS read restrictions
-        const transaction = await base44.asServiceRole.entities.Transaction.get(transaction_id);
+        const results = await base44.asServiceRole.entities.Transaction.filter({ id: transaction_id });
+        const transaction = results[0];
         if (!transaction) {
             return Response.json({ error: 'Transaction not found' }, { status: 404 });
         }
