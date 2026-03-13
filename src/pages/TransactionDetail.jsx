@@ -212,7 +212,11 @@ export default function TransactionDetail() {
     const results = await Promise.allSettled(recipients.map((to) => base44.integrations.Core.SendEmail({ to, subject: `Key Deadlines — ${transaction.address}`, body })));
     setSendingTimeline(false);
     const sent = recipients.filter((_, i) => results[i].status === "fulfilled");
-    alert(sent.length > 0 ? `Timeline sent to: ${sent.join(", ")}.` : "No emails sent.");
+    setAlertDialog({
+      open: true,
+      title: sent.length > 0 ? "Timeline Sent" : "No Emails Sent",
+      message: sent.length > 0 ? `Timeline sent to: ${sent.join(", ")}.` : "No recipient emails found on this transaction.",
+    });
   };
 
   if (isLoading) {
