@@ -186,7 +186,7 @@ export default function UserManagement() {
       if (selectedUser?.id === vars.id) {
         setSelectedUser(prev => ({ ...prev, role: vars.role }));
       }
-      await createAuditLog(currentUser, null, "role_changed", "user", vars.id, {}, { role: vars.role }, `Role changed to ${vars.role}`);
+      await writeAuditLog({ brokerageId: currentUser?.brokerage_id, actorEmail: currentUser?.email, action: "role_changed", entityType: "user", entityId: vars.id, after: { role: vars.role }, description: `Role changed to ${vars.role}` });
     },
   });
 
