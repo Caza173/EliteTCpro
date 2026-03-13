@@ -252,6 +252,16 @@ export default function TransactionDetail() {
         onConfirm={() => deleteMutation.mutate(transaction.id)}
         onCancel={() => setConfirmDelete(false)}
       />
+      <ConfirmDialog
+        open={alertDialog.open}
+        title={alertDialog.title}
+        message={alertDialog.message}
+        confirmText="OK"
+        cancelText=""
+        variant="default"
+        onConfirm={() => setAlertDialog({ open: false, title: "", message: "" })}
+        onCancel={() => setAlertDialog({ open: false, title: "", message: "" })}
+      />
 
       {/* Mobile AI Drawer */}
       {mobileAIOpen && (
