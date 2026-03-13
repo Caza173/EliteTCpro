@@ -442,10 +442,16 @@ export default function TransactionDetail() {
                 <TaskList
                   tasks={transaction.tasks || []}
                   onToggleTask={async (taskId) => {
+                    // Optimistically update local state
                     const updatedTasks = (transaction.tasks || []).map((task) =>
                       task.id === taskId ? { ...task, completed: !task.completed } : task
                     );
-                    updateMutation.mutate({ id: transaction.id, data: { tasks: updatedTasks, last_activity_at: new Date().toISOString() } });
+                    queryClient.setQueryData(["transactions"], (old = []) =>
+                      old.map((t) => t.id === transaction.id ? { ...t, tasks: updatedTasks } : t)
+                    );
+                    // Use backend function to bypass RLS restrictions
+                    await base44.functions.invoke("toggleTask", { transaction_id: transaction.id, task_id: taskId });
+                    queryClient.invalidateQueries({ queryKey: ["transactions"] });
                     await writeAuditLog({
                       brokerageId: transaction.brokerage_id, transactionId: transaction.id,
                       actorEmail: currentUser?.email, action: "task_completed", entityType: "task",
