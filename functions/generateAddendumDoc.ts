@@ -235,7 +235,7 @@ Deno.serve(async (req) => {
     // Fetch the transaction by listing and finding by id
     const allTx = await base44.asServiceRole.entities.Transaction.list();
     const tx = allTx.find(t => t.id === transaction_id);
-    if (!tx) return Response.json({ error: 'Transaction not found', total: allTx.length }, { status: 404 });
+    if (!tx) return Response.json({ error: 'Transaction not found' }, { status: 404 });
 
     // Build merge fields
     const buyers = (tx.buyers?.length ? tx.buyers : [tx.buyer]).filter(Boolean).join(' and ') || '';
