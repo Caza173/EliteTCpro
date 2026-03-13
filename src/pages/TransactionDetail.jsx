@@ -68,6 +68,7 @@ export default function TransactionDetail() {
   const [mobileAIOpen, setMobileAIOpen] = useState(false);
   const [sendingTimeline, setSendingTimeline] = useState(false);
   const [invitingClient, setInvitingClient] = useState(false);
+  const [confirmDelete, setConfirmDelete] = useState(false);
 
   const isDragging = useRef(false);
   const startX = useRef(0);

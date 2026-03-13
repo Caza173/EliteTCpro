@@ -41,6 +41,7 @@ export default function TransactionDocumentsTab({ transaction, currentUser }) {
   const [selectedDocType, setSelectedDocType] = useState("other");
   const [uploading, setUploading] = useState(false);
   const [dragOver, setDragOver] = useState(false);
+  const [confirmDeleteDoc, setConfirmDeleteDoc] = useState(null);
   const fileInputRef = useRef(null);
 
   const { data: documents = [], isLoading } = useQuery({
