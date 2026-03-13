@@ -46,19 +46,21 @@ export default function ConfirmDialog({
           )}
         </div>
         <div className="flex justify-end gap-2">
-          <button
-            onClick={onCancel}
-            className="px-4 py-2 rounded-lg text-sm font-medium transition-colors"
-            style={{
-              background: "var(--bg-tertiary)",
-              color: "var(--text-secondary)",
-              border: "1px solid var(--border)",
-            }}
-            onMouseEnter={e => e.currentTarget.style.background = "var(--bg-hover)"}
-            onMouseLeave={e => e.currentTarget.style.background = "var(--bg-tertiary)"}
-          >
-            {cancelText}
-          </button>
+          {cancelText && (
+            <button
+              onClick={onCancel}
+              className="px-4 py-2 rounded-lg text-sm font-medium transition-colors"
+              style={{
+                background: "var(--bg-tertiary)",
+                color: "var(--text-secondary)",
+                border: "1px solid var(--border)",
+              }}
+              onMouseEnter={e => e.currentTarget.style.background = "var(--bg-hover)"}
+              onMouseLeave={e => e.currentTarget.style.background = "var(--bg-tertiary)"}
+            >
+              {cancelText}
+            </button>
+          )}
           <button
             onClick={() => { onConfirm(); onCancel(); }}
             className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors text-white ${
