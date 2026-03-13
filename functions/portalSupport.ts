@@ -34,29 +34,20 @@ Deno.serve(async (req) => {
 
     const timestamp = new Date().toLocaleString("en-US", { timeZone: "America/New_York" });
 
-    await base44.asServiceRole.integrations.Core.SendEmail({
-      to: "support@elitetc.com",
-      from_name: "EliteTC Portal",
-      subject: `[Contact Us] ${subject}`,
-      body: `
-        <h2>New Contact Form Submission</h2>
-        <p><strong>Name:</strong> ${name}</p>
-        <p><strong>Email:</strong> ${email}</p>
-        <p><strong>Brokerage:</strong> ${brokerage || "—"}</p>
-        <p><strong>Subject:</strong> ${subject}</p>
-        <p><strong>Message:</strong></p>
-        <blockquote style="border-left:3px solid #c9a227;padding-left:12px;margin-left:0;color:#555;">${message.replace(/\n/g, "<br/>")}</blockquote>
-        <p style="color:#999;font-size:12px;">Submitted: ${timestamp}</p>
-      `,
-    });
+    // Find all admin/owner users to notify in-app
+    const allUsers = await base44.asServiceRole.entities.User.list();
+    const adminUsers = allUsers.filter(u => u.role === "admin" || u.role === "owner" || u.role === "tc_lead");
 
-    // Log to InAppNotification for TC team visibility
-    await base44.asServiceRole.entities.InAppNotification.create({
-      user_email: "support@elitetc.com",
-      title: `Contact: ${subject}`,
-      body: `From ${name} (${email}): ${message.substring(0, 200)}`,
-      type: "system",
-    });
+    const notifBody = `From: ${name} (${email})${brokerage ? ` | ${brokerage}` : ""} | ${timestamp}\n\n${message}`;
+
+    await Promise.all(adminUsers.map(u =>
+      base44.asServiceRole.entities.InAppNotification.create({
+        user_email: u.email,
+        title: `📩 Contact Form: ${subject}`,
+        body: notifBody.substring(0, 500),
+        type: "system",
+      })
+    ));
 
     return Response.json({ success: true });
   }
