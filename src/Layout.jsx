@@ -95,9 +95,13 @@ export default function Layout({ children, currentPageName }) {
   useEffect(() => {
     if (!currentUser) return;
     const role = currentUser.role;
+    const email = currentUser.email;
     const path = window.location.hash.replace("#", "") || "/";
 
     const isClientPage = path.startsWith("/ClientPortal");
+
+    // Master account always has full access
+    if (email === "nhcazateam@gmail.com") return;
 
     if (role === "client" && !isClientPage) {
       navigate(createPageUrl("ClientPortal"), { replace: true });
