@@ -10,6 +10,7 @@ import { Upload, FileText, Trash2, Download, Loader2, FolderOpen, ClipboardCheck
 import { format } from "date-fns";
 import { writeAuditLog } from "../utils/tenantUtils";
 import DocChecklistPanel from "./DocChecklistPanel";
+import ConfirmDialog from "@/components/ui/ConfirmDialog";
 
 const DOC_TYPES = [
   { value: "purchase_and_sale", label: "Purchase & Sale Agreement" },
