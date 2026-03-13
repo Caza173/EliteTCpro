@@ -128,8 +128,13 @@ export default function TransactionDetail() {
   const deleteMutation = useMutation({
     mutationFn: (txId) => base44.entities.Transaction.delete(txId),
     onSuccess: () => {
+      setConfirmDelete(false);
       queryClient.invalidateQueries({ queryKey: ["transactions"] });
       navigate(createPageUrl("Transactions"));
+    },
+    onError: (err) => {
+      setConfirmDelete(false);
+      setAlertDialog({ open: true, title: "Delete Failed", message: err?.message || "Could not delete transaction. Check your permissions." });
     },
   });
 
