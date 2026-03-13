@@ -431,14 +431,14 @@ export default function TransactionDetail() {
                 />
               </CardContent>
             </Card>
-            <Card className="shadow-sm border-gray-100">
+            <Card className="shadow-sm border-gray-100 relative z-10">
               <CardHeader>
                 <CardTitle className="text-base font-semibold">Tasks</CardTitle>
                 <p className="text-sm text-gray-500">
                   {(transaction.tasks || []).filter((t) => t.completed).length} / {(transaction.tasks || []).length} completed
                 </p>
               </CardHeader>
-              <CardContent>
+              <CardContent className="overflow-visible">
                 <TaskList
                   tasks={transaction.tasks || []}
                   onToggleTask={async (taskId) => {
