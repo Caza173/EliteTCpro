@@ -195,7 +195,7 @@ export default function UserManagement() {
     onSuccess: async (_, vars) => {
       queryClient.invalidateQueries({ queryKey: ["allUsers"] });
       setDeleteTarget(null);
-      await createAuditLog(currentUser, null, "user_deleted", "user", vars.id, {}, {}, "User deleted");
+      await writeAuditLog({ brokerageId: currentUser?.brokerage_id, actorEmail: currentUser?.email, action: "user_deleted", entityType: "user", entityId: vars.id, description: "User deleted" });
     },
   });
 
