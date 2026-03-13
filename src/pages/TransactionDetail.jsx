@@ -123,7 +123,7 @@ export default function TransactionDetail() {
   });
 
   const deleteMutation = useMutation({
-    mutationFn: (id) => base44.entities.Transaction.delete(id),
+    mutationFn: (txId) => base44.entities.Transaction.delete(txId),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["transactions"] });
       navigate(createPageUrl("Transactions"));
