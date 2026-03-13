@@ -85,19 +85,13 @@ export default function PortalSelect() {
         </div>
         <div className="flex items-center gap-3">
           <button
-            onClick={handleAgentLogin}
-            className="text-sm font-medium text-slate-400 hover:text-white transition-colors px-3 py-1.5"
-          >
-            Agent Login
-          </button>
-          <button
             onClick={handleTCLogin}
             className="text-sm font-semibold px-4 py-2 rounded-lg transition-all"
             style={{ backgroundColor: "#c9a227", color: "#0f172a" }}
             onMouseEnter={e => e.currentTarget.style.backgroundColor = "#d4aa30"}
             onMouseLeave={e => e.currentTarget.style.backgroundColor = "#c9a227"}
           >
-            TC Login
+            Login
           </button>
         </div>
       </nav>
