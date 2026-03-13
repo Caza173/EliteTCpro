@@ -14,7 +14,15 @@ Deno.serve(async (req) => {
     const { transaction_id } = await req.json();
     if (!transaction_id) return Response.json({ error: 'transaction_id required' }, { status: 400 });
 
-    await base44.asServiceRole.entities.Transaction.delete(transaction_id);
+    try {
+      await base44.asServiceRole.entities.Transaction.delete(transaction_id);
+    } catch (deleteErr) {
+      // 404 = already deleted or not found — treat as success
+      const msg = deleteErr?.message || '';
+      if (!msg.includes('404') && !msg.toLowerCase().includes('not found')) {
+        throw deleteErr;
+      }
+    }
 
     return Response.json({ success: true });
   } catch (error) {
