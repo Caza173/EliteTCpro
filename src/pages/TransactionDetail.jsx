@@ -173,7 +173,10 @@ export default function TransactionDetail() {
   };
 
   const handleInviteClient = async () => {
-    if (!transaction?.client_email) { alert("No client email on this transaction."); return; }
+    if (!transaction?.client_email) {
+      setAlertDialog({ open: true, title: "No Client Email", message: "No client email on this transaction." });
+      return;
+    }
     setInvitingClient(true);
     try {
       await base44.users.inviteUser(transaction.client_email, "user");
@@ -182,9 +185,9 @@ export default function TransactionDetail() {
         subject: `You've been invited to track your transaction — ${transaction.address}`,
         body: `<p>Hello,</p><p>Your transaction coordinator has invited you to view the progress of your transaction at <strong>${transaction.address}</strong>.</p><p>Best regards,<br/>TC Manager</p>`,
       });
-      alert(`Client invite sent to ${transaction.client_email}`);
+      setAlertDialog({ open: true, title: "Invite Sent", message: `Client invite sent to ${transaction.client_email}` });
     } catch (e) {
-      alert(`Invite sent (client may already have an account).`);
+      setAlertDialog({ open: true, title: "Invite Sent", message: "Invite sent (client may already have an account)." });
     }
     setInvitingClient(false);
   };
