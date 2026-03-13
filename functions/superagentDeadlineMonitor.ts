@@ -18,7 +18,27 @@ function getIntervalBucket(hoursUntil) {
   return null;
 }
 
-function buildEmailBody(agentName, label, address, deadline, bucket) {
+function getHealthStatus(tx, now) {
+  const deadlineFields = Object.keys(DEADLINE_FIELDS);
+  let minHours = Infinity;
+
+  for (const field of deadlineFields) {
+    if (tx[field]) {
+      const d = new Date(tx[field]);
+      const h = (d - now) / (1000 * 60 * 60);
+      if (h < minHours) minHours = h;
+    }
+  }
+
+  const hasOverdueTasks = (tx.tasks || []).some(t => !t.completed);
+
+  if (minHours <= 0) return { status: "Critical", reason: "Overdue deadline" };
+  if (minHours <= 72) return { status: "Critical", reason: `Deadline in ${Math.ceil(minHours)}h` };
+  if (minHours <= 168 || hasOverdueTasks) return { status: "Needs Attention", reason: minHours <= 168 ? "Deadline within 7 days" : "Outstanding tasks" };
+  return { status: "Healthy", reason: "No immediate concerns" };
+}
+
+function buildEmailHtml(agentName, label, address, deadline, bucket, health) {
   const deadlineDate = new Date(deadline).toLocaleDateString('en-US', {
     weekday: 'long', month: 'long', day: 'numeric', year: 'numeric'
   });
@@ -26,20 +46,39 @@ function buildEmailBody(agentName, label, address, deadline, bucket) {
     ? `has passed (${deadlineDate})`
     : `is approaching on ${deadlineDate} (in ${bucket})`;
 
-  return `Hi ${agentName},
+  const healthColor = health.status === "Critical" ? "#ef4444" : health.status === "Needs Attention" ? "#f59e0b" : "#22c55e";
 
-The ${label} deadline for ${address} ${urgency}.
-
-Please let me know if you would like the TC to prepare anything such as:
-• An inspection addendum or extension
-• A financing deadline extension
-• A contract modification
-• Any other document
-
-You can reply directly in the EliteTC platform or respond to this email.
-
-Thanks,
-EliteTC Superagent`;
+  return `
+    <div style="font-family:sans-serif;max-width:600px;margin:0 auto;padding:24px;">
+      <div style="text-align:center;margin-bottom:20px;">
+        <h1 style="color:#c9a227;font-size:22px;margin:0;">EliteTC</h1>
+        <p style="color:#64748b;font-size:13px;margin:4px 0;">Transaction Coordinator Platform</p>
+      </div>
+      <div style="border:1px solid #e2e8f0;border-radius:12px;padding:20px;margin-bottom:16px;">
+        <h2 style="margin:0 0 12px;color:#0f172a;font-size:17px;">${address}</h2>
+        <p style="margin:4px 0;color:#475569;font-size:14px;">
+          The <strong>${label}</strong> deadline ${urgency}.
+        </p>
+        <div style="margin-top:14px;padding:10px 14px;border-radius:8px;background:${healthColor}18;border-left:3px solid ${healthColor};">
+          <strong style="color:${healthColor};font-size:13px;">Transaction Health: ${health.status}</strong>
+          <p style="margin:2px 0 0;color:#64748b;font-size:12px;">${health.reason}</p>
+        </div>
+      </div>
+      <p style="color:#475569;font-size:14px;">
+        Hi ${agentName}, please let us know if you need the TC to prepare:
+      </p>
+      <ul style="color:#64748b;font-size:14px;line-height:1.8;">
+        <li>An inspection addendum or extension</li>
+        <li>A financing deadline extension</li>
+        <li>A contract modification</li>
+        <li>Any other document</li>
+      </ul>
+      <p style="color:#64748b;font-size:13px;">You can respond directly in the EliteTC platform.</p>
+      <div style="text-align:center;margin-top:20px;padding-top:16px;border-top:1px solid #e2e8f0;">
+        <p style="color:#94a3b8;font-size:11px;">EliteTC Superagent — Automated Monitoring</p>
+      </div>
+    </div>
+  `;
 }
 
 Deno.serve(async (req) => {
@@ -47,13 +86,23 @@ Deno.serve(async (req) => {
     const base44 = createClientFromRequest(req);
     const now = new Date();
 
-    const transactions = await base44.asServiceRole.entities.Transaction.filter({ status: 'active' });
+    // Get all registered app users so we only email registered agents
+    const allUsers = await base44.asServiceRole.entities.User.list();
+    const registeredEmails = new Set(allUsers.map(u => u.email?.toLowerCase()).filter(Boolean));
+
+    const transactions = await base44.asServiceRole.entities.Transaction.list();
+    const activeTransactions = transactions.filter(tx =>
+      tx.status !== "closed" && tx.status !== "cancelled"
+    );
 
     let notificationsSent = 0;
     const results = [];
 
-    for (const tx of transactions) {
+    for (const tx of activeTransactions) {
       if (!tx.agent_email) continue;
+      const agentEmailLower = tx.agent_email.toLowerCase();
+      const isRegistered = registeredEmails.has(agentEmailLower);
+      const health = getHealthStatus(tx, now);
 
       for (const [field, label] of Object.entries(DEADLINE_FIELDS)) {
         const dateStr = tx[field];
@@ -64,7 +113,7 @@ Deno.serve(async (req) => {
         const bucket = getIntervalBucket(hoursUntil);
         if (!bucket) continue;
 
-        // Check if already notified at this exact interval
+        // Deduplicate: skip if already notified at this interval
         const existing = await base44.asServiceRole.entities.AIActivityLog.filter({
           transaction_id: tx.id,
           deadline_type: field,
@@ -74,17 +123,18 @@ Deno.serve(async (req) => {
 
         const agentName = tx.agent || tx.agent_email;
         const subject = `${bucket === 'overdue' ? '[OVERDUE]' : 'Upcoming Deadline'} – ${label} – ${tx.address}`;
-        const emailBody = buildEmailBody(agentName, label, tx.address, deadline, bucket);
 
-        // Send email to agent
-        await base44.asServiceRole.integrations.Core.SendEmail({
-          to: tx.agent_email,
-          from_name: 'EliteTC Superagent',
-          subject,
-          body: emailBody,
-        });
+        // Only send email if agent is a registered user
+        if (isRegistered) {
+          await base44.asServiceRole.integrations.Core.SendEmail({
+            to: tx.agent_email,
+            from_name: 'EliteTC Superagent',
+            subject,
+            body: buildEmailHtml(agentName, label, tx.address, deadline, bucket, health),
+          });
+        }
 
-        // Create in-app notification for agent (with addendum_response tracking)
+        // Always create in-app notification (for TC visibility even if agent not registered)
         const notification = await base44.asServiceRole.entities.InAppNotification.create({
           brokerage_id: tx.brokerage_id,
           transaction_id: tx.id,
@@ -108,13 +158,12 @@ Deno.serve(async (req) => {
           recipient_email: tx.agent_email,
           recipient_name: agentName,
           subject,
-          message: emailBody,
           response_status: 'sent',
           notification_id: notification.id,
         });
 
         notificationsSent++;
-        results.push({ address: tx.address, field, bucket });
+        results.push({ address: tx.address, field, bucket, emailSent: isRegistered });
       }
     }
 
