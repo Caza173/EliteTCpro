@@ -450,7 +450,7 @@ export default function TransactionDetail() {
                       old.map((t) => t.id === transaction.id ? { ...t, tasks: updatedTasks } : t)
                     );
                     // Use backend function to bypass RLS restrictions
-                    await base44.functions.invoke("toggleTask", { transaction_id: transaction.id, task_id: taskId });
+                    await base44.functions.invoke("toggleTask", { transaction_id: transaction.id, tasks: updatedTasks });
                     queryClient.invalidateQueries({ queryKey: ["transactions"] });
                     await writeAuditLog({
                       brokerageId: transaction.brokerage_id, transactionId: transaction.id,
