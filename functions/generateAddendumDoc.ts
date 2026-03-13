@@ -216,14 +216,8 @@ async function buildDocxZip(documentXml) {
 Deno.serve(async (req) => {
   try {
     const base44 = createClientFromRequest(req);
-    // Auth check — skip in service/test contexts
-    let user = null;
-    try { user = await base44.auth.me(); } catch (_) { /* unauthenticated context */ }
-    if (!user) {
-      // Allow service-role test calls without user auth
-      const isServiceCall = req.headers.get('x-service-call') === 'true';
-      if (!isServiceCall) return Response.json({ error: 'Unauthorized' }, { status: 401 });
-    }
+    const user = await base44.auth.me();
+    if (!user) return Response.json({ error: 'Unauthorized' }, { status: 401 });
 
     const body = await req.json();
     const { transaction_id, addendum_clause, notification_id } = body;
