@@ -249,7 +249,7 @@ export default function TransactionDetail() {
         message="Are you sure you want to delete this transaction? This action cannot be undone."
         confirmText="Delete"
         cancelText="Cancel"
-        onConfirm={() => { setConfirmDelete(false); deleteMutation.mutate(transaction.id); }}
+        onConfirm={() => deleteMutation.mutate(transaction.id)}
         onCancel={() => setConfirmDelete(false)}
       />
       <ConfirmDialog
