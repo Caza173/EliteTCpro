@@ -199,19 +199,13 @@ export default function PortalSelect() {
           <p className="text-slate-400 mb-8 max-w-lg mx-auto">Log in to your portal and start closing deals faster with AI-powered coordination.</p>
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
             <button
-              onClick={handleAgentLogin}
-              className="w-full sm:w-auto px-8 py-3.5 rounded-xl text-base font-semibold text-white border border-white/10 hover:border-white/20 hover:bg-white/5 transition-all flex items-center justify-center gap-2"
-            >
-              <Users className="w-4 h-4" /> Agent Login
-            </button>
-            <button
               onClick={handleTCLogin}
               className="w-full sm:w-auto px-8 py-3.5 rounded-xl text-base font-bold transition-all flex items-center justify-center gap-2"
               style={{ backgroundColor: "#c9a227", color: "#0f172a" }}
               onMouseEnter={e => e.currentTarget.style.backgroundColor = "#d4aa30"}
               onMouseLeave={e => e.currentTarget.style.backgroundColor = "#c9a227"}
             >
-              <ShieldCheck className="w-4 h-4" /> TC / Admin Login
+              <ShieldCheck className="w-4 h-4" /> Login to EliteTC
             </button>
           </div>
         </div>
