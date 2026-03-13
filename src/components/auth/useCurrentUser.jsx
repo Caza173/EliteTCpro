@@ -9,12 +9,43 @@ export function useCurrentUser() {
   });
 }
 
+const MASTER_EMAIL = "nhcazateam@gmail.com";
+const FULL_ACCESS_ROLES = ["admin", "owner", "tc_lead", "tc"];
+
+/** Super admin / master account override */
+export function isMasterAccount(user) {
+  return user?.email === MASTER_EMAIL;
+}
+
+/** Full internal staff access — can do everything */
+export function hasFullAccess(user) {
+  if (!user) return false;
+  return isMasterAccount(user) || FULL_ACCESS_ROLES.includes(user?.role);
+}
+
+export function canManageTransactions(user) {
+  return hasFullAccess(user);
+}
+
+export function canDeleteRecords(user) {
+  return hasFullAccess(user);
+}
+
+export function canManageUsers(user) {
+  return hasFullAccess(user);
+}
+
+export function canManageBilling(user) {
+  return isMasterAccount(user) || user?.role === "owner" || user?.role === "admin";
+}
+
+// Legacy helpers — kept for backward compatibility
 export function isOwnerOrAdmin(user) {
-  return user?.role === "owner" || user?.role === "admin";
+  return isMasterAccount(user) || user?.role === "owner" || user?.role === "admin";
 }
 
 export function isTCOrAdmin(user) {
-  return ["tc", "tc_lead", "admin", "owner"].includes(user?.role);
+  return hasFullAccess(user);
 }
 
 export function isTC(user) {
@@ -34,9 +65,5 @@ export function isClient(user) {
 }
 
 export function canEdit(user) {
-  return ["owner", "admin", "tc_lead", "tc", "agent"].includes(user?.role);
-}
-
-export function canManageBilling(user) {
-  return user?.role === "owner" || user?.role === "admin";
+  return hasFullAccess(user) || user?.role === "agent";
 }
