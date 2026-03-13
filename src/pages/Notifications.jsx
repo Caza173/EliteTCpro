@@ -64,23 +64,15 @@ export default function Notifications() {
   const downloadAddendum = async (n) => {
     setDownloadingDoc(n.id);
     try {
-      // Use SDK invoke — response.data is the axios response
       const response = await base44.functions.invoke('generateAddendumDoc', {
         transaction_id: n.transaction_id,
         notification_id: n.id,
         addendum_clause: n.addendum_verbiage || '',
+      }, { responseType: 'arraybuffer' });
+
+      const blob = new Blob([response.data], {
+        type: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
       });
-      // Convert base64 or array buffer to blob
-      const data = response.data;
-      let blob;
-      if (data instanceof Blob) {
-        blob = data;
-      } else if (data?.data) {
-        // Axios may wrap in {data: ArrayBuffer}
-        blob = new Blob([data.data], { type: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' });
-      } else {
-        blob = new Blob([JSON.stringify(data)], { type: 'application/json' });
-      }
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
