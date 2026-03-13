@@ -20,7 +20,8 @@ import {
   CreditCard,
   Shield,
   Workflow,
-  LogOut
+  LogOut,
+  Users
 } from "lucide-react";
 import NotificationBell from "./components/dashboard/NotificationBell";
 import { ThemeProvider } from "./components/theme/ThemeContext";
