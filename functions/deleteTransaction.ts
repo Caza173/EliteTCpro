@@ -14,23 +14,13 @@ Deno.serve(async (req) => {
     const { transaction_id } = await req.json();
     if (!transaction_id) return Response.json({ error: 'transaction_id required' }, { status: 400 });
 
-    const appId = Deno.env.get('BASE44_APP_ID');
-    const serviceToken = req.headers.get('Authorization');
-
-    const res = await fetch(
-      `https://api.base44.com/api/apps/${appId}/entities/Transaction/${transaction_id}`,
-      {
-        method: 'DELETE',
-        headers: {
-          'Authorization': serviceToken,
-          'X-App-Id': appId,
-        },
+    try {
+      await base44.asServiceRole.entities.Transaction.delete(transaction_id);
+    } catch (deleteErr) {
+      const msg = deleteErr?.message || '';
+      if (!msg.includes('404') && !msg.toLowerCase().includes('not found')) {
+        throw deleteErr;
       }
-    );
-
-    if (!res.ok && res.status !== 404) {
-      const body = await res.text();
-      return Response.json({ error: `Delete failed: ${body}` }, { status: res.status });
     }
 
     return Response.json({ success: true });
