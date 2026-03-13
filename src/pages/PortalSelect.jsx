@@ -68,6 +68,9 @@ const STEPS = [
 ];
 
 export default function PortalSelect() {
+  const [showContact, setShowContact] = useState(false);
+  const [showUpdate, setShowUpdate] = useState(false);
+
   const handleAgentLogin = () => {
     base44.auth.redirectToLogin(createPageUrl("AgentPortal"));
   };
