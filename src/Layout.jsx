@@ -36,6 +36,7 @@ const TC_NAV = [
   { label: "Deadlines", page: "Deadlines", icon: Clock },
   { label: "Documents", page: "Documents", icon: FolderOpen },
   { label: "Templates", page: "Templates", icon: Workflow },
+  { label: "User Management", page: "UserManagement", icon: Users },
   { label: "Settings", page: "Settings", icon: Settings },
 ];
 
