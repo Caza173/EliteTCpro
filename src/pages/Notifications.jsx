@@ -59,6 +59,39 @@ export default function Notifications() {
   });
 
   const [addendumForms, setAddendumForms] = React.useState({}); // { [notifId]: { note, verbiage, open } }
+  const [downloadingDoc, setDownloadingDoc] = React.useState(null);
+
+  const downloadAddendum = async (n) => {
+    setDownloadingDoc(n.id);
+    try {
+      const response = await base44.functions.invoke('generateAddendumDoc', {
+        transaction_id: n.transaction_id,
+        notification_id: n.id,
+        addendum_clause: n.addendum_verbiage || '',
+      });
+      // response.data is the raw axios response; we need to fetch directly for blob download
+      const res = await fetch(`/api/functions/generateAddendumDoc`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${await base44.auth.getToken()}` },
+        body: JSON.stringify({
+          transaction_id: n.transaction_id,
+          notification_id: n.id,
+          addendum_clause: n.addendum_verbiage || '',
+        }),
+      });
+      if (!res.ok) throw new Error('Download failed');
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `Addendum_${n.id}.docx`;
+      a.click();
+      URL.revokeObjectURL(url);
+    } catch (e) {
+      console.error('Addendum download failed:', e);
+    }
+    setDownloadingDoc(null);
+  };
 
   const respondMutation = useMutation({
     mutationFn: ({ id, response, note, verbiage }) =>
