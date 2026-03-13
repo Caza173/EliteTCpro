@@ -116,14 +116,6 @@ export default function PortalSelect() {
 
         <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
           <button
-            onClick={handleAgentLogin}
-            className="w-full sm:w-auto flex items-center justify-center gap-2 px-8 py-3.5 rounded-xl text-base font-semibold text-white border border-white/10 hover:border-white/20 hover:bg-white/5 transition-all"
-          >
-            <Users className="w-5 h-5" />
-            Agent Login
-            <ArrowRight className="w-4 h-4 opacity-60" />
-          </button>
-          <button
             onClick={handleTCLogin}
             className="w-full sm:w-auto flex items-center justify-center gap-2 px-8 py-3.5 rounded-xl text-base font-bold transition-all"
             style={{ backgroundColor: "#c9a227", color: "#0f172a" }}
@@ -131,7 +123,7 @@ export default function PortalSelect() {
             onMouseLeave={e => { e.currentTarget.style.backgroundColor = "#c9a227"; e.currentTarget.style.boxShadow = "none"; }}
           >
             <ShieldCheck className="w-5 h-5" />
-            Transaction Coordinator Login
+            Login to EliteTC
             <ArrowRight className="w-4 h-4 opacity-70" />
           </button>
         </div>
