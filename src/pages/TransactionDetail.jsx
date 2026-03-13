@@ -312,7 +312,7 @@ export default function TransactionDetail() {
               {invitingClient ? "Sending..." : "Invite Client"}
             </Button>
             <Button variant="outline" size="sm" className="text-red-600 hover:text-red-700 hover:bg-red-50 border-red-200"
-              onClick={() => { if (confirm("Delete this transaction?")) deleteMutation.mutate(transaction.id); }}>
+              onClick={() => setConfirmDelete(true)}>
               <Trash2 className="w-4 h-4 mr-1" /> Delete
             </Button>
           </div>
