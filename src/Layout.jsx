@@ -111,9 +111,10 @@ export default function Layout({ children, currentPageName }) {
   }, [currentUser, navigate]);
 
   const role = currentUser?.role;
-  const navItems = role === "client" ? CLIENT_NAV
+  const isMaster = currentUser?.email === "nhcazateam@gmail.com";
+  const navItems = (isMaster || role === "owner" || role === "admin") ? OWNER_NAV
+    : role === "client" ? CLIENT_NAV
     : role === "agent" ? AGENT_NAV
-    : (role === "owner" || role === "admin") ? OWNER_NAV
     : (role === "tc" || role === "tc_lead") ? TC_NAV
     : TC_NAV;
 
