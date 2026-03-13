@@ -69,6 +69,7 @@ export default function TransactionDetail() {
   const [sendingTimeline, setSendingTimeline] = useState(false);
   const [invitingClient, setInvitingClient] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
+  const [alertDialog, setAlertDialog] = useState({ open: false, title: "", message: "" });
 
   const isDragging = useRef(false);
   const startX = useRef(0);
