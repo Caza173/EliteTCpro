@@ -58,6 +58,11 @@ const AuthenticatedApp = () => {
           }
         />
       ))}
+      <Route path="/UserManagement" element={
+        <LayoutWrapper currentPageName="UserManagement">
+          <UserManagement />
+        </LayoutWrapper>
+      } />
       <Route path="*" element={<PageNotFound />} />
     </Routes>
   );
