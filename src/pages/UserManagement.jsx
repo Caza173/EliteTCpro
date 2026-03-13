@@ -14,7 +14,7 @@ import {
   Users, Search, UserPlus, Loader2, CheckCircle, Pencil, Trash2, Eye, ShieldAlert
 } from "lucide-react";
 import { useCurrentUser, hasFullAccess, canDeleteRecords } from "../components/auth/useCurrentUser";
-import { ROLE_COLORS, logAuditEvent } from "../components/utils/tenantUtils";
+import { ROLE_COLORS, writeAuditLog } from "../components/utils/tenantUtils";
 
 const ROLES = ["admin", "owner", "tc_lead", "tc", "agent", "client"];
 const ROLE_LABELS = {
