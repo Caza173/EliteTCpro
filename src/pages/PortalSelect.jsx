@@ -238,6 +238,33 @@ export default function PortalSelect() {
         </div>
       </section>
 
+      {/* Support Bar */}
+      <section className="border-t border-white/5 px-6 py-10">
+        <div className="max-w-7xl mx-auto text-center">
+          <p className="text-slate-500 text-sm mb-4">Need help?</p>
+          <div className="flex items-center justify-center gap-3 flex-wrap">
+            <button
+              onClick={() => setShowContact(true)}
+              className="flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-medium border border-white/10 text-slate-300 hover:border-white/20 hover:bg-white/5 transition-all"
+            >
+              <MessageSquare className="w-4 h-4" />
+              Contact Us
+            </button>
+            <span className="text-slate-700 text-sm">|</span>
+            <button
+              onClick={() => setShowUpdate(true)}
+              className="flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-medium transition-all"
+              style={{ backgroundColor: "rgba(201,162,39,0.12)", border: "1px solid rgba(201,162,39,0.25)", color: "#c9a227" }}
+              onMouseEnter={e => e.currentTarget.style.backgroundColor = "rgba(201,162,39,0.2)"}
+              onMouseLeave={e => e.currentTarget.style.backgroundColor = "rgba(201,162,39,0.12)"}
+            >
+              <RefreshCw className="w-4 h-4" />
+              Request Transaction Update
+            </button>
+          </div>
+        </div>
+      </section>
+
       {/* Footer */}
       <footer className="border-t border-white/5 px-6 py-8 text-center">
         <div className="flex items-center justify-center gap-2 mb-2">
@@ -248,6 +275,9 @@ export default function PortalSelect() {
         </div>
         <p className="text-slate-600 text-xs">© 2025 EliteTC. All rights reserved.</p>
       </footer>
+
+      {showContact && <ContactModal onClose={() => setShowContact(false)} />}
+      {showUpdate && <TransactionUpdateModal onClose={() => setShowUpdate(false)} />}
     </div>
   );
 }
