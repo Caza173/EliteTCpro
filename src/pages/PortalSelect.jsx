@@ -4,17 +4,14 @@ import { createPageUrl } from "@/utils";
 import {
   Building2,
   Brain,
-  Clock,
   ShieldCheck,
   LayoutDashboard,
   ArrowRight,
-  FileText,
   CheckCircle,
   Bell,
   Upload,
   Sparkles,
   CalendarDays,
-  Users,
   MessageSquare,
   RefreshCw
 } from "lucide-react";

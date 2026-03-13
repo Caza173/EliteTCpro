@@ -95,13 +95,9 @@ export default function Layout({ children, currentPageName }) {
     const path = window.location.hash.replace("#", "") || "/";
 
     const isClientPage = path.startsWith("/ClientPortal");
-    const isAgentPage  = path.startsWith("/AgentPortal");
-    const isTCPage     = !isClientPage && !isAgentPage && path !== "/PortalSelect";
 
     if (role === "client" && !isClientPage) {
       navigate(createPageUrl("ClientPortal"), { replace: true });
-    } else if (role === "agent" && !isAgentPage && isTCPage) {
-      navigate(createPageUrl("AgentPortal"), { replace: true });
     } else if (!role || role === "user") {
       navigate(createPageUrl("Dashboard"), { replace: true });
     }
