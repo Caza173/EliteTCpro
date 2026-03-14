@@ -13,7 +13,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Plus, Search, Layers, ChevronLeft, ChevronRight } from "lucide-react";
+import { Plus, Search, Layers, ChevronLeft, ChevronRight, Sparkles } from "lucide-react";
+import ContractIntakeModal from "../components/intake/ContractIntakeModal";
 
 const PAGE_SIZE = 25;
 
