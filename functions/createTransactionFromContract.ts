@@ -1,0 +1,163 @@
+import { createClientFromRequest } from 'npm:@base44/sdk@0.8.20';
+
+Deno.serve(async (req) => {
+  try {
+    const base44 = createClientFromRequest(req);
+    const user = await base44.auth.me();
+    if (!user) return Response.json({ error: 'Unauthorized' }, { status: 401 });
+
+    const body = await req.json();
+    const { extracted, file_url, file_name } = body;
+
+    // Resolve brokerage_id
+    let brokerage_id = user.data?.brokerage_id;
+    if (!brokerage_id) {
+      const brokerages = await base44.asServiceRole.entities.Brokerage.list();
+      brokerage_id = brokerages[0]?.id;
+    }
+    if (!brokerage_id) return Response.json({ error: 'No brokerage found' }, { status: 400 });
+
+    // --- 1. Build buyer/seller arrays ---
+    const buyerList = (extracted.buyer_names || "")
+      .split(/[,&]/).map(s => s.trim()).filter(Boolean);
+    const sellerList = (extracted.seller_names || "")
+      .split(/[,&]/).map(s => s.trim()).filter(Boolean);
+
+    // --- 2. Create Transaction ---
+    const tx = await base44.asServiceRole.entities.Transaction.create({
+      brokerage_id,
+      address: extracted.property_address,
+      buyer: buyerList.join(" & "),
+      seller: sellerList.join(" & "),
+      buyers: buyerList,
+      sellers: sellerList,
+      buyers_agent_name: extracted.buyer_agent || "",
+      sellers_agent_name: extracted.seller_agent || "",
+      buyer_brokerage: extracted.buyer_brokerage || "",
+      seller_brokerage: extracted.seller_brokerage || "",
+      closing_title_company: extracted.title_company || "",
+      mls_number: extracted.mls_number || "",
+      sale_price: extracted.purchase_price || null,
+      commission_percent: extracted.commission_percent || null,
+      contract_date: extracted.acceptance_date || null,
+      closing_date: extracted.closing_date || null,
+      inspection_deadline: extracted.inspection_deadline || null,
+      financing_deadline: extracted.financing_commitment_date || null,
+      earnest_money_deadline: extracted.earnest_money_deadline || null,
+      due_diligence_deadline: extracted.due_diligence_deadline || null,
+      transaction_type: extracted.transaction_type || "buyer",
+      agent: user.full_name || user.email,
+      agent_email: user.email,
+      status: "active",
+      phase: 3,
+      phases_completed: [1, 2],
+      tasks: [],
+      last_activity_at: new Date().toISOString(),
+    });
+
+    const txId = tx.id;
+
+    // --- 3. Create Contacts + Participants ---
+    const participantDefs = [
+      ...buyerList.map(name => ({ name, role: "buyer" })),
+      ...sellerList.map(name => ({ name, role: "seller" })),
+      ...(extracted.buyer_agent ? [{ name: extracted.buyer_agent, role: "buyer_agent" }] : []),
+      ...(extracted.seller_agent ? [{ name: extracted.seller_agent, role: "listing_agent" }] : []),
+    ];
+
+    for (const p of participantDefs) {
+      const nameParts = p.name.trim().split(/\s+/);
+      const first_name = nameParts[0] || p.name;
+      const last_name = nameParts.slice(1).join(" ") || "";
+
+      // Check for existing contact by name
+      let contactId = null;
+      try {
+        const existing = await base44.asServiceRole.entities.Contact.filter({ first_name, last_name });
+        if (existing.length > 0) {
+          contactId = existing[0].id;
+        }
+      } catch (_) {}
+
+      if (!contactId) {
+        const roleType = ["buyer_agent", "listing_agent"].includes(p.role) ? "agent"
+          : p.role === "buyer" ? "buyer"
+          : p.role === "seller" ? "seller"
+          : "other";
+        const contact = await base44.asServiceRole.entities.Contact.create({
+          first_name,
+          last_name,
+          role_type: roleType,
+        });
+        contactId = contact.id;
+      }
+
+      await base44.asServiceRole.entities.TransactionParticipant.create({
+        transaction_id: txId,
+        contact_id: contactId,
+        role: p.role,
+      });
+    }
+
+    // --- 4. Create Finance record ---
+    if (extracted.purchase_price || extracted.deposit_amount || extracted.seller_concession_amount) {
+      await base44.asServiceRole.entities.TransactionFinance.create({
+        transaction_id: txId,
+        brokerage_id,
+        sale_price: extracted.purchase_price || null,
+        commission_percent: extracted.commission_percent || null,
+        seller_concession_amount: extracted.seller_concession_amount || 0,
+        professional_fee_type: extracted.professional_fee_amount ? "flat" : "percent",
+        professional_fee_value: extracted.professional_fee_amount || extracted.professional_fee_percent || 0,
+        professional_fee_amount: extracted.professional_fee_amount || 0,
+      });
+    }
+
+    // --- 5. Store Document ---
+    if (file_url) {
+      await base44.asServiceRole.entities.Document.create({
+        transaction_id: txId,
+        brokerage_id,
+        doc_type: "purchase_and_sale",
+        file_url,
+        file_name: file_name || "Purchase and Sale Agreement",
+        uploaded_by: user.email,
+        uploaded_by_role: user.role || "tc",
+        notes: "Auto-uploaded via Contract Intake Engine",
+      });
+    }
+
+    // --- 6. Create TransactionSummary ---
+    await base44.asServiceRole.entities.TransactionSummary.create({
+      transaction_id: txId,
+      brokerage_id,
+      property_address: extracted.property_address,
+      transaction_type: extracted.transaction_type || "buyer",
+      status: "active",
+      closing_date: extracted.closing_date || null,
+      acceptance_date: extracted.acceptance_date || null,
+      listing_agent_name: extracted.seller_agent || "",
+      buyer_agent_name: extracted.buyer_agent || "",
+      purchase_price: extracted.purchase_price || null,
+      mls_number: extracted.mls_number || "",
+      task_count_open: 0,
+      document_count: file_url ? 1 : 0,
+    });
+
+    // --- 7. Audit log ---
+    await base44.asServiceRole.entities.AuditLog.create({
+      brokerage_id,
+      transaction_id: txId,
+      actor_email: user.email,
+      action: "transaction_created",
+      entity_type: "transaction",
+      entity_id: txId,
+      description: `Transaction created via AI Contract Intake from file: ${file_name || "uploaded file"}`,
+    });
+
+    return Response.json({ transaction_id: txId, transaction: tx });
+  } catch (error) {
+    console.error('createTransactionFromContract error:', error);
+    return Response.json({ error: error.message }, { status: 500 });
+  }
+});
