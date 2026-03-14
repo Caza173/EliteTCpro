@@ -33,6 +33,7 @@ export default function Transactions() {
   const [statusFilter, setStatusFilter] = useState("all");
   const [phaseFilter, setPhaseFilter] = useState("all");
   const [page, setPage] = useState(1);
+  const [showIntake, setShowIntake] = useState(false);
   const { data: currentUser } = useCurrentUser();
 
   const { data: transactions = [], isLoading } = useQuery({
