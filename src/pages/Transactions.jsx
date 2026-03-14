@@ -31,6 +31,7 @@ export default function Transactions() {
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [phaseFilter, setPhaseFilter] = useState("all");
+  const [page, setPage] = useState(1);
   const { data: currentUser } = useCurrentUser();
 
   const { data: transactions = [], isLoading } = useQuery({
