@@ -45,16 +45,25 @@ export default function Transactions() {
     enabled: !!currentUser,
   });
 
-  const filtered = transactions.filter((tx) => {
+  const filtered = useMemo(() => transactions.filter((tx) => {
+    const q = search.toLowerCase();
     const matchesSearch =
       !search ||
-      tx.address?.toLowerCase().includes(search.toLowerCase()) ||
-      tx.buyer?.toLowerCase().includes(search.toLowerCase()) ||
-      tx.agent?.toLowerCase().includes(search.toLowerCase());
+      tx.address?.toLowerCase().includes(q) ||
+      tx.buyer?.toLowerCase().includes(q) ||
+      tx.buyers?.some(b => b.toLowerCase().includes(q)) ||
+      tx.agent?.toLowerCase().includes(q) ||
+      tx.mls_number?.toLowerCase().includes(q);
     const matchesStatus = statusFilter === "all" || tx.status === statusFilter;
     const matchesPhase = phaseFilter === "all" || String(tx.phase || 1) === phaseFilter;
     return matchesSearch && matchesStatus && matchesPhase;
-  });
+  }), [transactions, search, statusFilter, phaseFilter]);
+
+  const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
+  const paginated = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
+
+  // Reset to page 1 when filters change
+  React.useEffect(() => { setPage(1); }, [search, statusFilter, phaseFilter]);
 
   return (
     <div className="space-y-6 max-w-7xl mx-auto w-full min-w-0">
