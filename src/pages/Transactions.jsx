@@ -185,6 +185,7 @@ export default function Transactions() {
           </div>
         </div>
       )}
+      <ContractIntakeModal open={showIntake} onClose={() => setShowIntake(false)} />
     </div>
   );
 }
