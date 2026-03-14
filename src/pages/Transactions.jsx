@@ -63,7 +63,7 @@ export default function Transactions() {
   const paginated = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
 
   // Reset to page 1 when filters change
-  React.useEffect(() => { setPage(1); }, [search, statusFilter, phaseFilter]);
+  useEffect(() => { setPage(1); }, [search, statusFilter, phaseFilter]);
 
   return (
     <div className="space-y-6 max-w-7xl mx-auto w-full min-w-0">
