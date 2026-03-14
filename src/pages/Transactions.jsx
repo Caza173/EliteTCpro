@@ -71,7 +71,7 @@ export default function Transactions() {
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <div>
           <h1 className="text-2xl font-bold text-gray-900 tracking-tight">All Transactions</h1>
-          <p className="text-sm text-gray-500 mt-0.5">{transactions.length} total transactions</p>
+          <p className="text-sm text-gray-500 mt-0.5">{filtered.length} of {transactions.length} transactions</p>
         </div>
         <Link to={createPageUrl("AddTransaction")}>
           <Button className="bg-blue-600 hover:bg-blue-700">
