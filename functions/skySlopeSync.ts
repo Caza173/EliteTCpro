@@ -149,6 +149,7 @@ Deno.serve(async (req) => {
       if (!transaction_id) return Response.json({ error: "transaction_id required" }, { status: 400 });
 
       const allTx = await base44.asServiceRole.entities.Transaction.list();
+      console.log("All TX count:", allTx.length, "IDs:", allTx.map(t => t.id).join(","));
       const tx = allTx.find(t => t.id === transaction_id);
       if (!tx) return Response.json({ error: "Transaction not found" }, { status: 404 });
 
