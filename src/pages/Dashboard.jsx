@@ -23,6 +23,7 @@ import DeadlineRiskPanel from "../components/transactions/DeadlineRiskPanel";
 import TasksDueToday from "../components/dashboard/TasksDueToday";
 import GlobalAIAssistant from "../components/ai/GlobalAIAssistant";
 import AIActivityLogPanel from "../components/dashboard/AIActivityLogPanel";
+import TransactionAlertsPanel from "../components/dashboard/TransactionAlertsPanel";
 
 export default function Dashboard() {
   const [deadlineView, setDeadlineView] = useState("list"); // "list" | "calendar"
