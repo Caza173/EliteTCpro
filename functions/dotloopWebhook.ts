@@ -98,8 +98,14 @@ Deno.serve(async (req) => {
     // --- Match or create transaction ---
     let transaction = null;
 
+    // 0. Try Dotloop loop_id match (most reliable)
+    if (dotloopLoopId) {
+      const byLoop = await base44.asServiceRole.entities.Transaction.filter({ dotloop_loop_id: String(dotloopLoopId), brokerage_id });
+      if (byLoop.length > 0) transaction = byLoop[0];
+    }
+
     // 1. Try MLS match
-    if (mlsNumber) {
+    if (!transaction && mlsNumber) {
       const byMls = await base44.asServiceRole.entities.Transaction.filter({ mls_number: mlsNumber, brokerage_id });
       if (byMls.length > 0) transaction = byMls[0];
     }
@@ -130,6 +136,7 @@ Deno.serve(async (req) => {
         status: "pending",
         transaction_phase: "intake",
         mls_number: mlsNumber || "",
+        dotloop_loop_id: dotloopLoopId ? String(dotloopLoopId) : "",
         notes: `Auto-created from Dotloop webhook. Event: ${eventType}. Review and match manually.`,
         last_activity_at: new Date().toISOString(),
         tasks: [],
@@ -138,6 +145,12 @@ Deno.serve(async (req) => {
     }
 
     const txId = transaction.id;
+
+    // Persist dotloop_loop_id on matched transaction if not already set
+    if (dotloopLoopId && !transaction.dotloop_loop_id) {
+      await base44.asServiceRole.entities.Transaction.update(txId, { dotloop_loop_id: String(dotloopLoopId) });
+    }
+
     const docType = classifyDocType(docName);
 
     // --- Store document in EliteTC ---
