@@ -41,6 +41,7 @@ const initialForm = {
   appraisal_deadline: "",
   financing_deadline: "",
   transaction_type: "buyer",
+  property_type: "residential",
 };
 
 export default function TransactionForm({ onSubmit, isSubmitting }) {
@@ -257,18 +258,36 @@ export default function TransactionForm({ onSubmit, isSubmitting }) {
       </div>
 
       {/* Type */}
-      <div>
-        <Label className="text-sm font-medium text-gray-700">Transaction Type</Label>
-        <Select value={form.transaction_type} onValueChange={(v) => handleChange("transaction_type", v)}>
-          <SelectTrigger className="mt-1.5">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="buyer">Buyer</SelectItem>
-            <SelectItem value="seller">Seller</SelectItem>
-            <SelectItem value="dual">Dual</SelectItem>
-          </SelectContent>
-        </Select>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div>
+          <Label className="text-sm font-medium text-gray-700">Transaction Type</Label>
+          <Select value={form.transaction_type} onValueChange={(v) => handleChange("transaction_type", v)}>
+            <SelectTrigger className="mt-1.5">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="buyer">Buyer</SelectItem>
+              <SelectItem value="seller">Seller</SelectItem>
+              <SelectItem value="dual">Dual</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+        <div>
+          <Label className="text-sm font-medium text-gray-700">Property Type</Label>
+          <Select value={form.property_type} onValueChange={(v) => handleChange("property_type", v)}>
+            <SelectTrigger className="mt-1.5">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="residential">Residential</SelectItem>
+              <SelectItem value="condo">Condo</SelectItem>
+              <SelectItem value="land">Land</SelectItem>
+              <SelectItem value="commercial">Commercial</SelectItem>
+              <SelectItem value="multi_family">Multi-Family</SelectItem>
+              <SelectItem value="other">Other</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
       </div>
 
       <div className="flex justify-end pt-2">
