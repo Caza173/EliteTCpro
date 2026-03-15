@@ -174,24 +174,40 @@ Deno.serve(async (req) => {
       const tx = txList.find(t => t.id === transaction_id);
       if (!tx) return Response.json({ error: `Transaction ${transaction_id} not found` }, { status: 404 });
 
-      if (tx.skyslope_transaction_id) {
-        return Response.json({ skipped: true, skyslope_transaction_id: tx.skyslope_transaction_id, message: "Already synced" });
+      if (tx.skyslope_file_guid || tx.skyslope_transaction_id) {
+        return Response.json({ skipped: true, skyslope_file_guid: tx.skyslope_file_guid, message: "Already synced" });
       }
 
-      let skySlopeId;
+      let ssResult;
       try {
-        skySlopeId = await createSkySlopeSale(tx);
+        ssResult = await createSkySlopeSale(tx);
       } catch (err) {
         await base44.asServiceRole.entities.Transaction.update(tx.id, {
           skyslope_sync_status: "error",
           skyslope_sync_error: err.message,
         });
         console.error("SkySlope createSale error:", err.message);
+        // Notify the TC dashboard of the failure
+        try {
+          await base44.asServiceRole.entities.InAppNotification.create({
+            brokerage_id: tx.brokerage_id,
+            user_email: tx.agent_email || "system",
+            transaction_id: tx.id,
+            title: "SkySlope Sync Failed",
+            body: `Could not create SkySlope compliance file for ${tx.address}: ${err.message}`,
+            type: "system",
+          });
+        } catch { /* don't block on notification failure */ }
         return Response.json({ error: err.message }, { status: 502 });
       }
 
+      const syncTime = new Date().toISOString();
       await base44.asServiceRole.entities.Transaction.update(tx.id, {
-        skyslope_transaction_id: String(skySlopeId),
+        skyslope_transaction_id: String(ssResult.id),
+        skyslope_file_guid: ssResult.fileGuid ? String(ssResult.fileGuid) : String(ssResult.id),
+        skyslope_sale_guid: ssResult.saleGuid ? String(ssResult.saleGuid) : "",
+        skyslope_listing_guid: ssResult.listingGuid ? String(ssResult.listingGuid) : "",
+        skyslope_last_sync: syncTime,
         skyslope_sync_status: "synced",
         skyslope_sync_error: "",
       });
@@ -204,10 +220,10 @@ Deno.serve(async (req) => {
         action: "skyslope_transaction_created",
         entity_type: "transaction",
         entity_id: tx.id,
-        description: `SkySlope transaction created: ${skySlopeId}`,
+        description: `SkySlope compliance file created: ${ssResult.fileGuid || ssResult.id}`,
       });
 
-      return Response.json({ success: true, skyslope_transaction_id: skySlopeId });
+      return Response.json({ success: true, skyslope_file_guid: ssResult.fileGuid, skyslope_transaction_id: ssResult.id });
     }
 
     // ---- ACTION: syncDocument ----
