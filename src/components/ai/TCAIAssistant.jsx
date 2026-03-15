@@ -7,7 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Send, Bot, User, Loader2, Sparkles, RefreshCw } from "lucide-react";
 import { format } from "date-fns";
 
-function buildSystemPrompt(transaction, documents, checklistItems, complianceReports) {
+function buildSystemPrompt(transaction, documents, checklistItems, complianceReports, complianceIssuesList = []) {
   const buyers = transaction.buyers?.length ? transaction.buyers.join(", ") : (transaction.buyer || "Unknown");
   const sellers = transaction.sellers?.length ? transaction.sellers.join(", ") : (transaction.seller || "Unknown");
 
@@ -47,10 +47,16 @@ function buildSystemPrompt(transaction, documents, checklistItems, complianceRep
   const approvedDocs = checklistItems.filter((i) => i.status === "approved").length;
   const totalDocs = checklistItems.length;
 
-  const complianceIssues = complianceReports.flatMap((r) => [
+  // Merge ComplianceReport issues + ComplianceIssue records
+  const reportIssues = complianceReports.flatMap((r) => [
     ...(r.blockers || []).map((b) => `  [BLOCKER] ${b.message || b.field || JSON.stringify(b)}`),
     ...(r.warnings || []).map((w) => `  [WARNING] ${w.message || w.field || JSON.stringify(w)}`),
-  ]).join("\n") || "  No compliance issues detected.";
+  ]);
+  const trackedIssues = (complianceIssuesList || [])
+    .filter(i => i.status === "open")
+    .map(i => `  [${i.severity.toUpperCase()}][${i.issue_type}] ${i.message}`);
+  const allIssueLines = [...new Set([...reportIssues, ...trackedIssues])];
+  const complianceIssues = allIssueLines.join("\n") || "  No compliance issues detected.";
 
   return `You are an expert AI Transaction Coordinator Assistant for a real estate transaction management platform called EliteTC. You have deep knowledge of real estate transactions, contracts, timelines, and compliance requirements.
 
@@ -152,6 +158,11 @@ export default function TCAIAssistant({ transaction, currentUser }) {
     queryFn: () => base44.entities.ComplianceReport.filter({ transaction_id: transaction.id }),
   });
 
+  const { data: complianceIssuesList = [] } = useQuery({
+    queryKey: ["compliance-issues", transaction.id],
+    queryFn: () => base44.entities.ComplianceIssue.filter({ transaction_id: transaction.id, status: "open" }),
+  });
+
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages, loading]);
@@ -165,7 +176,7 @@ export default function TCAIAssistant({ transaction, currentUser }) {
     setMessages(newMessages);
     setLoading(true);
 
-    const systemPrompt = buildSystemPrompt(transaction, documents, checklistItems, complianceReports);
+    const systemPrompt = buildSystemPrompt(transaction, documents, checklistItems, complianceReports, complianceIssuesList);
 
     const conversationHistory = newMessages
       .map((m) => `${m.role === "user" ? "User" : "Assistant"}: ${m.content}`)
