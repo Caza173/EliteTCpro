@@ -201,12 +201,15 @@ Deno.serve(async (req) => {
     if (action === "syncDocument") {
       if (!document_id) return Response.json({ error: "document_id required" }, { status: 400 });
 
-      const allDocs = await base44.asServiceRole.entities.Document.list();
-      const doc = allDocs.find(d => d.id === document_id);
+      const { brokerage_id: brokerageId2 } = body;
+      if (!brokerageId2) return Response.json({ error: "brokerage_id required" }, { status: 400 });
+
+      const docList = await base44.asServiceRole.entities.Document.filter({ brokerage_id: brokerageId2 });
+      const doc = docList.find(d => d.id === document_id);
       if (!doc) return Response.json({ error: "Document not found" }, { status: 404 });
 
-      const allTx2 = await base44.asServiceRole.entities.Transaction.list();
-      const tx = allTx2.find(t => t.id === doc.transaction_id);
+      const txList2 = await base44.asServiceRole.entities.Transaction.filter({ brokerage_id: brokerageId2 });
+      const tx = txList2.find(t => t.id === doc.transaction_id);
       if (!tx) return Response.json({ error: "Transaction not found for document" }, { status: 404 });
 
       if (!tx.skyslope_transaction_id) {
