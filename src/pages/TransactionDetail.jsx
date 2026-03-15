@@ -57,7 +57,8 @@ const statusStyles = {
 };
 
 export default function TransactionDetail() {
-  const urlParams = new URLSearchParams(window.location.search);
+  const hashSearch = window.location.hash.includes("?") ? window.location.hash.split("?")[1] : window.location.search;
+  const urlParams = new URLSearchParams(hashSearch);
   const id = urlParams.get("id");
   const navigate = useNavigate();
   const queryClient = useQueryClient();
