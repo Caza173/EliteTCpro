@@ -5,10 +5,10 @@ import { Button } from "@/components/ui/button";
 import { RefreshCw, CheckCircle2, AlertCircle, Clock, Minus } from "lucide-react";
 
 const STATUS_CONFIG = {
-  synced:     { label: "SkySlope Synced", icon: CheckCircle2, className: "bg-emerald-50 text-emerald-700 border-emerald-200" },
-  pending:    { label: "Sync Pending",    icon: Clock,         className: "bg-amber-50 text-amber-700 border-amber-200" },
-  error:      { label: "Sync Failed",     icon: AlertCircle,   className: "bg-red-50 text-red-700 border-red-200" },
-  not_synced: { label: "Not Synced",      icon: Minus,         className: "bg-gray-50 text-gray-500 border-gray-200" },
+  synced:     { label: "Connected",     icon: CheckCircle2, className: "bg-emerald-50 text-emerald-700 border-emerald-200" },
+  pending:    { label: "Pending Sync",  icon: Clock,         className: "bg-amber-50 text-amber-700 border-amber-200" },
+  error:      { label: "Error",         icon: AlertCircle,   className: "bg-red-50 text-red-700 border-red-200" },
+  not_synced: { label: "Pending Sync",  icon: Clock,         className: "bg-gray-50 text-gray-500 border-gray-200" },
 };
 
 export default function SkySlopeSyncBadge({ transaction, onSynced }) {
