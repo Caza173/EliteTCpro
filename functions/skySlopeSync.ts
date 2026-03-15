@@ -151,7 +151,7 @@ Deno.serve(async (req) => {
       let allTx = [];
       try {
         allTx = await base44.asServiceRole.entities.Transaction.list();
-        console.log("TX list count:", allTx.length);
+        console.log("TX list count:", allTx.length, "sample:", JSON.stringify(allTx[0]));
       } catch (listErr) {
         console.error("TX list error:", listErr.message);
         return Response.json({ error: "Failed to list transactions: " + listErr.message }, { status: 500 });
