@@ -148,10 +148,16 @@ Deno.serve(async (req) => {
     if (action === "syncTransaction") {
       if (!transaction_id) return Response.json({ error: "transaction_id required" }, { status: 400 });
 
-      const allTx = await base44.asServiceRole.entities.Transaction.list();
-      console.log("All TX count:", allTx.length, "IDs:", allTx.map(t => t.id).join(","));
+      let allTx = [];
+      try {
+        allTx = await base44.asServiceRole.entities.Transaction.list();
+        console.log("TX list count:", allTx.length);
+      } catch (listErr) {
+        console.error("TX list error:", listErr.message);
+        return Response.json({ error: "Failed to list transactions: " + listErr.message }, { status: 500 });
+      }
       const tx = allTx.find(t => t.id === transaction_id);
-      if (!tx) return Response.json({ error: "Transaction not found" }, { status: 404 });
+      if (!tx) return Response.json({ error: `Transaction ${transaction_id} not found in ${allTx.length} records` }, { status: 404 });
 
       if (tx.skyslope_transaction_id) {
         return Response.json({ skipped: true, skyslope_transaction_id: tx.skyslope_transaction_id, message: "Already synced" });
