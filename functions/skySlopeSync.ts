@@ -146,8 +146,13 @@ Deno.serve(async (req) => {
     if (action === "syncTransaction") {
       if (!transaction_id) return Response.json({ error: "transaction_id required" }, { status: 400 });
 
-      const txList = await base44.asServiceRole.entities.Transaction.filter({ id: transaction_id });
-      const tx = txList[0];
+      let tx;
+      try {
+        tx = await base44.asServiceRole.entities.Transaction.get(transaction_id);
+      } catch {
+        const txList = await base44.asServiceRole.entities.Transaction.filter({ id: transaction_id });
+        tx = txList[0];
+      }
       if (!tx) return Response.json({ error: "Transaction not found" }, { status: 404 });
 
       if (tx.skyslope_transaction_id) {
@@ -190,12 +195,22 @@ Deno.serve(async (req) => {
     if (action === "syncDocument") {
       if (!document_id) return Response.json({ error: "document_id required" }, { status: 400 });
 
-      const docList = await base44.asServiceRole.entities.Document.filter({ id: document_id });
-      const doc = docList[0];
+      let doc;
+      try {
+        doc = await base44.asServiceRole.entities.Document.get(document_id);
+      } catch {
+        const docList = await base44.asServiceRole.entities.Document.filter({ id: document_id });
+        doc = docList[0];
+      }
       if (!doc) return Response.json({ error: "Document not found" }, { status: 404 });
 
-      const txList = await base44.asServiceRole.entities.Transaction.filter({ id: doc.transaction_id });
-      const tx = txList[0];
+      let tx;
+      try {
+        tx = await base44.asServiceRole.entities.Transaction.get(doc.transaction_id);
+      } catch {
+        const txList = await base44.asServiceRole.entities.Transaction.filter({ id: doc.transaction_id });
+        tx = txList[0];
+      }
       if (!tx) return Response.json({ error: "Transaction not found for document" }, { status: 404 });
 
       if (!tx.skyslope_transaction_id) {
