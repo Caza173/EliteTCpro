@@ -397,6 +397,11 @@ export default function TransactionDetail() {
               )}
               <InfoItem icon={Calendar} label="Contract Date"
                 value={transaction.contract_date ? format(new Date(transaction.contract_date), "MMM d, yyyy") : "—"} />
+              {transaction.property_type && (
+                <InfoItem label="Property Type" value={
+                  { residential: "Residential", condo: "Condo", land: "Land", commercial: "Commercial", multi_family: "Multi-Family", other: "Other" }[transaction.property_type] || transaction.property_type
+                } />
+              )}
               <InfoItem label="Current Phase" value={PHASES[(transaction.phase || 1) - 1]} highlight />
               {transaction.is_cash_transaction && <InfoItem label="Financing" value="Cash Transaction" />}
             </div>

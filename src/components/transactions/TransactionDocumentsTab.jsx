@@ -11,6 +11,7 @@ import { format } from "date-fns";
 import { writeAuditLog } from "../utils/tenantUtils";
 import DocChecklistPanel from "./DocChecklistPanel";
 import ConfirmDialog from "@/components/ui/ConfirmDialog";
+import SuggestedDocuments from "./SuggestedDocuments";
 
 const DOC_TYPES = [
   { value: "purchase_and_sale", label: "Purchase & Sale Agreement" },
@@ -222,6 +223,13 @@ export default function TransactionDocumentsTab({ transaction, currentUser }) {
             />
           </CardContent>
         </Card>
+      )}
+
+      {transaction.property_type && (
+        <SuggestedDocuments
+          propertyType={transaction.property_type}
+          uploadedFileNames={documents.map(d => d.file_name)}
+        />
       )}
 
       <Card className="shadow-sm border-gray-100">
