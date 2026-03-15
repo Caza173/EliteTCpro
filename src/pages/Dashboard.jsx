@@ -179,6 +179,15 @@ export default function Dashboard() {
 
         {/* Right column */}
         <div className="space-y-5">
+          {/* Transaction Alerts */}
+          {!isLoading && (
+            <Card className="shadow-sm border-gray-100">
+              <CardContent className="pt-4">
+                <TransactionAlertsPanel />
+              </CardContent>
+            </Card>
+          )}
+
           {/* Superagent Activity Log */}
           {!isLoading && (
             <Card className="shadow-sm border-gray-100">
