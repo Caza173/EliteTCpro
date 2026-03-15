@@ -11,7 +11,7 @@ import { Plus, ArrowRight, AlertTriangle, CheckCircle2, FileWarning, CalendarDay
 import { Skeleton } from "@/components/ui/skeleton";
 
 import DashboardStats from "../components/dashboard/DashboardStats";
-import TransactionTable from "../components/transactions/TransactionTable";
+import TransactionTable, { calcPriorityScore } from "../components/transactions/TransactionTable";
 import DeadlineCalendarView from "../components/dashboard/DeadlineCalendarView";
 import DeadlineSummaryPanel from "../components/dashboard/DeadlineSummaryPanel";
 import { useCurrentUser, isOwnerOrAdmin } from "../components/auth/useCurrentUser";

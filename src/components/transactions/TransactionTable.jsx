@@ -11,8 +11,61 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Eye, MapPin, User, Calendar } from "lucide-react";
+import { Eye, MapPin, User, Calendar, AlertTriangle, CheckCircle2 } from "lucide-react";
 import { format } from "date-fns";
+
+const DEADLINE_FIELDS = [
+  "earnest_money_deadline", "inspection_deadline", "due_diligence_deadline",
+  "appraisal_deadline", "financing_deadline", "ctc_target", "closing_date",
+];
+
+export function calcPriorityScore(tx, complianceIssues = []) {
+  const today = new Date();
+  let score = 0;
+
+  for (const field of DEADLINE_FIELDS) {
+    if (!tx[field]) continue;
+    const d = new Date(tx[field]);
+    const daysLeft = Math.ceil((d - today) / (1000 * 60 * 60 * 24));
+    if (daysLeft < 0)       score += 100; // overdue
+    else if (daysLeft <= 3) score += 80;
+    else if (daysLeft <= 7) score += 50;
+  }
+
+  if (tx.closing_date) {
+    const closingDays = Math.ceil((new Date(tx.closing_date) - today) / (1000 * 60 * 60 * 24));
+    if (closingDays >= 0 && closingDays <= 7) score += 40;
+  }
+
+  const openTasks = (tx.tasks || []).filter(t => !t.completed).length;
+  if (openTasks > 0) score += 20;
+
+  if (complianceIssues > 0) score += 30;
+
+  return score;
+}
+
+function PriorityBadge({ score }) {
+  if (score >= 80) {
+    return (
+      <span className="inline-flex items-center gap-1 text-[10px] font-semibold px-1.5 py-0.5 rounded-full bg-red-50 text-red-600 border border-red-200 whitespace-nowrap">
+        <AlertTriangle className="w-2.5 h-2.5" /> Attention
+      </span>
+    );
+  }
+  if (score >= 40) {
+    return (
+      <span className="inline-flex items-center gap-1 text-[10px] font-semibold px-1.5 py-0.5 rounded-full bg-amber-50 text-amber-600 border border-amber-200 whitespace-nowrap">
+        <AlertTriangle className="w-2.5 h-2.5" /> Watch
+      </span>
+    );
+  }
+  return (
+    <span className="inline-flex items-center gap-1 text-[10px] font-semibold px-1.5 py-0.5 rounded-full bg-emerald-50 text-emerald-600 border border-emerald-200 whitespace-nowrap">
+      <CheckCircle2 className="w-2.5 h-2.5" /> On Track
+    </span>
+  );
+}
 
 const PHASES = [
   "Pre-Contract", "Offer Drafting", "Offer Accepted", "Escrow Opened",
