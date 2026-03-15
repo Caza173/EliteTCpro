@@ -134,8 +134,10 @@ async function documentExistsInSkySlope(skySlopeId, fileName, txType) {
 Deno.serve(async (req) => {
   try {
     const base44 = createClientFromRequest(req);
-    const user = await base44.auth.me();
-    if (!user) return Response.json({ error: "Unauthorized" }, { status: 401 });
+
+    // Allow both direct user calls and service-role automation calls
+    let user = null;
+    try { user = await base44.auth.me(); } catch { /* service-role call */ }
 
     const body = await req.json();
     const { action, transaction_id, document_id } = body;
