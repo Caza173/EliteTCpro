@@ -135,14 +135,14 @@ Deno.serve(async (req) => {
   try {
     const base44 = createClientFromRequest(req);
 
-    // Allow both direct user calls and service-role automation calls
-    let user = null;
-    try { user = await base44.auth.me(); } catch { /* service-role call */ }
-
     const body = await req.json();
     const { action, transaction_id, document_id } = body;
 
     if (!action) return Response.json({ error: "action required" }, { status: 400 });
+
+    // Allow both direct user calls and service-role automation calls
+    let user = null;
+    try { user = await base44.auth.me(); } catch { /* service-role or unauthenticated call */ }
 
     // ---- ACTION: syncTransaction ----
     if (action === "syncTransaction") {
