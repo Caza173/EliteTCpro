@@ -80,7 +80,7 @@ const statusStyles = {
   cancelled: "bg-red-50 text-red-700 border-red-200",
 };
 
-export default function TransactionTable({ transactions }) {
+export default function TransactionTable({ transactions, sorted = false }) {
   if (!transactions || transactions.length === 0) {
     return (
       <div className="text-center py-16">
@@ -93,6 +93,17 @@ export default function TransactionTable({ transactions }) {
     );
   }
 
+  const rows = sorted
+    ? [...transactions].sort((a, b) => {
+        const diff = calcPriorityScore(b) - calcPriorityScore(a);
+        if (diff !== 0) return diff;
+        if (!a.closing_date && !b.closing_date) return 0;
+        if (!a.closing_date) return 1;
+        if (!b.closing_date) return -1;
+        return new Date(a.closing_date) - new Date(b.closing_date);
+      })
+    : transactions;
+
   return (
     <div className="overflow-x-auto">
       <Table>
@@ -104,12 +115,15 @@ export default function TransactionTable({ transactions }) {
             <TableHead className="text-xs font-semibold text-gray-500 uppercase tracking-wider hidden lg:table-cell">Contract Date</TableHead>
             <TableHead className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Phase</TableHead>
             <TableHead className="text-xs font-semibold text-gray-500 uppercase tracking-wider hidden sm:table-cell">Status</TableHead>
+            <TableHead className="text-xs font-semibold text-gray-500 uppercase tracking-wider hidden sm:table-cell">Priority</TableHead>
             <TableHead className="text-xs font-semibold text-gray-500 uppercase tracking-wider text-right">Action</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
-          {transactions.map((tx) => (
-            <TableRow key={tx.id} className="hover:bg-gray-50/60 transition-colors border-gray-100">
+          {rows.map((tx) => {
+            const score = calcPriorityScore(tx);
+            return (
+            <TableRow key={tx.id} className={`hover:bg-gray-50/60 transition-colors border-gray-100 ${score >= 80 ? "bg-red-50/30" : score >= 40 ? "bg-amber-50/20" : ""}`}>
               <TableCell>
                 <div className="flex items-center gap-2">
                   <div className="w-8 h-8 rounded-lg bg-blue-50 flex items-center justify-center flex-shrink-0">
@@ -141,6 +155,9 @@ export default function TransactionTable({ transactions }) {
                   {tx.status || "active"}
                 </Badge>
               </TableCell>
+              <TableCell className="hidden sm:table-cell">
+                <PriorityBadge score={score} />
+              </TableCell>
               <TableCell className="text-right">
                 <Link to={createPageUrl("TransactionDetail") + `?id=${tx.id}`}>
                   <Button variant="ghost" size="sm" className="text-blue-600 hover:text-blue-700 hover:bg-blue-50">
@@ -150,7 +167,8 @@ export default function TransactionTable({ transactions }) {
                 </Link>
               </TableCell>
             </TableRow>
-          ))}
+            );
+          })}
         </TableBody>
       </Table>
     </div>
