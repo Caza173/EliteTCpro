@@ -183,7 +183,7 @@ Deno.serve(async (req) => {
       await base44.asServiceRole.entities.AuditLog.create({
         brokerage_id: tx.brokerage_id,
         transaction_id: tx.id,
-        actor_email: user.email,
+        actor_email: user?.email || "system",
         action: "skyslope_transaction_created",
         entity_type: "transaction",
         entity_id: tx.id,
@@ -233,7 +233,7 @@ Deno.serve(async (req) => {
         // Notify TC via in-app notification
         await base44.asServiceRole.entities.InAppNotification.create({
           brokerage_id: tx.brokerage_id,
-          user_email: user.email,
+          user_email: user?.email || "system",
           transaction_id: tx.id,
           title: "SkySlope Document Sync Failed",
           body: `Failed to upload "${fileName}" to SkySlope for ${tx.address}: ${err.message}`,
@@ -246,7 +246,7 @@ Deno.serve(async (req) => {
       await base44.asServiceRole.entities.AuditLog.create({
         brokerage_id: tx.brokerage_id,
         transaction_id: tx.id,
-        actor_email: user.email,
+        actor_email: user?.email || "system",
         action: "skyslope_document_uploaded",
         entity_type: "document",
         entity_id: doc.id,
