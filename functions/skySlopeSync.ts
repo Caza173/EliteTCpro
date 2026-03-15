@@ -28,16 +28,23 @@ async function skySlopeHeaders(method, path) {
   };
 }
 
-async function ssRequest(method, path, body = null) {
-  const headers = await skySlopeHeaders(method, path);
-  const opts = { method, headers };
-  if (body) opts.body = JSON.stringify(body);
-  const res = await fetch(`${SKYSLOPE_BASE}${path}`, opts);
-  const text = await res.text();
-  let data;
-  try { data = JSON.parse(text); } catch { data = text; }
-  if (!res.ok) throw new Error(`SkySlope ${method} ${path} → ${res.status}: ${text}`);
-  return data;
+async function ssRequest(method, path, body = null, retries = 1) {
+  for (let attempt = 0; attempt <= retries; attempt++) {
+    const headers = await skySlopeHeaders(method, path);
+    const opts = { method, headers };
+    if (body) opts.body = JSON.stringify(body);
+    const res = await fetch(`${SKYSLOPE_BASE}${path}`, opts);
+    const text = await res.text();
+    let data;
+    try { data = JSON.parse(text); } catch { data = text; }
+    if (res.ok) return data;
+    if (attempt < retries) {
+      console.warn(`SkySlope ${method} ${path} attempt ${attempt + 1} failed (${res.status}), retrying...`);
+      await new Promise(r => setTimeout(r, 1500));
+    } else {
+      throw new Error(`SkySlope ${method} ${path} → ${res.status}: ${text}`);
+    }
+  }
 }
 
 // --- Map EliteTC doc_type to SkySlope document name tag ---
