@@ -91,9 +91,16 @@ async function createSkySlopeSale(tx) {
   };
 
   // Use /v1/sales for buyer/dual, /v1/listings for seller
-  const endpoint = tx.transaction_type === "seller" ? "/v1/listings" : "/v1/sales";
+  const isSeller = tx.transaction_type === "seller";
+  const endpoint = isSeller ? "/v1/listings" : "/v1/sales";
   const result = await ssRequest("POST", endpoint, payload);
-  return result?.id || result?.saleId || result?.listingId || null;
+
+  return {
+    id: result?.id || result?.saleId || result?.listingId || null,
+    fileGuid: result?.fileGuid || result?.guid || result?.id || null,
+    saleGuid: isSeller ? null : (result?.saleGuid || result?.guid || result?.id || null),
+    listingGuid: isSeller ? (result?.listingGuid || result?.guid || result?.id || null) : null,
+  };
 }
 
 // --- Upload document to SkySlope sale ---
