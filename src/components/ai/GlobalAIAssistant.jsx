@@ -18,7 +18,7 @@ const QUICK_PROMPTS = [
   "Which deals are at risk?",
 ];
 
-function buildGlobalSystemPrompt(transactions, documents, checklistItems, complianceReports) {
+function buildGlobalSystemPrompt(transactions, documents, checklistItems, complianceReports, monitorAlerts = []) {
   const today = new Date();
   const active = transactions.filter((t) => t.status === "active");
   const pending = transactions.filter((t) => t.status === "pending");
@@ -93,7 +93,14 @@ function buildGlobalSystemPrompt(transactions, documents, checklistItems, compli
     return `  - ${tx.address} | ${tx.status} | Buyer: ${buyers} | Seller: ${sellers} | Agent: ${tx.agent || "N/A"} | Phase: ${tx.phase || 1}/12 | Closing: ${tx.closing_date ? format(new Date(tx.closing_date), "MMM d") + (closingDaysLeft !== null ? ` (${closingDaysLeft}d)` : "") : "N/A"} | Sale: ${tx.sale_price ? "$" + tx.sale_price.toLocaleString() : "N/A"}`;
   }).join("\n");
 
-  return `You are an expert AI Transaction Coordinator Assistant with full visibility into a real estate transaction management platform called EliteTC. You have access to all transactions, deadlines, documents, and compliance data.
+  // Monitor alerts summary
+  const criticalAlerts = monitorAlerts.filter(a => a.priority === "critical" && a.status === "open");
+  const warningAlerts = monitorAlerts.filter(a => a.priority === "warning" && a.status === "open");
+  const alertsText = monitorAlerts.length > 0
+    ? monitorAlerts.slice(0, 20).map(a => `  [${a.priority.toUpperCase()}][${a.alert_type}] ${a.transaction_address}: ${a.message}`).join("\n")
+    : "  No open alerts.";
+
+  return `You are an expert AI Transaction Coordinator Assistant with full visibility into a real estate transaction management platform called EliteTC. You have access to all transactions, deadlines, documents, compliance data, and the proactive monitoring alert system.
 
 Today's date: ${format(today, "MMMM d, yyyy")}
 
@@ -118,6 +125,9 @@ ${missingDocsText}
 === COMPLIANCE ISSUES ===
 ${complianceText}
 
+=== PROACTIVE MONITOR ALERTS (${monitorAlerts.length} open: ${criticalAlerts.length} critical, ${warningAlerts.length} warnings) ===
+${alertsText}
+
 === DOCUMENT COUNTS ===
 Total Documents Uploaded: ${documents.length}
 Total Checklist Items: ${checklistItems.length}
@@ -132,11 +142,12 @@ Pending Approval: ${checklistItems.filter((ci) => ci.status === "uploaded").leng
 - List upcoming and overdue deadlines
 - Show which transactions are missing documents
 - Identify compliance flags across all deals
+- Surface proactive monitor alerts ("what needs attention today?", "what deals are at risk?")
 - Summarize any specific transaction
 - Draft communications for any deal
 - Provide actionable next steps for the pipeline
 
-When asked about specific transactions, reference the actual address, parties, and data above. Format responses clearly with sections and bullet points. Be concise and actionable. If the user asks for a "daily briefing," provide a structured summary covering: deals closing soon, upcoming deadlines, compliance alerts, and missing documents.`;
+When asked about specific transactions, reference the actual address, parties, and data above. Format responses clearly with sections and bullet points. Be concise and actionable. If the user asks for a "daily briefing" or "what deals need attention", provide a structured summary covering: critical alerts, deals closing soon, upcoming deadlines, compliance alerts, and missing documents.`;
 }
 
 function FormattedMessage({ content }) {
