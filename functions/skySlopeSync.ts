@@ -3,13 +3,12 @@ import { createClientFromRequest } from 'npm:@base44/sdk@0.8.20';
 const SKYSLOPE_BASE = "https://api.skyslope.com";
 
 // --- HMAC Auth ---
-// SkySlope uses HMAC-SHA256: sign "METHOD\nPATH\nDATE" with Access Secret
-// Headers: X-SS-AccessKey, X-SS-Date, X-SS-Signature
+// Supports both SKYSLOPE_ACCESS_KEY/SECRET and SKYSLOPE_API_KEY/API_SECRET aliases
 async function skySlopeHeaders(method, path) {
   const date = new Date().toUTCString();
   const stringToSign = `${method.toUpperCase()}\n${path}\n${date}`;
-  const accessKey = Deno.env.get("SKYSLOPE_ACCESS_KEY");
-  const accessSecret = Deno.env.get("SKYSLOPE_ACCESS_SECRET");
+  const accessKey = Deno.env.get("SKYSLOPE_ACCESS_KEY") || Deno.env.get("SKYSLOPE_API_KEY");
+  const accessSecret = Deno.env.get("SKYSLOPE_ACCESS_SECRET") || Deno.env.get("SKYSLOPE_API_SECRET");
 
   const encoder = new TextEncoder();
   const keyData = encoder.encode(accessSecret);
