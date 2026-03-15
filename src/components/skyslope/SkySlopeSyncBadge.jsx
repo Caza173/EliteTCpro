@@ -41,8 +41,8 @@ export default function SkySlopeSyncBadge({ transaction, onSynced }) {
         <Icon className="w-3 h-3" />
         {config.label}
       </Badge>
-      {transaction?.skyslope_transaction_id && (
-        <span className="text-xs text-gray-400">ID: {transaction.skyslope_transaction_id}</span>
+      {transaction?.skyslope_file_guid && (
+        <span className="text-xs text-gray-400 font-mono">GUID: {transaction.skyslope_file_guid.slice(0, 8)}…</span>
       )}
       {(status === "not_synced" || status === "error") && (
         <Button size="sm" variant="outline" onClick={handleSync} disabled={syncing} className="h-6 text-xs px-2">
