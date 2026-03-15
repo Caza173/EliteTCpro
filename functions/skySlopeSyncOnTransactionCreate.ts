@@ -16,9 +16,12 @@ Deno.serve(async (req) => {
     // Small delay to let the record fully commit
     await new Promise(r => setTimeout(r, 2000));
 
+    const brokerageId = data?.brokerage_id || "";
+
     const result = await base44.asServiceRole.functions.invoke("skySlopeSync", {
       action: "syncTransaction",
       transaction_id: transactionId,
+      brokerage_id: brokerageId,
     });
 
     console.log("SkySlope transaction sync result:", JSON.stringify(result));
