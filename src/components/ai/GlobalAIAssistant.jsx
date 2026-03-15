@@ -200,6 +200,12 @@ export default function GlobalAIAssistant({ transactions = [], checklistItems = 
     staleTime: 60_000,
   });
 
+  const { data: monitorAlerts = [] } = useQuery({
+    queryKey: ["monitor-alerts"],
+    queryFn: () => base44.entities.MonitorAlert.filter({ status: "open" }, "-created_date", 100),
+    staleTime: 60_000,
+  });
+
   // Update welcome message when transaction count changes
   useEffect(() => {
     if (transactions.length > 0 && messages.length === 1) {
@@ -226,7 +232,7 @@ export default function GlobalAIAssistant({ transactions = [], checklistItems = 
     setMessages(newMessages);
     setLoading(true);
 
-    const systemPrompt = buildGlobalSystemPrompt(transactions, documents, checklistItems, complianceReports);
+    const systemPrompt = buildGlobalSystemPrompt(transactions, documents, checklistItems, complianceReports, monitorAlerts);
     const conversationHistory = newMessages
       .map((m) => `${m.role === "user" ? "User" : "Assistant"}: ${m.content}`)
       .join("\n\n");
