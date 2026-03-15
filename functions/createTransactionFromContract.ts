@@ -155,6 +155,31 @@ Deno.serve(async (req) => {
       description: `Transaction created via AI Contract Intake from file: ${file_name || "uploaded file"}`,
     });
 
+    // --- 8. Auto compliance scan (document + deadline check) ---
+    if (file_url) {
+      base44.asServiceRole.functions.invoke("complianceEngine", {
+        document_url: file_url,
+        file_name: file_name || "Purchase and Sale Agreement",
+        document_id: null, // doc was just created, id may not be stable yet
+        transaction_id: txId,
+        brokerage_id,
+        transaction_data: {
+          address: extracted.property_address,
+          transaction_type: extracted.transaction_type || "buyer",
+          is_cash_transaction: extracted.is_cash_transaction || false,
+          sale_price: extracted.purchase_price || null,
+          seller_concession_amount: extracted.seller_concession_amount || 0,
+          professional_fee_amount: extracted.professional_fee_amount || 0,
+          phase: 3,
+          brokerage_id,
+          inspection_deadline: extracted.inspection_deadline || null,
+          financing_deadline: extracted.financing_commitment_date || null,
+          earnest_money_deadline: extracted.earnest_money_deadline || null,
+          closing_date: extracted.closing_date || null,
+        },
+      }).catch(() => {});
+    }
+
     return Response.json({ transaction_id: txId, transaction: tx });
   } catch (error) {
     console.error('createTransactionFromContract error:', error);
