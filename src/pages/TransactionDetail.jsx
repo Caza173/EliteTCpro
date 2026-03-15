@@ -341,6 +341,20 @@ export default function TransactionDetail() {
                 <SelectItem value="cancelled">Cancelled</SelectItem>
               </SelectContent>
             </Select>
+            <Select
+              value={transaction.property_type || "residential"}
+              onValueChange={(v) => updateMutation.mutate({ id: transaction.id, data: { property_type: v } })}
+            >
+              <SelectTrigger className="w-36"><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="residential">Residential</SelectItem>
+                <SelectItem value="condo">Condo</SelectItem>
+                <SelectItem value="land">Land</SelectItem>
+                <SelectItem value="commercial">Commercial</SelectItem>
+                <SelectItem value="multi_family">Multi-Family</SelectItem>
+                <SelectItem value="other">Other</SelectItem>
+              </SelectContent>
+            </Select>
             <Button variant="outline" size="sm" className="text-indigo-600 hover:text-indigo-700 hover:bg-indigo-50 border-indigo-200"
               onClick={handleInviteClient} disabled={invitingClient}>
               <UserPlus className="w-4 h-4 mr-1" />
