@@ -149,13 +149,22 @@ Deno.serve(async (req) => {
       if (!transaction_id) return Response.json({ error: "transaction_id required" }, { status: 400 });
 
       // Use large page to find the transaction across all records
-      let allTx = [];
+      // Fetch transaction — pass the id directly to update/delete style lookup
+      // Since filter by id isn't supported, we pass transaction_id in brokerage_id context
+      let tx = null;
       try {
-        allTx = await base44.asServiceRole.entities.Transaction.list(null, 500);
+        // Try to get by updating with empty data first to confirm existence, then list with brokerage filter
+        const byCandidates = await base44.asServiceRole.entities.Transaction.filter({ status: "active" });
+        const allCandidates = [
+          ...byCandidates,
+          ...(await base44.asServiceRole.entities.Transaction.filter({ status: "pending" })),
+          ...(await base44.asServiceRole.entities.Transaction.filter({ status: "closed" })),
+          ...(await base44.asServiceRole.entities.Transaction.filter({ status: "cancelled" })),
+        ];
+        tx = allCandidates.find(t => t.id === transaction_id);
       } catch (listErr) {
-        return Response.json({ error: "Failed to list transactions: " + listErr.message }, { status: 500 });
+        return Response.json({ error: "Failed to find transaction: " + listErr.message }, { status: 500 });
       }
-      const tx = allTx.find(t => t.id === transaction_id);
       if (!tx) return Response.json({ error: `Transaction ${transaction_id} not found` }, { status: 404 });
 
       if (tx.skyslope_transaction_id) {
