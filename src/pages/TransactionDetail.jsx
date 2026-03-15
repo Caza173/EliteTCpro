@@ -30,6 +30,7 @@ import TransactionDocumentsTab from "../components/transactions/TransactionDocum
 import ContractTimeline from "../components/transactions/ContractTimeline";
 import EditableDeadlinePanel from "../components/transactions/EditableDeadlinePanel";
 import ComplianceScanPanel from "../components/compliance/ComplianceScanPanel";
+import ComplianceMonitorWidget from "../components/compliance/ComplianceMonitorWidget";
 import TCAIAssistant from "../components/ai/TCAIAssistant";
 import ConfirmDialog from "../components/ui/ConfirmDialog";
 
@@ -461,6 +462,14 @@ export default function TransactionDetail() {
                 />
               </CardContent>
             </Card>
+            {/* Compliance Monitor Widget */}
+            <div className="lg:col-span-2">
+              <ComplianceMonitorWidget
+                transaction={transaction}
+                onNavigateToCompliance={() => setActiveTab("compliance")}
+              />
+            </div>
+
             {checklistItems.length > 0 && (
               <Card className="shadow-sm border-gray-100 lg:col-span-2">
                 <CardHeader>
