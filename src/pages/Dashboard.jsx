@@ -172,7 +172,7 @@ export default function Dashboard() {
                 ))}
               </div>
             ) : (
-              <TransactionTable transactions={transactions.slice(0, 5)} />
+              <TransactionTable transactions={transactions.slice(0, 10)} sorted={true} />
             )}
           </CardContent>
         </Card>
