@@ -11,8 +11,9 @@ import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
 } from "@/components/ui/dialog";
 import {
-  Users, Search, UserPlus, Loader2, CheckCircle, Pencil, Trash2, Eye, ShieldAlert
+  Users, Search, UserPlus, Loader2, CheckCircle, Pencil, Trash2, Eye, ShieldAlert, Mail
 } from "lucide-react";
+import { Switch } from "@/components/ui/switch";
 import { useCurrentUser, hasFullAccess, canDeleteRecords } from "../components/auth/useCurrentUser";
 import { ROLE_COLORS, writeAuditLog } from "../components/utils/tenantUtils";
 
@@ -193,6 +194,11 @@ export default function UserManagement() {
     },
   });
 
+  const toggleWeeklyUpdatesMutation = useMutation({
+    mutationFn: ({ id, value }) => base44.entities.User.update(id, { weekly_transaction_updates: value }),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["allUsers"] }),
+  });
+
   const deleteUserMutation = useMutation({
     mutationFn: ({ id }) => base44.entities.User.delete(id),
     onSuccess: async (_, vars) => {
@@ -291,6 +297,7 @@ export default function UserManagement() {
                     <th className="px-4 py-2.5 text-left font-medium">Role</th>
                     <th className="px-4 py-2.5 text-left font-medium hidden sm:table-cell">Transactions</th>
                     <th className="px-4 py-2.5 text-left font-medium hidden md:table-cell">Joined</th>
+                    <th className="px-4 py-2.5 text-left font-medium hidden lg:table-cell">Weekly Updates</th>
                     <th className="px-4 py-2.5 text-right font-medium">Actions</th>
                   </tr>
                 </thead>
@@ -330,6 +337,19 @@ export default function UserManagement() {
                       </td>
                       <td className="px-4 py-3 text-gray-500 text-xs hidden md:table-cell">
                         {u.created_date ? new Date(u.created_date).toLocaleDateString() : "—"}
+                      </td>
+                      <td className="px-4 py-3 hidden lg:table-cell">
+                        {(u.role === "agent" || u.role === "tc" || u.role === "tc_lead") ? (
+                          <div className="flex items-center gap-2">
+                            <Switch
+                              checked={u.weekly_transaction_updates !== false}
+                              onCheckedChange={(v) => toggleWeeklyUpdatesMutation.mutate({ id: u.id, value: v })}
+                            />
+                            <span className="text-xs text-gray-400">{u.weekly_transaction_updates !== false ? "On" : "Off"}</span>
+                          </div>
+                        ) : (
+                          <span className="text-xs text-gray-300">—</span>
+                        )}
                       </td>
                       <td className="px-4 py-3">
                         <div className="flex items-center justify-end gap-1">
