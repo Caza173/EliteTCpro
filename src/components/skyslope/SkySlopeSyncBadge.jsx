@@ -26,6 +26,7 @@ export default function SkySlopeSyncBadge({ transaction, onSynced }) {
       await base44.functions.invoke("skySlopeSync", {
         action: "syncTransaction",
         transaction_id: transaction.id,
+        brokerage_id: transaction.brokerage_id,
       });
       if (onSynced) onSynced();
     } catch (err) {
