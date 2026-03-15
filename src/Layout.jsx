@@ -21,7 +21,8 @@ import {
   Shield,
   Workflow,
   LogOut,
-  Users
+  Users,
+  Link2
 } from "lucide-react";
 import NotificationBell from "./components/dashboard/NotificationBell";
 import { ThemeProvider } from "./components/theme/ThemeContext";
@@ -48,6 +49,7 @@ const OWNER_NAV = [
   { label: "Documents", page: "Documents", icon: FolderOpen },
   { label: "Templates", page: "Templates", icon: Workflow },
   { label: "User Management", page: "UserManagement", icon: Users },
+  { label: "Dotloop", page: "DotloopIntegration", icon: Link2 },
   { label: "Billing", page: "Billing", icon: CreditCard },
   { label: "Audit Log", page: "AuditLog", icon: Shield },
   { label: "Settings", page: "Settings", icon: Settings },
