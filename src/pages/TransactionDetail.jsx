@@ -355,6 +355,22 @@ export default function TransactionDetail() {
                 <SelectItem value="other">Other</SelectItem>
               </SelectContent>
             </Select>
+            <Select
+              value={transaction.transaction_phase || "intake"}
+              onValueChange={(v) => updateMutation.mutate({ id: transaction.id, data: { transaction_phase: v, last_activity_at: new Date().toISOString() } })}
+            >
+              <SelectTrigger className="w-40"><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="intake">Intake</SelectItem>
+                <SelectItem value="under_contract">Under Contract</SelectItem>
+                <SelectItem value="inspection">Inspection</SelectItem>
+                <SelectItem value="financing">Financing</SelectItem>
+                <SelectItem value="appraisal">Appraisal</SelectItem>
+                <SelectItem value="clear_to_close">Clear to Close</SelectItem>
+                <SelectItem value="closing">Closing</SelectItem>
+                <SelectItem value="closed">Closed</SelectItem>
+              </SelectContent>
+            </Select>
             <Button variant="outline" size="sm" className="text-indigo-600 hover:text-indigo-700 hover:bg-indigo-50 border-indigo-200"
               onClick={handleInviteClient} disabled={invitingClient}>
               <UserPlus className="w-4 h-4 mr-1" />
@@ -416,7 +432,12 @@ export default function TransactionDetail() {
                   { residential: "Residential", condo: "Condo", land: "Land", commercial: "Commercial", multi_family: "Multi-Family", other: "Other" }[transaction.property_type] || transaction.property_type
                 } />
               )}
-              <InfoItem label="Current Phase" value={PHASES[(transaction.phase || 1) - 1]} highlight />
+              {transaction.transaction_phase && (
+                <InfoItem label="Transaction Phase" value={
+                  { intake: "Intake", under_contract: "Under Contract", inspection: "Inspection", financing: "Financing", appraisal: "Appraisal", clear_to_close: "Clear to Close", closing: "Closing", closed: "Closed" }[transaction.transaction_phase] || transaction.transaction_phase
+                } highlight />
+              )}
+              <InfoItem label="Workflow Phase" value={PHASES[(transaction.phase || 1) - 1]} />
               {transaction.is_cash_transaction && <InfoItem label="Financing" value="Cash Transaction" />}
             </div>
           </CardContent>

@@ -18,6 +18,11 @@ const DOC_TYPES = [
   { value: "listing_agreement", label: "Listing Agreement" },
   { value: "addendum", label: "Addendum" },
   { value: "buyer_agency_agreement", label: "Buyer Agency Agreement" },
+  { value: "disclosure", label: "Disclosure" },
+  { value: "inspection", label: "Inspection Report" },
+  { value: "appraisal", label: "Appraisal" },
+  { value: "title", label: "Title Document" },
+  { value: "closing", label: "Closing Document" },
   { value: "other", label: "Other" },
 ];
 
@@ -25,7 +30,12 @@ const DOC_LABELS = {
   purchase_and_sale: "Purchase & Sale",
   listing_agreement: "Listing Agreement",
   addendum: "Addendum",
-  buyer_agency_agreement: "Buyer Agency Agreement",
+  buyer_agency_agreement: "Buyer Agency",
+  disclosure: "Disclosure",
+  inspection: "Inspection",
+  appraisal: "Appraisal",
+  title: "Title",
+  closing: "Closing",
   other: "Other",
 };
 
@@ -34,6 +44,11 @@ const TYPE_COLORS = {
   listing_agreement: "bg-emerald-50 text-emerald-700",
   addendum: "bg-amber-50 text-amber-700",
   buyer_agency_agreement: "bg-purple-50 text-purple-700",
+  disclosure: "bg-orange-50 text-orange-700",
+  inspection: "bg-cyan-50 text-cyan-700",
+  appraisal: "bg-indigo-50 text-indigo-700",
+  title: "bg-teal-50 text-teal-700",
+  closing: "bg-rose-50 text-rose-700",
   other: "bg-gray-50 text-gray-600",
 };
 
