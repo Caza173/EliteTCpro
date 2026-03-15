@@ -33,6 +33,7 @@ import ComplianceScanPanel from "../components/compliance/ComplianceScanPanel";
 import ComplianceMonitorWidget from "../components/compliance/ComplianceMonitorWidget";
 import TCAIAssistant from "../components/ai/TCAIAssistant";
 import ConfirmDialog from "../components/ui/ConfirmDialog";
+import SkySlopeSyncBadge from "../components/skyslope/SkySlopeSyncBadge";
 
 const TX_TABS = [
   { id: "overview",   label: "Overview",   icon: LayoutDashboard },
