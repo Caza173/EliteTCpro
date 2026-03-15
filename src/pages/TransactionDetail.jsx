@@ -405,6 +405,10 @@ export default function TransactionDetail() {
                       healthScore={transaction.health_score ?? computeHealthScore(transaction, checklistItems).health_score}
                       riskLevel={transaction.risk_level ?? computeHealthScore(transaction, checklistItems).risk_level}
                     />
+                    <SkySlopeSyncBadge
+                      transaction={transaction}
+                      onSynced={() => queryClient.invalidateQueries({ queryKey: ["transactions"] })}
+                    />
                   </div>
                 </div>
               </div>
