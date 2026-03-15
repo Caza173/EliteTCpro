@@ -11,11 +11,11 @@ import { Link } from "react-router-dom";
 
 const QUICK_PROMPTS = [
   "Daily briefing",
+  "What deals need attention today?",
+  "Which transactions are at risk for closing?",
   "What deadlines are this week?",
   "Which deals have compliance issues?",
   "Which transactions are missing documents?",
-  "Deals closing this month",
-  "Which deals are at risk?",
 ];
 
 function buildGlobalSystemPrompt(transactions, documents, checklistItems, complianceReports, monitorAlerts = []) {
