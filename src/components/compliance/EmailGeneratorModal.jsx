@@ -173,24 +173,55 @@ The email should:
                 />
               </div>
 
-              <div className="flex items-center justify-between pt-2 gap-3">
+              <div className="flex items-center justify-between pt-2 gap-3 flex-wrap">
                 <Button
                   variant="outline"
                   size="sm"
                   onClick={generateEmail}
-                  disabled={loading}
+                  disabled={loading || sending}
                   className="text-xs"
                 >
                   {loading ? <Loader2 className="w-3 h-3 mr-1 animate-spin" /> : <Wand2 className="w-3 h-3 mr-1" />}
                   Regenerate
                 </Button>
-                <Button
-                  onClick={openGmail}
-                  className="bg-blue-600 hover:bg-blue-700 gap-2"
-                >
-                  <ExternalLink className="w-4 h-4" />
-                  Open in Gmail
-                </Button>
+                <div className="flex gap-2">
+                  <Button
+                    variant="outline"
+                    onClick={openGmail}
+                    className="gap-2 text-sm"
+                    disabled={sending}
+                  >
+                    <ExternalLink className="w-4 h-4" />
+                    Open in Gmail
+                  </Button>
+                  <Button
+                    onClick={async () => {
+                      const to = emailTo.split(",").map(s => s.trim()).filter(Boolean);
+                      if (!to.length) { toast.error("Enter a recipient"); return; }
+                      setSending(true);
+                      try {
+                        const res = await base44.functions.invoke("sendEmail", {
+                          to,
+                          subject,
+                          body,
+                          transaction_id: transaction?.id,
+                          brokerage_id: transaction?.brokerage_id,
+                        });
+                        if (res.data?.error) throw new Error(res.data.error);
+                        toast.success("Email sent!");
+                        onClose();
+                      } catch (e) {
+                        toast.error(e.message || "Send failed");
+                      }
+                      setSending(false);
+                    }}
+                    disabled={sending}
+                    className="bg-blue-600 hover:bg-blue-700 gap-2 text-sm"
+                  >
+                    {sending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
+                    Send Now
+                  </Button>
+                </div>
               </div>
             </div>
           )}
