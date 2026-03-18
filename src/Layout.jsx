@@ -19,7 +19,6 @@ import {
   Home,
   CreditCard,
   Shield,
-  Workflow,
   LogOut,
   Users,
   Link2
