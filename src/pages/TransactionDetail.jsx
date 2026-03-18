@@ -379,6 +379,10 @@ export default function TransactionDetail() {
                 <SelectItem value="closed">Closed</SelectItem>
               </SelectContent>
             </Select>
+            <Button variant="outline" size="sm" className="text-blue-600 hover:text-blue-700 hover:bg-blue-50 border-blue-200"
+              onClick={() => setEmailModalOpen(true)}>
+              <MailIcon className="w-4 h-4 mr-1" /> Send Email
+            </Button>
             <Button variant="outline" size="sm" className="text-indigo-600 hover:text-indigo-700 hover:bg-indigo-50 border-indigo-200"
               onClick={handleInviteClient} disabled={invitingClient}>
               <UserPlus className="w-4 h-4 mr-1" />
