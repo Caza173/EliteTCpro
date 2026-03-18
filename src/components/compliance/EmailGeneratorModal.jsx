@@ -38,6 +38,7 @@ export default function EmailGeneratorModal({ issue, transaction, onClose }) {
   const [subject, setSubject] = useState("");
   const [body, setBody] = useState("");
   const [generated, setGenerated] = useState(false);
+  const [sending, setSending] = useState(false);
 
   const generateEmail = async () => {
     setLoading(true);
