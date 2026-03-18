@@ -68,6 +68,7 @@ const CLIENT_NAV = [
 
 export default function Layout({ children, currentPageName }) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const { data: currentUser = null } = useQuery({
     queryKey: ["currentUser"],
     queryFn: async () => {
