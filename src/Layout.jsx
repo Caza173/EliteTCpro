@@ -12,6 +12,7 @@ import {
   Menu,
   X,
   ChevronRight,
+  ChevronLeft,
   Building2,
   ClipboardList,
   UserPlus,
@@ -21,7 +22,9 @@ import {
   Shield,
   LogOut,
   Users,
-  Link2
+  Link2,
+  PanelLeftClose,
+  PanelLeftOpen,
 } from "lucide-react";
 import NotificationBell from "./components/dashboard/NotificationBell";
 import { ThemeProvider } from "./components/theme/ThemeContext";
