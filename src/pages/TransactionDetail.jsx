@@ -14,7 +14,7 @@ import {
   MapPin, User, Users, Mail, Phone, Calendar, ArrowLeft, Trash2,
   ClipboardCheck, Send, UserPlus, LayoutDashboard, GitBranch, Clock,
   DollarSign, FolderOpen, ShieldCheck, PanelLeftClose, PanelLeftOpen,
-  MessageSquare, X,
+  MessageSquare, X, Pencil,
 } from "lucide-react";
 import { format } from "date-fns";
 import PhaseChecklist from "../components/transactions/PhaseChecklist";
