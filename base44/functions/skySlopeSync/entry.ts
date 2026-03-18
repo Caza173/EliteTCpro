@@ -1,50 +1,93 @@
-import { createClientFromRequest } from 'npm:@base44/sdk@0.8.20';
+import { createClientFromRequest } from 'npm:@base44/sdk@0.8.21';
 
 const SKYSLOPE_BASE = "https://api.skyslope.com";
 
-// --- HMAC Auth ---
-// Supports both SKYSLOPE_ACCESS_KEY/SECRET and SKYSLOPE_API_KEY/API_SECRET aliases
-async function skySlopeHeaders(method, path) {
-  const date = new Date().toUTCString();
-  const stringToSign = `${method.toUpperCase()}\n${path}\n${date}`;
-  const accessKey = Deno.env.get("SKYSLOPE_ACCESS_KEY") || Deno.env.get("SKYSLOPE_API_KEY");
-  const accessSecret = Deno.env.get("SKYSLOPE_ACCESS_SECRET") || Deno.env.get("SKYSLOPE_API_SECRET");
+// ============================================================
+// SKYSLOPE SESSION AUTH (HMAC-SHA256 login → SS-Session token)
+// ============================================================
+let _session = null; // { token, expiresAt }
 
-  const encoder = new TextEncoder();
-  const keyData = encoder.encode(accessSecret);
-  const msgData = encoder.encode(stringToSign);
-
-  const cryptoKey = await crypto.subtle.importKey(
-    "raw", keyData, { name: "HMAC", hash: "SHA-256" }, false, ["sign"]
+async function generateHmac(clientId, clientSecret, timestamp) {
+  const secret = Deno.env.get("SKYSLOPE_ACCESS_SECRET");
+  if (!secret) throw new Error("SKYSLOPE_ACCESS_SECRET not set");
+  const message = `${clientId}:${clientSecret}:${timestamp}`;
+  const key = await crypto.subtle.importKey(
+    "raw", new TextEncoder().encode(secret),
+    { name: "HMAC", hash: "SHA-256" }, false, ["sign"]
   );
-  const sigBuffer = await crypto.subtle.sign("HMAC", cryptoKey, msgData);
-  const signature = btoa(String.fromCharCode(...new Uint8Array(sigBuffer)));
-
-  return {
-    "Content-Type": "application/json",
-    "X-SS-AccessKey": accessKey,
-    "X-SS-Date": date,
-    "X-SS-Signature": signature,
-  };
+  const sig = await crypto.subtle.sign("HMAC", key, new TextEncoder().encode(message));
+  return btoa(String.fromCharCode(...new Uint8Array(sig)));
 }
 
-async function ssRequest(method, path, body = null, retries = 1) {
-  for (let attempt = 0; attempt <= retries; attempt++) {
-    const headers = await skySlopeHeaders(method, path);
-    const opts = { method, headers };
-    if (body) opts.body = JSON.stringify(body);
-    const res = await fetch(`${SKYSLOPE_BASE}${path}`, opts);
-    const text = await res.text();
-    let data;
-    try { data = JSON.parse(text); } catch { data = text; }
-    if (res.ok) return data;
-    if (attempt < retries) {
-      console.warn(`SkySlope ${method} ${path} attempt ${attempt + 1} failed (${res.status}), retrying...`);
-      await new Promise(r => setTimeout(r, 1500));
-    } else {
-      throw new Error(`SkySlope ${method} ${path} → ${res.status}: ${text}`);
-    }
+async function refreshSession() {
+  const clientId = Deno.env.get("SKYSLOPE_CLIENT_ID");
+  const clientSecret = Deno.env.get("SKYSLOPE_CLIENT_SECRET");
+  const accessKey = Deno.env.get("SKYSLOPE_ACCESS_KEY");
+  if (!clientId || !clientSecret || !accessKey) {
+    throw new Error("Missing SkySlope credentials (CLIENT_ID, CLIENT_SECRET, ACCESS_KEY)");
   }
+  const timestamp = new Date().toISOString();
+  const hmac = await generateHmac(clientId, clientSecret, timestamp);
+
+  const res = await fetch(`${SKYSLOPE_BASE}/auth/login`, {
+    method: "POST",
+    headers: {
+      "Authorization": `SS ${accessKey}:${hmac}`,
+      "Timestamp": timestamp,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ clientID: clientId, clientSecret }),
+  });
+
+  if (!res.ok) {
+    const text = await res.text();
+    console.error(`[SkySlope Auth] Login failed (${res.status}): ${text}`);
+    if (res.status === 401) throw new Error("SkySlope auth failed: invalid credentials or timestamp mismatch");
+    throw new Error(`SkySlope login error ${res.status}: ${text}`);
+  }
+
+  const data = await res.json();
+  if (!data.Session) throw new Error("SkySlope login did not return a session token");
+
+  const expiresAt = data.Expiration ? new Date(data.Expiration).getTime() : Date.now() + 2 * 60 * 60 * 1000;
+  _session = { token: data.Session, expiresAt };
+  console.info(`[SkySlope Auth] Session acquired, expires ${new Date(expiresAt).toISOString()}`);
+  return _session;
+}
+
+async function getToken() {
+  const TEN_MIN = 10 * 60 * 1000;
+  if (_session && _session.expiresAt - Date.now() > TEN_MIN) return _session.token;
+  if (_session) console.info("[SkySlope Auth] Token near expiry, refreshing...");
+  return (await refreshSession()).token;
+}
+
+// Authenticated fetch with one auto-retry on 401
+async function ssRequest(method, path, body = null) {
+  const doFetch = async (token) => {
+    const opts = {
+      method,
+      headers: { "Authorization": `SS-Session ${token}`, "Content-Type": "application/json" },
+    };
+    if (body) opts.body = JSON.stringify(body);
+    return fetch(`${SKYSLOPE_BASE}${path}`, opts);
+  };
+
+  let token = await getToken();
+  let res = await doFetch(token);
+
+  if (res.status === 401) {
+    console.warn("[SkySlope Auth] 401 received, refreshing session and retrying...");
+    _session = null;
+    token = await getToken();
+    res = await doFetch(token);
+  }
+
+  const text = await res.text();
+  let data;
+  try { data = JSON.parse(text); } catch { data = text; }
+  if (!res.ok) throw new Error(`SkySlope ${method} ${path} → ${res.status}: ${text}`);
+  return data;
 }
 
 // --- Map EliteTC doc_type to SkySlope document name tag ---
