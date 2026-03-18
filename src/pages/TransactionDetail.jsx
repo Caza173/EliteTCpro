@@ -416,22 +416,42 @@ export default function TransactionDetail() {
           </CardHeader>
           <CardContent>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-              <InfoItem icon={User} label={transaction.buyers?.length > 1 ? "Buyers" : "Buyer"}
-                value={transaction.buyers?.length ? transaction.buyers.join(", ") : (transaction.buyer || "—")} />
-              <InfoItem icon={Users} label={transaction.sellers?.length > 1 ? "Sellers" : "Seller"}
-                value={transaction.sellers?.length ? transaction.sellers.join(", ") : (transaction.seller || "—")} />
-              {transaction.buyers_agent_name && <InfoItem icon={User} label="Buyer's Agent" value={transaction.buyers_agent_name} />}
-              {transaction.buyer_brokerage && <InfoItem icon={User} label="Buyer Brokerage" value={transaction.buyer_brokerage} />}
-              {transaction.sellers_agent_name && <InfoItem icon={User} label="Seller's Agent" value={transaction.sellers_agent_name} />}
-              {transaction.seller_brokerage && <InfoItem icon={User} label="Seller Brokerage" value={transaction.seller_brokerage} />}
-              <InfoItem icon={User} label="Transaction Coordinator" value={transaction.agent} />
-              <InfoItem icon={Mail} label="Client Email" value={transaction.client_email || "—"} />
-              <InfoItem icon={Phone} label="Client Phone" value={transaction.client_phone || "—"} />
-              {transaction.closing_title_company && (
-                <InfoItem icon={Calendar} label="Closing / Title Company" value={transaction.closing_title_company} />
-              )}
-              <InfoItem icon={Calendar} label="Contract Date"
-                value={transaction.contract_date ? format(new Date(transaction.contract_date), "MMM d, yyyy") : "—"} />
+              <EditableInfoItem icon={User} label={transaction.buyers?.length > 1 ? "Buyers" : "Buyer"}
+                value={transaction.buyers?.length ? transaction.buyers.join(", ") : (transaction.buyer || "")}
+                onSave={v => updateMutation.mutate({ id: transaction.id, data: { buyer: v, buyers: v ? [v] : [] } })} />
+              <EditableInfoItem icon={Users} label={transaction.sellers?.length > 1 ? "Sellers" : "Seller"}
+                value={transaction.sellers?.length ? transaction.sellers.join(", ") : (transaction.seller || "")}
+                onSave={v => updateMutation.mutate({ id: transaction.id, data: { seller: v, sellers: v ? [v] : [] } })} />
+              <EditableInfoItem icon={User} label="Buyer's Agent"
+                value={transaction.buyers_agent_name || ""}
+                onSave={v => updateMutation.mutate({ id: transaction.id, data: { buyers_agent_name: v } })} />
+              <EditableInfoItem icon={User} label="Buyer Brokerage"
+                value={transaction.buyer_brokerage || ""}
+                onSave={v => updateMutation.mutate({ id: transaction.id, data: { buyer_brokerage: v } })} />
+              <EditableInfoItem icon={User} label="Seller's Agent"
+                value={transaction.sellers_agent_name || ""}
+                onSave={v => updateMutation.mutate({ id: transaction.id, data: { sellers_agent_name: v } })} />
+              <EditableInfoItem icon={User} label="Seller Brokerage"
+                value={transaction.seller_brokerage || ""}
+                onSave={v => updateMutation.mutate({ id: transaction.id, data: { seller_brokerage: v } })} />
+              <EditableInfoItem icon={User} label="Transaction Coordinator"
+                value={transaction.agent || ""}
+                onSave={v => updateMutation.mutate({ id: transaction.id, data: { agent: v } })} />
+              <EditableInfoItem icon={Mail} label="Client Email"
+                value={transaction.client_email || ""}
+                type="email"
+                onSave={v => updateMutation.mutate({ id: transaction.id, data: { client_email: v } })} />
+              <EditableInfoItem icon={Phone} label="Client Phone"
+                value={transaction.client_phone || ""}
+                type="tel"
+                onSave={v => updateMutation.mutate({ id: transaction.id, data: { client_phone: v } })} />
+              <EditableInfoItem icon={Calendar} label="Closing / Title Company"
+                value={transaction.closing_title_company || ""}
+                onSave={v => updateMutation.mutate({ id: transaction.id, data: { closing_title_company: v } })} />
+              <EditableInfoItem icon={Calendar} label="Contract Date"
+                value={transaction.contract_date || ""}
+                type="date"
+                onSave={v => updateMutation.mutate({ id: transaction.id, data: { contract_date: v } })} />
               {transaction.property_type && (
                 <InfoItem label="Property Type" value={
                   { residential: "Residential", condo: "Condo", land: "Land", commercial: "Commercial", multi_family: "Multi-Family", other: "Other" }[transaction.property_type] || transaction.property_type
