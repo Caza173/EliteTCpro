@@ -627,3 +627,51 @@ function InfoItem({ icon: Icon, label, value, highlight }) {
     </div>
   );
 }
+
+function EditableInfoItem({ icon: Icon, label, value, onSave, type = "text" }) {
+  const [editing, setEditing] = useState(false);
+  const [draft, setDraft] = useState(value || "");
+
+  const handleSave = () => {
+    setEditing(false);
+    if (draft !== value) onSave(draft);
+  };
+
+  return (
+    <div className="flex items-start gap-2.5 group">
+      {Icon && (
+        <div className="w-8 h-8 rounded-lg bg-gray-50 flex items-center justify-center flex-shrink-0 mt-0.5">
+          <Icon className="w-4 h-4 text-gray-400" />
+        </div>
+      )}
+      <div className="flex-1 min-w-0">
+        <p className="text-xs text-gray-500 font-medium">{label}</p>
+        {editing ? (
+          <div className="flex items-center gap-1 mt-0.5">
+            <input
+              type={type}
+              className="text-sm border border-blue-300 rounded px-2 py-0.5 focus:outline-none focus:ring-1 focus:ring-blue-400 w-full"
+              value={draft}
+              onChange={e => setDraft(e.target.value)}
+              onKeyDown={e => { if (e.key === "Enter") handleSave(); if (e.key === "Escape") setEditing(false); }}
+              autoFocus
+            />
+            <button onClick={handleSave} className="text-blue-600 hover:text-blue-800 text-xs font-semibold px-1">✓</button>
+            <button onClick={() => setEditing(false)} className="text-gray-400 hover:text-gray-600 text-xs px-1">✕</button>
+          </div>
+        ) : (
+          <div className="flex items-center gap-1">
+            <p className="text-sm font-medium break-words text-gray-900">{value || "—"}</p>
+            <button
+              onClick={() => { setDraft(value || ""); setEditing(true); }}
+              className="opacity-0 group-hover:opacity-100 transition-opacity p-0.5 rounded hover:bg-gray-100"
+              title="Edit"
+            >
+              <Pencil className="w-3 h-3 text-gray-400" />
+            </button>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
