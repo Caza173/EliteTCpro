@@ -143,29 +143,40 @@ export default function Layout({ children, currentPageName }) {
       {/* Sidebar */}
       <aside
         style={{ backgroundColor: "var(--sidebar-bg)", borderRight: "1px solid var(--sidebar-border)" }}
-        className={`fixed lg:sticky top-0 left-0 z-50 h-screen w-64 text-white flex flex-col transition-transform duration-300 ease-in-out ${
-          sidebarOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"
-        }`}
+        className={`fixed lg:sticky top-0 left-0 z-50 h-screen text-white flex flex-col transition-all duration-300 ease-in-out flex-shrink-0 ${
+          sidebarCollapsed ? "w-[60px]" : "w-64"
+        } ${sidebarOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"}`}
       >
         {/* Logo */}
-        <div className="flex items-center gap-3 px-6 py-6 border-b" style={{ borderColor: "var(--sidebar-border)" }}>
-          <div className="w-9 h-9 rounded-lg bg-blue-500 flex items-center justify-center">
+        <div className="flex items-center gap-3 px-3 py-5 border-b" style={{ borderColor: "var(--sidebar-border)" }}>
+          <div className="w-9 h-9 rounded-lg bg-blue-500 flex items-center justify-center flex-shrink-0">
             <Building2 className="w-5 h-5 text-white" />
           </div>
-          <div>
-            <h1 className="text-base font-semibold tracking-tight">EliteTC</h1>
-            <p className="text-[11px] text-slate-400 font-medium">Transaction Coordinator</p>
-          </div>
+          {!sidebarCollapsed && (
+            <div className="flex-1 min-w-0">
+              <h1 className="text-base font-semibold tracking-tight">EliteTC</h1>
+              <p className="text-[11px] text-slate-400 font-medium">Transaction Coordinator</p>
+            </div>
+          )}
+          {/* Mobile close */}
           <button
             className="ml-auto lg:hidden text-slate-400 hover:text-white"
             onClick={() => setSidebarOpen(false)}
           >
             <X className="w-5 h-5" />
           </button>
+          {/* Desktop collapse toggle */}
+          <button
+            className="hidden lg:flex ml-auto text-slate-400 hover:text-white transition-colors p-1 rounded"
+            onClick={() => setSidebarCollapsed(c => !c)}
+            title={sidebarCollapsed ? "Expand sidebar" : "Collapse sidebar"}
+          >
+            {sidebarCollapsed ? <PanelLeftOpen className="w-4 h-4" /> : <PanelLeftClose className="w-4 h-4" />}
+          </button>
         </div>
 
         {/* Navigation */}
-        <nav className="flex-1 px-3 py-4 space-y-1">
+        <nav className="flex-1 px-2 py-4 space-y-1 overflow-y-auto">
           {navItems.map((item) => {
             const isActive = currentPageName === item.page;
             const Icon = item.icon;
@@ -174,29 +185,34 @@ export default function Layout({ children, currentPageName }) {
                 key={item.page}
                 to={createPageUrl(item.page)}
                 onClick={() => setSidebarOpen(false)}
+                title={sidebarCollapsed ? item.label : undefined}
                 style={isActive ? {
                   backgroundColor: "var(--sidebar-item-active)",
                   color: "var(--sidebar-accent)",
                 } : {
                   color: "var(--sidebar-text)",
                 }}
-                className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-200 group sidebar-nav-item"
+                className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-200 sidebar-nav-item ${sidebarCollapsed ? "justify-center" : ""}`}
                 onMouseEnter={e => { if (!isActive) { e.currentTarget.style.backgroundColor = "var(--sidebar-item-hover)"; e.currentTarget.style.color = "var(--sidebar-text-active)"; }}}
                 onMouseLeave={e => { if (!isActive) { e.currentTarget.style.backgroundColor = ""; e.currentTarget.style.color = "var(--sidebar-text)"; }}}
               >
-                <Icon className="w-[18px] h-[18px]" style={{ color: isActive ? "var(--sidebar-accent)" : "inherit" }} />
-                {item.label}
-                {isActive && <ChevronRight className="w-4 h-4 ml-auto opacity-50" />}
+                <Icon className="w-[18px] h-[18px] flex-shrink-0" style={{ color: isActive ? "var(--sidebar-accent)" : "inherit" }} />
+                {!sidebarCollapsed && (
+                  <>
+                    {item.label}
+                    {isActive && <ChevronRight className="w-4 h-4 ml-auto opacity-50" />}
+                  </>
+                )}
               </Link>
             );
           })}
         </nav>
 
         {/* Footer */}
-        <div className="px-4 py-4 border-t space-y-2" style={{ borderColor: "var(--sidebar-border)" }}>
-          {currentUser && (
+        <div className="px-2 py-4 border-t space-y-2" style={{ borderColor: "var(--sidebar-border)" }}>
+          {currentUser && !sidebarCollapsed && (
             <div className="flex items-center gap-2 px-2 py-1.5 rounded-lg mb-1">
-              <div className="w-7 h-7 rounded-full bg-blue-500/20 flex items-center justify-center text-xs font-bold text-blue-400">
+              <div className="w-7 h-7 rounded-full bg-blue-500/20 flex items-center justify-center text-xs font-bold text-blue-400 flex-shrink-0">
                 {currentUser.full_name?.[0] || currentUser.email?.[0] || "?"}
               </div>
               <div className="flex-1 min-w-0">
@@ -207,11 +223,12 @@ export default function Layout({ children, currentPageName }) {
           )}
           <button
             onClick={() => base44.auth.logout()}
-            className="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-medium transition-colors hover:bg-red-500/10 hover:text-red-400"
+            title={sidebarCollapsed ? "Sign Out" : undefined}
+            className={`w-full flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-medium transition-colors hover:bg-red-500/10 hover:text-red-400 ${sidebarCollapsed ? "justify-center" : ""}`}
             style={{ color: "var(--sidebar-text)" }}
           >
-            <LogOut className="w-4 h-4" />
-            Sign Out
+            <LogOut className="w-4 h-4 flex-shrink-0" />
+            {!sidebarCollapsed && "Sign Out"}
           </button>
         </div>
       </aside>
