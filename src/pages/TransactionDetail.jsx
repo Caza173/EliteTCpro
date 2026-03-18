@@ -253,6 +253,11 @@ export default function TransactionDetail() {
   return (
     <div className="flex -mx-4 -mb-4 lg:-mx-8 lg:-mb-8 overflow-hidden" style={{ height: "calc(100vh - 57px)" }}>
 
+      <EmailComposerModal
+        open={emailModalOpen}
+        onClose={() => setEmailModalOpen(false)}
+        transaction={transaction}
+      />
       <ConfirmDialog
         open={confirmDelete}
         title="Delete Transaction"
