@@ -36,7 +36,6 @@ const TC_NAV = [
   { label: "Deal Intake", page: "AgentIntake", icon: UserPlus },
   { label: "Deadlines", page: "Deadlines", icon: Clock },
   { label: "Documents", page: "Documents", icon: FolderOpen },
-  { label: "Templates", page: "Templates", icon: Workflow },
   { label: "User Management", page: "UserManagement", icon: Users },
   { label: "Settings", page: "Settings", icon: Settings },
 ];
@@ -47,7 +46,6 @@ const OWNER_NAV = [
   { label: "Deal Intake", page: "AgentIntake", icon: UserPlus },
   { label: "Deadlines", page: "Deadlines", icon: Clock },
   { label: "Documents", page: "Documents", icon: FolderOpen },
-  { label: "Templates", page: "Templates", icon: Workflow },
   { label: "User Management", page: "UserManagement", icon: Users },
   { label: "Dotloop", page: "DotloopIntegration", icon: Link2 },
   { label: "Billing", page: "Billing", icon: CreditCard },
