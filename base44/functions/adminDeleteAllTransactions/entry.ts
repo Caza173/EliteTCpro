@@ -11,14 +11,15 @@ Deno.serve(async (req) => {
     // Try listing transactions
     const transactions = await base44.asServiceRole.entities.Transaction.list('-created_date', 10);
     let deleted = 0;
+    const errors = [];
     for (const tx of transactions) {
       try {
         await base44.asServiceRole.entities.Transaction.delete(tx.id);
         deleted++;
-      } catch (e) { return Response.json({ error: e.message, id: tx.id, stack: e.stack }); }
+      } catch (e) { errors.push({ id: tx.id, err: e.message }); }
     }
 
-    return Response.json({ success: true, deleted, found: transactions.length, ids: transactions.map(t => t.id) });
+    return Response.json({ success: true, deleted, found: transactions.length, errors });
   } catch (error) {
     return Response.json({ error: error.message }, { status: 500 });
   }
