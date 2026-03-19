@@ -8,17 +8,17 @@ Deno.serve(async (req) => {
       return Response.json({ error: 'Forbidden' }, { status: 403 });
     }
 
-    // Fetch batch of transactions via service role and delete them
-    const transactions = await base44.asServiceRole.entities.Transaction.filter({}, 'created_date', 10);
+    // Try listing transactions
+    const transactions = await base44.asServiceRole.entities.Transaction.list('-created_date', 10);
     let deleted = 0;
-    await Promise.all(transactions.map(async (tx) => {
+    for (const tx of transactions) {
       try {
         await base44.asServiceRole.entities.Transaction.delete(tx.id);
         deleted++;
-      } catch { /* already deleted */ }
-    }));
+      } catch (e) { console.log('delete err', tx.id, e.message); }
+    }
 
-    return Response.json({ success: true, deleted });
+    return Response.json({ success: true, deleted, found: transactions.length, ids: transactions.map(t => t.id) });
   } catch (error) {
     return Response.json({ error: error.message }, { status: 500 });
   }
