@@ -8,18 +8,12 @@ Deno.serve(async (req) => {
       return Response.json({ error: 'Forbidden' }, { status: 403 });
     }
 
-    // Try listing transactions
-    const transactions = await base44.asServiceRole.entities.Transaction.list('-created_date', 10);
-    let deleted = 0;
-    const errors = [];
-    for (const tx of transactions) {
-      try {
-        await base44.asServiceRole.entities.Transaction.delete(tx.id);
-        deleted++;
-      } catch (e) { errors.push({ id: tx.id, err: e.message }); }
-    }
+    const body = await req.json().catch(() => ({}));
+    const { id } = body;
+    if (!id) return Response.json({ error: 'id required' }, { status: 400 });
 
-    return Response.json({ success: true, deleted, found: transactions.length, errors });
+    await base44.asServiceRole.entities.Transaction.delete(id);
+    return Response.json({ success: true, deleted: id });
   } catch (error) {
     return Response.json({ error: error.message }, { status: 500 });
   }
