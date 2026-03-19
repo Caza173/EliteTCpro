@@ -1,4 +1,4 @@
-import { createClientFromRequest } from 'npm:@base44/sdk@0.8.21';
+import { createClientFromRequest } from 'npm:@base44/sdk@0.8.20';
 
 const SKYSLOPE_BASE = "https://api.skyslope.com";
 
