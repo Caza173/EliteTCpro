@@ -208,13 +208,13 @@ Deno.serve(async (req) => {
       const { brokerage_id: brokerageId } = body;
       if (!brokerageId) return Response.json({ error: "brokerage_id required" }, { status: 400 });
 
-      let txList = [];
+      let tx;
       try {
-        txList = await base44.asServiceRole.entities.Transaction.filter({ brokerage_id: brokerageId });
+        const txList = await base44.asServiceRole.entities.Transaction.filter({ id: transaction_id });
+        tx = txList[0];
       } catch (listErr) {
         return Response.json({ error: "Failed to find transaction: " + listErr.message }, { status: 500 });
       }
-      const tx = txList.find(t => t.id === transaction_id);
       if (!tx) return Response.json({ error: `Transaction ${transaction_id} not found` }, { status: 404 });
 
       if (tx.skyslope_file_guid || tx.skyslope_transaction_id) {
