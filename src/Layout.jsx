@@ -55,7 +55,6 @@ const AGENT_NAV = [
 
 const CLIENT_NAV = [
   { label: "My Transaction",  page: "ClientPortal", icon: LayoutDashboard },
-  { label: "Documents",       page: "Documents",    icon: FolderOpen },
 ];
 
 const PAGE_TITLES = {
