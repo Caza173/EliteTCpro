@@ -15,7 +15,7 @@ Deno.serve(async (req) => {
       try {
         await base44.asServiceRole.entities.Transaction.delete(tx.id);
         deleted++;
-      } catch (e) { console.error('delete err', tx.id, e.message); deleted = -999; }
+      } catch (e) { return Response.json({ error: e.message, id: tx.id, stack: e.stack }); }
     }
 
     return Response.json({ success: true, deleted, found: transactions.length, ids: transactions.map(t => t.id) });
