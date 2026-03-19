@@ -283,27 +283,28 @@ export default function Layout({ children, currentPageName }) {
         <div className="flex-1 flex flex-col min-h-screen min-w-0 overflow-x-hidden">
           {/* Top bar */}
           <header
-            className="sticky top-0 z-30 backdrop-blur-md px-4 lg:px-6 py-3 flex items-center gap-3"
+            className="sticky top-0 z-30 backdrop-blur-sm px-4 lg:px-5 h-12 flex items-center gap-3 flex-shrink-0"
             style={{
               backgroundColor: "var(--header-bg)",
               borderBottom: "1px solid var(--header-border)",
             }}
           >
             <button
-              className="lg:hidden p-2 rounded-lg transition-colors hover:bg-gray-100"
+              className="lg:hidden p-1.5 rounded-lg transition-colors"
+              style={{ color: "var(--text-secondary)" }}
               onClick={() => setSidebarOpen(true)}
             >
-              <Menu className="w-4 h-4" style={{ color: "var(--text-secondary)" }} />
+              <Menu className="w-4 h-4" />
             </button>
 
             <h2
-              className="text-base font-semibold tracking-tight"
+              className="text-sm font-semibold tracking-tight"
               style={{ color: "var(--text-primary)" }}
             >
               {pageTitle}
             </h2>
 
-            <div className="ml-auto flex items-center gap-2">
+            <div className="ml-auto flex items-center gap-1.5">
               <ThemeToggle />
               <NotificationBell />
             </div>
@@ -311,7 +312,7 @@ export default function Layout({ children, currentPageName }) {
 
           {/* Page content */}
           <main
-            className="flex-1 p-4 lg:p-6 min-w-0 overflow-x-hidden"
+            className="flex-1 p-4 lg:p-5 min-w-0 overflow-x-hidden"
             style={{ backgroundColor: "var(--bg-primary)" }}
           >
             {children}
