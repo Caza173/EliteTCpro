@@ -8,13 +8,14 @@ Deno.serve(async (req) => {
       return Response.json({ error: 'Forbidden' }, { status: 403 });
     }
 
-    // Fetch all transactions via service role
-    const transactions = await base44.asServiceRole.entities.Transaction.list('created_date', 200);
+    // Fetch batch of transactions via service role and delete them
+    const { offset = 0 } = await req.json().catch(() => ({}));
+    const transactions = await base44.asServiceRole.entities.Transaction.list('created_date', 10, offset);
     let deleted = 0;
-    for (const tx of transactions) {
+    await Promise.all(transactions.map(async (tx) => {
       await base44.asServiceRole.entities.Transaction.delete(tx.id);
       deleted++;
-    }
+    }));
 
     return Response.json({ success: true, deleted });
   } catch (error) {
