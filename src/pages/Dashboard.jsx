@@ -12,7 +12,7 @@ import {
   ChevronRight, MapPin, List,
 } from "lucide-react";
 import { format, differenceInDays, parseISO } from "date-fns";
-import { Link as RouterLink } from "react-router-dom";
+
 import { useCurrentUser, isOwnerOrAdmin } from "../components/auth/useCurrentUser";
 import { computeHealthScore } from "../components/utils/tenantUtils";
 import AddendumAlertChecker from "../components/dashboard/AddendumAlertChecker";
