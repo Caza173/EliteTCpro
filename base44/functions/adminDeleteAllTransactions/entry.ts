@@ -9,11 +9,18 @@ Deno.serve(async (req) => {
     }
 
     const body = await req.json().catch(() => ({}));
-    const { id } = body;
-    if (!id) return Response.json({ error: 'id required' }, { status: 400 });
+    const { ids } = body;
+    if (!ids || !ids.length) return Response.json({ error: 'ids required' }, { status: 400 });
 
-    await base44.asServiceRole.entities.Transaction.delete(id);
-    return Response.json({ success: true, deleted: id });
+    const results = await Promise.all(ids.map(async (id) => {
+      try {
+        await base44.asServiceRole.entities.Transaction.delete(id);
+        return { id, ok: true };
+      } catch (e) {
+        return { id, ok: false, err: e.message };
+      }
+    }));
+    return Response.json({ success: true, results });
   } catch (error) {
     return Response.json({ error: error.message }, { status: 500 });
   }
