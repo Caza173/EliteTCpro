@@ -13,8 +13,10 @@ Deno.serve(async (req) => {
     const transactions = await base44.asServiceRole.entities.Transaction.list('created_date', 10, offset);
     let deleted = 0;
     await Promise.all(transactions.map(async (tx) => {
-      await base44.asServiceRole.entities.Transaction.delete(tx.id);
-      deleted++;
+      try {
+        await base44.asServiceRole.entities.Transaction.delete(tx.id);
+        deleted++;
+      } catch { /* already deleted */ }
     }));
 
     return Response.json({ success: true, deleted });
