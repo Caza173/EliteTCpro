@@ -9,8 +9,7 @@ Deno.serve(async (req) => {
     }
 
     // Fetch batch of transactions via service role and delete them
-    const { offset = 0 } = await req.json().catch(() => ({}));
-    const transactions = await base44.asServiceRole.entities.Transaction.list('created_date', 10, offset);
+    const transactions = await base44.asServiceRole.entities.Transaction.filter({}, 'created_date', 10);
     let deleted = 0;
     await Promise.all(transactions.map(async (tx) => {
       try {
