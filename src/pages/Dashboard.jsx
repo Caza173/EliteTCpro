@@ -97,6 +97,7 @@ function TransactionRow({ tx }) {
 
 export default function Dashboard() {
   const [deadlineView, setDeadlineView] = useState("list");
+  const [activeTab, setActiveTab] = useState("overview");
   const { data: currentUser } = useCurrentUser();
 
   const { data: transactions = [], isLoading } = useQuery({
