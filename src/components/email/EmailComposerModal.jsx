@@ -58,7 +58,7 @@ export default function EmailComposerModal({
 
     setSending(true);
     try {
-      const res = await base44.functions.invoke("sendEmail", {
+      const res = await base44.functions.invoke("sendGmailEmail", {
         to: validTo,
         subject,
         body,
