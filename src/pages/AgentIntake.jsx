@@ -190,7 +190,9 @@ export default function AgentIntake() {
           <CardDescription>
             {docType === "ps"
               ? "Optional — auto-fills buyer, seller, and all deadline dates"
-              : "Optional — attach the listing agreement for this transaction"}
+              : docType === "listing"
+              ? "Optional — auto-fills seller, list price, commission, and listing dates"
+              : "Optional — auto-fills buyer name and agency details"}
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-3">
@@ -199,8 +201,10 @@ export default function AgentIntake() {
               <PurchaseAgreementUpload onParsed={handleParsed} />
               {parsedData && <ParsedDeadlinesPreview parsed={parsedData} isCash={form.is_cash_transaction} />}
             </>
+          ) : docType === "listing" ? (
+            <AgencyDocUpload docType="listing" onParsed={handleListingParsed} />
           ) : (
-            <ListingAgreementUpload onUploaded={(url) => set("listing_agreement_url", url)} />
+            <AgencyDocUpload docType="buyer_agency" onParsed={handleBuyerAgencyParsed} />
           )}
         </CardContent>
       </Card>
