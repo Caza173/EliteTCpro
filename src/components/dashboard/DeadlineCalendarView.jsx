@@ -16,9 +16,17 @@ export default function DeadlineCalendarView({ transactions = [] }) {
   const days = eachDayOfInterval({ start: startOfMonth(currentMonth), end: endOfMonth(currentMonth) });
   const startDay = startOfMonth(currentMonth).getDay();
 
+  // Deduplicate by address — keep the first encountered
+  const dedupedTx = React.useMemo ? 
+    React.useMemo(() => {
+      const seen = new Set();
+      return transactions.filter(tx => { if (seen.has(tx.address)) return false; seen.add(tx.address); return true; });
+    }, [transactions]) :
+    (() => { const seen = new Set(); return transactions.filter(tx => { if (seen.has(tx.address)) return false; seen.add(tx.address); return true; }); })();
+
   // Build events map: dateStr -> [{label, address, color}]
   const events = {};
-  transactions.forEach((tx) => {
+  dedupedTx.forEach((tx) => {
     if (tx.status === "closed" || tx.status === "cancelled") return;
     DEADLINE_TYPES.forEach((dt) => {
       if (tx[dt.key] && !(dt.key === "financing_deadline" && tx.is_cash_transaction)) {
