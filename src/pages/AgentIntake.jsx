@@ -388,35 +388,53 @@ export default function AgentIntake() {
   );
 }
 
-function ListingAgreementUpload({ onUploaded }) {
+function AgencyDocUpload({ docType, onParsed }) {
   const [file, setFile] = useState(null);
-  const [status, setStatus] = useState("idle"); // idle | uploading | done | error
-  const [url, setUrl] = useState("");
+  const [status, setStatus] = useState("idle"); // idle | uploading | parsing | done | error
+  const [errorMsg, setErrorMsg] = useState("");
   const inputRef = React.useRef();
+
+  const isListing = docType === "listing";
+  const fnName = isListing ? "parseListingAgreement" : "parseBuyerAgencyAgreement";
+  const label = isListing ? "Listing Agreement" : "Buyer Agency Agreement";
 
   const handleFile = async (f) => {
     if (!f) return;
     setFile(f);
+    setErrorMsg("");
     setStatus("uploading");
     const { file_url } = await base44.integrations.Core.UploadFile({ file: f });
-    setUrl(file_url);
+    setStatus("parsing");
+    const res = await base44.functions.invoke(fnName, { file_url });
+    const data = res?.data;
+    if (!data || data.error) {
+      setErrorMsg(data?.error || "Parsing failed. Please try again.");
+      setStatus("error");
+      return;
+    }
     setStatus("done");
-    onUploaded(file_url);
+    onParsed(data);
   };
+
+  const reset = () => { setFile(null); setStatus("idle"); setErrorMsg(""); };
 
   return (
     <div className="space-y-3">
       {!file && (
         <div
           onClick={() => inputRef.current?.click()}
-          className="border-2 border-dashed border-gray-200 bg-gray-50 hover:border-blue-300 hover:bg-blue-50/40 rounded-xl p-8 flex flex-col items-center gap-3 cursor-pointer transition-colors"
+          className="border-2 border-dashed border-gray-200 bg-gray-50 hover:border-indigo-300 hover:bg-indigo-50/30 rounded-xl p-8 flex flex-col items-center gap-3 cursor-pointer transition-colors"
         >
           <div className="w-12 h-12 rounded-full bg-indigo-100 flex items-center justify-center">
             <Upload className="w-6 h-6 text-indigo-500" />
           </div>
           <div className="text-center">
-            <p className="text-sm font-medium text-gray-700">Upload Listing Agreement</p>
+            <p className="text-sm font-medium text-gray-700">Upload {label}</p>
             <p className="text-xs text-gray-400 mt-0.5">PDF, image scans, or DOCX — click to browse</p>
+          </div>
+          <div className="flex items-center gap-1.5 text-xs text-indigo-600 bg-indigo-50 px-3 py-1 rounded-full">
+            <Zap className="w-3 h-3" />
+            AI auto-extracts key fields
           </div>
           <input ref={inputRef} type="file" accept=".pdf,.docx,.jpg,.jpeg,.png,.webp" className="hidden" onChange={(e) => handleFile(e.target.files[0])} />
         </div>
@@ -430,15 +448,15 @@ function ListingAgreementUpload({ onUploaded }) {
             <p className="text-sm font-medium text-gray-800 truncate">{file.name}</p>
             <p className="text-xs text-gray-400">{(file.size / 1024).toFixed(1)} KB</p>
           </div>
-          {status === "uploading" && <Loader2 className="w-4 h-4 animate-spin text-blue-500 flex-shrink-0" />}
+          {(status === "uploading" || status === "parsing") && <Loader2 className="w-4 h-4 animate-spin text-indigo-500 flex-shrink-0" />}
           {status === "done" && <CheckCircle className="w-5 h-5 text-emerald-500 flex-shrink-0" />}
+          {status === "idle" && <button onClick={reset} className="text-gray-400 hover:text-gray-600"><X className="w-4 h-4" /></button>}
         </div>
       )}
-      {status === "done" && (
-        <p className="text-xs text-emerald-600 flex items-center gap-1">
-          <CheckCircle className="w-3 h-3" /> Listing agreement uploaded successfully.
-        </p>
-      )}
+      {status === "uploading" && <p className="text-xs text-indigo-600 flex items-center gap-1"><Loader2 className="w-3 h-3 animate-spin" /> Uploading...</p>}
+      {status === "parsing" && <p className="text-xs text-indigo-600 flex items-center gap-1"><Loader2 className="w-3 h-3 animate-spin" /> AI extracting fields from {label}...</p>}
+      {status === "done" && <p className="text-xs text-emerald-600 flex items-center gap-1"><CheckCircle className="w-3 h-3" /> {label} parsed — fields auto-filled below.</p>}
+      {status === "error" && <p className="text-xs text-red-600">{errorMsg}</p>}
     </div>
   );
 }
