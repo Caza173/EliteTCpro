@@ -119,33 +119,39 @@ export default function StatementDetailModal({ statement: s, onClose, onEdit, on
   const sendEmail = async (type) => {
     setSending(type);
     const doc = buildPDF(s);
+    // Get PDF as base64 string for attachment
+    const pdfBase64 = doc.output("datauristring").split(",")[1];
+    const pdfFileName = `commission_${(s.property_address || "statement").replace(/[^a-z0-9]/gi, "_")}.pdf`;
+
+    // Also upload for download link
     const blob = doc.output("blob");
-    const file = new File([blob], `commission_${s.id}.pdf`, { type: "application/pdf" });
+    const file = new File([blob], pdfFileName, { type: "application/pdf" });
     const { file_url } = await base44.integrations.Core.UploadFile({ file });
 
     if (type === "agent") {
-      await base44.integrations.Core.SendEmail({
+      await base44.functions.invoke("sendCommissionEmail", {
         to: s.agent_email,
         subject: `Commission Statement for Review — ${s.property_address}`,
-        body: `<p>Hello ${s.agent_name || ""},</p>
-<p>Please review your commission statement for <strong>${s.property_address}</strong>.</p>
+        htmlBody: `<p>Hello ${s.agent_name || ""},</p>
+<p>Please review your commission statement for <strong>${s.property_address}</strong>. The PDF is attached to this email.</p>
 <table style="border-collapse:collapse;width:100%;max-width:460px;font-family:sans-serif;font-size:14px;">
   <tr><td style="padding:6px 0;color:#666;">Purchase Price</td><td style="padding:6px 0;font-weight:600;">${fmt$(s.purchase_price)}</td></tr>
   <tr><td style="padding:6px 0;color:#666;">Gross Commission</td><td style="padding:6px 0;font-weight:600;">${fmt$(s.gross_commission)}</td></tr>
   <tr><td style="padding:6px 0;color:#666;">Brokerage Split</td><td style="padding:6px 0;font-weight:600;">−${fmt$(s.brokerage_split_amount)}</td></tr>
   <tr style="background:#f0fdf4;"><td style="padding:8px;font-weight:700;">Your Net Commission</td><td style="padding:8px;font-weight:700;color:#16a34a;">${fmt$(s.agent_net)}</td></tr>
 </table>
-<br/><a href="${file_url}" style="display:inline-block;padding:10px 20px;background:#3b82f6;color:#fff;border-radius:6px;text-decoration:none;font-weight:600;">Download PDF Statement</a>
-<br/><br/><p>Please reply <strong>Approved</strong> if this looks correct, or let us know if any changes are needed.</p>
+<br/><p>Please reply <strong>Approved</strong> if this looks correct, or let us know if any changes are needed.</p>
 <p>Best regards,<br/>Transaction Coordinator</p>`,
+        pdfBase64,
+        pdfFileName,
       });
       await updateMutation.mutateAsync({ status: "sent_to_agent", pdf_url: file_url });
     } else {
-      await base44.integrations.Core.SendEmail({
+      await base44.functions.invoke("sendCommissionEmail", {
         to: s.title_company_email,
         subject: `Commission Disbursement Authorization — ${s.property_address}`,
-        body: `<p>Hello,</p>
-<p>Please find the commission disbursement authorization for the following transaction:</p>
+        htmlBody: `<p>Hello,</p>
+<p>Please find the commission disbursement authorization for the following transaction. The PDF statement is attached.</p>
 <p><strong>Property:</strong> ${s.property_address}<br/>
 <strong>Closing Date:</strong> ${fmtDate(s.closing_date)}<br/>
 <strong>Agent:</strong> ${s.agent_name || "—"} (${s.agent_email || "—"})</p>
@@ -154,9 +160,10 @@ export default function StatementDetailModal({ statement: s, onClose, onEdit, on
   <tr><td style="padding:6px 0;color:#666;">Gross Commission</td><td style="padding:6px 0;font-weight:600;">${fmt$(s.gross_commission)}</td></tr>
   <tr style="background:#f0fdf4;"><td style="padding:8px;font-weight:700;">Agent Net Payout</td><td style="padding:8px;font-weight:700;color:#16a34a;">${fmt$(s.agent_net)}</td></tr>
 </table>
-<br/><a href="${file_url}" style="display:inline-block;padding:10px 20px;background:#3b82f6;color:#fff;border-radius:6px;text-decoration:none;font-weight:600;">Download Commission Statement PDF</a>
-<br/><br/><p>Please disburse agent net commission as per the statement at closing.</p>
+<br/><p>Please disburse agent net commission as per the attached statement at closing.</p>
 <p>Best regards,<br/>Transaction Coordinator</p>`,
+        pdfBase64,
+        pdfFileName,
       });
       await updateMutation.mutateAsync({ status: "sent_to_title", sent_to_title_at: new Date().toISOString(), pdf_url: file_url });
     }
