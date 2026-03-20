@@ -80,7 +80,9 @@ export default function DeadlineCalendarView({ transactions = [] }) {
                 {dayEvents.slice(0, 2).map((ev, i) => (
                   <div key={i} className="flex items-center gap-1 truncate" title={`${ev.label} — ${ev.address}`}>
                     <span className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${ev.dotColor}`} />
-                    <span className="text-[9px] text-gray-600 truncate hidden sm:block">{ev.label}</span>
+                    <span className="text-[9px] text-gray-600 truncate hidden sm:block">
+                      {ev.label} · {ev.address?.split(",")[0]}
+                    </span>
                   </div>
                 ))}
                 {dayEvents.length > 2 && (
