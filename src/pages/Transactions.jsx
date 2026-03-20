@@ -75,22 +75,7 @@ export default function Transactions() {
           <h1 className="text-2xl font-bold text-gray-900 tracking-tight">All Transactions</h1>
           <p className="text-sm text-gray-500 mt-0.5">{filtered.length} of {transactions.length} transactions</p>
         </div>
-        <div className="flex items-center gap-2">
-          <Button
-            variant="outline"
-            className="border-blue-200 text-blue-700 hover:bg-blue-50"
-            onClick={() => setShowIntake(true)}
-          >
-            <Sparkles className="w-4 h-4 mr-2" />
-            Upload Contract
-          </Button>
-          <Link to={createPageUrl("AddTransaction")}>
-            <Button className="bg-blue-600 hover:bg-blue-700">
-              <Plus className="w-4 h-4 mr-2" />
-              New Transaction
-            </Button>
-          </Link>
-        </div>
+
       </div>
 
       {/* Filters */}
