@@ -124,6 +124,16 @@ export default function Dashboard() {
     staleTime: 30_000,
   });
 
+  // Deduplicate by address — keep the oldest record per address
+  const transactions = React.useMemo ? 
+    React.useMemo(() => {
+      const seen = new Map();
+      [...(Array.isArray(transactionsRaw) ? transactionsRaw : [])].sort((a, b) => new Date(a.created_date) - new Date(b.created_date)).forEach(tx => {
+        if (!seen.has(tx.address)) seen.set(tx.address, tx);
+      });
+      return Array.from(seen.values());
+    }, [transactionsRaw]) : transactionsRaw;
+
   const active = transactions.filter(t => t.status === "active");
   const pending = transactions.filter(t => t.status === "pending");
   const closed = transactions.filter(t => t.status === "closed");
