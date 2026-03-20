@@ -127,11 +127,11 @@ export default function Dashboard() {
   // Deduplicate by address — keep the oldest record per address
   const transactions = useMemo(() => {
     const seen = new Map();
-    [...transactionsRaw].sort((a, b) => new Date(a.created_date) - new Date(b.created_date)).forEach(tx => {
+    [...rawTransactions].sort((a, b) => new Date(a.created_date) - new Date(b.created_date)).forEach(tx => {
       if (!seen.has(tx.address)) seen.set(tx.address, tx);
     });
     return Array.from(seen.values());
-  }, [transactionsRaw]);
+  }, [rawTransactions]);
 
   const active = transactions.filter(t => t.status === "active");
   const pending = transactions.filter(t => t.status === "pending");
