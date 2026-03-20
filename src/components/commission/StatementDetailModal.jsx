@@ -106,6 +106,12 @@ function buildPDF(s) {
 export default function StatementDetailModal({ statement: s, onClose, onEdit, onUpdated }) {
   const [sending, setSending] = useState(null);
 
+  const { data: brokerages = [] } = useQuery({
+    queryKey: ["brokerage"],
+    queryFn: () => base44.entities.Brokerage.list(),
+  });
+  const brokerage = brokerages[0];
+
   const updateMutation = useMutation({
     mutationFn: (data) => base44.entities.CommissionStatement.update(s.id, data),
     onSuccess: onUpdated,
