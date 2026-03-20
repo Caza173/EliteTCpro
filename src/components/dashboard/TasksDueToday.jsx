@@ -59,9 +59,9 @@ export default function TasksDueToday({ transactions = [], notifications = [] })
     } catch {}
   });
 
-  // 3 — Pending addendum requests
+  // 3 — Pending addendum requests (must have a deadline_field set, indicating a real deadline alert)
   notifications.forEach((n) => {
-    if (n.addendum_response === "pending") {
+    if (n.addendum_response === "pending" && n.deadline_field && n.transaction_id) {
       items.push({
         key: `addendum-${n.id}`,
         type: "addendum",
