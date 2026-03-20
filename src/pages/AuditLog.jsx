@@ -1,11 +1,11 @@
 import React, { useState } from "react";
 import { base44 } from "@/api/base44Client";
 import { useQuery } from "@tanstack/react-query";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Shield, Search } from "lucide-react";
+import { Shield, Search, X } from "lucide-react";
 import { format } from "date-fns";
 import { useCurrentUser, isOwnerOrAdmin } from "../components/auth/useCurrentUser";
 
@@ -21,9 +21,71 @@ const ACTION_COLORS = {
   deadline_edited: "bg-amber-50 text-amber-700",
 };
 
+function AuditDetailDialog({ log, onClose }) {
+  if (!log) return null;
+
+  const hasData = log.before || log.after;
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+      <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={onClose} />
+      <div className="relative bg-white rounded-xl shadow-2xl w-full max-w-2xl max-h-[80vh] flex flex-col overflow-hidden">
+        {/* Header */}
+        <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100">
+          <div className="flex items-center gap-2">
+            <Badge className={`text-xs ${ACTION_COLORS[log.action] || "bg-gray-50 text-gray-600"}`}>
+              {log.action?.replace(/_/g, " ")}
+            </Badge>
+            <span className="text-sm font-semibold text-gray-800">{log.description || `${log.entity_type} ${log.entity_id}`}</span>
+          </div>
+          <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-gray-100 transition-colors">
+            <X className="w-4 h-4 text-gray-500" />
+          </button>
+        </div>
+
+        {/* Meta */}
+        <div className="px-5 py-3 bg-gray-50 border-b border-gray-100 flex flex-wrap gap-4 text-xs text-gray-500">
+          <span>Actor: <span className="font-medium text-gray-700">{log.actor_email || "system"}</span></span>
+          {log.transaction_id && <span>Transaction: <span className="font-mono text-gray-700">{log.transaction_id}</span></span>}
+          {log.entity_type && <span>Entity: <span className="font-medium text-gray-700">{log.entity_type}</span></span>}
+          {log.entity_id && <span>ID: <span className="font-mono text-gray-700">{log.entity_id}</span></span>}
+          <span>Time: <span className="font-medium text-gray-700">{log.created_date ? format(new Date(log.created_date), "MMM d, yyyy h:mm:ss a") : "—"}</span></span>
+        </div>
+
+        {/* Data */}
+        <div className="flex-1 overflow-y-auto p-5 space-y-4">
+          {!hasData ? (
+            <p className="text-sm text-gray-400 text-center py-8">No before/after data recorded for this event.</p>
+          ) : (
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              {log.before && (
+                <div>
+                  <p className="text-xs font-semibold uppercase tracking-wider text-gray-400 mb-2">Before</p>
+                  <pre className="bg-gray-50 border border-gray-200 rounded-lg p-3 text-xs text-gray-700 overflow-auto whitespace-pre-wrap break-words">
+                    {JSON.stringify(log.before, null, 2)}
+                  </pre>
+                </div>
+              )}
+              {log.after && (
+                <div>
+                  <p className="text-xs font-semibold uppercase tracking-wider text-emerald-500 mb-2">After</p>
+                  <pre className="bg-emerald-50 border border-emerald-200 rounded-lg p-3 text-xs text-gray-700 overflow-auto whitespace-pre-wrap break-words">
+                    {JSON.stringify(log.after, null, 2)}
+                  </pre>
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function AuditLogPage() {
   const { data: currentUser } = useCurrentUser();
   const [search, setSearch] = useState("");
+  const [selectedLog, setSelectedLog] = useState(null);
 
   const { data: logs = [], isLoading } = useQuery({
     queryKey: ["auditLogs", currentUser?.brokerage_id],
@@ -49,6 +111,7 @@ export default function AuditLogPage() {
 
   return (
     <div className="max-w-5xl mx-auto space-y-6 w-full min-w-0">
+      <AuditDetailDialog log={selectedLog} onClose={() => setSelectedLog(null)} />
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <div>
           <h1 className="text-2xl font-bold text-gray-900 tracking-tight flex items-center gap-2">
@@ -74,7 +137,7 @@ export default function AuditLogPage() {
           ) : (
             <div className="space-y-1">
               {filtered.map((log) => (
-                <div key={log.id} className="flex items-start gap-3 p-3 rounded-lg hover:bg-gray-50 transition-colors">
+                <div key={log.id} onClick={() => setSelectedLog(log)} className="flex items-start gap-3 p-3 rounded-lg hover:bg-gray-50 transition-colors cursor-pointer">
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 flex-wrap">
                       <Badge className={`text-xs ${ACTION_COLORS[log.action] || "bg-gray-50 text-gray-600"}`}>
