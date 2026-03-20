@@ -31,6 +31,7 @@ import ContractTimeline from "../components/transactions/ContractTimeline";
 import EditableDeadlinePanel from "../components/transactions/EditableDeadlinePanel";
 import ComplianceScanPanel from "../components/compliance/ComplianceScanPanel";
 import ComplianceMonitorWidget from "../components/compliance/ComplianceMonitorWidget";
+import TransactionFinancialTools from "../components/transactions/TransactionFinancialTools";
 import TCAIAssistant from "../components/ai/TCAIAssistant";
 import ConfirmDialog from "../components/ui/ConfirmDialog";
 import SkySlopeSyncBadge from "../components/skyslope/SkySlopeSyncBadge";
@@ -43,6 +44,7 @@ const TX_TABS = [
   { id: "documents",  label: "Documents",  icon: FolderOpen },
   { id: "finance",    label: "Finance",    icon: DollarSign },
   { id: "compliance", label: "Compliance", icon: ShieldCheck },
+  { id: "financial_tools", label: "Financial Tools", icon: Receipt },
 ];
 
 const PHASES = [
