@@ -233,7 +233,7 @@ export default function StatementFormModal({ statement, currentUser, onClose, on
 
           <div className="flex justify-end gap-2 px-5 pb-5 flex-shrink-0">
             <Button type="button" variant="outline" onClick={onClose}>Cancel</Button>
-            <Button type="submit" disabled={saveMutation.isPending} style={{ background: "var(--accent)", color: "var(--accent-text)" }}>
+            <Button type="submit" disabled={saveMutation.isPending} className="bg-blue-600 hover:bg-blue-700 text-white">
               {saveMutation.isPending
                 ? <><Loader2 className="w-4 h-4 mr-1.5 animate-spin" /> Saving…</>
                 : statement ? "Update Statement" : "Save as Draft"}
