@@ -134,7 +134,7 @@ export default function CommissionStatements() {
             <Button
               onClick={() => setShowForm(true)}
               size="sm"
-              style={{ background: "var(--accent)", color: "var(--accent-text)" }}
+              className="bg-blue-600 hover:bg-blue-700 text-white"
             >
               Create your first
             </Button>
