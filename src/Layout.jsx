@@ -23,6 +23,7 @@ import {
   PanelLeftClose,
   PanelLeftOpen,
   ClipboardList,
+  Receipt,
 } from "lucide-react";
 import NotificationBell from "./components/dashboard/NotificationBell";
 import { ThemeProvider } from "./components/theme/ThemeContext";
@@ -35,6 +36,7 @@ const TC_NAV = [
   { label: "Transactions",   page: "Transactions",   icon: FileText },
   { label: "Deal Intake",    page: "AgentIntake",    icon: UserPlus },
   { label: "User Management",page: "UserManagement", icon: Users },
+  { label: "Commission",     page: "CommissionStatements", icon: Receipt },
   { label: "Settings",       page: "Settings",       icon: Settings },
 ];
 
@@ -43,6 +45,7 @@ const OWNER_NAV = [
   { label: "Transactions",   page: "Transactions",   icon: FileText },
   { label: "Deal Intake",    page: "AgentIntake",    icon: UserPlus },
   { label: "User Management",page: "UserManagement", icon: Users },
+  { label: "Commission",     page: "CommissionStatements", icon: Receipt },
   { label: "Billing",        page: "Billing",        icon: CreditCard },
   { label: "Audit Log",      page: "AuditLog",       icon: Shield },
   { label: "Settings",       page: "Settings",       icon: Settings },
@@ -73,6 +76,7 @@ const PAGE_TITLES = {
   Deadlines:         "Deadlines",
   Dashboard:         "Dashboard",
   Transactions:      "Transactions",
+  CommissionStatements: "Commission Statements",
 };
 
 export default function Layout({ children, currentPageName }) {

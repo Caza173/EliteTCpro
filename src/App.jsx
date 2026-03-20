@@ -1,6 +1,7 @@
 import { Toaster } from "@/components/ui/toaster"
 import UserManagement from './pages/UserManagement'
 import DotloopIntegration from './pages/DotloopIntegration'
+import CommissionStatements from './pages/CommissionStatements'
 import { QueryClientProvider } from '@tanstack/react-query'
 import { queryClientInstance } from '@/lib/query-client'
 import { pagesConfig } from './pages.config'
@@ -67,6 +68,11 @@ const AuthenticatedApp = () => {
       <Route path="/DotloopIntegration" element={
         <LayoutWrapper currentPageName="DotloopIntegration">
           <DotloopIntegration />
+        </LayoutWrapper>
+      } />
+      <Route path="/CommissionStatements" element={
+        <LayoutWrapper currentPageName="CommissionStatements">
+          <CommissionStatements />
         </LayoutWrapper>
       } />
       <Route path="*" element={<PageNotFound />} />
