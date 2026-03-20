@@ -100,7 +100,7 @@ export default function Dashboard() {
   const [activeTab, setActiveTab] = useState("overview");
   const { data: currentUser } = useCurrentUser();
 
-  const { data: transactions = [], isLoading } = useQuery({
+  const { data: transactionsRaw = [], isLoading } = useQuery({
     queryKey: ["transactions", currentUser?.email, currentUser?.role],
     queryFn: () => {
       if (isOwnerOrAdmin(currentUser)) return base44.entities.Transaction.list("-created_date");
