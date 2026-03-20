@@ -74,6 +74,7 @@ const PAGE_TITLES = {
   AgentPortal:       "My Transactions",
   UserManagement:    "User Management",
   DotloopIntegration:"Dotloop Integration",
+  FuelProrations:    "Fuel Prorations",
   Billing:           "Billing",
   Settings:          "Settings",
   Deadlines:         "Deadlines",

@@ -76,6 +76,11 @@ const AuthenticatedApp = () => {
           <CommissionStatements />
         </LayoutWrapper>
       } />
+      <Route path="/FuelProrations" element={
+        <LayoutWrapper currentPageName="FuelProrations">
+          <FuelProrations />
+        </LayoutWrapper>
+      } />
       <Route path="*" element={<PageNotFound />} />
     </Routes>
   );
