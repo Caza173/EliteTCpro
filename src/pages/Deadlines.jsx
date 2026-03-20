@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useMemo } from "react";
 import { base44 } from "@/api/base44Client";
 import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -10,7 +10,7 @@ import { useCurrentUser, isOwnerOrAdmin } from "../components/auth/useCurrentUse
 export default function Deadlines() {
   const { data: currentUser } = useCurrentUser();
 
-  const { data: transactions = [], isLoading } = useQuery({
+  const { data: rawTransactions = [], isLoading } = useQuery({
     queryKey: ["transactions", currentUser?.email, currentUser?.role],
     queryFn: () => {
       if (!currentUser) return [];
@@ -19,6 +19,14 @@ export default function Deadlines() {
     },
     enabled: !!currentUser,
   });
+
+  const transactions = useMemo(() => {
+    const seen = new Map();
+    [...rawTransactions].sort((a, b) => new Date(a.created_date) - new Date(b.created_date)).forEach(tx => {
+      if (!seen.has(tx.address)) seen.set(tx.address, tx);
+    });
+    return Array.from(seen.values());
+  }, [rawTransactions]);
 
   return (
     <div className="max-w-3xl mx-auto space-y-6">
