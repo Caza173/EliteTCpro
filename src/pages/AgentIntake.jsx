@@ -96,6 +96,30 @@ export default function AgentIntake() {
     setForm((p) => ({ ...p, ...u }));
   };
 
+  const handleListingParsed = (data) => {
+    const u = {};
+    if (data.seller_names)            { u.seller = data.seller_names; setSellers([data.seller_names]); }
+    if (data.property_address)        u.address = data.property_address;
+    if (data.list_price)              u.sale_price = String(data.list_price);
+    if (data.firm_name)               u.seller_brokerage = data.firm_name;
+    if (data.designated_agent)        u.sellers_agent_name = data.designated_agent;
+    if (data.listing_start_date)      u.contract_date = data.listing_start_date;
+    if (data.listing_expiration_date) u.closing_date = data.listing_expiration_date;
+    if (data.listing_commission_percent) u.commission = `${data.listing_commission_percent}%`;
+    u.transaction_type = "seller";
+    setForm((p) => ({ ...p, ...u }));
+  };
+
+  const handleBuyerAgencyParsed = (data) => {
+    const u = {};
+    if (data.buyer_names)         { u.buyer = data.buyer_names; setBuyers([data.buyer_names]); }
+    if (data.firm_name)           u.buyer_brokerage = data.firm_name;
+    if (data.designated_agent)    u.buyers_agent_name = data.designated_agent;
+    if (data.agreement_start_date) u.contract_date = data.agreement_start_date;
+    u.transaction_type = "buyer";
+    setForm((p) => ({ ...p, ...u }));
+  };
+
   const handleSubmit = (e) => {
     e.preventDefault();
     const tasks = generateSmartTasks(parsedData, form.is_cash_transaction, form);
