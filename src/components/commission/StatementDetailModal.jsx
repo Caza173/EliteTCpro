@@ -126,14 +126,29 @@ export default function StatementDetailModal({ statement: s, onClose, onEdit, on
     onSuccess: onUpdated,
   });
 
-  const handleDownload = () => {
-    const doc = buildPDF(s);
+  const fetchLogoDataUrl = async () => {
+    if (!brokerage?.branding_logo) return null;
+    try {
+      const res = await fetch(brokerage.branding_logo);
+      const blob = await res.blob();
+      return new Promise((resolve) => {
+        const reader = new FileReader();
+        reader.onloadend = () => resolve(reader.result);
+        reader.readAsDataURL(blob);
+      });
+    } catch (_) { return null; }
+  };
+
+  const handleDownload = async () => {
+    const logoDataUrl = await fetchLogoDataUrl();
+    const doc = buildPDF(s, logoDataUrl);
     doc.save(`commission_${(s.property_address || "statement").replace(/[^a-z0-9]/gi, "_")}.pdf`);
   };
 
   const sendEmail = async (type) => {
     setSending(type);
-    const doc = buildPDF(s);
+    const logoDataUrl = await fetchLogoDataUrl();
+    const doc = buildPDF(s, logoDataUrl);
     // Get PDF as base64 string for attachment
     const pdfBase64 = doc.output("datauristring").split(",")[1];
     const pdfFileName = `commission_${(s.property_address || "statement").replace(/[^a-z0-9]/gi, "_")}.pdf`;
