@@ -38,9 +38,9 @@ export default function ComplianceMonitorWidget({ transaction, onNavigateToCompl
 
   const runDeadlineCheck = async () => {
     setScanning(true);
-    const { data: financeData = [] } = await base44.entities.TransactionFinance.filter({ transaction_id: transaction.id });
-    const finance = financeData[0] || {};
-    const { data: checklistItems = [] } = await base44.entities.DocumentChecklistItem.filter({ transaction_id: transaction.id });
+    const financeData = await base44.entities.TransactionFinance.filter({ transaction_id: transaction.id });
+    const finance = Array.isArray(financeData) ? (financeData[0] || {}) : {};
+    const checklistItems = await base44.entities.DocumentChecklistItem.filter({ transaction_id: transaction.id });
 
     await base44.functions.invoke("complianceEngine", {
       transaction_id: transaction.id,

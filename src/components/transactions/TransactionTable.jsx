@@ -40,7 +40,7 @@ export function calcPriorityScore(tx, complianceIssues = []) {
   const openTasks = (tx.tasks || []).filter(t => !t.completed).length;
   if (openTasks > 0) score += 20;
 
-  if (complianceIssues > 0) score += 30;
+  if (Array.isArray(complianceIssues) ? complianceIssues.length > 0 : complianceIssues > 0) score += 30;
 
   return score;
 }
@@ -135,7 +135,7 @@ export default function TransactionTable({ transactions, sorted = false }) {
               <TableCell>
                 <div className="flex items-center gap-1.5 text-sm text-gray-600">
                   <User className="w-3.5 h-3.5 text-gray-400" />
-                  {tx.buyer}
+                  {tx.buyers?.length ? tx.buyers[0] : (tx.buyer || "—")}
                 </div>
               </TableCell>
               <TableCell className="hidden md:table-cell text-sm text-gray-600">{tx.agent}</TableCell>

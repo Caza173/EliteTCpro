@@ -297,7 +297,7 @@ export default function ComplianceScanPanel({ transaction, currentUser }) {
   });
 
   const updateTxMutation = useMutation({
-    mutationFn: (data) => base44.entities.Transaction.update(transaction.id, data),
+    mutationFn: (data) => base44.functions.invoke("updateTransaction", { transaction_id: transaction.id, data }),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["transactions"] }),
   });
 
