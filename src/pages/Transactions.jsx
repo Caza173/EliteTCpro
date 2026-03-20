@@ -42,7 +42,16 @@ export default function Transactions() {
     enabled: !!currentUser,
   });
 
-  const filtered = useMemo(() => transactions.filter((tx) => {
+  // Deduplicate by address — keep the oldest record per address
+  const deduped = useMemo(() => {
+    const seen = new Map();
+    [...transactions].sort((a, b) => new Date(a.created_date) - new Date(b.created_date)).forEach(tx => {
+      if (!seen.has(tx.address)) seen.set(tx.address, tx);
+    });
+    return Array.from(seen.values());
+  }, [transactions]);
+
+  const filtered = useMemo(() => deduped.filter((tx) => {
     const q = search.toLowerCase();
     const matchesSearch =
       !search ||
