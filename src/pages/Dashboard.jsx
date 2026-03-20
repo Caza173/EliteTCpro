@@ -148,7 +148,11 @@ export default function Dashboard() {
     .reduce((sum, t) => sum + (t.sale_price || 0), 0);
 
   const closingSoon = active
-    .filter(t => t.closing_date)
+    .filter(t => {
+      if (!t.closing_date) return false;
+      const days = (new Date(t.closing_date) - new Date()) / (1000 * 60 * 60 * 24);
+      return days >= 0 && days <= 30;
+    })
     .sort((a, b) => new Date(a.closing_date) - new Date(b.closing_date))
     .slice(0, 5);
 

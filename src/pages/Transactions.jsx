@@ -79,7 +79,7 @@ export default function Transactions() {
           <div>
             <h1 className="text-2xl font-bold tracking-tight" style={{ color: "var(--text-primary)" }}>All Transactions</h1>
             <p className="text-sm mt-0.5" style={{ color: "var(--text-muted)" }}>
-              {filtered.length} of {transactions.length} transactions
+              {filtered.length} of {deduped.length} transactions
             </p>
           </div>
         </div>
