@@ -36,6 +36,7 @@ export default function AgentIntake() {
   const [sellers, setSellers] = useState([""]);
   const [parsedData, setParsedData] = useState(null);
   const [submitted, setSubmitted] = useState(false);
+  const [docType, setDocType] = useState("ps"); // "ps" | "listing"
   const queryClient = useQueryClient();
   const { data: currentUser } = useQuery({ queryKey: ["currentUser"], queryFn: () => base44.auth.me(), retry: false });
   const createMutation = useMutation({
