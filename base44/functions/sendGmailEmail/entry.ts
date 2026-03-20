@@ -26,10 +26,11 @@ Deno.serve(async (req) => {
     // Send to each recipient
     const results = await Promise.allSettled(recipients.map(async (recipient) => {
       const htmlBody = emailBody.includes("<") ? emailBody : emailBody.replace(/\n/g, "<br/>");
+      const encodedSubject = `=?UTF-8?B?${btoa(unescape(encodeURIComponent(subject)))}?=`;
       const mimeMessage = [
         `From: ${fromName || "EliteTC"} <me>`,
         `To: ${recipient}`,
-        `Subject: ${subject}`,
+        `Subject: ${encodedSubject}`,
         `MIME-Version: 1.0`,
         `Content-Type: text/html; charset=utf-8`,
         ``,
