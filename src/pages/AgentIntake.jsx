@@ -153,18 +153,47 @@ export default function AgentIntake() {
         </Button>
       </div>
 
-      {/* P&S Upload */}
+      {/* Document Upload */}
       <Card className="shadow-sm border-blue-100 bg-blue-50/20">
         <CardHeader className="pb-3">
-          <div className="flex items-center gap-2">
-            <FileSearch className="w-4 h-4 text-blue-500" />
-            <CardTitle className="text-base font-semibold">Upload Purchase &amp; Sales Agreement</CardTitle>
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <FileSearch className="w-4 h-4 text-blue-500" />
+              <CardTitle className="text-base font-semibold">Upload Agreement</CardTitle>
+            </div>
+            {/* Doc type toggle */}
+            <div className="flex gap-0.5 p-0.5 rounded-lg bg-white border border-gray-200">
+              <button
+                type="button"
+                onClick={() => setDocType("ps")}
+                className={`px-3 py-1 rounded-md text-xs font-medium transition-colors ${docType === "ps" ? "bg-blue-600 text-white shadow-sm" : "text-gray-500 hover:text-gray-700"}`}
+              >
+                Purchase &amp; Sale
+              </button>
+              <button
+                type="button"
+                onClick={() => setDocType("listing")}
+                className={`px-3 py-1 rounded-md text-xs font-medium transition-colors ${docType === "listing" ? "bg-blue-600 text-white shadow-sm" : "text-gray-500 hover:text-gray-700"}`}
+              >
+                Listing Agreement
+              </button>
+            </div>
           </div>
-          <CardDescription>Optional — auto-fills buyer, seller, and all deadline dates</CardDescription>
+          <CardDescription>
+            {docType === "ps"
+              ? "Optional — auto-fills buyer, seller, and all deadline dates"
+              : "Optional — attach the listing agreement for this transaction"}
+          </CardDescription>
         </CardHeader>
         <CardContent className="space-y-3">
-          <PurchaseAgreementUpload onParsed={handleParsed} />
-          {parsedData && <ParsedDeadlinesPreview parsed={parsedData} isCash={form.is_cash_transaction} />}
+          {docType === "ps" ? (
+            <>
+              <PurchaseAgreementUpload onParsed={handleParsed} />
+              {parsedData && <ParsedDeadlinesPreview parsed={parsedData} isCash={form.is_cash_transaction} />}
+            </>
+          ) : (
+            <ListingAgreementUpload onUploaded={(url) => set("listing_agreement_url", url)} />
+          )}
         </CardContent>
       </Card>
 
