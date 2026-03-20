@@ -123,11 +123,9 @@ export default function CommissionStatements() {
             <Receipt className="w-10 h-10 mx-auto mb-3" style={{ color: "var(--text-muted)" }} />
             <p className="text-sm" style={{ color: "var(--text-muted)" }}>No commission statements yet.</p>
             <Button
-            onClick={() => setShowForm(true)} className="bg-primary text-slate-900 mt-3 px-3 text-xs font-medium rounded-md inline-flex items-center justify-center gap-2 whitespace-nowrap transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0 shadow hover:bg-primary/90 h-8"
-
-            size="sm"
-            style={{ background: "var(--accent)", color: "var(--accent-text)" }}>
-            
+              onClick={() => setShowForm(true)}
+              size="sm"
+              style={{ background: "var(--accent)", color: "var(--accent-text)" }}>
               Create your first
             </Button>
           </div> :
