@@ -24,6 +24,7 @@ import {
   PanelLeftOpen,
   ClipboardList,
   Receipt,
+  Droplets,
 } from "lucide-react";
 import NotificationBell from "./components/dashboard/NotificationBell";
 import { ThemeProvider } from "./components/theme/ThemeContext";

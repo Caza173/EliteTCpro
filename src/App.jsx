@@ -2,6 +2,7 @@ import { Toaster } from "@/components/ui/toaster"
 import UserManagement from './pages/UserManagement'
 import DotloopIntegration from './pages/DotloopIntegration'
 import CommissionStatements from './pages/CommissionStatements'
+import FuelProrations from './pages/FuelProrations'
 import { QueryClientProvider } from '@tanstack/react-query'
 import { queryClientInstance } from '@/lib/query-client'
 import { pagesConfig } from './pages.config'
