@@ -388,6 +388,61 @@ export default function AgentIntake() {
   );
 }
 
+function ListingAgreementUpload({ onUploaded }) {
+  const [file, setFile] = useState(null);
+  const [status, setStatus] = useState("idle"); // idle | uploading | done | error
+  const [url, setUrl] = useState("");
+  const inputRef = React.useRef();
+
+  const handleFile = async (f) => {
+    if (!f) return;
+    setFile(f);
+    setStatus("uploading");
+    const { file_url } = await base44.integrations.Core.UploadFile({ file: f });
+    setUrl(file_url);
+    setStatus("done");
+    onUploaded(file_url);
+  };
+
+  return (
+    <div className="space-y-3">
+      {!file && (
+        <div
+          onClick={() => inputRef.current?.click()}
+          className="border-2 border-dashed border-gray-200 bg-gray-50 hover:border-blue-300 hover:bg-blue-50/40 rounded-xl p-8 flex flex-col items-center gap-3 cursor-pointer transition-colors"
+        >
+          <div className="w-12 h-12 rounded-full bg-indigo-100 flex items-center justify-center">
+            <Upload className="w-6 h-6 text-indigo-500" />
+          </div>
+          <div className="text-center">
+            <p className="text-sm font-medium text-gray-700">Upload Listing Agreement</p>
+            <p className="text-xs text-gray-400 mt-0.5">PDF, image scans, or DOCX — click to browse</p>
+          </div>
+          <input ref={inputRef} type="file" accept=".pdf,.docx,.jpg,.jpeg,.png,.webp" className="hidden" onChange={(e) => handleFile(e.target.files[0])} />
+        </div>
+      )}
+      {file && (
+        <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg border border-gray-200">
+          <div className="w-9 h-9 rounded-lg bg-indigo-50 flex items-center justify-center flex-shrink-0">
+            <FileText className="w-4 h-4 text-indigo-500" />
+          </div>
+          <div className="flex-1 min-w-0">
+            <p className="text-sm font-medium text-gray-800 truncate">{file.name}</p>
+            <p className="text-xs text-gray-400">{(file.size / 1024).toFixed(1)} KB</p>
+          </div>
+          {status === "uploading" && <Loader2 className="w-4 h-4 animate-spin text-blue-500 flex-shrink-0" />}
+          {status === "done" && <CheckCircle className="w-5 h-5 text-emerald-500 flex-shrink-0" />}
+        </div>
+      )}
+      {status === "done" && (
+        <p className="text-xs text-emerald-600 flex items-center gap-1">
+          <CheckCircle className="w-3 h-3" /> Listing agreement uploaded successfully.
+        </p>
+      )}
+    </div>
+  );
+}
+
 function Section({ label, children }) {
   return (
     <div className="space-y-3">
