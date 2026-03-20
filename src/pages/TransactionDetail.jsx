@@ -630,6 +630,10 @@ export default function TransactionDetail() {
         {activeTab === "compliance" && (
           <ComplianceScanPanel transaction={transaction} currentUser={currentUser} />
         )}
+
+        {activeTab === "financial_tools" && (
+          <TransactionFinancialTools transaction={transaction} currentUser={currentUser} />
+        )}
       </div>
 
       {/* Mobile floating Ask AI button */}
