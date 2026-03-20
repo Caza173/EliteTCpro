@@ -17,12 +17,10 @@ export default function DeadlineCalendarView({ transactions = [] }) {
   const startDay = startOfMonth(currentMonth).getDay();
 
   // Deduplicate by address — keep the first encountered
-  const dedupedTx = React.useMemo ? 
-    React.useMemo(() => {
-      const seen = new Set();
-      return transactions.filter(tx => { if (seen.has(tx.address)) return false; seen.add(tx.address); return true; });
-    }, [transactions]) :
-    (() => { const seen = new Set(); return transactions.filter(tx => { if (seen.has(tx.address)) return false; seen.add(tx.address); return true; }); })();
+  const dedupedTx = useMemo(() => {
+    const seen = new Set();
+    return transactions.filter(tx => { if (seen.has(tx.address)) return false; seen.add(tx.address); return true; });
+  }, [transactions]);
 
   // Build events map: dateStr -> [{label, address, color}]
   const events = {};
