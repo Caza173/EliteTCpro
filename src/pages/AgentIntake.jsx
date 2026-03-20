@@ -178,6 +178,13 @@ export default function AgentIntake() {
               >
                 Listing Agreement
               </button>
+              <button
+                type="button"
+                onClick={() => setDocType("buyer_agency")}
+                className={`px-3 py-1 rounded-md text-xs font-medium transition-colors ${docType === "buyer_agency" ? "bg-blue-600 text-white shadow-sm" : "text-gray-500 hover:text-gray-700"}`}
+              >
+                Buyer Agency
+              </button>
             </div>
           </div>
           <CardDescription>
