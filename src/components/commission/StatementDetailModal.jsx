@@ -21,20 +21,29 @@ const STATUS_LABELS = {
 const fmt$ = (v) => v != null ? `$${Number(v).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : "—";
 const fmtDate = (d) => { try { return d ? format(new Date(d), "MMM d, yyyy") : "—"; } catch { return "—"; } };
 
-function buildPDF(s) {
+function buildPDF(s, logoDataUrl) {
   const doc = new jsPDF();
   const gray = [100, 100, 100];
   const black = [15, 23, 42];
 
+  let headerY = 26;
+
+  if (logoDataUrl) {
+    try {
+      doc.addImage(logoDataUrl, "PNG", 20, 12, 36, 14);
+      headerY = 34;
+    } catch (_) {}
+  }
+
   doc.setFontSize(22);
   doc.setFont("helvetica", "bold");
   doc.setTextColor(...black);
-  doc.text("Commission Statement", 20, 26);
+  doc.text("Commission Statement", logoDataUrl ? 62 : 20, headerY);
 
   doc.setFontSize(9);
   doc.setFont("helvetica", "normal");
   doc.setTextColor(...gray);
-  doc.text(`Generated: ${format(new Date(), "MMMM d, yyyy")}`, 20, 34);
+  doc.text(`Generated: ${format(new Date(), "MMMM d, yyyy")}`, logoDataUrl ? 62 : 20, headerY + 8);
 
   doc.setDrawColor(220, 220, 220);
   doc.line(20, 40, 190, 40);
