@@ -211,132 +211,184 @@ export default function Dashboard() {
         </div>
       )}
 
-      {/* AI Assistant */}
-      {!isLoading && (
-        <GlobalAIAssistant transactions={transactions} checklistItems={checklistItems} />
-      )}
+      {/* Tab Navigation */}
+      <div className="flex gap-1 p-1 rounded-xl overflow-x-auto scrollbar-none" style={{ background: "var(--bg-tertiary)" }}>
+        {[
+          { id: "overview", label: "Overview" },
+          { id: "transactions", label: "Transactions" },
+          { id: "tasks", label: "Tasks" },
+          { id: "deadlines", label: "Deadlines" },
+          { id: "alerts", label: "Alerts" },
+          { id: "ai", label: "AI Assistant" },
+          ...((currentUser?.role === "owner" || currentUser?.role === "admin") ? [{ id: "analytics", label: "Analytics" }] : []),
+          { id: "finance", label: "Finance" },
+          { id: "activity", label: "AI Activity" },
+        ].map(tab => (
+          <button
+            key={tab.id}
+            onClick={() => setActiveTab(tab.id)}
+            className={`px-3 py-1.5 rounded-lg text-xs font-medium whitespace-nowrap transition-all ${
+              activeTab === tab.id ? "bg-white shadow-sm" : "hover:opacity-70"
+            }`}
+            style={{ color: activeTab === tab.id ? "var(--text-primary)" : "var(--text-muted)" }}
+          >
+            {tab.label}
+          </button>
+        ))}
+      </div>
 
-      {/* Owner analytics */}
-      {(currentUser?.role === "owner" || currentUser?.role === "admin") && !isLoading && (
-        <TCAnalyticsDashboard transactions={transactions} />
-      )}
-
-      {/* Finance metrics */}
-      {!isLoading && transactions.length > 0 && (
-        <FinanceDashboardMetrics transactions={transactions} />
-      )}
-
-      {/* Main grid */}
-      <div className="grid grid-cols-1 xl:grid-cols-3 gap-5">
-
-        {/* Transactions list — 2/3 */}
-        <div className="xl:col-span-2 space-y-5">
-          {/* Tasks due today */}
-          {!isLoading && (
-            <div className="theme-card overflow-hidden">
-              <div className="flex items-center justify-between px-4 py-3 border-b" style={{ borderColor: "var(--border)" }}>
-                <h3 className="text-sm font-semibold" style={{ color: "var(--text-primary)" }}>Tasks Due Today</h3>
-              </div>
-              <div className="p-4">
-                <TasksDueToday transactions={transactions} notifications={notifications} />
-              </div>
-            </div>
-          )}
-
-          {/* Recent transactions */}
-          <div className="theme-card overflow-hidden">
-            <div className="flex items-center justify-between px-4 py-3 border-b" style={{ borderColor: "var(--border)" }}>
-              <h3 className="text-sm font-semibold" style={{ color: "var(--text-primary)" }}>Recent Transactions</h3>
-              <Link to={createPageUrl("Transactions")}
-                className="flex items-center gap-1 text-xs font-medium transition-colors hover:opacity-70"
-                style={{ color: "var(--accent)" }}>
-                View all <ArrowRight className="w-3 h-3" />
-              </Link>
-            </div>
-            {isLoading ? (
-              <div className="space-y-2 p-4">
-                {[1,2,3,4].map(i => <Skeleton key={i} className="h-12 rounded" />)}
-              </div>
-            ) : transactions.length === 0 ? (
-              <div className="text-center py-12">
-                <p className="text-sm" style={{ color: "var(--text-muted)" }}>No transactions yet.</p>
-                <Link to={createPageUrl("AgentIntake")}>
-                  <Button size="sm" className="mt-3" style={{ background: "var(--accent)", color: "var(--accent-text)" }}>
-                    Create your first
-                  </Button>
-                </Link>
-              </div>
-            ) : (
-              <div>
-                {transactions.slice(0, 12).map(tx => (
-                  <TransactionRow key={tx.id} tx={tx} />
-                ))}
+      {/* Tab: Overview */}
+      {activeTab === "overview" && (
+        <div className="grid grid-cols-1 xl:grid-cols-3 gap-5">
+          <div className="xl:col-span-2 space-y-5">
+            {!isLoading && (
+              <div className="theme-card overflow-hidden">
+                <div className="px-4 py-3 border-b" style={{ borderColor: "var(--border)" }}>
+                  <h3 className="text-sm font-semibold" style={{ color: "var(--text-primary)" }}>Tasks Due Today</h3>
+                </div>
+                <div className="p-4">
+                  <TasksDueToday transactions={transactions} notifications={notifications} />
+                </div>
               </div>
             )}
+            <div className="theme-card overflow-hidden">
+              <div className="flex items-center justify-between px-4 py-3 border-b" style={{ borderColor: "var(--border)" }}>
+                <h3 className="text-sm font-semibold" style={{ color: "var(--text-primary)" }}>Recent Transactions</h3>
+                <Link to={createPageUrl("Transactions")} className="flex items-center gap-1 text-xs font-medium hover:opacity-70" style={{ color: "var(--accent)" }}>
+                  View all <ArrowRight className="w-3 h-3" />
+                </Link>
+              </div>
+              {isLoading ? (
+                <div className="space-y-2 p-4">{[1,2,3,4].map(i => <Skeleton key={i} className="h-12 rounded" />)}</div>
+              ) : transactions.length === 0 ? (
+                <div className="text-center py-12">
+                  <p className="text-sm" style={{ color: "var(--text-muted)" }}>No transactions yet.</p>
+                  <Link to={createPageUrl("AgentIntake")}><Button size="sm" className="mt-3" style={{ background: "var(--accent)", color: "var(--accent-text)" }}>Create your first</Button></Link>
+                </div>
+              ) : (
+                <div>{transactions.slice(0, 8).map(tx => <TransactionRow key={tx.id} tx={tx} />)}</div>
+              )}
+            </div>
           </div>
-        </div>
-
-        {/* Right column — 1/3 */}
-        <div className="space-y-5">
-          {/* Alerts */}
-          {!isLoading && (
+          <div className="space-y-5">
             <div className="theme-card overflow-hidden">
               <div className="px-4 py-3 border-b" style={{ borderColor: "var(--border)" }}>
                 <h3 className="text-sm font-semibold" style={{ color: "var(--text-primary)" }}>Alerts</h3>
               </div>
-              <div className="p-4">
-                <TransactionAlertsPanel />
-              </div>
+              <div className="p-4"><TransactionAlertsPanel /></div>
             </div>
-          )}
-
-          {/* Deadlines */}
-          <div className="theme-card overflow-hidden">
-            <div className="flex items-center justify-between px-4 py-3 border-b" style={{ borderColor: "var(--border)" }}>
-              <h3 className="text-sm font-semibold" style={{ color: "var(--text-primary)" }}>Deadlines</h3>
-              <div className="flex gap-0.5 p-0.5 rounded-lg" style={{ background: "var(--bg-tertiary)" }}>
-                <button onClick={() => setDeadlineView("list")}
-                  className={`px-2 py-1 rounded-md text-xs font-medium transition-colors flex items-center gap-1 ${
-                    deadlineView === "list" ? "bg-white shadow-sm" : "hover:text-gray-700"
-                  }`}
-                  style={{ color: deadlineView === "list" ? "var(--text-primary)" : "var(--text-muted)" }}>
-                  <List className="w-3 h-3" /> List
-                </button>
-                <button onClick={() => setDeadlineView("calendar")}
-                  className={`px-2 py-1 rounded-md text-xs font-medium transition-colors flex items-center gap-1 ${
-                    deadlineView === "calendar" ? "bg-white shadow-sm" : "hover:text-gray-700"
-                  }`}
-                  style={{ color: deadlineView === "calendar" ? "var(--text-primary)" : "var(--text-muted)" }}>
-                  <CalendarDays className="w-3 h-3" /> Cal
-                </button>
-              </div>
-            </div>
-            <div className="p-4">
-              {isLoading ? (
-                <div className="space-y-2">
-                  {[1,2,3].map(i => <Skeleton key={i} className="h-12 rounded" />)}
-                </div>
-              ) : deadlineView === "calendar" ? (
-                <DeadlineCalendarView transactions={transactions} />
-              ) : (
-                <DeadlineSummaryPanel transactions={transactions} compact={true} />
-              )}
-            </div>
-          </div>
-
-          {/* AI Activity */}
-          {!isLoading && (
             <div className="theme-card overflow-hidden">
               <div className="px-4 py-3 border-b" style={{ borderColor: "var(--border)" }}>
-                <h3 className="text-sm font-semibold" style={{ color: "var(--text-primary)" }}>AI Activity</h3>
+                <h3 className="text-sm font-semibold" style={{ color: "var(--text-primary)" }}>Upcoming Deadlines</h3>
               </div>
               <div className="p-4">
-                <AIActivityLogPanel />
+                {isLoading ? <div className="space-y-2">{[1,2,3].map(i => <Skeleton key={i} className="h-12 rounded" />)}</div>
+                  : <DeadlineSummaryPanel transactions={transactions} compact={true} />}
               </div>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Tab: Transactions */}
+      {activeTab === "transactions" && (
+        <div className="theme-card overflow-hidden">
+          <div className="flex items-center justify-between px-4 py-3 border-b" style={{ borderColor: "var(--border)" }}>
+            <h3 className="text-sm font-semibold" style={{ color: "var(--text-primary)" }}>All Transactions</h3>
+            <Link to={createPageUrl("Transactions")} className="flex items-center gap-1 text-xs font-medium hover:opacity-70" style={{ color: "var(--accent)" }}>
+              Full view <ArrowRight className="w-3 h-3" />
+            </Link>
+          </div>
+          {isLoading ? (
+            <div className="space-y-2 p-4">{[1,2,3,4,5].map(i => <Skeleton key={i} className="h-12 rounded" />)}</div>
+          ) : transactions.length === 0 ? (
+            <div className="text-center py-12">
+              <p className="text-sm" style={{ color: "var(--text-muted)" }}>No transactions yet.</p>
+              <Link to={createPageUrl("AgentIntake")}><Button size="sm" className="mt-3" style={{ background: "var(--accent)", color: "var(--accent-text)" }}>Create your first</Button></Link>
+            </div>
+          ) : (
+            <div>{transactions.map(tx => <TransactionRow key={tx.id} tx={tx} />)}</div>
           )}
         </div>
-      </div>
+      )}
+
+      {/* Tab: Tasks */}
+      {activeTab === "tasks" && !isLoading && (
+        <div className="theme-card overflow-hidden">
+          <div className="px-4 py-3 border-b" style={{ borderColor: "var(--border)" }}>
+            <h3 className="text-sm font-semibold" style={{ color: "var(--text-primary)" }}>Tasks Due Today</h3>
+          </div>
+          <div className="p-4">
+            <TasksDueToday transactions={transactions} notifications={notifications} />
+          </div>
+        </div>
+      )}
+
+      {/* Tab: Deadlines */}
+      {activeTab === "deadlines" && (
+        <div className="theme-card overflow-hidden">
+          <div className="flex items-center justify-between px-4 py-3 border-b" style={{ borderColor: "var(--border)" }}>
+            <h3 className="text-sm font-semibold" style={{ color: "var(--text-primary)" }}>Deadlines</h3>
+            <div className="flex gap-0.5 p-0.5 rounded-lg" style={{ background: "var(--bg-tertiary)" }}>
+              <button onClick={() => setDeadlineView("list")}
+                className={`px-2 py-1 rounded-md text-xs font-medium transition-colors flex items-center gap-1 ${deadlineView === "list" ? "bg-white shadow-sm" : ""}`}
+                style={{ color: deadlineView === "list" ? "var(--text-primary)" : "var(--text-muted)" }}>
+                <List className="w-3 h-3" /> List
+              </button>
+              <button onClick={() => setDeadlineView("calendar")}
+                className={`px-2 py-1 rounded-md text-xs font-medium transition-colors flex items-center gap-1 ${deadlineView === "calendar" ? "bg-white shadow-sm" : ""}`}
+                style={{ color: deadlineView === "calendar" ? "var(--text-primary)" : "var(--text-muted)" }}>
+                <CalendarDays className="w-3 h-3" /> Calendar
+              </button>
+            </div>
+          </div>
+          <div className="p-4">
+            {isLoading ? <div className="space-y-2">{[1,2,3].map(i => <Skeleton key={i} className="h-12 rounded" />)}</div>
+              : deadlineView === "calendar" ? <DeadlineCalendarView transactions={transactions} />
+              : <DeadlineSummaryPanel transactions={transactions} compact={false} />}
+          </div>
+        </div>
+      )}
+
+      {/* Tab: Alerts */}
+      {activeTab === "alerts" && (
+        <div className="theme-card overflow-hidden">
+          <div className="px-4 py-3 border-b" style={{ borderColor: "var(--border)" }}>
+            <h3 className="text-sm font-semibold" style={{ color: "var(--text-primary)" }}>Transaction Alerts</h3>
+          </div>
+          <div className="p-4"><TransactionAlertsPanel /></div>
+        </div>
+      )}
+
+      {/* Tab: AI Assistant */}
+      {activeTab === "ai" && !isLoading && (
+        <GlobalAIAssistant transactions={transactions} checklistItems={checklistItems} />
+      )}
+
+      {/* Tab: Analytics (owner/admin only) */}
+      {activeTab === "analytics" && !isLoading && (
+        <TCAnalyticsDashboard transactions={transactions} />
+      )}
+
+      {/* Tab: Finance */}
+      {activeTab === "finance" && !isLoading && transactions.length > 0 && (
+        <FinanceDashboardMetrics transactions={transactions} />
+      )}
+      {activeTab === "finance" && !isLoading && transactions.length === 0 && (
+        <div className="theme-card p-12 text-center">
+          <p className="text-sm" style={{ color: "var(--text-muted)" }}>No transaction data available yet.</p>
+        </div>
+      )}
+
+      {/* Tab: AI Activity */}
+      {activeTab === "activity" && (
+        <div className="theme-card overflow-hidden">
+          <div className="px-4 py-3 border-b" style={{ borderColor: "var(--border)" }}>
+            <h3 className="text-sm font-semibold" style={{ color: "var(--text-primary)" }}>AI Activity Log</h3>
+          </div>
+          <div className="p-4"><AIActivityLogPanel /></div>
+        </div>
+      )}
     </div>
   );
 }
