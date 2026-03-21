@@ -89,10 +89,10 @@ function buildPDF(s, logoDataUrl) {
   if (s.listing_commission_percent) row(`Listing Commission (${s.listing_commission_percent}%):`, fmt$((s.purchase_price || 0) * s.listing_commission_percent / 100));
   if (s.buyer_commission_percent) row(`Buyer Commission (${s.buyer_commission_percent}%):`, fmt$((s.purchase_price || 0) * s.buyer_commission_percent / 100));
   row("Gross Commission:", fmt$(s.gross_commission));
-  row(`Brokerage Split (${s.brokerage_split_percent || 0}%):`, `−${fmt$(s.brokerage_split_amount)}`);
-  if (s.referral_fee) row("Referral Fee:", `−${fmt$(s.referral_fee)}`);
-  if (s.tc_fee) row("TC Fee:", `−${fmt$(s.tc_fee)}`);
-  if (s.transaction_fee) row("Transaction Fee:", `−${fmt$(s.transaction_fee)}`);
+  row(`Brokerage Split (${s.brokerage_split_percent || 0}%):`, `-${fmt$(s.brokerage_split_amount)}`);
+  if (s.referral_fee) row("Referral Fee:", `-${fmt$(s.referral_fee)}`);
+  if (s.tc_fee) row("TC Fee:", `-${fmt$(s.tc_fee)}`);
+  if (s.transaction_fee) row("Transaction Fee:", `-${fmt$(s.transaction_fee)}`);
 
   y += 2;
   doc.setDrawColor(220, 220, 220);
