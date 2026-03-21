@@ -466,6 +466,64 @@ export default function TransactionDetail() {
               <EditableInfoItem icon={User} label="Transaction Coordinator"
                 value={transaction.agent || ""}
                 onSave={v => updateMutation.mutate({ id: transaction.id, data: { agent: v } })} />
+              <EditableInfoItem icon={User} label="Title Contact Name"
+                value={transaction.title_company_contact_name || ""}
+                onSave={v => updateMutation.mutate({ id: transaction.id, data: { title_company_contact_name: v } })} />
+              <EditableInfoItem icon={Mail} label="Title Company Email"
+                value={transaction.title_company_email || ""}
+                type="email"
+                onSave={v => updateMutation.mutate({ id: transaction.id, data: { title_company_email: v } })} />
+              <EditableInfoItem icon={Phone} label="Title Company Phone"
+                value={transaction.title_company_phone || ""}
+                type="tel"
+                onSave={v => updateMutation.mutate({ id: transaction.id, data: { title_company_phone: v } })} />
+              <EditableInfoItem icon={User} label="Lender Name"
+                value={transaction.lender_name || ""}
+                onSave={v => updateMutation.mutate({ id: transaction.id, data: { lender_name: v } })} />
+              <EditableInfoItem icon={Mail} label="Lender Email"
+                value={transaction.lender_email || ""}
+                type="email"
+                onSave={v => updateMutation.mutate({ id: transaction.id, data: { lender_email: v } })} />
+              <EditableInfoItem icon={Phone} label="Lender Phone"
+                value={transaction.lender_phone || ""}
+                type="tel"
+                onSave={v => updateMutation.mutate({ id: transaction.id, data: { lender_phone: v } })} />
+              <EditableInfoItem icon={User} label="Lender Company"
+                value={transaction.lender_company || ""}
+                onSave={v => updateMutation.mutate({ id: transaction.id, data: { lender_company: v } })} />
+              <EditableInfoItem icon={User} label="Inspector Name"
+                value={transaction.inspector_name || ""}
+                onSave={v => updateMutation.mutate({ id: transaction.id, data: { inspector_name: v } })} />
+              <EditableInfoItem icon={Mail} label="Inspector Email"
+                value={transaction.inspector_email || ""}
+                type="email"
+                onSave={v => updateMutation.mutate({ id: transaction.id, data: { inspector_email: v } })} />
+              <EditableInfoItem icon={Phone} label="Inspector Phone"
+                value={transaction.inspector_phone || ""}
+                type="tel"
+                onSave={v => updateMutation.mutate({ id: transaction.id, data: { inspector_phone: v } })} />
+              <EditableInfoItem icon={User} label="Appraiser Name"
+                value={transaction.appraiser_name || ""}
+                onSave={v => updateMutation.mutate({ id: transaction.id, data: { appraiser_name: v } })} />
+              <EditableInfoItem icon={Mail} label="Appraiser Email"
+                value={transaction.appraiser_email || ""}
+                type="email"
+                onSave={v => updateMutation.mutate({ id: transaction.id, data: { appraiser_email: v } })} />
+              <EditableInfoItem icon={Phone} label="Appraiser Phone"
+                value={transaction.appraiser_phone || ""}
+                type="tel"
+                onSave={v => updateMutation.mutate({ id: transaction.id, data: { appraiser_phone: v } })} />
+              <EditableInfoItem icon={User} label="Attorney Name"
+                value={transaction.attorney_name || ""}
+                onSave={v => updateMutation.mutate({ id: transaction.id, data: { attorney_name: v } })} />
+              <EditableInfoItem icon={Mail} label="Attorney Email"
+                value={transaction.attorney_email || ""}
+                type="email"
+                onSave={v => updateMutation.mutate({ id: transaction.id, data: { attorney_email: v } })} />
+              <EditableInfoItem icon={Phone} label="Attorney Phone"
+                value={transaction.attorney_phone || ""}
+                type="tel"
+                onSave={v => updateMutation.mutate({ id: transaction.id, data: { attorney_phone: v } })} />
               <EditableInfoItem icon={Mail} label="Client Email"
                 value={transaction.client_email || ""}
                 type="email"
