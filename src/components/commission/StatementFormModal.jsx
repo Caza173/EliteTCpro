@@ -210,6 +210,28 @@ export default function StatementFormModal({ statement, currentUser, onClose, on
               </div>
             </div>
 
+            <div className="border border-gray-100 rounded-xl p-4 space-y-3 bg-gray-50">
+              <p className="text-xs font-semibold uppercase tracking-wider text-gray-500">Agent Details</p>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <Label className="text-sm font-medium text-gray-700">Listing Agent Name</Label>
+                  <Input className="mt-1.5" value={form.listing_agent_name} onChange={e => set("listing_agent_name", e.target.value)} placeholder="Jane Smith" />
+                </div>
+                <div>
+                  <Label className="text-sm font-medium text-gray-700">Listing Agent Brokerage</Label>
+                  <Input className="mt-1.5" value={form.listing_agent_brokerage} onChange={e => set("listing_agent_brokerage", e.target.value)} placeholder="ABC Realty" />
+                </div>
+                <div>
+                  <Label className="text-sm font-medium text-gray-700">Buyer Agent Name</Label>
+                  <Input className="mt-1.5" value={form.buyer_agent_name} onChange={e => set("buyer_agent_name", e.target.value)} placeholder="John Doe" />
+                </div>
+                <div>
+                  <Label className="text-sm font-medium text-gray-700">Buyer Agent Brokerage</Label>
+                  <Input className="mt-1.5" value={form.buyer_agent_brokerage} onChange={e => set("buyer_agent_brokerage", e.target.value)} placeholder="XYZ Realty" />
+                </div>
+              </div>
+            </div>
+
             {gross > 0 && (
               <div className="bg-blue-50 border border-blue-100 rounded-xl p-4">
                 <p className="text-xs font-semibold uppercase tracking-wider text-blue-500 mb-3">Live Calculation</p>
