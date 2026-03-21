@@ -168,6 +168,14 @@ export default function FuelProrationFormModal({ proration, initialValues, curre
                 <Input className="mt-1.5" value={form.seller_name} onChange={e => set("seller_name", e.target.value)} />
               </div>
               <div>
+                <Label className="text-sm font-medium text-gray-700">Buyer's Agent</Label>
+                <Input className="mt-1.5" value={form.buyer_agent_name} onChange={e => set("buyer_agent_name", e.target.value)} />
+              </div>
+              <div>
+                <Label className="text-sm font-medium text-gray-700">Seller's Agent</Label>
+                <Input className="mt-1.5" value={form.seller_agent_name} onChange={e => set("seller_agent_name", e.target.value)} />
+              </div>
+              <div>
                 <Label className="text-sm font-medium text-gray-700">Closing Date</Label>
                 <Input type="date" className="mt-1.5" value={form.closing_date} onChange={e => set("closing_date", e.target.value)} />
               </div>
