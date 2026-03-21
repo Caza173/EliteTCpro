@@ -18,8 +18,10 @@ import {
 } from "lucide-react";
 import { format } from "date-fns";
 import PhaseChecklist from "../components/transactions/PhaseChecklist";
+import PhaseTaskPanel from "../components/transactions/PhaseTaskPanel";
 import TransactionTimeline from "../components/transactions/TransactionTimeline";
 import TaskList from "../components/transactions/TaskList";
+import { generateTasksForPhase, isPhaseComplete, PHASE_TASK_LIBRARY } from "../lib/taskLibrary";
 import DocChecklistPanel from "../components/transactions/DocChecklistPanel";
 import HealthScoreBadge from "../components/dashboard/HealthScoreBadge";
 import { useCurrentUser } from "../components/auth/useCurrentUser";
