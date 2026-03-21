@@ -576,7 +576,7 @@ export default function TransactionDetail() {
             <Card className="shadow-sm border-gray-100">
               <CardHeader>
                 <CardTitle className="text-base font-semibold">Transaction Phases</CardTitle>
-                <p className="text-sm text-gray-500">Check off phases as completed.</p>
+                <p className="text-sm text-gray-500">Click a phase to view its tasks.</p>
               </CardHeader>
               <CardContent>
                 <PhaseChecklist
@@ -584,6 +584,8 @@ export default function TransactionDetail() {
                   currentPhase={transaction.phase || 1}
                   onTogglePhase={handleTogglePhase}
                   tasks={transaction.tasks || []}
+                  selectedPhase={selectedPhase}
+                  onSelectPhase={(num) => setSelectedPhase(selectedPhase === num ? null : num)}
                 />
               </CardContent>
             </Card>
@@ -595,26 +597,66 @@ export default function TransactionDetail() {
                 </p>
               </CardHeader>
               <CardContent className="overflow-visible">
-                <TaskList
-                  tasks={transaction.tasks || []}
-                  onToggleTask={async (taskId) => {
-                    // Optimistically update local state
-                    const updatedTasks = (transaction.tasks || []).map((task) =>
-                      task.id === taskId ? { ...task, completed: !task.completed } : task
-                    );
-                    queryClient.setQueryData(["transactions"], (old = []) =>
-                      old.map((t) => t.id === transaction.id ? { ...t, tasks: updatedTasks } : t)
-                    );
-                    // Use backend function to bypass RLS restrictions
-                    await base44.functions.invoke("toggleTask", { transaction_id: transaction.id, tasks: updatedTasks });
-                    queryClient.invalidateQueries({ queryKey: ["transactions"] });
-                    await writeAuditLog({
-                      brokerageId: transaction.brokerage_id, transactionId: transaction.id,
-                      actorEmail: currentUser?.email, action: "task_completed", entityType: "task",
-                      entityId: taskId, description: `Task ${taskId} toggled by ${currentUser?.email}`,
-                    });
-                  }}
-                />
+                {selectedPhase ? (
+                  <PhaseTaskPanel
+                    phaseNum={selectedPhase}
+                    tasks={transaction.tasks || []}
+                    onToggleTask={async (taskId) => {
+                      const updatedTasks = (transaction.tasks || []).map((task) =>
+                        task.id === taskId ? { ...task, completed: !task.completed } : task
+                      );
+                      queryClient.setQueryData(["transactions"], (old = []) =>
+                        old.map((t) => t.id === transaction.id ? { ...t, tasks: updatedTasks } : t)
+                      );
+                      await base44.functions.invoke("toggleTask", { transaction_id: transaction.id, tasks: updatedTasks });
+                      queryClient.invalidateQueries({ queryKey: ["transactions"] });
+                      // Auto-complete phase if all required done
+                      const phaseLib = PHASE_TASK_LIBRARY.find(p => p.phaseNum === selectedPhase);
+                      if (phaseLib && isPhaseComplete(selectedPhase, updatedTasks)) {
+                        const completed = transaction.phases_completed || [];
+                        if (!completed.includes(selectedPhase)) {
+                          handleTogglePhase(selectedPhase);
+                        }
+                      }
+                      await writeAuditLog({
+                        brokerageId: transaction.brokerage_id, transactionId: transaction.id,
+                        actorEmail: currentUser?.email, action: "task_completed", entityType: "task",
+                        entityId: taskId, description: `Task ${taskId} toggled by ${currentUser?.email}`,
+                      });
+                    }}
+                    onGenerateTasks={async (phaseNum) => {
+                      const newTasks = generateTasksForPhase(phaseNum, transaction.id);
+                      const existing = transaction.tasks || [];
+                      // Avoid duplicates
+                      const existingIds = new Set(existing.map(t => t.id));
+                      const merged = [...existing, ...newTasks.filter(t => !existingIds.has(t.id))];
+                      queryClient.setQueryData(["transactions"], (old = []) =>
+                        old.map((t) => t.id === transaction.id ? { ...t, tasks: merged } : t)
+                      );
+                      await base44.functions.invoke("toggleTask", { transaction_id: transaction.id, tasks: merged });
+                      queryClient.invalidateQueries({ queryKey: ["transactions"] });
+                    }}
+                  />
+                ) : (
+                  <TaskList
+                    tasks={transaction.tasks || []}
+                    onToggleTask={async (taskId) => {
+                      const updatedTasks = (transaction.tasks || []).map((task) =>
+                        task.id === taskId ? { ...task, completed: !task.completed } : task
+                      );
+                      queryClient.setQueryData(["transactions"], (old = []) =>
+                        old.map((t) => t.id === transaction.id ? { ...t, tasks: updatedTasks } : t)
+                      );
+                      await base44.functions.invoke("toggleTask", { transaction_id: transaction.id, tasks: updatedTasks });
+                      queryClient.invalidateQueries({ queryKey: ["transactions"] });
+                      await writeAuditLog({
+                        brokerageId: transaction.brokerage_id, transactionId: transaction.id,
+                        actorEmail: currentUser?.email, action: "task_completed", entityType: "task",
+                        entityId: taskId, description: `Task ${taskId} toggled by ${currentUser?.email}`,
+                      });
+                    }}
+                  />
+                )}
               </CardContent>
             </Card>
             {/* Compliance Monitor Widget */}
