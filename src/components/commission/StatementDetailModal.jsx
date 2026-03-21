@@ -208,10 +208,10 @@ export default function StatementDetailModal({ statement: s, onClose, onEdit, on
     s.listing_commission_percent ? { label: `Listing Commission (${s.listing_commission_percent}%)`, value: fmt$((s.purchase_price || 0) * s.listing_commission_percent / 100) } : null,
     s.buyer_commission_percent ? { label: `Buyer Commission (${s.buyer_commission_percent}%)`, value: fmt$((s.purchase_price || 0) * s.buyer_commission_percent / 100) } : null,
     { label: "Gross Commission", value: fmt$(s.gross_commission), bold: true },
-    { label: `Brokerage Split (${s.brokerage_split_percent || 0}%)`, value: `−${fmt$(s.brokerage_split_amount)}`, negative: true },
-    s.referral_fee ? { label: "Referral Fee", value: `−${fmt$(s.referral_fee)}`, negative: true } : null,
-    s.tc_fee ? { label: "TC Fee", value: `−${fmt$(s.tc_fee)}`, negative: true } : null,
-    s.transaction_fee ? { label: "Transaction Fee", value: `−${fmt$(s.transaction_fee)}`, negative: true } : null,
+    { label: `Brokerage Split (${s.brokerage_split_percent || 0}%)`, value: `-${fmt$(s.brokerage_split_amount)}`, negative: true },
+    s.referral_fee ? { label: "Referral Fee", value: `-${fmt$(s.referral_fee)}`, negative: true } : null,
+    s.tc_fee ? { label: "TC Fee", value: `-${fmt$(s.tc_fee)}`, negative: true } : null,
+    s.transaction_fee ? { label: "Transaction Fee", value: `-${fmt$(s.transaction_fee)}`, negative: true } : null,
   ].filter(Boolean);
 
   return (
