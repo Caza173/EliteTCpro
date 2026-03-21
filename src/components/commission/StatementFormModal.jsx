@@ -218,10 +218,10 @@ export default function StatementFormModal({ statement, currentUser, onClose, on
                     <p className="text-xs text-gray-500">Brokerage Split</p>
                     <p className="text-base font-bold text-gray-900">−${brokerageSplit.toLocaleString("en-US", { minimumFractionDigits: 2 })}</p>
                   </div>
-                  {parse(form.referral_fee) > 0 && (
+                  {referralAmount > 0 && (
                     <div>
-                      <p className="text-xs text-gray-500">Referral Fee</p>
-                      <p className="text-base font-bold text-red-600">−${parse(form.referral_fee).toLocaleString("en-US", { minimumFractionDigits: 2 })}</p>
+                      <p className="text-xs text-gray-500">Referral Fee ({parse(form.referral_fee)}%)</p>
+                      <p className="text-base font-bold text-red-600">−${referralAmount.toLocaleString("en-US", { minimumFractionDigits: 2 })}</p>
                     </div>
                   )}
                   {(parse(form.tc_fee) > 0 || parse(form.transaction_fee) > 0) && (
