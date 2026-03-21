@@ -621,10 +621,6 @@ export default function TransactionDetail() {
           <TransactionDocumentsTab transaction={transaction} currentUser={currentUser} />
         )}
 
-        {activeTab === "finance" && (
-          <FinanceTab transaction={transaction} currentUser={currentUser} />
-        )}
-
         {activeTab === "compliance" && (
           <ComplianceScanPanel transaction={transaction} currentUser={currentUser} />
         )}
