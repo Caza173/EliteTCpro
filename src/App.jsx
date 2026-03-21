@@ -5,6 +5,7 @@ import DotloopIntegration from './pages/DotloopIntegration'
 import CommissionStatements from './pages/CommissionStatements'
 import FuelProrations from './pages/FuelProrations'
 import DeadlineResponse from './pages/DeadlineResponse'
+import AddendumBuilder from './pages/AddendumBuilder'
 import { QueryClientProvider } from '@tanstack/react-query'
 import { queryClientInstance } from '@/lib/query-client'
 import { pagesConfig } from './pages.config'
@@ -89,6 +90,11 @@ const AuthenticatedApp = () => {
         </LayoutWrapper>
       } />
       <Route path="/DeadlineResponse" element={<DeadlineResponse />} />
+      <Route path="/AddendumBuilder" element={
+        <LayoutWrapper currentPageName="AddendumBuilder">
+          <AddendumBuilder />
+        </LayoutWrapper>
+      } />
       <Route path="*" element={<PageNotFound />} />
     </Routes>
   );
