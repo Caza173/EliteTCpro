@@ -72,6 +72,7 @@ export default function TransactionDetail() {
   const [aiWidth, setAiWidth] = useState(380);
   const [mobileAIOpen, setMobileAIOpen] = useState(false);
   const [sendingTimeline, setSendingTimeline] = useState(false);
+  const [syncingCalendar, setSyncingCalendar] = useState(false);
   const [emailModalOpen, setEmailModalOpen] = useState(false);
   const [invitingClient, setInvitingClient] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
