@@ -93,6 +93,14 @@ export default function AuditLogPage() {
     enabled: !!currentUser?.brokerage_id && isOwnerOrAdmin(currentUser),
   });
 
+  const { data: transactions = [] } = useQuery({
+    queryKey: ["transactions"],
+    queryFn: () => base44.entities.Transaction.list(),
+    enabled: isOwnerOrAdmin(currentUser),
+  });
+
+  const txAddressMap = Object.fromEntries(transactions.map(t => [t.id, t.address]));
+
   if (!isOwnerOrAdmin(currentUser)) {
     return (
       <div className="max-w-xl mx-auto text-center py-20">
