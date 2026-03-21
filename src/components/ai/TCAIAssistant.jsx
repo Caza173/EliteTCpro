@@ -73,14 +73,17 @@ MLS #: ${transaction.mls_number || "N/A"}
 === PARTIES ===
 Buyer(s): ${buyers}
 Seller(s): ${sellers}
-Buyer's Agent: ${transaction.buyers_agent_name || "Unknown"}
+Buyer's Agent: ${transaction.buyers_agent_name || "Unknown"} | Email: ${transaction.buyers_agent_email || "N/A"} | Phone: ${transaction.buyers_agent_phone || "N/A"}
 Buyer's Brokerage: ${transaction.buyer_brokerage || "Unknown"}
-Seller's Agent: ${transaction.sellers_agent_name || "Unknown"}
+Seller's Agent: ${transaction.sellers_agent_name || "Unknown"} | Email: ${transaction.sellers_agent_email || "N/A"} | Phone: ${transaction.sellers_agent_phone || "N/A"}
 Seller's Brokerage: ${transaction.seller_brokerage || "Unknown"}
-Transaction Coordinator: ${transaction.agent || "Unknown"}
-Client Email: ${transaction.client_email || "N/A"}
-Client Phone: ${transaction.client_phone || "N/A"}
-Closing/Title Company: ${transaction.closing_title_company || "N/A"}
+Transaction Coordinator: ${transaction.agent || "Unknown"} | Email: ${transaction.agent_email || "N/A"}
+Client Email: ${transaction.client_email || "N/A"} | Client Phone: ${transaction.client_phone || "N/A"}
+Title Company: ${transaction.closing_title_company || "N/A"} | Contact: ${transaction.title_company_contact_name || "N/A"} | Email: ${transaction.title_company_email || "N/A"} | Phone: ${transaction.title_company_phone || "N/A"}
+Lender: ${transaction.lender_name || "N/A"} | Company: ${transaction.lender_company || "N/A"} | Email: ${transaction.lender_email || "N/A"} | Phone: ${transaction.lender_phone || "N/A"}
+Inspector: ${transaction.inspector_name || "N/A"} | Company: ${transaction.inspector_company || "N/A"} | Email: ${transaction.inspector_email || "N/A"} | Phone: ${transaction.inspector_phone || "N/A"}
+Appraiser: ${transaction.appraiser_name || "N/A"} | Company: ${transaction.appraiser_company || "N/A"} | Email: ${transaction.appraiser_email || "N/A"} | Phone: ${transaction.appraiser_phone || "N/A"}
+Attorney: ${transaction.attorney_name || "N/A"} | Firm: ${transaction.attorney_firm || "N/A"} | Email: ${transaction.attorney_email || "N/A"} | Phone: ${transaction.attorney_phone || "N/A"}
 
 === FINANCIAL ===
 Sale Price: ${transaction.sale_price ? `$${transaction.sale_price.toLocaleString()}` : "Not set"}
