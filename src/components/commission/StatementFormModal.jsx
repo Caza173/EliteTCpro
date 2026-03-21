@@ -49,7 +49,7 @@ export default function StatementFormModal({ statement, currentUser, onClose, on
     queryFn: () => base44.entities.Transaction.list("-created_date", 100),
   });
 
-  const { gross, brokerageSplit, agentNet } = calcCommission(form);
+  const { gross, brokerageSplit, referralAmount, agentNet } = calcCommission(form);
   const set = (k, v) => setForm(p => ({ ...p, [k]: v }));
 
   const handleTxSelect = (txId) => {
