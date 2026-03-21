@@ -198,6 +198,8 @@ export default function FuelProrationDetailModal({ proration: p, onClose, onUpda
             {[
               { label: "Buyer", value: p.buyer_name || "—" },
               { label: "Seller", value: p.seller_name || "—" },
+              { label: "Buyer's Agent", value: p.buyer_agent_name || "—" },
+              { label: "Seller's Agent", value: p.seller_agent_name || "—" },
               { label: "Closing Date", value: fmtDate(p.closing_date) },
               { label: "Total Gallons", value: p.total_gallons ? `${Number(p.total_gallons).toFixed(1)} gal` : "—" },
               { label: "Agent Email", value: p.agent_email || "—" },
