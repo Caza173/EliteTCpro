@@ -475,7 +475,6 @@ export default function TransactionDetail() {
                   { intake: "Intake", under_contract: "Under Contract", inspection: "Inspection", financing: "Financing", appraisal: "Appraisal", clear_to_close: "Clear to Close", closing: "Closing", closed: "Closed" }[transaction.transaction_phase] || transaction.transaction_phase
                 } highlight />
               )}
-              <InfoItem label="Workflow Phase" value={PHASES[(transaction.phase || 1) - 1]} />
               {transaction.is_cash_transaction && <InfoItem label="Financing" value="Cash Transaction" />}
             </div>
           </CardContent>
