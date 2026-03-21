@@ -1,4 +1,25 @@
-import { createClientFromRequest } from 'npm:@base44/sdk@0.8.20';
+import { createClientFromRequest } from 'npm:@base44/sdk@0.8.21';
+
+const APP_URL = 'https://app.elitetc.pro';
+
+const TOKEN_SECRET = () => Deno.env.get('BASE44_APP_ID') || 'elitetc-deadline-hmac-v1';
+
+function b64urlEncode(str) {
+  return btoa(unescape(encodeURIComponent(str)))
+    .replace(/\+/g, '-').replace(/\//g, '_').replace(/=/g, '');
+}
+
+async function signDeadlineToken(payload) {
+  const enc = new TextEncoder();
+  const key = await crypto.subtle.importKey(
+    'raw', enc.encode(TOKEN_SECRET()), { name: 'HMAC', hash: 'SHA-256' }, false, ['sign']
+  );
+  const payloadStr = b64urlEncode(JSON.stringify(payload));
+  const sig = await crypto.subtle.sign('HMAC', key, enc.encode(payloadStr));
+  const sigStr = btoa(String.fromCharCode(...new Uint8Array(sig)))
+    .replace(/\+/g, '-').replace(/\//g, '_').replace(/=/g, '');
+  return `${payloadStr}.${sigStr}`;
+}
 
 const DEADLINE_FIELDS = {
   inspection_deadline: "Inspection Contingency",
