@@ -189,7 +189,7 @@ export default function StatementFormModal({ statement, currentUser, onClose, on
                 <Input type="number" step="0.01" className="mt-1.5" value={form.brokerage_split_percent} onChange={e => set("brokerage_split_percent", e.target.value)} />
               </div>
               <div>
-                <Label className="text-sm font-medium text-gray-700">Referral Fee ($)</Label>
+                <Label className="text-sm font-medium text-gray-700">Referral Fee (%)</Label>
                 <Input type="number" step="0.01" className="mt-1.5" value={form.referral_fee} onChange={e => set("referral_fee", e.target.value)} placeholder="0" />
               </div>
               <div>
