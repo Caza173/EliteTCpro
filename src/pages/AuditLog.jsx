@@ -46,7 +46,7 @@ function AuditDetailDialog({ log, onClose }) {
         {/* Meta */}
         <div className="px-5 py-3 bg-gray-50 border-b border-gray-100 flex flex-wrap gap-4 text-xs text-gray-500">
           <span>Actor: <span className="font-medium text-gray-700">{log.actor_email || "system"}</span></span>
-          {log.transaction_id && <span>Transaction: <span className="font-mono text-gray-700">{log.transaction_id}</span></span>}
+          {log.transaction_id && <span>Transaction: <span className="font-medium text-gray-700">{txAddressMap[log.transaction_id] || log.transaction_id}</span></span>}
           {log.entity_type && <span>Entity: <span className="font-medium text-gray-700">{log.entity_type}</span></span>}
           {log.entity_id && <span>ID: <span className="font-mono text-gray-700">{log.entity_id}</span></span>}
           <span>Time: <span className="font-medium text-gray-700">{log.created_date ? format(new Date(log.created_date), "MMM d, yyyy h:mm:ss a") : "—"}</span></span>
@@ -155,7 +155,7 @@ export default function AuditLogPage() {
                     </div>
                     <p className="text-xs text-gray-400 mt-0.5">
                       by <span className="font-medium text-gray-500">{log.actor_email || "system"}</span>
-                      {log.transaction_id && <> · tx: <span className="font-mono text-[10px]">{log.transaction_id?.slice(-6)}</span></>}
+                      {log.transaction_id && <> · <span className="text-gray-500">{txAddressMap[log.transaction_id] || log.transaction_id?.slice(-6)}</span></>}
                     </p>
                   </div>
                   <span className="text-xs text-gray-400 flex-shrink-0">
