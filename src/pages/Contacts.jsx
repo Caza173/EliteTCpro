@@ -159,10 +159,12 @@ function EditContactModal({ contact, transactions, onClose, onSave }) {
             <label className="text-xs font-medium mb-1 block" style={{ color: "var(--text-muted)" }}>Email</label>
             <Input value={form.email} onChange={e => setForm(f => ({ ...f, email: e.target.value }))} placeholder="Email address" type="email" />
           </div>
-          <div>
-            <label className="text-xs font-medium mb-1 block" style={{ color: "var(--text-muted)" }}>Phone</label>
-            <Input value={form.phone} onChange={e => setForm(f => ({ ...f, phone: e.target.value }))} placeholder="Phone number" type="tel" />
-          </div>
+          {fieldMap?.phone && (
+            <div>
+              <label className="text-xs font-medium mb-1 block" style={{ color: "var(--text-muted)" }}>Phone</label>
+              <Input value={form.phone} onChange={e => setForm(f => ({ ...f, phone: e.target.value }))} placeholder="Phone number" type="tel" />
+            </div>
+          )}
           {fieldMap?.company && (
             <div>
               <label className="text-xs font-medium mb-1 block" style={{ color: "var(--text-muted)" }}>Company</label>
