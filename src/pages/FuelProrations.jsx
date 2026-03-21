@@ -50,7 +50,7 @@ export default function FuelProrations() {
             Calculate fuel tank reimbursements at closing
           </p>
         </div>
-        <Button onClick={() => setShowForm(true)} style={{ background: "var(--accent)", color: "var(--accent-text)" }} className="gap-1.5">
+        <Button onClick={() => setShowForm(true)} className="gap-1.5 bg-blue-600 hover:bg-blue-700 text-white">
           <Plus className="w-4 h-4" /> New Proration
         </Button>
       </div>
