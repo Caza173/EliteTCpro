@@ -9,6 +9,7 @@ import { MapPin, LayoutGrid, List, Search } from "lucide-react";
 import { useCurrentUser } from "../components/auth/useCurrentUser";
 import AgentTransactionCard from "../components/agent/AgentTransactionCard";
 import AgentTransactionTable from "../components/agent/AgentTransactionTable";
+import AgentCommissionApproval from "../components/agent/AgentCommissionApproval";
 
 function useLocalStorage(key, defaultValue) {
   const [value, setValue] = useState(() => {
