@@ -83,7 +83,7 @@ export default function StatementFormModal({ statement, currentUser, onClose, on
         brokerage_split_percent: parse(data.brokerage_split_percent),
         listing_commission_percent: parse(data.listing_commission_percent),
         buyer_commission_percent: parse(data.buyer_commission_percent),
-        referral_fee: parse(data.referral_fee),
+        referral_fee: referralAmount,
         tc_fee: parse(data.tc_fee),
         transaction_fee: parse(data.transaction_fee),
       };
