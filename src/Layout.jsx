@@ -84,6 +84,7 @@ const PAGE_TITLES = {
   Dashboard:         "Dashboard",
   Transactions:      "Transactions",
   CommissionStatements: "Commission Statements",
+  Contacts: "Contacts",
 };
 
 export default function Layout({ children, currentPageName }) {
