@@ -88,6 +88,7 @@ const AuthenticatedApp = () => {
           <FuelProrations />
         </LayoutWrapper>
       } />
+      <Route path="/DeadlineResponse" element={<DeadlineResponse />} />
       <Route path="*" element={<PageNotFound />} />
     </Routes>
   );

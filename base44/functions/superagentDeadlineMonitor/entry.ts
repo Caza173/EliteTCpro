@@ -238,7 +238,79 @@ Deno.serve(async (req) => {
       }
     }
 
-    return Response.json({ success: true, notificationsSent, results });
+    // ── FAIL-SAFE: Escalate unresponded 24h alerts that are now 4h+ old ──
+    const activityLogs = await base44.asServiceRole.entities.AIActivityLog.filter({ interval_label: '24h' });
+    let escalations = 0;
+
+    for (const log of activityLogs) {
+      if (log.response_status !== 'sent') continue; // already responded
+      const sentAt = new Date(log.created_date);
+      const hoursSince = (now - sentAt) / (1000 * 60 * 60);
+      if (hoursSince < 4) continue;
+
+      // Check if already escalated
+      const escalated = await base44.asServiceRole.entities.AIActivityLog.filter({
+        transaction_id: log.transaction_id,
+        deadline_type: `escalation_${log.deadline_type}`,
+      });
+      if (escalated.length > 0) continue;
+
+      // Check if they responded via the link (response_<field>)
+      const responded = await base44.asServiceRole.entities.AIActivityLog.filter({
+        transaction_id: log.transaction_id,
+        deadline_type: `response_${log.deadline_type}`,
+      });
+      if (responded.length > 0) continue;
+
+      // Send reminder email to agent
+      if (log.recipient_email) {
+        const reminderSubject = `Reminder — Deadline Action Required – ${log.deadline_label || log.deadline_type} – ${log.transaction_address}`;
+        const reminderHtml = `
+<div style="font-family:-apple-system,sans-serif;max-width:600px;margin:0 auto;padding:24px;">
+  <div style="background:#fef2f2;border-left:4px solid #ef4444;padding:14px;border-radius:8px;margin-bottom:16px;">
+    <strong style="color:#dc2626;">⏰ Reminder — No Response Received</strong>
+  </div>
+  <p style="color:#475569;font-size:14px;">We sent you a deadline alert for <strong>${log.transaction_address}</strong> regarding the <strong>${log.deadline_label || log.deadline_type}</strong> deadline and haven't received a response yet.</p>
+  <p style="color:#475569;font-size:14px;">Please check the original email and respond, or contact your TC directly.</p>
+  <p style="margin-top:20px;color:#94a3b8;font-size:11px;">EliteTC Superagent — Automated Follow-up</p>
+</div>`;
+        try {
+          await base44.asServiceRole.integrations.Core.SendEmail({ to: log.recipient_email, from_name: 'EliteTC Superagent', subject: reminderSubject, body: reminderHtml });
+        } catch (e) { console.warn('Escalation email failed:', e.message); }
+      }
+
+      // Notify TC via InAppNotification
+      const txList = await base44.asServiceRole.entities.Transaction.filter({ id: log.transaction_id });
+      const escalTx = txList[0];
+      if (escalTx?.agent_email) {
+        await base44.asServiceRole.entities.InAppNotification.create({
+          brokerage_id: escalTx.brokerage_id,
+          transaction_id: log.transaction_id,
+          user_email: escalTx.agent_email,
+          title: `No Response — ${log.deadline_label || log.deadline_type} – ${log.transaction_address}`,
+          body: `Agent ${log.recipient_email} did not respond to the 24h deadline alert. Please follow up directly.`,
+          type: 'deadline',
+        });
+      }
+
+      // Log escalation
+      await base44.asServiceRole.entities.AIActivityLog.create({
+        brokerage_id: log.brokerage_id,
+        transaction_id: log.transaction_id,
+        transaction_address: log.transaction_address,
+        deadline_type: `escalation_${log.deadline_type}`,
+        deadline_label: log.deadline_label,
+        interval_label: '4h',
+        recipient_email: log.recipient_email,
+        subject: `Escalation: No response to ${log.deadline_label}`,
+        message: `No response after 4 hours. Reminder sent to agent and TC notified.`,
+        response_status: 'sent',
+      });
+
+      escalations++;
+    }
+
+    return Response.json({ success: true, notificationsSent, escalations, results });
   } catch (error) {
     return Response.json({ error: error.message }, { status: 500 });
   }
