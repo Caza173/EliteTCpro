@@ -438,12 +438,28 @@ export default function TransactionDetail() {
               <EditableInfoItem icon={User} label="Buyer's Agent"
                 value={transaction.buyers_agent_name || ""}
                 onSave={v => updateMutation.mutate({ id: transaction.id, data: { buyers_agent_name: v } })} />
+              <EditableInfoItem icon={Mail} label="Buyer's Agent Email"
+                value={transaction.buyers_agent_email || ""}
+                type="email"
+                onSave={v => updateMutation.mutate({ id: transaction.id, data: { buyers_agent_email: v } })} />
+              <EditableInfoItem icon={Phone} label="Buyer's Agent Phone"
+                value={transaction.buyers_agent_phone || ""}
+                type="tel"
+                onSave={v => updateMutation.mutate({ id: transaction.id, data: { buyers_agent_phone: v } })} />
               <EditableInfoItem icon={User} label="Buyer Brokerage"
                 value={transaction.buyer_brokerage || ""}
                 onSave={v => updateMutation.mutate({ id: transaction.id, data: { buyer_brokerage: v } })} />
               <EditableInfoItem icon={User} label="Seller's Agent"
                 value={transaction.sellers_agent_name || ""}
                 onSave={v => updateMutation.mutate({ id: transaction.id, data: { sellers_agent_name: v } })} />
+              <EditableInfoItem icon={Mail} label="Seller's Agent Email"
+                value={transaction.sellers_agent_email || ""}
+                type="email"
+                onSave={v => updateMutation.mutate({ id: transaction.id, data: { sellers_agent_email: v } })} />
+              <EditableInfoItem icon={Phone} label="Seller's Agent Phone"
+                value={transaction.sellers_agent_phone || ""}
+                type="tel"
+                onSave={v => updateMutation.mutate({ id: transaction.id, data: { sellers_agent_phone: v } })} />
               <EditableInfoItem icon={User} label="Seller Brokerage"
                 value={transaction.seller_brokerage || ""}
                 onSave={v => updateMutation.mutate({ id: transaction.id, data: { seller_brokerage: v } })} />
