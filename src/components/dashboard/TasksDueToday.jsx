@@ -83,20 +83,22 @@ export default function TasksDueToday({ transactions = [], notifications = [] })
       try {
         const deadline = parseISO(dateStr);
         const hoursUntil = differenceInHours(deadline, now);
-        if (hoursUntil >= 0 && hoursUntil <= 72) {
-          // Check if there's an unfinished task linked to this deadline
+        const dueToday = isToday(deadline);
+        if (dueToday || (hoursUntil > 0 && hoursUntil <= 72)) {
           const linkedTaskDone = (tx.tasks || []).some(
             (t) => t.linked_deadline === field && t.completed
           );
           if (!linkedTaskDone) {
+            const badge = dueToday ? "Due Today" : hoursUntil <= 24 ? "< 24h" : "< 72h";
+            const badgeColor = dueToday ? "bg-red-100 text-red-700" : hoursUntil <= 24 ? "bg-red-100 text-red-700" : "bg-orange-100 text-orange-700";
             items.push({
               key: `deadline-${tx.id}-${field}`,
               type: "deadline",
               label: `${DEADLINE_LABELS[field]}: ${tx.address}`,
-              sub: `Due in ${hoursUntil}h`,
+              sub: dueToday ? "Due Today" : `Due in ${hoursUntil}h`,
               txId: tx.id,
-              badge: hoursUntil <= 24 ? "< 24h" : "< 72h",
-              badgeColor: hoursUntil <= 24 ? "bg-red-100 text-red-700" : "bg-orange-100 text-orange-700",
+              badge,
+              badgeColor,
             });
           }
         }
