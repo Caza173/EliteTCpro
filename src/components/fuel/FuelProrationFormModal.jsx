@@ -81,6 +81,8 @@ export default function FuelProrationFormModal({ proration, initialValues, curre
       property_address: tx.address || "",
       buyer_name: tx.buyers?.join(", ") || tx.buyer || "",
       seller_name: tx.sellers?.join(", ") || tx.seller || "",
+      buyer_agent_name: tx.buyers_agent_name || "",
+      seller_agent_name: tx.sellers_agent_name || "",
       closing_date: tx.closing_date || "",
       agent_email: tx.agent_email || "",
     }));
