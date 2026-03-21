@@ -150,7 +150,7 @@ export default function StatementFormModal({ statement, currentUser, onClose, on
               </div>
               <div>
                 <Label className="text-sm font-medium text-gray-700">Agent Email</Label>
-                <Input type="email" className="mt-1.5" value={form.agent_email} onChange={e => set("agent_email", e.target.value)} />
+                <Input type="text" className="mt-1.5" value={form.agent_email} onChange={e => set("agent_email", e.target.value)} />
               </div>
               <div>
                 <Label className="text-sm font-medium text-gray-700">Closing Date</Label>
