@@ -293,7 +293,7 @@ export default function StatementDetailModal({ statement: s, onClose, onEdit, on
         </div>
 
         {/* Footer actions */}
-        <div className="px-5 py-4 border-t border-gray-100 bg-gray-50 flex flex-wrap gap-2 flex-shrink-0">
+        <div className="px-5 py-4 border-t flex flex-wrap gap-2 flex-shrink-0" style={{ borderColor: "var(--border)", backgroundColor: "var(--bg-tertiary)" }}>
           {(s.status === "draft" || s.status === "revision_requested") && (
             <Button onClick={() => sendEmail("agent")} disabled={!!sending || !s.agent_email}
               className="gap-1.5 text-sm" style={{ background: "var(--accent)", color: "var(--accent-text)" }}>
