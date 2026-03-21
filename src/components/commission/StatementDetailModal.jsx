@@ -86,8 +86,16 @@ function buildPDF(s, logoDataUrl) {
 
   section("Commission Breakdown");
   row("Purchase Price:", fmt$(s.purchase_price));
-  if (s.listing_commission_percent) row(`Listing Commission (${s.listing_commission_percent}%):`, fmt$((s.purchase_price || 0) * s.listing_commission_percent / 100));
-  if (s.buyer_commission_percent) row(`Buyer Commission (${s.buyer_commission_percent}%):`, fmt$((s.purchase_price || 0) * s.buyer_commission_percent / 100));
+  if (s.listing_commission_percent) {
+    const amt = fmt$((s.purchase_price || 0) * s.listing_commission_percent / 100);
+    const label = s.listing_agent_name ? `Listing Commission (${s.listing_commission_percent}%) - ${s.listing_agent_name}` : `Listing Commission (${s.listing_commission_percent}%)`;
+    row(label + (s.listing_agent_brokerage ? ` / ${s.listing_agent_brokerage}` : "") + ":", amt);
+  }
+  if (s.buyer_commission_percent) {
+    const amt = fmt$((s.purchase_price || 0) * s.buyer_commission_percent / 100);
+    const label = s.buyer_agent_name ? `Buyer Commission (${s.buyer_commission_percent}%) - ${s.buyer_agent_name}` : `Buyer Commission (${s.buyer_commission_percent}%)`;
+    row(label + (s.buyer_agent_brokerage ? ` / ${s.buyer_agent_brokerage}` : "") + ":", amt);
+  }
   row("Gross Commission:", fmt$(s.gross_commission));
   row(`Brokerage Split (${s.brokerage_split_percent || 0}%):`, `-${fmt$(s.brokerage_split_amount)}`);
   if (s.referral_fee) row("Referral Fee:", `-${fmt$(s.referral_fee)}`);
