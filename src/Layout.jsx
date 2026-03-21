@@ -143,7 +143,7 @@ export default function Layout({ children, currentPageName }) {
       <InstallPrompt />
 
       <div
-        className="min-h-screen flex overflow-x-hidden w-full"
+        className="h-screen flex overflow-hidden w-full"
         style={{ backgroundColor: "var(--bg-primary)", color: "var(--text-primary)" }}
       >
         {/* Mobile overlay */}
