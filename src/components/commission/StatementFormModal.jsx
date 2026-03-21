@@ -201,7 +201,7 @@ export default function StatementFormModal({ statement, currentUser, onClose, on
               </div>
               <div>
                 <Label className="text-sm font-medium text-gray-700">Title Company Email</Label>
-                <Input type="email" className="mt-1.5" value={form.title_company_email} onChange={e => set("title_company_email", e.target.value)} placeholder="title@company.com" />
+                <Input type="text" className="mt-1.5" value={form.title_company_email} onChange={e => set("title_company_email", e.target.value)} placeholder="title@company.com" />
               </div>
             </div>
 
