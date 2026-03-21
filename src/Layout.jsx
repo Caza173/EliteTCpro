@@ -320,7 +320,7 @@ export default function Layout({ children, currentPageName }) {
 
           {/* Page content */}
           <main
-            className="flex-1 p-4 lg:p-5 min-w-0 overflow-x-hidden"
+            className="flex-1 p-4 lg:p-5 min-w-0 overflow-y-auto overflow-x-hidden"
             style={{ backgroundColor: "var(--bg-primary)" }}
           >
             {children}
