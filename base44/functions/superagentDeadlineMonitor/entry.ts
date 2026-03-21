@@ -158,14 +158,51 @@ Deno.serve(async (req) => {
         const agentName = tx.agent || tx.agent_email;
         const subject = `${bucket === 'overdue' ? '[OVERDUE]' : 'Upcoming Deadline'} – ${label} – ${tx.address}`;
 
+        // Generate YES/NO response links for 24h bucket
+        let yesLink = null;
+        let noLink = null;
+        if (bucket === '24h' && isRegistered) {
+          const tokenPayload = {
+            transaction_id: tx.id,
+            deadline_type: field,
+            agent_email: tx.agent_email,
+            expires_at: new Date(now.getTime() + 24 * 60 * 60 * 1000).toISOString(),
+          };
+          const signedToken = await signDeadlineToken(tokenPayload);
+          yesLink = `${APP_URL}/#/DeadlineResponse?action=yes&token=${encodeURIComponent(signedToken)}`;
+          noLink  = `${APP_URL}/#/DeadlineResponse?action=no&token=${encodeURIComponent(signedToken)}`;
+        }
+
         // Only send email if agent is a registered user
         if (isRegistered) {
-          await base44.asServiceRole.integrations.Core.SendEmail({
-            to: tx.agent_email,
-            from_name: 'EliteTC Superagent',
-            subject,
-            body: buildEmailHtml(agentName, label, tx.address, deadline, bucket, health),
-          });
+          const emailHtml = buildEmailHtml(agentName, label, tx.address, deadline, bucket, health, yesLink, noLink);
+          // Use Gmail connector for 24h (with response buttons), fallback to Core for other buckets
+          if (bucket === '24h') {
+            try {
+              const { accessToken } = await base44.asServiceRole.connectors.getConnection('gmail');
+              const mime = [
+                `From: EliteTC Superagent <me>`,
+                `To: ${tx.agent_email}`,
+                `Subject: =?UTF-8?B?${btoa(unescape(encodeURIComponent(subject)))}?=`,
+                `MIME-Version: 1.0`,
+                `Content-Type: text/html; charset=utf-8`,
+                ``,
+                emailHtml,
+              ].join('\r\n');
+              const encoded = btoa(unescape(encodeURIComponent(mime)))
+                .replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+              await fetch('https://gmail.googleapis.com/gmail/v1/users/me/messages/send', {
+                method: 'POST',
+                headers: { Authorization: `Bearer ${accessToken}`, 'Content-Type': 'application/json' },
+                body: JSON.stringify({ raw: encoded }),
+              });
+            } catch (gmailErr) {
+              console.warn('Gmail send failed, falling back to Core:', gmailErr.message);
+              await base44.asServiceRole.integrations.Core.SendEmail({ to: tx.agent_email, from_name: 'EliteTC Superagent', subject, body: emailHtml });
+            }
+          } else {
+            await base44.asServiceRole.integrations.Core.SendEmail({ to: tx.agent_email, from_name: 'EliteTC Superagent', subject, body: emailHtml });
+          }
         }
 
         // Always create in-app notification (for TC visibility even if agent not registered)
