@@ -167,7 +167,7 @@ export default function FuelProrationDetailModal({ proration: p, onClose, onUpda
 <p>Best regards,<br/>Transaction Coordinator</p>`;
 
     await base44.functions.invoke("sendCommissionEmail", {
-      to, subject: `Fuel Proration Statement — ${p.property_address}`, htmlBody, pdfBase64, pdfFileName,
+      to, subject: `Fuel Proration Statement - ${p.property_address}`, htmlBody, pdfBase64, pdfFileName,
     });
     await updateMutation.mutateAsync({ status: "sent" });
     setSending(null);
