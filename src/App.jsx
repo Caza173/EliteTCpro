@@ -1,5 +1,6 @@
 import { Toaster } from "@/components/ui/toaster"
 import UserManagement from './pages/UserManagement'
+import Contacts from './pages/Contacts'
 import DotloopIntegration from './pages/DotloopIntegration'
 import CommissionStatements from './pages/CommissionStatements'
 import FuelProrations from './pages/FuelProrations'
@@ -74,6 +75,11 @@ const AuthenticatedApp = () => {
       <Route path="/CommissionStatements" element={
         <LayoutWrapper currentPageName="CommissionStatements">
           <CommissionStatements />
+        </LayoutWrapper>
+      } />
+      <Route path="/Contacts" element={
+        <LayoutWrapper currentPageName="Contacts">
+          <Contacts />
         </LayoutWrapper>
       } />
       <Route path="/FuelProrations" element={

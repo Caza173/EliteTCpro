@@ -25,6 +25,7 @@ import {
   ClipboardList,
   Receipt,
   Droplets,
+  BookUser,
 } from "lucide-react";
 import NotificationBell from "./components/dashboard/NotificationBell";
 import { ThemeProvider } from "./components/theme/ThemeContext";
@@ -35,6 +36,7 @@ import OfflineBanner from "./components/pwa/OfflineBanner";
 const TC_NAV = [
   { label: "Dashboard",      page: "Dashboard",      icon: LayoutDashboard },
   { label: "Transactions",   page: "Transactions",   icon: FileText },
+  { label: "Contacts",       page: "Contacts",       icon: BookUser },
   { label: "Deal Intake",    page: "AgentIntake",    icon: UserPlus },
   { label: "User Management",page: "UserManagement", icon: Users },
   { label: "Commission",     page: "CommissionStatements", icon: Receipt },
@@ -45,6 +47,7 @@ const TC_NAV = [
 const OWNER_NAV = [
   { label: "Dashboard",      page: "Dashboard",      icon: LayoutDashboard },
   { label: "Transactions",   page: "Transactions",   icon: FileText },
+  { label: "Contacts",       page: "Contacts",       icon: BookUser },
   { label: "Deal Intake",    page: "AgentIntake",    icon: UserPlus },
   { label: "User Management",page: "UserManagement", icon: Users },
   { label: "Commission",     page: "CommissionStatements", icon: Receipt },
