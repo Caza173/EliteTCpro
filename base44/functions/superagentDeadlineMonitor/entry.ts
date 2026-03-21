@@ -59,7 +59,7 @@ function getHealthStatus(tx, now) {
   return { status: "Healthy", reason: "No immediate concerns" };
 }
 
-function buildEmailHtml(agentName, label, address, deadline, bucket, health) {
+function buildEmailHtml(agentName, label, address, deadline, bucket, health, yesLink, noLink) {
   const deadlineDate = new Date(deadline).toLocaleDateString('en-US', {
     weekday: 'long', month: 'long', day: 'numeric', year: 'numeric'
   });
@@ -69,8 +69,29 @@ function buildEmailHtml(agentName, label, address, deadline, bucket, health) {
 
   const healthColor = health.status === "Critical" ? "#ef4444" : health.status === "Needs Attention" ? "#f59e0b" : "#22c55e";
 
+  const responseSection = (bucket === '24h' && yesLink && noLink) ? `
+    <div style="margin:20px 0;padding:18px;border:1px solid #e2e8f0;border-radius:12px;background:#fafafa;">
+      <p style="margin:0 0 6px;font-size:13px;font-weight:700;color:#0f172a;text-transform:uppercase;letter-spacing:0.05em;">Action Required</p>
+      <p style="margin:0 0 16px;color:#475569;font-size:14px;">Does this deadline need an extension?</p>
+      <table style="border-collapse:collapse;">
+        <tr>
+          <td style="padding-right:12px;">
+            <a href="${yesLink}" style="display:inline-block;background:#dc2626;color:white;text-decoration:none;padding:12px 28px;border-radius:8px;font-size:14px;font-weight:700;letter-spacing:0.01em;">
+              YES — Request Extension
+            </a>
+          </td>
+          <td>
+            <a href="${noLink}" style="display:inline-block;background:#16a34a;color:white;text-decoration:none;padding:12px 28px;border-radius:8px;font-size:14px;font-weight:700;letter-spacing:0.01em;">
+              NO — On Track
+            </a>
+          </td>
+        </tr>
+      </table>
+      <p style="margin:12px 0 0;color:#94a3b8;font-size:11px;">Links expire in 24 hours. If no response is received, your TC will be notified.</p>
+    </div>` : '';
+
   return `
-    <div style="font-family:sans-serif;max-width:600px;margin:0 auto;padding:24px;">
+    <div style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;max-width:600px;margin:0 auto;padding:24px;">
       <div style="text-align:center;margin-bottom:20px;">
         <h1 style="color:#c9a227;font-size:22px;margin:0;">EliteTC</h1>
         <p style="color:#64748b;font-size:13px;margin:4px 0;">Transaction Coordinator Platform</p>
@@ -85,16 +106,8 @@ function buildEmailHtml(agentName, label, address, deadline, bucket, health) {
           <p style="margin:2px 0 0;color:#64748b;font-size:12px;">${health.reason}</p>
         </div>
       </div>
-      <p style="color:#475569;font-size:14px;">
-        Hi ${agentName}, please let us know if you need the TC to prepare:
-      </p>
-      <ul style="color:#64748b;font-size:14px;line-height:1.8;">
-        <li>An inspection addendum or extension</li>
-        <li>A financing deadline extension</li>
-        <li>A contract modification</li>
-        <li>Any other document</li>
-      </ul>
-      <p style="color:#64748b;font-size:13px;">You can respond directly in the EliteTC platform.</p>
+      ${responseSection}
+      <p style="color:#64748b;font-size:13px;">Your TC is monitoring this transaction and is available to prepare any needed documents.</p>
       <div style="text-align:center;margin-top:20px;padding-top:16px;border-top:1px solid #e2e8f0;">
         <p style="color:#94a3b8;font-size:11px;">EliteTC Superagent — Automated Monitoring</p>
       </div>
