@@ -78,6 +78,10 @@ function buildPDF(s, logoDataUrl) {
   section("Agent Information");
   row("Agent Name:", s.agent_name);
   row("Agent Email:", s.agent_email);
+  if (s.listing_agent_name) row("Listing Agent:", s.listing_agent_name);
+  if (s.listing_agent_brokerage) row("Listing Brokerage:", s.listing_agent_brokerage);
+  if (s.buyer_agent_name) row("Buyer Agent:", s.buyer_agent_name);
+  if (s.buyer_agent_brokerage) row("Buyer Brokerage:", s.buyer_agent_brokerage);
   y += 4;
 
   section("Commission Breakdown");
