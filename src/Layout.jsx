@@ -40,8 +40,9 @@ const TC_NAV = [
   { label: "Deal Intake",    page: "AgentIntake",    icon: UserPlus },
   { label: "User Management",page: "UserManagement", icon: Users },
   { label: "Commission",     page: "CommissionStatements", icon: Receipt },
-  { label: "Fuel Prorations",page: "FuelProrations", icon: Droplets },
-  { label: "Settings",       page: "Settings",       icon: Settings },
+  { label: "Fuel Prorations",page: "FuelProrations",   icon: Droplets },
+  { label: "Addendum Builder",page: "AddendumBuilder", icon: ClipboardList },
+  { label: "Settings",       page: "Settings",         icon: Settings },
 ];
 
 const OWNER_NAV = [
@@ -51,8 +52,9 @@ const OWNER_NAV = [
   { label: "Deal Intake",    page: "AgentIntake",    icon: UserPlus },
   { label: "User Management",page: "UserManagement", icon: Users },
   { label: "Commission",     page: "CommissionStatements", icon: Receipt },
-  { label: "Fuel Prorations",page: "FuelProrations", icon: Droplets },
-  { label: "Billing",        page: "Billing",        icon: CreditCard },
+  { label: "Fuel Prorations",  page: "FuelProrations",   icon: Droplets },
+  { label: "Addendum Builder",page: "AddendumBuilder",  icon: ClipboardList },
+  { label: "Billing",          page: "Billing",          icon: CreditCard },
   { label: "Audit Log",      page: "AuditLog",       icon: Shield },
   { label: "Settings",       page: "Settings",       icon: Settings },
 ];
@@ -84,6 +86,7 @@ const PAGE_TITLES = {
   Dashboard:         "Dashboard",
   Transactions:      "Transactions",
   CommissionStatements: "Commission Statements",
+  AddendumBuilder: "Addendum Builder",
   Contacts: "Contacts",
 };
 
