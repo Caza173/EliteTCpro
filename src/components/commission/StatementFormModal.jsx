@@ -208,15 +208,27 @@ export default function StatementFormModal({ statement, currentUser, onClose, on
             {gross > 0 && (
               <div className="bg-blue-50 border border-blue-100 rounded-xl p-4">
                 <p className="text-xs font-semibold uppercase tracking-wider text-blue-500 mb-3">Live Calculation</p>
-                <div className="grid grid-cols-3 gap-3 text-center">
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-center">
                   <div>
                     <p className="text-xs text-gray-500">Gross Commission</p>
                     <p className="text-base font-bold text-gray-900">${gross.toLocaleString("en-US", { minimumFractionDigits: 2 })}</p>
                   </div>
                   <div>
                     <p className="text-xs text-gray-500">Brokerage Split</p>
-                    <p className="text-base font-bold text-gray-900">${brokerageSplit.toLocaleString("en-US", { minimumFractionDigits: 2 })}</p>
+                    <p className="text-base font-bold text-gray-900">−${brokerageSplit.toLocaleString("en-US", { minimumFractionDigits: 2 })}</p>
                   </div>
+                  {parse(form.referral_fee) > 0 && (
+                    <div>
+                      <p className="text-xs text-gray-500">Referral Fee</p>
+                      <p className="text-base font-bold text-red-600">−${parse(form.referral_fee).toLocaleString("en-US", { minimumFractionDigits: 2 })}</p>
+                    </div>
+                  )}
+                  {(parse(form.tc_fee) > 0 || parse(form.transaction_fee) > 0) && (
+                    <div>
+                      <p className="text-xs text-gray-500">Other Fees</p>
+                      <p className="text-base font-bold text-red-600">−${(parse(form.tc_fee) + parse(form.transaction_fee)).toLocaleString("en-US", { minimumFractionDigits: 2 })}</p>
+                    </div>
+                  )}
                   <div>
                     <p className="text-xs text-gray-500">Agent Net</p>
                     <p className="text-base font-bold text-emerald-700">${agentNet.toLocaleString("en-US", { minimumFractionDigits: 2 })}</p>
