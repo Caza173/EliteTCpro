@@ -604,11 +604,28 @@ export default function TransactionDetail() {
                   <CardTitle className="text-base font-semibold">Key Deadlines</CardTitle>
                   <p className="text-sm text-gray-500">Click the pencil to edit any date</p>
                 </div>
-                <Button size="sm" variant="outline" className="text-blue-600 hover:text-blue-700 hover:bg-blue-50 border-blue-200"
-                  onClick={handleSendTimeline} disabled={sendingTimeline}>
-                  <Send className="w-3.5 h-3.5 mr-1.5" />
-                  {sendingTimeline ? "Sending..." : "Send Timeline"}
-                </Button>
+                <div className="flex items-center gap-2">
+                  <Button size="sm" variant="outline" className="text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50 border-emerald-200"
+                    onClick={async () => {
+                      setSyncingCalendar(true);
+                      try {
+                        const res = await base44.functions.invoke("syncTransactionDeadlinesToCalendar", { transaction_id: transaction.id });
+                        setAlertDialog({ open: true, title: "Calendar Synced", message: res.data?.message || "Deadlines synced to Google Calendar. Agent and client will receive calendar invitations." });
+                      } catch (e) {
+                        setAlertDialog({ open: true, title: "Sync Failed", message: e?.message || "Could not sync to Google Calendar." });
+                      }
+                      setSyncingCalendar(false);
+                    }}
+                    disabled={syncingCalendar}>
+                    <CalendarDays className="w-3.5 h-3.5 mr-1.5" />
+                    {syncingCalendar ? "Syncing..." : "Sync to Calendar"}
+                  </Button>
+                  <Button size="sm" variant="outline" className="text-blue-600 hover:text-blue-700 hover:bg-blue-50 border-blue-200"
+                    onClick={handleSendTimeline} disabled={sendingTimeline}>
+                    <Send className="w-3.5 h-3.5 mr-1.5" />
+                    {sendingTimeline ? "Sending..." : "Send Timeline"}
+                  </Button>
+                </div>
               </div>
             </CardHeader>
             <CardContent>
