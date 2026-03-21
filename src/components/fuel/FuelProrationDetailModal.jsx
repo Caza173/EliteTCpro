@@ -63,6 +63,8 @@ function buildPDF(p, logoDataUrl) {
   row("Closing Date:", fmtDate(p.closing_date));
   row("Buyer:", p.buyer_name || "—");
   row("Seller:", p.seller_name || "—");
+  if (p.buyer_agent_name) row("Buyer's Agent:", p.buyer_agent_name);
+  if (p.seller_agent_name) row("Seller's Agent:", p.seller_agent_name);
   y += 4;
 
   section("Fuel Tank Proration");
