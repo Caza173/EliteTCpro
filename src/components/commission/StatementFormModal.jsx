@@ -36,6 +36,10 @@ const BLANK = {
   referral_fee: 0,
   tc_fee: 0,
   transaction_fee: 0,
+  listing_agent_name: "",
+  listing_agent_brokerage: "",
+  buyer_agent_name: "",
+  buyer_agent_brokerage: "",
   title_company_email: "",
   notes: "",
 };
