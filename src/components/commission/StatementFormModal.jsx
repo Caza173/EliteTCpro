@@ -68,6 +68,8 @@ export default function StatementFormModal({ statement, currentUser, onClose, on
     }));
   };
 
+  const [saveError, setSaveError] = useState(null);
+
   const saveMutation = useMutation({
     mutationFn: (data) => {
       const payload = {
@@ -76,8 +78,10 @@ export default function StatementFormModal({ statement, currentUser, onClose, on
         brokerage_split_amount: brokerageSplit,
         agent_net: agentNet,
         brokerage_id: currentUser?.data?.brokerage_id,
-        purchase_price: parse(data.purchase_price) || undefined,
+        purchase_price: parse(data.purchase_price) || 0,
         brokerage_split_percent: parse(data.brokerage_split_percent),
+        listing_commission_percent: parse(data.listing_commission_percent),
+        buyer_commission_percent: parse(data.buyer_commission_percent),
         referral_fee: parse(data.referral_fee),
         tc_fee: parse(data.tc_fee),
         transaction_fee: parse(data.transaction_fee),
@@ -86,6 +90,7 @@ export default function StatementFormModal({ statement, currentUser, onClose, on
       return base44.entities.CommissionStatement.create({ ...payload, status: "draft" });
     },
     onSuccess: onSaved,
+    onError: (err) => setSaveError(err?.message || "Failed to save. Please try again."),
   });
 
   const handleSubmit = (e) => { e.preventDefault(); saveMutation.mutate(form); };
