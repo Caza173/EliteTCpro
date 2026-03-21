@@ -236,6 +236,9 @@ export default function StatementFormModal({ statement, currentUser, onClose, on
             </div>
           </div>
 
+          {saveError && (
+            <p className="px-5 pb-2 text-xs text-red-600">{saveError}</p>
+          )}
           <div className="flex justify-end gap-2 px-5 pb-5 flex-shrink-0">
             <Button type="button" variant="outline" onClick={onClose}>Cancel</Button>
             <Button type="submit" disabled={saveMutation.isPending} className="bg-blue-600 hover:bg-blue-700 text-white">
