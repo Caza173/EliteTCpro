@@ -286,18 +286,17 @@ export default function Dashboard() {
           <div className="space-y-5">
             <div className="theme-card overflow-hidden">
               <div className="px-4 py-3 border-b" style={{ borderColor: "var(--border)" }}>
-                <h3 className="text-sm font-semibold" style={{ color: "var(--text-primary)" }}>Alerts</h3>
+                <h3 className="text-sm font-semibold" style={{ color: "var(--text-primary)" }}>Deadline Calendar</h3>
               </div>
-              <div className="p-4"><TransactionAlertsPanel /></div>
+              <div className="p-4">
+                {isLoading ? <Skeleton className="h-64 rounded-xl" /> : <DeadlineCalendarView transactions={transactions} />}
+              </div>
             </div>
             <div className="theme-card overflow-hidden">
               <div className="px-4 py-3 border-b" style={{ borderColor: "var(--border)" }}>
-                <h3 className="text-sm font-semibold" style={{ color: "var(--text-primary)" }}>Upcoming Deadlines</h3>
+                <h3 className="text-sm font-semibold" style={{ color: "var(--text-primary)" }}>Alerts</h3>
               </div>
-              <div className="p-4">
-                {isLoading ? <div className="space-y-2">{[1,2,3].map(i => <Skeleton key={i} className="h-12 rounded" />)}</div>
-                  : <DeadlineSummaryPanel transactions={transactions} compact={true} />}
-              </div>
+              <div className="p-4"><TransactionAlertsPanel /></div>
             </div>
           </div>
         </div>
