@@ -288,7 +288,7 @@ export default function Layout({ children, currentPageName }) {
         </aside>
 
         {/* Main content */}
-        <div className="flex-1 flex flex-col min-h-screen min-w-0 overflow-x-hidden">
+        <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
           {/* Top bar */}
           <header
             className="sticky top-0 z-30 backdrop-blur-sm px-4 lg:px-5 h-12 flex items-center gap-3 flex-shrink-0"
