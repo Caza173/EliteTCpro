@@ -16,7 +16,7 @@ Deno.serve(async (req) => {
     if (!transaction_id) return Response.json({ error: 'transaction_id required' }, { status: 400 });
     if (!data || typeof data !== 'object') return Response.json({ error: 'data required' }, { status: 400 });
 
-    const updated = await base44.asServiceRole.entities.Transaction.update(transaction_id, data);
+    const updated = await base44.entities.Transaction.update(transaction_id, data);
     return Response.json({ success: true, data: updated });
   } catch (error) {
     console.error('updateTransaction error:', error.message);
