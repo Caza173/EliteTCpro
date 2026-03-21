@@ -41,6 +41,8 @@ const BLANK = {
   property_address: "",
   buyer_name: "",
   seller_name: "",
+  buyer_agent_name: "",
+  seller_agent_name: "",
   closing_date: "",
   agent_email: "",
   title_company_email: "",
