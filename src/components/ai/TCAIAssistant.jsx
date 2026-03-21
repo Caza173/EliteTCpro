@@ -132,25 +132,36 @@ const QUICK_PROMPTS = [
   "What are the next steps?",
 ];
 
-export default function TCAIAssistant({ transaction, currentUser }) {
+export default function TCAIAssistant({ transaction: initialTransaction, currentUser }) {
   const [messages, setMessages] = useState([
     {
       role: "assistant",
-      content: `Hello! I'm your AI Transaction Coordinator for **${transaction.address}**. I have full context on this deal including parties, deadlines, documents, and compliance status. How can I help you today?`,
+      content: `Hello! I'm your AI Transaction Coordinator for **${initialTransaction.address}**. I have full context on this deal including parties, deadlines, documents, and compliance status. How can I help you today?`,
     },
   ]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
   const bottomRef = useRef(null);
 
+  // Always fetch fresh transaction data so AI has latest edits
+  const { data: txList = [] } = useQuery({
+    queryKey: ["transactions"],
+    queryFn: () => base44.entities.Transaction.list(),
+    staleTime: 0,
+    refetchInterval: 10_000,
+  });
+  const transaction = txList.find(t => t.id === initialTransaction.id) || initialTransaction;
+
   const { data: documents = [] } = useQuery({
     queryKey: ["documents", transaction.id],
     queryFn: () => base44.entities.Document.filter({ transaction_id: transaction.id }),
+    staleTime: 0,
   });
 
   const { data: checklistItems = [] } = useQuery({
     queryKey: ["checklist", transaction.id],
     queryFn: () => base44.entities.DocumentChecklistItem.filter({ transaction_id: transaction.id }),
+    staleTime: 0,
   });
 
   const { data: complianceReports = [] } = useQuery({
