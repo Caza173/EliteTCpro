@@ -17,8 +17,9 @@ function calcCommission(form) {
     : parse(form.listing_commission_percent) + parse(form.buyer_commission_percent);
   const gross = price * sidePercent / 100;
   const brokerageSplit = gross * parse(form.brokerage_split_percent) / 100;
-  const agentNet = gross - brokerageSplit - parse(form.referral_fee) - parse(form.tc_fee) - parse(form.transaction_fee);
-  return { gross, brokerageSplit, agentNet };
+  const referralAmount = gross * parse(form.referral_fee) / 100;
+  const agentNet = gross - brokerageSplit - referralAmount - parse(form.tc_fee) - parse(form.transaction_fee);
+  return { gross, brokerageSplit, referralAmount, agentNet };
 }
 
 const BLANK = {
