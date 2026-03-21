@@ -246,7 +246,9 @@ export default function StatementDetailModal({ statement: s, onClose, onEdit, on
               { label: "Closing Date", value: fmtDate(s.closing_date) },
               { label: "Purchase Price", value: fmt$(s.purchase_price) },
               { label: "Title Co. Email", value: s.title_company_email || "—" },
-            ].map(item => (
+              s.listing_agent_name ? { label: "Listing Agent", value: `${s.listing_agent_name}${s.listing_agent_brokerage ? ` — ${s.listing_agent_brokerage}` : ""}` } : null,
+              s.buyer_agent_name ? { label: "Buyer Agent", value: `${s.buyer_agent_name}${s.buyer_agent_brokerage ? ` — ${s.buyer_agent_brokerage}` : ""}` } : null,
+            ].filter(Boolean).map(item => (
               <div key={item.label}>
                 <p className="text-xs font-medium text-gray-400">{item.label}</p>
                 <p className="text-sm font-medium text-gray-800 mt-0.5 break-words">{item.value}</p>
