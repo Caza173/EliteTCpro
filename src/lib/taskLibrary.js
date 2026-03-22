@@ -1,98 +1,120 @@
 // ─── ELITETC TASK LIBRARY ─────────────────────────────────────────────────────
-// Canonical task templates per phase. Phase numbers match PhaseChecklist nums.
+// 7-Phase lifecycle: Pre-Listing → Active Listing → Under Contract →
+//                    Due Diligence → Pending → Closing → Post-Close
 
 export const PHASE_TASK_LIBRARY = [
   {
-    phaseNum: 3,
-    phaseId: "offer_accepted_escrow",
-    label: "Offer Accepted & Escrow",
+    phaseNum: 1,
+    phaseId: "pre_listing",
+    label: "Pre-Listing",
+    appliesTo: ["listing", "seller", "dual"],
     tasks: [
-      { id: "ps_uploaded",           name: "Executed Purchase & Sales uploaded",          required: true,  source: "system" },
-      { id: "effective_date",         name: "Effective date confirmed",                    required: true,  source: "system" },
-      { id: "earnest_money",          name: "Earnest money received",                      required: true,  source: "system" },
-      { id: "buyer_agency",           name: "Buyer agency agreement uploaded",             required: true,  source: "system" },
-      { id: "seller_disclosures",     name: "Seller disclosures received",                 required: true,  source: "system" },
-      { id: "create_tx_file",         name: "Create transaction file (SkySlope/Dotloop)",  required: true,  source: "system" },
-      { id: "add_all_parties",        name: "Add all parties (buyer, seller, agent, lender, title)", required: true, source: "system" },
-      { id: "confirm_escrow",         name: "Confirm escrow agent",                        required: true,  source: "system" },
+      { id: "create_tx_file",         name: "Create transaction file (SkySlope/Dotloop)",      required: true,  source: "system" },
+      { id: "upload_listing_agreement",name: "Upload listing agreement",                        required: true,  source: "system" },
+      { id: "verify_seller_names",     name: "Verify seller names match deed",                  required: true,  source: "system" },
+      { id: "enter_property_system",   name: "Enter property into system",                      required: true,  source: "system" },
+      { id: "order_photos",            name: "Order photos",                                    required: false, source: "system" },
+      { id: "schedule_photos",         name: "Schedule photo session",                          required: false, source: "system" },
+      { id: "collect_seller_disclosures", name: "Collect seller disclosures",                  required: true,  source: "system" },
+      { id: "lead_paint_disclosure",   name: "Lead paint disclosure (if applicable)",           required: false, source: "system" },
+      { id: "hoa_docs",                name: "HOA docs collected (if applicable)",              required: false, source: "system" },
+      { id: "showing_instructions",    name: "Create showing instructions",                     required: false, source: "system" },
+      { id: "install_lockbox",         name: "Install lockbox",                                 required: false, source: "system" },
+      { id: "confirm_utilities_access",name: "Confirm utilities & access",                      required: false, source: "system" },
+    ],
+  },
+  {
+    phaseNum: 2,
+    phaseId: "active_listing",
+    label: "Active Listing",
+    appliesTo: ["listing", "seller", "dual"],
+    tasks: [
+      { id: "input_mls",               name: "Input listing into MLS",                          required: true,  source: "system" },
+      { id: "upload_photos_mls",       name: "Upload photos to MLS",                           required: true,  source: "system" },
+      { id: "map_verification",        name: "Map/location verification",                       required: true,  source: "system" },
+      { id: "syndication_live",        name: "Syndication confirmed live",                      required: false, source: "system" },
+      { id: "track_showings",          name: "Track showings",                                  required: false, source: "system" },
+      { id: "weekly_seller_update",    name: "Weekly seller update sent",                       required: false, source: "system" },
+    ],
+  },
+  {
+    phaseNum: 3,
+    phaseId: "under_contract",
+    label: "Under Contract",
+    appliesTo: ["buyer", "seller", "dual", "listing"],
+    tasks: [
+      { id: "psa_uploaded",            name: "Executed Purchase & Sale uploaded",               required: true,  source: "system" },
+      { id: "effective_date",          name: "Effective date confirmed",                        required: true,  source: "system" },
+      { id: "earnest_money",           name: "Earnest money received",                          required: true,  source: "system" },
+      { id: "buyer_agency",            name: "Buyer agency agreement uploaded",                 required: true,  source: "system" },
+      { id: "seller_disclosures_uctr", name: "Seller disclosures received",                    required: true,  source: "system" },
+      { id: "add_all_parties",         name: "Add all parties (buyer, seller, lender, title)", required: true,  source: "system" },
+      { id: "confirm_escrow",          name: "Confirm escrow / title company",                  required: true,  source: "system" },
+      { id: "enter_critical_dates",    name: "Enter all critical dates into system",            required: true,  source: "system" },
+      { id: "timeline_email",          name: "Timeline email sent to all parties",              required: true,  source: "system" },
+      { id: "calendar_sync",           name: "Deadlines synced to calendar",                   required: false, source: "system" },
+      { id: "verify_signatures",       name: "Verify all signatures",                           required: true,  source: "system" },
+    ],
+  },
+  {
+    phaseNum: 4,
+    phaseId: "due_diligence",
+    label: "Due Diligence",
+    appliesTo: ["buyer", "seller", "dual"],
+    tasks: [
+      { id: "inspection_ordered",      name: "Inspection ordered",                              required: true,  source: "system" },
+      { id: "inspection_scheduled",    name: "Inspection scheduled",                            required: true,  source: "system" },
+      { id: "inspection_completed",    name: "Inspection completed",                            required: true,  source: "system" },
+      { id: "inspection_report",       name: "Inspection report uploaded",                      required: true,  source: "system" },
+      { id: "repair_negotiations",     name: "Repair negotiations completed",                   required: true,  source: "system" },
+      { id: "inspection_addendum",     name: "Inspection addendum drafted (if applicable)",    required: false, source: "system" },
+      { id: "contingency_removed",     name: "Inspection contingency removed",                  required: true,  source: "system" },
     ],
   },
   {
     phaseNum: 5,
-    phaseId: "inspection_repair",
-    label: "Inspection & Repair",
+    phaseId: "pending",
+    label: "Pending",
+    appliesTo: ["buyer", "seller", "dual"],
     tasks: [
-      { id: "inspection_ordered",     name: "Inspection ordered",                          required: true,  source: "system" },
-      { id: "inspection_completed",   name: "Inspection completed",                        required: true,  source: "system" },
-      { id: "inspection_report",      name: "Inspection report uploaded",                  required: true,  source: "system" },
-      { id: "repair_negotiations",    name: "Repair negotiations completed",                required: true,  source: "system" },
-      { id: "addendum_created",       name: "Addendum created (if applicable)",            required: true,  source: "system" },
-      { id: "contingency_removed",    name: "Inspection contingency removed",               required: true,  source: "system" },
+      { id: "appraisal_ordered",       name: "Appraisal ordered",                              required: true,  source: "system" },
+      { id: "appraisal_scheduled",     name: "Appraisal scheduled",                            required: true,  source: "system" },
+      { id: "appraisal_received",      name: "Appraisal received",                             required: true,  source: "system" },
+      { id: "lender_docs",             name: "Buyer submitted lender documents",               required: true,  source: "system" },
+      { id: "conditional_approval",    name: "Conditional approval received",                  required: true,  source: "system" },
+      { id: "conditions_cleared",      name: "Loan conditions cleared",                        required: true,  source: "system" },
+      { id: "ctc_received",            name: "Clear to close received",                        required: true,  source: "system" },
+      { id: "title_completed",         name: "Title work completed",                           required: true,  source: "system" },
+      { id: "alta_cd_received",        name: "ALTA/CD received",                               required: true,  source: "system" },
+    ],
+  },
+  {
+    phaseNum: 6,
+    phaseId: "closing",
+    label: "Closing",
+    appliesTo: ["buyer", "seller", "dual"],
+    tasks: [
+      { id: "closing_scheduled",       name: "Closing scheduled",                              required: true,  source: "system" },
+      { id: "walkthrough_scheduled",   name: "Final walkthrough scheduled",                    required: true,  source: "system" },
+      { id: "walkthrough_completed",   name: "Final walkthrough completed",                    required: true,  source: "system" },
+      { id: "docs_signed",             name: "Closing documents signed",                       required: true,  source: "system" },
+      { id: "funds_received",          name: "Funds received",                                 required: true,  source: "system" },
+      { id: "deed_recorded",           name: "Deed recorded",                                  required: true,  source: "system" },
+      { id: "commission_submitted",    name: "Commission statement submitted",                 required: true,  source: "system" },
+      { id: "hud_alta_uploaded",       name: "HUD/ALTA uploaded",                              required: true,  source: "system" },
     ],
   },
   {
     phaseNum: 7,
-    phaseId: "appraisal_ordered",
-    label: "Appraisal Ordered",
+    phaseId: "post_close",
+    label: "Post-Close",
+    appliesTo: ["buyer", "seller", "dual"],
     tasks: [
-      { id: "appraisal_ordered",      name: "Appraisal ordered",                           required: true,  source: "system" },
-      { id: "appraisal_scheduled",    name: "Appraisal scheduled",                         required: true,  source: "system" },
-      { id: "appraisal_completed",    name: "Appraisal completed",                         required: false, source: "system" },
-      { id: "appraisal_received",     name: "Appraisal received",                          required: true,  source: "system" },
-    ],
-  },
-  {
-    phaseNum: 8,
-    phaseId: "loan_processing",
-    label: "Loan Processing",
-    tasks: [
-      { id: "lender_docs",            name: "Buyer submitted lender documents",            required: true,  source: "system" },
-      { id: "loan_app_completed",     name: "Loan application completed",                  required: true,  source: "system" },
-      { id: "conditional_approval",   name: "Conditional approval received",               required: true,  source: "system" },
-      { id: "conditions_cleared",     name: "Conditions cleared",                          required: true,  source: "system" },
-    ],
-  },
-  {
-    phaseNum: 9,
-    phaseId: "clear_to_close",
-    label: "Clear to Close",
-    tasks: [
-      { id: "ctc_received",           name: "Clear to close received",                     required: true,  source: "system" },
-      { id: "closing_scheduled",      name: "Closing scheduled",                           required: true,  source: "system" },
-      { id: "alta_cd_received",       name: "ALTA/CD received",                            required: true,  source: "system" },
-      { id: "title_completed",        name: "Title work completed",                        required: true,  source: "system" },
-    ],
-  },
-  {
-    phaseNum: 10,
-    phaseId: "final_walkthrough",
-    label: "Final Walkthrough",
-    tasks: [
-      { id: "walkthrough_scheduled",  name: "Walkthrough scheduled",                       required: true,  source: "system" },
-      { id: "walkthrough_completed",  name: "Walkthrough completed",                       required: true,  source: "system" },
-      { id: "issues_resolved",        name: "Issues resolved",                             required: true,  source: "system" },
-    ],
-  },
-  {
-    phaseNum: 11,
-    phaseId: "closing",
-    label: "Closing",
-    tasks: [
-      { id: "docs_signed",            name: "Closing documents signed",                    required: true,  source: "system" },
-      { id: "funds_received",         name: "Funds received",                              required: true,  source: "system" },
-      { id: "deed_recorded",          name: "Deed recorded",                               required: true,  source: "system" },
-      { id: "commission_submitted",   name: "Commission submitted",                        required: true,  source: "system" },
-    ],
-  },
-  {
-    phaseNum: 12,
-    phaseId: "post_closing",
-    label: "Post Closing",
-    tasks: [
-      { id: "docs_to_skyslope",       name: "All documents uploaded to SkySlope",          required: true,  source: "system" },
-      { id: "mls_closed",             name: "Transaction marked closed in MLS",            required: true,  source: "system" },
-      { id: "client_followup",        name: "Client follow-up initiated",                  required: true,  source: "system" },
-      { id: "client_gift",            name: "Client gift ordered",                         required: false, source: "system" },
+      { id: "docs_to_skyslope",        name: "All documents uploaded to SkySlope",             required: true,  source: "system" },
+      { id: "mls_closed",              name: "Transaction marked closed in MLS",               required: true,  source: "system" },
+      { id: "client_followup",         name: "Client follow-up initiated",                     required: true,  source: "system" },
+      { id: "client_gift",             name: "Client gift ordered",                            required: false, source: "system" },
+      { id: "start_followup_campaign", name: "Start follow-up campaign",                       required: false, source: "system" },
     ],
   },
 ];
@@ -140,4 +162,18 @@ export function getPhaseProgress(phaseNum, tasks = []) {
     required: required.length,
     requiredDone: required.filter(t => t.completed).length,
   };
+}
+
+/**
+ * Get phases relevant to a transaction type
+ */
+export function getPhasesForType(transactionType) {
+  return PHASE_TASK_LIBRARY.filter(p =>
+    !p.appliesTo || p.appliesTo.includes(transactionType)
+  );
+}
+
+/** Starting phase number based on deal type */
+export function getStartingPhase(dealType) {
+  return dealType === "listing" ? 1 : 3;
 }
