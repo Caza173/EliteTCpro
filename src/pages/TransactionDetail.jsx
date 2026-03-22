@@ -592,6 +592,7 @@ export default function TransactionDetail() {
                   currentPhase={transaction.phase || 1}
                   onTogglePhase={handleTogglePhase}
                   tasks={transaction.tasks || []}
+                  transactionType={transaction.transaction_type}
                   selectedPhase={selectedPhase}
                   onSelectPhase={async (num) => {
                     const next = selectedPhase === num ? null : num;
