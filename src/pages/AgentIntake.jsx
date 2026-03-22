@@ -165,11 +165,26 @@ export default function AgentIntake() {
   const handleSubmit = (e) => {
     e.preventDefault();
     const isListing = dealType === "listing";
+    const isListingUC = dealType === "listing_uc";
+    const isBuyerUC = dealType === "buyer_uc";
     const sellerList = sellers.filter(Boolean);
     const buyerList = buyers.filter(Boolean);
 
-    const startPhase = getStartingPhase(isListing ? "listing" : "buyer");
-    const tasks = isListing ? [] : generateSmartTasks(parsedData, form.is_cash_transaction, form);
+    let txType, txPhase, phase, tasks;
+    if (isListing) {
+      txType = "seller"; txPhase = "intake"; phase = 1;
+      tasks = [];
+    } else if (isListingUC) {
+      txType = "seller"; txPhase = "under_contract"; phase = 3;
+      tasks = generateTasksForPhase(3, null, "seller");
+    } else {
+      txType = "buyer"; txPhase = "under_contract"; phase = 3;
+      tasks = generateSmartTasks(parsedData, form.is_cash_transaction, form);
+      // Merge buyer-side phase 3 tasks
+      const phase3Tasks = generateTasksForPhase(3, null, "buyer");
+      const existingIds = new Set(tasks.map(t => t.id));
+      tasks = [...tasks, ...phase3Tasks.filter(t => !existingIds.has(t.id))];
+    }
 
     createMutation.mutate({
       ...form,
@@ -178,10 +193,10 @@ export default function AgentIntake() {
       seller: sellerList.join(" & "),
       sellers: sellerList,
       sale_price: form.sale_price ? Number(form.sale_price) : (parsedData?.purchasePrice || undefined),
-      transaction_type: isListing ? "seller" : (form.transaction_type || "buyer"),
-      transaction_phase: isListing ? "intake" : "under_contract",
-      status: isListing ? "active" : "active",
-      phase: startPhase,
+      transaction_type: txType,
+      transaction_phase: txPhase,
+      status: "active",
+      phase,
       phases_completed: [],
       tasks,
     });
