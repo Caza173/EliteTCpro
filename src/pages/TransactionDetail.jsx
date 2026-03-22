@@ -38,6 +38,7 @@ import TCAIAssistant from "../components/ai/TCAIAssistant";
 import ConfirmDialog from "../components/ui/ConfirmDialog";
 import SkySlopeSyncBadge from "../components/skyslope/SkySlopeSyncBadge";
 import EmailComposerModal from "../components/email/EmailComposerModal";
+import ConvertToTransactionButton from "../components/transactions/ConvertToTransactionButton";
 
 const TX_TABS = [
   { id: "overview",   label: "Overview",   icon: LayoutDashboard },
