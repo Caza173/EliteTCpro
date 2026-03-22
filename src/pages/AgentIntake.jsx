@@ -254,20 +254,21 @@ export default function AgentIntake() {
           </Button>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          {DEAL_TYPES.map(({ id, label, desc, icon: Icon }) => (
+        <div className="grid grid-cols-1 gap-3">
+          {DEAL_TYPES.map(({ id, label, desc, icon: Icon, color, bg }) => (
             <button
               key={id}
               onClick={() => selectDealType(id)}
-              className="flex flex-col items-start gap-3 p-6 rounded-2xl border-2 text-left transition-all hover:border-blue-400 hover:bg-blue-50/40 hover:shadow-md"
+              className="flex items-center gap-4 p-5 rounded-2xl border-2 text-left transition-all hover:shadow-md"
               style={{ borderColor: "var(--border)", background: "var(--card-bg)" }}
+              onMouseEnter={e => { e.currentTarget.style.borderColor = color; e.currentTarget.style.background = bg; }}
+              onMouseLeave={e => { e.currentTarget.style.borderColor = "var(--border)"; e.currentTarget.style.background = "var(--card-bg)"; }}
             >
-              <div className="w-12 h-12 rounded-xl flex items-center justify-center"
-                style={{ background: id === "listing" ? "#fef3c7" : "#eff6ff" }}>
-                <Icon className="w-6 h-6" style={{ color: id === "listing" ? "#d97706" : "#2563eb" }} />
+              <div className="w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0" style={{ background: bg }}>
+                <Icon className="w-6 h-6" style={{ color }} />
               </div>
               <div>
-                <p className="text-lg font-semibold" style={{ color: "var(--text-primary)" }}>{label}</p>
+                <p className="text-base font-semibold" style={{ color: "var(--text-primary)" }}>{label}</p>
                 <p className="text-sm mt-0.5" style={{ color: "var(--text-secondary)" }}>{desc}</p>
               </div>
             </button>
