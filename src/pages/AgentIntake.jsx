@@ -218,12 +218,14 @@ export default function AgentIntake() {
           <CheckCircle className="w-8 h-8 text-emerald-500" />
         </div>
         <h2 className="text-2xl font-bold text-gray-900 mb-2">
-          {dealType === "listing" ? "Listing Created!" : "Transaction Submitted!"}
+          {dealType === "listing" ? "Listing Created!" : dealType === "listing_uc" ? "Listing Under Contract Created!" : "Buyer Transaction Submitted!"}
         </h2>
         <p className="text-gray-500 mb-6">
           {dealType === "listing"
             ? "Your listing has been created. You can manage it from the Transactions page."
-            : "Your transaction has been sent to the TC. All parties will be notified."}
+            : dealType === "listing_uc"
+            ? "Your seller-side transaction is now under contract and ready to manage."
+            : "Your buyer transaction has been submitted. All parties will be notified."}
         </p>
         <Button onClick={() => { setSubmitted(false); setDealType(null); }} className="bg-blue-600 hover:bg-blue-700">
           Submit Another
