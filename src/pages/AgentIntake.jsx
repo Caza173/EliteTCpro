@@ -100,12 +100,14 @@ export default function AgentIntake() {
       const tx = res.data;
       if (data.client_email) {
         try { await base44.users.inviteUser(data.client_email, "user"); } catch (_) {}
-        const portalUrl = `${window.location.origin}${window.location.pathname}#/ClientPortal?id=${tx.id}`;
-        await base44.integrations.Core.SendEmail({
-          to: data.client_email,
-          subject: `You're invited to track your transaction — ${data.address}`,
-          body: `<p>Hello,</p><p>Your transaction has been submitted and you've been invited to track its progress online.</p><p><strong>Property:</strong> ${data.address}</p><p><a href="${portalUrl}" style="display:inline-block;padding:10px 20px;background:#3b82f6;color:#fff;border-radius:6px;text-decoration:none;font-weight:600;">View My Transaction</a></p><p>Best regards,<br/>TC Manager</p>`,
-        });
+        try {
+          const portalUrl = `${window.location.origin}${window.location.pathname}#/ClientPortal?id=${tx.id}`;
+          await base44.integrations.Core.SendEmail({
+            to: data.client_email,
+            subject: `You're invited to track your transaction — ${data.address}`,
+            body: `<p>Hello,</p><p>Your transaction has been submitted and you've been invited to track its progress online.</p><p><strong>Property:</strong> ${data.address}</p><p><a href="${portalUrl}" style="display:inline-block;padding:10px 20px;background:#3b82f6;color:#fff;border-radius:6px;text-decoration:none;font-weight:600;">View My Transaction</a></p><p>Best regards,<br/>TC Manager</p>`,
+          });
+        } catch (_) {}
       }
       return tx;
     },
