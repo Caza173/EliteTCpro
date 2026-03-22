@@ -13,7 +13,7 @@ Deno.serve(async (req) => {
             return Response.json({ error: 'Missing transaction_id or tasks' }, { status: 400 });
         }
 
-        await base44.asServiceRole.entities.Transaction.update(transaction_id, {
+        await base44.entities.Transaction.update(transaction_id, {
             tasks,
             last_activity_at: new Date().toISOString(),
         });
