@@ -394,6 +394,13 @@ export default function TransactionDetail() {
               <UserPlus className="w-4 h-4 mr-1" />
               {invitingClient ? "Sending..." : "Invite Client"}
             </Button>
+            {/* Convert listing → transaction */}
+            {(transaction.transaction_type === "seller" || transaction.phase <= 2) && (
+              <ConvertToTransactionButton
+                transaction={transaction}
+                onConverted={() => queryClient.invalidateQueries({ queryKey: ["transactions"] })}
+              />
+            )}
             <Button variant="outline" size="sm" className="text-red-600 hover:text-red-700 hover:bg-red-50 border-red-200"
               onClick={() => setConfirmDelete(true)}>
               <Trash2 className="w-4 h-4 mr-1" /> Delete
