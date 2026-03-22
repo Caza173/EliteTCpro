@@ -279,6 +279,11 @@ export default function AgentIntake() {
   }
 
   const isListing = dealType === "listing";
+  const isListingUC = dealType === "listing_uc";
+  const isBuyerUC = dealType === "buyer_uc";
+  const isUnderContract = isListingUC || isBuyerUC;
+
+  const dealConfig = DEAL_TYPES.find(d => d.id === dealType);
 
   // ── STEP 2: Form ──────────────────────────────────────────────────────────────
   return (
@@ -286,11 +291,11 @@ export default function AgentIntake() {
       <div className="flex items-center gap-3">
         <button onClick={() => setDealType(null)} className="text-sm text-blue-600 hover:underline">← Back</button>
         <div>
-          <h1 className="text-2xl font-bold text-gray-900 tracking-tight">
-            {isListing ? "New Listing" : "New Transaction (Under Contract)"}
-          </h1>
+          <h1 className="text-2xl font-bold text-gray-900 tracking-tight">{dealConfig?.label}</h1>
           <p className="text-sm text-gray-500 mt-0.5">
-            {isListing ? "Create a listing file — buyer fields not required yet." : "Upload P&S to auto-fill key dates."}
+            {isListing ? "Create a listing file — buyer fields not required yet." :
+             isListingUC ? "Seller-side under contract — buyer info + PSA required." :
+             "Buyer-side — PSA, lender, inspections, appraisal tracked."}
           </p>
         </div>
       </div>
@@ -303,7 +308,7 @@ export default function AgentIntake() {
               <FileSearch className="w-4 h-4 text-blue-500" />
               <CardTitle className="text-base font-semibold">Upload Agreement</CardTitle>
             </div>
-            {!isListing && (
+            {isBuyerUC && (
               <div className="flex gap-0.5 p-0.5 rounded-lg bg-white border border-gray-200">
                 <button type="button" onClick={() => setDocType("ps")}
                   className={`px-3 py-1 rounded-md text-xs font-medium transition-colors ${docType === "ps" ? "bg-blue-600 text-white shadow-sm" : "text-gray-500 hover:text-gray-700"}`}>
@@ -317,12 +322,19 @@ export default function AgentIntake() {
             )}
           </div>
           <CardDescription>
-            {isListing ? "Optional — auto-fills seller, list price, commission" : "Optional — auto-fills buyer, seller, and all deadline dates"}
+            {isListing ? "Optional — auto-fills seller, list price, commission" :
+             isListingUC ? "Optional — upload P&S to auto-fill buyer, seller, and dates" :
+             "Optional — auto-fills buyer, seller, and all deadline dates"}
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-3">
           {isListing ? (
             <AgencyDocUpload docType="listing" onParsed={handleListingParsed} />
+          ) : isListingUC ? (
+            <>
+              <PurchaseAgreementUpload onParsed={handleParsed} />
+              {parsedData && <ParsedDeadlinesPreview parsed={parsedData} isCash={form.is_cash_transaction} />}
+            </>
           ) : docType === "ps" ? (
             <>
               <PurchaseAgreementUpload onParsed={handleParsed} />
