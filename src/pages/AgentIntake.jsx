@@ -119,7 +119,9 @@ export default function AgentIntake() {
 
   const selectDealType = (type) => {
     setDealType(type);
-    setForm(type === "listing" ? { ...initialListing } : { ...initialPurchase });
+    if (type === "listing") setForm({ ...initialListing });
+    else if (type === "listing_uc") setForm({ ...initialListingUC });
+    else setForm({ ...initialBuyerUC });
     setBuyers([""]);
     setSellers([""]);
     setParsedData(null);
