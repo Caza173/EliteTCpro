@@ -512,6 +512,7 @@ export default function AgentIntake() {
             {/* Purchase Deadlines */}
             {isUnderContract && (
               <>
+                <Separator />
                 <div className="flex items-center justify-between rounded-xl border border-gray-100 bg-gray-50 px-4 py-3">
                   <div>
                     <p className="text-sm font-medium text-gray-800">Cash Transaction</p>
