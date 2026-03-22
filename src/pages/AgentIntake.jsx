@@ -489,8 +489,28 @@ export default function AgentIntake() {
               </Section>
             )}
 
+            {/* Lender — buyer UC only */}
+            {isBuyerUC && (
+              <>
+                <Separator />
+                <Section label="Lender">
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                    <F label="Lender Name" id="lender_name">
+                      <Input id="lender_name" value={form.lender_name || ""} onChange={(e) => set("lender_name", e.target.value)} placeholder="Jane Smith" className="mt-1.5" />
+                    </F>
+                    <F label="Lender Email" id="lender_email">
+                      <Input id="lender_email" type="email" value={form.lender_email || ""} onChange={(e) => set("lender_email", e.target.value)} placeholder="lender@bank.com" className="mt-1.5" />
+                    </F>
+                    <F label="Lender Phone" id="lender_phone">
+                      <Input id="lender_phone" type="tel" value={form.lender_phone || ""} onChange={(e) => set("lender_phone", e.target.value)} placeholder="(555) 123-4567" className="mt-1.5" />
+                    </F>
+                  </div>
+                </Section>
+              </>
+            )}
+
             {/* Purchase Deadlines */}
-            {!isListing && (
+            {isUnderContract && (
               <>
                 <div className="flex items-center justify-between rounded-xl border border-gray-100 bg-gray-50 px-4 py-3">
                   <div>
