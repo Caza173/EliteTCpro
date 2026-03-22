@@ -453,7 +453,7 @@ export default function AgentIntake() {
                 <F label="TC Email *" id="agent_email">
                   <Input id="agent_email" type="email" value={form.agent_email || ""} onChange={(e) => set("agent_email", e.target.value)} placeholder="tc@office.com" required className="mt-1.5" />
                 </F>
-                {!isListing && (
+                {isUnderContract && (
                   <F label="Closing / Title Company" id="closing_title_company">
                     <Input id="closing_title_company" value={form.closing_title_company || ""} onChange={(e) => set("closing_title_company", e.target.value)} placeholder="NH Title & Escrow" className="mt-1.5" />
                   </F>
