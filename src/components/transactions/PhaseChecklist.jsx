@@ -2,7 +2,13 @@ import React from "react";
 import { Check, Lock, ChevronRight } from "lucide-react";
 import { PHASE_TASK_LIBRARY, getPhaseProgress, isPhaseComplete } from "@/lib/taskLibrary";
 
-const PHASES = PHASE_TASK_LIBRARY.map(p => ({ num: p.phaseNum, label: p.label }));
+function getPhasesForTransaction(txType, currentPhase) {
+  // Listing-only: show pre-listing + active listing. Once converted (phase >= 3), show all.
+  if ((txType === "seller") && currentPhase <= 2) {
+    return PHASE_TASK_LIBRARY.filter(p => p.phaseNum <= 2).map(p => ({ num: p.phaseNum, label: p.label }));
+  }
+  return PHASE_TASK_LIBRARY.map(p => ({ num: p.phaseNum, label: p.label }));
+}
 
 export default function PhaseChecklist({ phasesCompleted = [], currentPhase, onTogglePhase, tasks = [], selectedPhase, onSelectPhase }) {
   return (
