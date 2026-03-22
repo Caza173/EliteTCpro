@@ -84,7 +84,7 @@ const initialBuyerUC = {
 };
 
 export default function AgentIntake() {
-  const [dealType, setDealType] = useState(null); // "listing" | "purchase"
+  const [dealType, setDealType] = useState(null); // "listing" | "listing_uc" | "buyer_uc"
   const [form, setForm] = useState({});
   const [buyers, setBuyers] = useState([""]);
   const [sellers, setSellers] = useState([""]);
