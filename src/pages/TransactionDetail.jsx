@@ -140,12 +140,19 @@ export default function TransactionDetail() {
     mutationFn: (txId) => base44.functions.invoke("deleteTransaction", { transaction_id: txId }),
     onSuccess: () => {
       setConfirmDelete(false);
-      queryClient.invalidateQueries({ queryKey: ["transactions"] });
+      queryClient.removeQueries({ queryKey: ["transactions"] });
       navigate(createPageUrl("Transactions"));
     },
     onError: (err) => {
       setConfirmDelete(false);
-      setAlertDialog({ open: true, title: "Delete Failed", message: err?.message || "Could not delete transaction. Check your permissions." });
+      // If the response says success or 404, treat as success
+      const msg = err?.message || "";
+      if (msg.includes("404") || msg.toLowerCase().includes("not found")) {
+        queryClient.removeQueries({ queryKey: ["transactions"] });
+        navigate(createPageUrl("Transactions"));
+        return;
+      }
+      setAlertDialog({ open: true, title: "Delete Failed", message: msg || "Could not delete transaction. Check your permissions." });
     },
   });
 
