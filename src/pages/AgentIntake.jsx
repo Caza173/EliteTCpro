@@ -550,7 +550,7 @@ export default function AgentIntake() {
             <div className="flex justify-end pt-2">
               <Button type="submit" disabled={createMutation.isPending} className="bg-blue-600 hover:bg-blue-700 px-8">
                 {createMutation.isPending ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Send className="w-4 h-4 mr-2" />}
-                {isListing ? "Create Listing" : "Submit to TC"}
+                {isListing ? "Create Listing" : isListingUC ? "Create Listing Under Contract" : "Submit Buyer Transaction"}
               </Button>
             </div>
           </form>
