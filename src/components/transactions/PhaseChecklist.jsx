@@ -10,7 +10,8 @@ function getPhasesForTransaction(txType, currentPhase) {
   return PHASE_TASK_LIBRARY.map(p => ({ num: p.phaseNum, label: p.label }));
 }
 
-export default function PhaseChecklist({ phasesCompleted = [], currentPhase, onTogglePhase, tasks = [], selectedPhase, onSelectPhase }) {
+export default function PhaseChecklist({ phasesCompleted = [], currentPhase, onTogglePhase, tasks = [], selectedPhase, onSelectPhase, transactionType }) {
+  const PHASES = getPhasesForTransaction(transactionType, currentPhase);
   return (
     <div className="space-y-1">
       {PHASES.map((phase) => {
