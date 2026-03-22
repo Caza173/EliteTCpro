@@ -15,18 +15,15 @@ Deno.serve(async (req) => {
     const { transaction_id } = await req.json();
     if (!transaction_id) return Response.json({ error: 'transaction_id required' }, { status: 400 });
 
-    try {
-      await base44.asServiceRole.entities.Transaction.delete(transaction_id);
-    } catch (deleteError) {
-      const msg = deleteError?.message || '';
-      // If already gone, treat as success
-      if (!msg.includes('404') && !msg.toLowerCase().includes('not found')) {
-        throw deleteError;
-      }
-    }
+    // Use user-scoped delete (RLS no longer has brokerage_id restriction on delete)
+    await base44.entities.Transaction.delete(transaction_id);
 
     return Response.json({ success: true });
   } catch (error) {
-    return Response.json({ error: error?.message || 'Unknown error' }, { status: 500 });
+    const msg = error?.message || '';
+    if (msg.includes('404') || msg.toLowerCase().includes('not found')) {
+      return Response.json({ success: true });
+    }
+    return Response.json({ error: msg }, { status: 500 });
   }
 });
