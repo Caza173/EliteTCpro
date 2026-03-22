@@ -52,12 +52,27 @@ const initialListing = {
   transaction_type: "seller",
 };
 
-const initialPurchase = {
+const initialListingUC = {
   agent: "", agent_email: "",
-  buyer: "", seller: "",
+  sellers_agent_name: "", seller_brokerage: "",
+  buyers_agent_name: "", buyer_brokerage: "",
+  closing_title_company: "",
+  address: "", mls_number: "", commission: "",
+  sale_price: "",
+  transaction_type: "seller",
+  is_cash_transaction: false,
+  client_email: "", client_phone: "",
+  contract_date: "", closing_date: "",
+  earnest_money_deadline: "", inspection_deadline: "",
+  due_diligence_deadline: "", financing_deadline: "",
+};
+
+const initialBuyerUC = {
+  agent: "", agent_email: "",
   buyers_agent_name: "", sellers_agent_name: "",
   buyer_brokerage: "", seller_brokerage: "",
   closing_title_company: "",
+  lender_name: "", lender_email: "", lender_phone: "",
   address: "", mls_number: "", commission: "",
   sale_price: "",
   transaction_type: "buyer",
