@@ -8,15 +8,38 @@ import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
-import { Loader2, Send, CheckCircle, FileSearch, Link2, Copy, Plus, X, Upload, FileText, Zap, Home, FileSignature } from "lucide-react";
+import { Loader2, Send, CheckCircle, FileSearch, Link2, Copy, Plus, X, Upload, FileText, Zap, Home, FileSignature, UserCheck } from "lucide-react";
 import { generateSmartTasks } from "../components/transactions/defaultTasks";
 import PurchaseAgreementUpload from "../components/forms/PurchaseAgreementUpload";
 import ParsedDeadlinesPreview from "../components/forms/ParsedDeadlinesPreview";
-import { getStartingPhase } from "../lib/taskLibrary";
+import { getStartingPhase, generateTasksForPhase } from "../lib/taskLibrary";
 
+// dealType: "listing" | "listing_uc" | "buyer_uc"
 const DEAL_TYPES = [
-  { id: "listing",  label: "Listing",        desc: "Seller-side only — MLS, photos, showings",  icon: Home },
-  { id: "purchase", label: "Under Contract",  desc: "Buyer + Seller — PSA required",             icon: FileSignature },
+  {
+    id: "listing",
+    label: "Listing (Pre-Listing)",
+    desc: "You represent the seller — MLS, photos, showings. No buyer or PSA yet.",
+    icon: Home,
+    color: "#d97706",
+    bg: "#fef3c7",
+  },
+  {
+    id: "listing_uc",
+    label: "Listing Under Contract",
+    desc: "You represent the seller — an offer has been accepted. PSA + buyer info required.",
+    icon: FileSignature,
+    color: "#7c3aed",
+    bg: "#f5f3ff",
+  },
+  {
+    id: "buyer_uc",
+    label: "Buyer Under Contract",
+    desc: "You represent the buyer — PSA signed. Lender, inspections, appraisal tracked.",
+    icon: UserCheck,
+    color: "#2563eb",
+    bg: "#eff6ff",
+  },
 ];
 
 const initialListing = {
