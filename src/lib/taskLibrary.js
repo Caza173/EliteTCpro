@@ -136,10 +136,19 @@ export const PHASE_MAP = Object.fromEntries(PHASE_TASK_LIBRARY.map(p => [p.phase
  * Generate task objects for a specific phase, scoped to a transactionId.
  * Returns array ready to merge into transaction.tasks.
  */
-export function generateTasksForPhase(phaseNum, transactionId) {
+export function generateTasksForPhase(phaseNum, transactionId, transactionType = null) {
   const phase = PHASE_MAP[phaseNum];
   if (!phase) return [];
-  return phase.tasks.map(t => ({
+  // For phase 3 (under_contract), filter tasks by side based on transaction type
+  const tasks = phaseNum === 3 && transactionType
+    ? phase.tasks.filter(t => {
+        if (!t.side || t.side === "both") return true;
+        if (transactionType === "buyer") return t.side === "buyer";
+        if (transactionType === "seller" || transactionType === "listing") return t.side === "seller";
+        return true;
+      })
+    : phase.tasks;
+  return tasks.map(t => ({
     id: `${phaseNum}_${t.id}`,
     name: t.name,
     phase: phaseNum,
