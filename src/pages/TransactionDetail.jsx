@@ -40,8 +40,19 @@ import ConfirmDialog from "../components/ui/ConfirmDialog";
 import SkySlopeSyncBadge from "../components/skyslope/SkySlopeSyncBadge";
 import EmailComposerModal from "../components/email/EmailComposerModal";
 import ConvertToTransactionButton from "../components/transactions/ConvertToTransactionButton";
+import ListingIntakeTab from "../components/transactions/ListingIntakeTab";
 
 const TX_TABS = [
+  { id: "overview",   label: "Overview",   icon: LayoutDashboard },
+  { id: "timeline",   label: "Timeline",   icon: GitBranch },
+  { id: "deadlines",  label: "Deadlines",  icon: Clock },
+  { id: "documents",  label: "Documents",  icon: FolderOpen },
+  { id: "compliance", label: "Compliance", icon: ShieldCheck },
+  { id: "financial_tools", label: "Financial Tools", icon: Receipt },
+];
+
+const LISTING_TABS = [
+  { id: "listing_intake", label: "Listing Intake", icon: ClipboardCheck },
   { id: "overview",   label: "Overview",   icon: LayoutDashboard },
   { id: "timeline",   label: "Timeline",   icon: GitBranch },
   { id: "deadlines",  label: "Deadlines",  icon: Clock },
