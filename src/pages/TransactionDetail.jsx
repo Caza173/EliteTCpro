@@ -139,6 +139,13 @@ export default function TransactionDetail() {
     enabled: !!id,
   });
 
+  // Auto-switch to listing_intake tab for seller transactions
+  useEffect(() => {
+    if (transaction?.transaction_type === "seller" && !urlTab) {
+      setActiveTab("listing_intake");
+    }
+  }, [transaction?.id]);
+
   // Auto-seed the default selected phase once data is ready
   const seededRef = useRef(false);
   useEffect(() => {
