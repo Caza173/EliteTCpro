@@ -708,7 +708,7 @@ export default function TransactionDetail() {
                     const next = selectedPhase === num ? null : num;
                     setSelectedPhase(next);
                     if (next !== null) {
-                      await seedPhaseTasksIfNeeded(next);
+                      seedPhaseTasksIfNeeded(next);
                     }
                   }}
                 />
