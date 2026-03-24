@@ -839,6 +839,14 @@ function InfoItem({ icon: Icon, label, value, highlight }) {
   );
 }
 
+function formatPhone(val) {
+  if (!val) return val;
+  const digits = val.replace(/\D/g, "");
+  if (digits.length === 10) return `(${digits.slice(0,3)}) ${digits.slice(3,6)}-${digits.slice(6)}`;
+  if (digits.length === 11 && digits[0] === "1") return `+1 (${digits.slice(1,4)}) ${digits.slice(4,7)}-${digits.slice(7)}`;
+  return val;
+}
+
 function EditableInfoItem({ icon: Icon, label, value, onSave, type = "text" }) {
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState(value || "");
@@ -847,6 +855,8 @@ function EditableInfoItem({ icon: Icon, label, value, onSave, type = "text" }) {
     setEditing(false);
     if (draft !== value) onSave(draft);
   };
+
+  const displayValue = type === "tel" ? formatPhone(value) : value;
 
   return (
     <div className="flex items-start gap-2.5 group">
@@ -872,7 +882,7 @@ function EditableInfoItem({ icon: Icon, label, value, onSave, type = "text" }) {
           </div>
         ) : (
           <div className="flex items-center gap-1">
-            <p className="text-sm font-medium break-words text-gray-900">{value || "—"}</p>
+            <p className="text-sm font-medium break-words text-gray-900">{displayValue || "—"}</p>
             <button
               onClick={() => { setDraft(value || ""); setEditing(true); }}
               className="opacity-0 group-hover:opacity-100 transition-opacity p-0.5 rounded hover:bg-gray-100"
