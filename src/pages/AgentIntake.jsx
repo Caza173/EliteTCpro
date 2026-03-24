@@ -381,12 +381,12 @@ export default function AgentIntake() {
 
             <Separator />
 
-            {/* Buyer side — listing UC and buyer UC */}
-            {isUnderContract && (
+            {/* Buyer side — buyer UC only (not listing UC) */}
+            {isBuyerUC && (
               <>
                 <Section label="Buyer Side">
                   <div className="space-y-2">
-                    <Label className="text-sm font-medium text-gray-700">Buyer Name(s) {isUnderContract ? "*" : ""}</Label>
+                    <Label className="text-sm font-medium text-gray-700">Buyer Name(s) *</Label>
                     {buyers.map((b, i) => (
                       <div key={i} className="flex gap-2 items-center">
                         <Input value={b} onChange={(e) => { const n = [...buyers]; n[i] = e.target.value; setBuyers(n); }}
