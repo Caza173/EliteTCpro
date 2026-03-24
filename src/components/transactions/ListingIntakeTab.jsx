@@ -190,8 +190,8 @@ export default function ListingIntakeTab({ transaction, onSave }) {
           size="sm"
           onClick={handleSave}
           disabled={saving}
-          className="gap-1.5"
-          style={{ background: saved ? "#16a34a" : "var(--accent)", color: "white" }}
+          className="gap-1.5 text-white"
+          style={{ backgroundColor: saved ? "#16a34a" : "#2563eb", color: "#ffffff" }}
         >
           {saved ? <CheckCircle2 className="w-3.5 h-3.5" /> : <Save className="w-3.5 h-3.5" />}
           {saving ? "Saving…" : saved ? "Saved!" : "Save"}
