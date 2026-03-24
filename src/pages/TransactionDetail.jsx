@@ -822,6 +822,13 @@ export default function TransactionDetail() {
         {activeTab === "financial_tools" && (
           <TransactionFinancialTools transaction={transaction} currentUser={currentUser} />
         )}
+
+        {activeTab === "listing_intake" && (
+          <ListingIntakeTab
+            transaction={transaction}
+            onSave={(changes) => updateMutation.mutate({ id: transaction.id, data: { ...changes, last_activity_at: new Date().toISOString() } })}
+          />
+        )}
       </div>
 
       {/* Mobile floating Ask AI button */}
