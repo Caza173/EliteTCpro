@@ -166,7 +166,7 @@ export default function AddendumBuilder() {
 
           {/* LIBRARY TAB */}
           {activeTab === "library" && (
-            <ClauseLibraryPanel onAddClause={addClause} selectedIds={selectedClauses} />
+            <ClauseLibraryPanel onAddClause={addClause} selectedIds={selectedClauses} brokerageId={brokerageId} />
           )}
 
           {/* SUGGESTIONS TAB */}
