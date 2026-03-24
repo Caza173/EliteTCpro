@@ -232,12 +232,45 @@ export default function PhaseTaskPanelV2({
           <button onClick={() => { setAddingTask(false); setNewTitle(""); }} className="text-xs px-2 py-1.5 rounded-lg text-gray-500 hover:bg-gray-100">✕</button>
         </div>
       ) : (
-        <button
-          onClick={() => setAddingTask(true)}
-          className="flex items-center gap-1.5 text-xs font-medium text-blue-600 hover:text-blue-700 mt-1 px-1 py-1 rounded hover:bg-blue-50 transition-colors"
-        >
-          <Plus className="w-3.5 h-3.5" /> Add Task
-        </button>
+        <div className="flex items-center gap-3 mt-1">
+          <button
+            onClick={() => setAddingTask(true)}
+            className="flex items-center gap-1.5 text-xs font-medium text-blue-600 hover:text-blue-700 px-1 py-1 rounded hover:bg-blue-50 transition-colors"
+          >
+            <Plus className="w-3.5 h-3.5" /> Add Task
+          </button>
+          <button
+            onClick={() => setLibraryOpen(true)}
+            className="flex items-center gap-1.5 text-xs font-medium text-purple-600 hover:text-purple-700 px-1 py-1 rounded hover:bg-purple-50 transition-colors"
+          >
+            <BookOpen className="w-3.5 h-3.5" /> From Library
+          </button>
+        </div>
+      )}
+
+      {/* Task Library Modal */}
+      {libraryOpen && (
+        <TaskLibraryModal
+          phaseNum={phaseNum}
+          brokerageId={brokerageId}
+          onClose={() => setLibraryOpen(false)}
+          onApply={async (items) => {
+            const maxOrder = phaseTasks.length > 0 ? Math.max(...phaseTasks.map(t => t.order_index ?? 0)) + 1 : 0;
+            await Promise.all(items.map((item, i) =>
+              base44.entities.TransactionTask.create({
+                transaction_id: transactionId,
+                brokerage_id: brokerageId,
+                phase: phaseNum,
+                title: item.title,
+                order_index: maxOrder + i,
+                is_completed: false,
+                is_required: item.is_required || false,
+                is_custom: true,
+              })
+            ));
+            onTasksChanged?.();
+          }}
+        />
       )}
     </div>
   );
