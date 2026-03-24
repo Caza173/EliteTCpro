@@ -842,6 +842,36 @@ function InfoItem({ icon: Icon, label, value, highlight }) {
   );
 }
 
+function EditableAddress({ value, onSave }) {
+  const [editing, setEditing] = useState(false);
+  const [draft, setDraft] = useState(value || "");
+
+  const handleSave = () => {
+    setEditing(false);
+    if (draft.trim() && draft.trim() !== value) onSave(draft.trim());
+  };
+
+  return editing ? (
+    <div className="flex items-center gap-1">
+      <input
+        className="text-xl font-semibold border border-blue-300 rounded px-2 py-0.5 focus:outline-none focus:ring-1 focus:ring-blue-400 w-72"
+        value={draft}
+        onChange={e => setDraft(e.target.value)}
+        onBlur={handleSave}
+        onKeyDown={e => { if (e.key === "Enter") handleSave(); if (e.key === "Escape") setEditing(false); }}
+        autoFocus
+      />
+      <button onClick={handleSave} className="text-blue-600 hover:text-blue-800 text-xs font-semibold px-1">✓</button>
+      <button onClick={() => setEditing(false)} className="text-gray-400 hover:text-gray-600 text-xs px-1">✕</button>
+    </div>
+  ) : (
+    <div className="flex items-center gap-1.5 group cursor-pointer" onClick={() => { setDraft(value || ""); setEditing(true); }}>
+      <span className="text-xl font-semibold text-gray-900">{value}</span>
+      <Pencil className="w-3.5 h-3.5 text-gray-400 opacity-0 group-hover:opacity-100 transition-opacity" />
+    </div>
+  );
+}
+
 function formatPhone(val) {
   if (!val) return val;
   const digits = val.replace(/\D/g, "");
