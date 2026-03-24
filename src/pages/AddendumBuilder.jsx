@@ -47,11 +47,6 @@ export default function AddendumBuilder() {
     enabled: !!brokerageId,
   });
 
-  const transaction = useMemo(
-    () => transactions.find(t => t.id === selectedTxId) || {},
-    [transactions, selectedTxId]
-  );
-
   const suggestions = useMemo(
     () => getSuggestedClauses(transaction, complianceIssues),
     [transaction, complianceIssues]
