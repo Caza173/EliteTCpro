@@ -646,6 +646,7 @@ export default function TransactionDetail() {
                   currentPhase={transaction.phase || 1}
                   onTogglePhase={handleTogglePhase}
                   tasks={transaction.tasks || []}
+                  txTasks={txTasks}
                   transactionType={transaction.transaction_type}
                   selectedPhase={selectedPhase}
                   onSelectPhase={async (num) => {
