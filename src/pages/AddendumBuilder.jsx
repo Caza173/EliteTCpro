@@ -69,11 +69,6 @@ export default function AddendumBuilder() {
     setInputs(prev => { const next = { ...prev }; delete next[clauseId]; return next; });
   };
 
-  const CLAUSE_LIBRARY_IMPORT = useMemo(async () => {
-    const { CLAUSE_LIBRARY } = await import("@/lib/clauseLibrary");
-    return CLAUSE_LIBRARY;
-  }, []);
-
   // Build clauseMap: system + custom DB clauses
   const [systemClauseMap, setSystemClauseMap] = useState({});
   useMemo(() => {
