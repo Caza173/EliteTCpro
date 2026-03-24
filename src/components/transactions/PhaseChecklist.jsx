@@ -10,21 +10,32 @@ function getPhasesForTransaction(txType, currentPhase) {
   return PHASE_TASK_LIBRARY.map(p => ({ num: p.phaseNum, label: p.label }));
 }
 
-export default function PhaseChecklist({ phasesCompleted = [], currentPhase, onTogglePhase, tasks = [], selectedPhase, onSelectPhase, transactionType }) {
+export default function PhaseChecklist({ phasesCompleted = [], currentPhase, onTogglePhase, tasks = [], txTasks = [], selectedPhase, onSelectPhase, transactionType }) {
   const PHASES = getPhasesForTransaction(transactionType, currentPhase);
   return (
     <div className="space-y-1">
       {PHASES.map((phase) => {
-        const progress = getPhaseProgress(phase.num, tasks);
-        const tasksDriven = progress.total > 0;
-        const isCompleted = tasksDriven ? isPhaseComplete(phase.num, tasks) : phasesCompleted.includes(phase.num);
+        // Prefer TransactionTask records if available for this phase
+        const newPhaseTasks = txTasks.filter(t => t.phase === phase.num);
+        let progress, isCompleted, isLocked, pct;
+        if (newPhaseTasks.length > 0) {
+          const total = newPhaseTasks.length;
+          const completed = newPhaseTasks.filter(t => t.is_completed).length;
+          const required = newPhaseTasks.filter(t => t.is_required).length;
+          const requiredDone = newPhaseTasks.filter(t => t.is_required && t.is_completed).length;
+          progress = { total, completed, required, requiredDone };
+          isCompleted = required > 0 && requiredDone === required;
+          isLocked = false;
+          pct = total > 0 ? Math.round((completed / total) * 100) : 0;
+        } else {
+          progress = getPhaseProgress(phase.num, tasks);
+          const tasksDriven = progress.total > 0;
+          isCompleted = tasksDriven ? isPhaseComplete(phase.num, tasks) : phasesCompleted.includes(phase.num);
+          isLocked = tasksDriven && !isCompleted && progress.requiredDone < progress.required;
+          pct = progress.total > 0 ? Math.round((progress.completed / progress.total) * 100) : 0;
+        }
         const isCurrent = phase.num === currentPhase;
         const isSelected = selectedPhase === phase.num;
-
-        // Locked if tasks exist and required ones aren't done
-        const isLocked = tasksDriven && !isCompleted && progress.requiredDone < progress.required;
-
-        const pct = progress.total > 0 ? Math.round((progress.completed / progress.total) * 100) : 0;
 
         return (
           <div
