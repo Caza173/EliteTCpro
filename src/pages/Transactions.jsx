@@ -54,7 +54,7 @@ export default function Transactions() {
     const matchesStatus = statusFilter === "all" || tx.status === statusFilter;
     const matchesPhase = phaseFilter === "all" || String(tx.phase || 1) === phaseFilter;
     return matchesSearch && matchesStatus && matchesPhase;
-  }), [deduped, search, statusFilter, phaseFilter]);
+  }), [transactions, search, statusFilter, phaseFilter]);
 
   const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
   const paginated = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
