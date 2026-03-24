@@ -82,7 +82,8 @@ export default function TransactionDetail() {
   const queryClient = useQueryClient();
   const { data: currentUser } = useCurrentUser();
 
-  const [activeTab, setActiveTab] = useState("overview");
+  const urlTab = urlParams.get("tab");
+  const [activeTab, setActiveTab] = useState(urlTab || "overview");
   const [selectedPhase, setSelectedPhase] = useState(1);
   const [aiCollapsed, setAiCollapsed] = useState(false);
   const [aiWidth, setAiWidth] = useState(380);
