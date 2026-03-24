@@ -59,7 +59,7 @@ export default function Transactions() {
   const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
   const paginated = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
 
-  useEffect(() => { setPage(1); }, [search, statusFilter, phaseFilter, deduped]);
+  useEffect(() => { setPage(1); }, [search, statusFilter, phaseFilter, transactions]);
 
   return (
     <div className="flex flex-col w-full min-w-0" style={{ height: "calc(100vh - 48px)", overflow: "hidden" }}>
