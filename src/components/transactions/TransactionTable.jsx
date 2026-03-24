@@ -45,25 +45,69 @@ export function calcPriorityScore(tx, complianceIssues = []) {
   return score;
 }
 
-function PriorityBadge({ score }) {
-  if (score >= 80) {
-    return (
-      <span className="inline-flex items-center gap-1 text-[10px] font-semibold px-1.5 py-0.5 rounded-full bg-red-50 text-red-600 border border-red-200 whitespace-nowrap">
-        <AlertTriangle className="w-2.5 h-2.5" /> Attention
-      </span>
-    );
+function getPriorityReasons(tx) {
+  const today = new Date();
+  const reasons = [];
+  const DEADLINE_LABELS = {
+    earnest_money_deadline: "Earnest Money",
+    inspection_deadline: "Inspection",
+    due_diligence_deadline: "Due Diligence",
+    appraisal_deadline: "Appraisal",
+    financing_deadline: "Financing",
+    ctc_target: "Clear to Close",
+    closing_date: "Closing",
+  };
+  for (const field of DEADLINE_FIELDS) {
+    if (!tx[field]) continue;
+    const d = new Date(tx[field]);
+    const daysLeft = Math.ceil((d - today) / (1000 * 60 * 60 * 24));
+    if (daysLeft < 0) reasons.push(`${DEADLINE_LABELS[field]} deadline overdue`);
+    else if (daysLeft <= 3) reasons.push(`${DEADLINE_LABELS[field]} due in ${daysLeft}d`);
+    else if (daysLeft <= 7) reasons.push(`${DEADLINE_LABELS[field]} due in ${daysLeft}d`);
   }
-  if (score >= 40) {
-    return (
-      <span className="inline-flex items-center gap-1 text-[10px] font-semibold px-1.5 py-0.5 rounded-full bg-amber-50 text-amber-600 border border-amber-200 whitespace-nowrap">
-        <AlertTriangle className="w-2.5 h-2.5" /> Watch
-      </span>
-    );
-  }
-  return (
-    <span className="inline-flex items-center gap-1 text-[10px] font-semibold px-1.5 py-0.5 rounded-full bg-emerald-50 text-emerald-600 border border-emerald-200 whitespace-nowrap">
+  const openTasks = (tx.tasks || []).filter(t => !t.completed).length;
+  if (openTasks > 0) reasons.push(`${openTasks} open task${openTasks > 1 ? "s" : ""}`);
+  return reasons;
+}
+
+function PriorityBadge({ score, tx }) {
+  const reasons = tx ? getPriorityReasons(tx) : [];
+  const [show, setShow] = React.useState(false);
+
+  const badge = score >= 80 ? (
+    <span className="inline-flex items-center gap-1 text-[10px] font-semibold px-1.5 py-0.5 rounded-full bg-red-50 text-red-600 border border-red-200 whitespace-nowrap cursor-default">
+      <AlertTriangle className="w-2.5 h-2.5" /> Attention
+    </span>
+  ) : score >= 40 ? (
+    <span className="inline-flex items-center gap-1 text-[10px] font-semibold px-1.5 py-0.5 rounded-full bg-amber-50 text-amber-600 border border-amber-200 whitespace-nowrap cursor-default">
+      <AlertTriangle className="w-2.5 h-2.5" /> Watch
+    </span>
+  ) : (
+    <span className="inline-flex items-center gap-1 text-[10px] font-semibold px-1.5 py-0.5 rounded-full bg-emerald-50 text-emerald-600 border border-emerald-200 whitespace-nowrap cursor-default">
       <CheckCircle2 className="w-2.5 h-2.5" /> On Track
     </span>
+  );
+
+  if (reasons.length === 0) return badge;
+
+  return (
+    <div className="relative inline-block" onMouseEnter={() => setShow(true)} onMouseLeave={() => setShow(false)}>
+      {badge}
+      {show && (
+        <div className="absolute z-50 bottom-full left-1/2 -translate-x-1/2 mb-2 w-48 bg-gray-900 text-white text-xs rounded-lg px-3 py-2 shadow-xl pointer-events-none">
+          <p className="font-semibold mb-1 text-gray-300">Needs attention:</p>
+          <ul className="space-y-0.5">
+            {reasons.map((r, i) => (
+              <li key={i} className="flex items-start gap-1.5">
+                <span className="text-red-400 mt-0.5">•</span>
+                <span>{r}</span>
+              </li>
+            ))}
+          </ul>
+          <div className="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-gray-900" />
+        </div>
+      )}
+    </div>
   );
 }
 
