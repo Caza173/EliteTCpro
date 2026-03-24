@@ -374,7 +374,7 @@ export default function ListingIntakeTab({ transaction, onSave }) {
 
       {/* Bottom Save */}
       <div className="flex justify-end pt-1 pb-10">
-        <Button onClick={handleSave} disabled={saving} className="gap-1.5" style={{ background: saved ? "#16a34a" : "var(--accent)", color: "white" }}>
+        <Button onClick={handleSave} disabled={saving} className="gap-1.5 text-white" style={{ backgroundColor: saved ? "#16a34a" : "#2563eb", color: "#ffffff" }}>
           {saved ? <CheckCircle2 className="w-4 h-4" /> : <Save className="w-4 h-4" />}
           {saving ? "Saving…" : saved ? "Saved!" : "Save Listing Intake"}
         </Button>
