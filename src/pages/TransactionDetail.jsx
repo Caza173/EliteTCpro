@@ -672,49 +672,19 @@ export default function TransactionDetail() {
               <CardHeader>
                 <CardTitle className="text-base font-semibold">Tasks</CardTitle>
                 <p className="text-sm text-gray-500">
-                  {(transaction.tasks || []).filter((t) => t.completed).length} / {(transaction.tasks || []).length} completed
+                  {txTasks.filter(t => t.is_completed).length} / {txTasks.length} completed
+                  {txTasks.length === 0 && (transaction.tasks || []).length > 0 && ` · ${(transaction.tasks || []).filter(t => t.completed).length} / ${(transaction.tasks || []).length} (legacy)`}
                 </p>
               </CardHeader>
               <CardContent className="overflow-visible">
                 {selectedPhase ? (
-                  <PhaseTaskPanel
+                  <PhaseTaskPanelV2
                     phaseNum={selectedPhase}
-                    tasks={transaction.tasks || []}
-                    onToggleTask={async (taskId) => {
-                      const updatedTasks = (transaction.tasks || []).map((task) =>
-                        task.id === taskId ? { ...task, completed: !task.completed } : task
-                      );
-                      queryClient.setQueryData(["transactions"], (old = []) =>
-                        old.map((t) => t.id === transaction.id ? { ...t, tasks: updatedTasks } : t)
-                      );
-                      await base44.functions.invoke("toggleTask", { transaction_id: transaction.id, tasks: updatedTasks });
-                      queryClient.invalidateQueries({ queryKey: ["transactions"] });
-                      // Auto-complete phase if all required done
-                      const phaseLib = PHASE_TASK_LIBRARY.find(p => p.phaseNum === selectedPhase);
-                      if (phaseLib && isPhaseComplete(selectedPhase, updatedTasks)) {
-                        const completed = transaction.phases_completed || [];
-                        if (!completed.includes(selectedPhase)) {
-                          handleTogglePhase(selectedPhase);
-                        }
-                      }
-                      await writeAuditLog({
-                        brokerageId: transaction.brokerage_id, transactionId: transaction.id,
-                        actorEmail: currentUser?.email, action: "task_completed", entityType: "task",
-                        entityId: taskId, description: `Task ${taskId} toggled by ${currentUser?.email}`,
-                      });
-                    }}
-                    onGenerateTasks={async (phaseNum) => {
-                      const newTasks = generateTasksForPhase(phaseNum, transaction.id);
-                      const existing = transaction.tasks || [];
-                      // Avoid duplicates
-                      const existingIds = new Set(existing.map(t => t.id));
-                      const merged = [...existing, ...newTasks.filter(t => !existingIds.has(t.id))];
-                      queryClient.setQueryData(["transactions"], (old = []) =>
-                        old.map((t) => t.id === transaction.id ? { ...t, tasks: merged } : t)
-                      );
-                      await base44.functions.invoke("toggleTask", { transaction_id: transaction.id, tasks: merged });
-                      queryClient.invalidateQueries({ queryKey: ["transactions"] });
-                    }}
+                    tasks={txTasks}
+                    onToggleTask={handleToggleTxTask}
+                    onTasksChanged={refetchTxTasks}
+                    transactionId={transaction.id}
+                    brokerageId={transaction.brokerage_id}
                   />
                 ) : (
                   <TaskList
@@ -728,11 +698,6 @@ export default function TransactionDetail() {
                       );
                       await base44.functions.invoke("toggleTask", { transaction_id: transaction.id, tasks: updatedTasks });
                       queryClient.invalidateQueries({ queryKey: ["transactions"] });
-                      await writeAuditLog({
-                        brokerageId: transaction.brokerage_id, transactionId: transaction.id,
-                        actorEmail: currentUser?.email, action: "task_completed", entityType: "task",
-                        entityId: taskId, description: `Task ${taskId} toggled by ${currentUser?.email}`,
-                      });
                     }}
                   />
                 )}
