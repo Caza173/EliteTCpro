@@ -651,18 +651,8 @@ export default function TransactionDetail() {
                   onSelectPhase={async (num) => {
                     const next = selectedPhase === num ? null : num;
                     setSelectedPhase(next);
-                    // Auto-generate tasks for this phase if none exist yet
                     if (next !== null) {
-                      const existing = (transaction.tasks || []).filter(t => t.phase === next);
-                      if (existing.length === 0) {
-                        const newTasks = generateTasksForPhase(next, transaction.id);
-                        const allTasks = [...(transaction.tasks || []), ...newTasks];
-                        queryClient.setQueryData(["transactions"], (old = []) =>
-                          old.map((t) => t.id === transaction.id ? { ...t, tasks: allTasks } : t)
-                        );
-                        await base44.functions.invoke("toggleTask", { transaction_id: transaction.id, tasks: allTasks });
-                        queryClient.invalidateQueries({ queryKey: ["transactions"] });
-                      }
+                      await seedPhaseTasksIfNeeded(next);
                     }
                   }}
                 />
