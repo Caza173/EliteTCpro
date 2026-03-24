@@ -39,6 +39,19 @@ export default function AddendumBuilder() {
     [transactions, selectedTxId]
   );
 
+  const brokerageId = transaction?.brokerage_id;
+
+  const { data: customClauses = [] } = useQuery({
+    queryKey: ["customClauses", brokerageId],
+    queryFn: () => base44.entities.Clause.filter({ brokerage_id: brokerageId }),
+    enabled: !!brokerageId,
+  });
+
+  const transaction = useMemo(
+    () => transactions.find(t => t.id === selectedTxId) || {},
+    [transactions, selectedTxId]
+  );
+
   const suggestions = useMemo(
     () => getSuggestedClauses(transaction, complianceIssues),
     [transaction, complianceIssues]
