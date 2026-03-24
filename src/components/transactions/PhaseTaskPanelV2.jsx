@@ -25,6 +25,7 @@ export default function PhaseTaskPanelV2({
   const [editDraft, setEditDraft] = useState("");
   const [addingTask, setAddingTask] = useState(false);
   const [newTitle, setNewTitle] = useState("");
+  const [libraryOpen, setLibraryOpen] = useState(false);
   const inputRef = useRef(null);
 
   if (!phaseDef) return null;
