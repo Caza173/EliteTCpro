@@ -74,15 +74,27 @@ export default function AddendumBuilder() {
     return CLAUSE_LIBRARY;
   }, []);
 
-  // Sync: import CLAUSE_LIBRARY synchronously
-  const [clauseMap, setClauseMap] = useState({});
+  // Build clauseMap: system + custom DB clauses
+  const [systemClauseMap, setSystemClauseMap] = useState({});
   useMemo(() => {
     import("@/lib/clauseLibrary").then(m => {
       const map = {};
       m.CLAUSE_LIBRARY.forEach(c => { map[c.id] = c; });
-      setClauseMap(map);
+      setSystemClauseMap(map);
     });
   }, []);
+
+  const clauseMap = useMemo(() => {
+    const map = { ...systemClauseMap };
+    customClauses.forEach(c => {
+      map[c.id] = {
+        id: c.id, name: c.name, category: c.category, type: c.type,
+        description: c.use_case || "", tags: c.tags || [],
+        bodyTemplate: c.text, requiredInputs: [], triggers: [], isActive: true, isCustom: true,
+      };
+    });
+    return map;
+  }, [systemClauseMap, customClauses]);
 
   const recipientEmail = transaction.agent_email || transaction.buyers_agent_email;
 
