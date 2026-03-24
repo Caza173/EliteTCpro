@@ -60,29 +60,46 @@ export default function PhaseTaskPanelV2({
     setEditingId(null);
   };
 
-  // ── Add custom task ───────────────────────────────────────────────────────
+  // ── Add custom task (auto-saves to library) ───────────────────────────────
   const handleAddTask = async () => {
     const title = newTitle.trim();
     if (!title) { setAddingTask(false); return; }
     const maxOrder = phaseTasks.length > 0 ? Math.max(...phaseTasks.map(t => t.order_index ?? 0)) + 1 : 0;
-    await base44.entities.TransactionTask.create({
-      transaction_id: transactionId,
-      brokerage_id: brokerageId,
-      phase: phaseNum,
-      title,
-      order_index: maxOrder,
-      is_completed: false,
-      is_required: false,
-      is_custom: true,
-    });
+    await Promise.all([
+      base44.entities.TransactionTask.create({
+        transaction_id: transactionId,
+        brokerage_id: brokerageId,
+        phase: phaseNum,
+        title,
+        order_index: maxOrder,
+        is_completed: false,
+        is_required: false,
+        is_custom: true,
+      }),
+      // Auto-save to library
+      base44.entities.TaskLibraryItem.create({
+        brokerage_id: brokerageId,
+        title,
+        phase: phaseNum,
+        is_required: false,
+      }),
+    ]);
     setNewTitle("");
     setAddingTask(false);
+    queryClient.invalidateQueries({ queryKey: ["taskLibrary", brokerageId] });
     onTasksChanged?.();
   };
 
-  // ── Delete custom task ────────────────────────────────────────────────────
+  // ── Delete task (also removes from library if custom) ────────────────────
   const handleDelete = async (taskId) => {
+    const task = phaseTasks.find(t => t.id === taskId);
     await base44.entities.TransactionTask.delete(taskId);
+    // If custom, also delete matching library entry by title
+    if (task?.is_custom && brokerageId) {
+      const libraryItems = await base44.entities.TaskLibraryItem.filter({ brokerage_id: brokerageId, title: task.title });
+      await Promise.all(libraryItems.map(i => base44.entities.TaskLibraryItem.delete(i.id)));
+      queryClient.invalidateQueries({ queryKey: ["taskLibrary", brokerageId] });
+    }
     onTasksChanged?.();
   };
 
