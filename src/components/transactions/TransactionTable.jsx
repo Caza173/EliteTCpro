@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import { Link } from "react-router-dom";
 import { createPageUrl } from "@/utils";
 import { Badge } from "@/components/ui/badge";
@@ -200,7 +200,7 @@ export default function TransactionTable({ transactions, sorted = false }) {
                 </Badge>
               </TableCell>
               <TableCell className="hidden sm:table-cell">
-                <PriorityBadge score={score} />
+                <PriorityBadge score={score} tx={tx} />
               </TableCell>
               <TableCell className="text-right">
                 <Link to={createPageUrl("TransactionDetail") + `?id=${tx.id}`}>
