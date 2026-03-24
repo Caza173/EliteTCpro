@@ -121,6 +121,52 @@ export default function TransactionDetail() {
     enabled: !!id,
   });
 
+  const { data: txTasks = [], refetch: refetchTxTasks } = useQuery({
+    queryKey: ["txTasks", id],
+    queryFn: () => base44.entities.TransactionTask.filter({ transaction_id: id }),
+    enabled: !!id,
+  });
+
+  // Seed TransactionTasks from library if none exist yet for a given phase
+  const seedPhaseTasksIfNeeded = async (phaseNum) => {
+    const existing = txTasks.filter(t => t.phase === phaseNum);
+    if (existing.length > 0) return;
+    const libTasks = generateTasksForPhase(phaseNum, id, transaction?.transaction_type);
+    await Promise.all(libTasks.map((t, i) =>
+      base44.entities.TransactionTask.create({
+        transaction_id: id,
+        brokerage_id: transaction?.brokerage_id,
+        phase: phaseNum,
+        title: t.name,
+        order_index: i,
+        is_completed: false,
+        is_required: t.required,
+        is_custom: false,
+        created_by: currentUser?.email,
+      })
+    ));
+    refetchTxTasks();
+  };
+
+  const handleToggleTxTask = async (taskId) => {
+    const task = txTasks.find(t => t.id === taskId);
+    if (!task) return;
+    await base44.entities.TransactionTask.update(taskId, { is_completed: !task.is_completed });
+    refetchTxTasks();
+    await writeAuditLog({
+      brokerageId: transaction.brokerage_id, transactionId: transaction.id,
+      actorEmail: currentUser?.email, action: "task_completed", entityType: "task",
+      entityId: taskId, description: `Task "${task.title}" toggled`,
+    });
+    // Auto-complete phase if all required tasks done
+    const updatedTasks = txTasks.map(t => t.id === taskId ? { ...t, is_completed: !t.is_completed } : t);
+    const phaseDone = updatedTasks.filter(t => t.phase === task.phase && t.is_required).every(t => t.is_completed);
+    if (phaseDone) {
+      const completed = transaction.phases_completed || [];
+      if (!completed.includes(task.phase)) handleTogglePhase(task.phase);
+    }
+  };
+
   const updateMutation = useMutation({
     mutationFn: ({ id, data }) => base44.functions.invoke("updateTransaction", { transaction_id: id, data }),
     onMutate: ({ id: txId, data }) => {
