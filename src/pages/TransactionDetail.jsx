@@ -19,6 +19,7 @@ import {
 import { format } from "date-fns";
 import PhaseChecklist from "../components/transactions/PhaseChecklist";
 import PhaseTaskPanel from "../components/transactions/PhaseTaskPanel";
+import PhaseTaskPanelV2 from "../components/transactions/PhaseTaskPanelV2";
 import TransactionTimeline from "../components/transactions/TransactionTimeline";
 import TaskList from "../components/transactions/TaskList";
 import { generateTasksForPhase, isPhaseComplete, PHASE_TASK_LIBRARY } from "../lib/taskLibrary";
