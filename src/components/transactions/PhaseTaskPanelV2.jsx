@@ -195,15 +195,13 @@ export default function PhaseTaskPanelV2({
                                 <Pencil className="w-3 h-3 text-gray-400" />
                               </button>
                             )}
-                            {task.is_custom && (
-                              <button
-                                onClick={() => handleDelete(task.id)}
-                                className="p-1 rounded hover:bg-red-50"
-                                title="Delete task"
-                              >
-                                <Trash2 className="w-3 h-3 text-red-400" />
-                              </button>
-                            )}
+                            <button
+                              onClick={() => handleDelete(task.id)}
+                              className="p-1 rounded hover:bg-red-50"
+                              title="Delete task"
+                            >
+                              <Trash2 className="w-3 h-3 text-red-400" />
+                            </button>
                           </div>
                         </div>
                       )}
