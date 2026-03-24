@@ -72,7 +72,7 @@ export default function TransactionDetail() {
   const { data: currentUser } = useCurrentUser();
 
   const [activeTab, setActiveTab] = useState("overview");
-  const [selectedPhase, setSelectedPhase] = useState(null);
+  const [selectedPhase, setSelectedPhase] = useState(1);
   const [aiCollapsed, setAiCollapsed] = useState(false);
   const [aiWidth, setAiWidth] = useState(380);
   const [mobileAIOpen, setMobileAIOpen] = useState(false);
