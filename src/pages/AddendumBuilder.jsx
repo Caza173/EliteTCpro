@@ -1,6 +1,6 @@
 import React, { useState, useMemo } from "react";
 import { base44 } from "@/api/base44Client";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { getSuggestedClauses, fillFromTransaction } from "@/lib/clauseEngine";
 import ClauseLibraryPanel from "../components/clauses/ClauseLibraryPanel";
 import SmartSuggestionsPanel from "../components/clauses/SmartSuggestionsPanel";
