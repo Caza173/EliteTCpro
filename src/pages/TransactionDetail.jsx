@@ -146,18 +146,43 @@ export default function TransactionDetail() {
     }
   }, [transaction?.id]);
 
-  // Auto-seed the default selected phase once data is ready
-  const seededRef = useRef(false);
+  // Track which phases have already been seeded this session
+  const seededPhasesRef = useRef(new Set());
+
+  // Auto-seed phase 1 once tasks are loaded (only once per transaction)
   useEffect(() => {
-    if (!transaction || txTasks === undefined || seededRef.current) return;
-    seededRef.current = true;
+    if (!transaction?.id || !txTasks) return;
+    if (seededPhasesRef.current.has(`${transaction.id}-${selectedPhase}`)) return;
     seedPhaseTasksIfNeeded(selectedPhase);
-  }, [transaction?.id, txTasks?.length]);
+  }, [transaction?.id, txTasks]);
 
   // Seed TransactionTasks from library if none exist yet for a given phase
   const seedPhaseTasksIfNeeded = async (phaseNum) => {
-    const existing = txTasks.filter(t => t.phase === phaseNum);
-    if (existing.length > 0) return;
+    const key = `${id}-${phaseNum}`;
+    if (seededPhasesRef.current.has(key)) return;
+    seededPhasesRef.current.add(key);
+
+    // Fetch fresh tasks to avoid stale closure issues
+    const fresh = await base44.entities.TransactionTask.filter({ transaction_id: id });
+    const existing = fresh.filter(t => t.phase === phaseNum);
+    if (existing.length > 0) {
+      // Deduplicate: keep first occurrence of each title, delete the rest
+      const seen = new Map();
+      const toDelete = [];
+      existing.forEach(t => {
+        if (seen.has(t.title)) {
+          toDelete.push(t.id);
+        } else {
+          seen.set(t.title, t);
+        }
+      });
+      if (toDelete.length > 0) {
+        await Promise.all(toDelete.map(tid => base44.entities.TransactionTask.delete(tid)));
+        refetchTxTasks();
+      }
+      return;
+    }
+
     const libTasks = generateTasksForPhase(phaseNum, id, transaction?.transaction_type);
     await Promise.all(libTasks.map((t, i) =>
       base44.entities.TransactionTask.create({
