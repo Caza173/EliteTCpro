@@ -127,6 +127,14 @@ export default function TransactionDetail() {
     enabled: !!id,
   });
 
+  // Auto-seed the default selected phase once data is ready
+  const seededRef = useRef(false);
+  useEffect(() => {
+    if (!transaction || txTasks === undefined || seededRef.current) return;
+    seededRef.current = true;
+    seedPhaseTasksIfNeeded(selectedPhase);
+  }, [transaction?.id, txTasks?.length]);
+
   // Seed TransactionTasks from library if none exist yet for a given phase
   const seedPhaseTasksIfNeeded = async (phaseNum) => {
     const existing = txTasks.filter(t => t.phase === phaseNum);
