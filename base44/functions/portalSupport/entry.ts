@@ -334,7 +334,7 @@ Deno.serve(async (req) => {
     });
 
     return Response.json({ found: true, count: active.length });
-  }
+  } // end _legacy_transaction_update
 
   return Response.json({ error: "Unknown action" }, { status: 400 });
 });
