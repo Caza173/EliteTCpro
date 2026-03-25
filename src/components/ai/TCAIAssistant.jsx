@@ -271,7 +271,7 @@ Respond to the user's latest message. Be helpful, professional, and reference sp
             }`}>
               {msg.role === "user"
                 ? <User className="w-3.5 h-3.5 text-white" />
-                : <Bot className="w-3.5 h-3.5 text-white" />
+                : <Globe className="w-3.5 h-3.5 text-white" />
               }
             </div>
             <div className={`max-w-[78%] rounded-xl px-4 py-3 text-sm leading-relaxed ${
