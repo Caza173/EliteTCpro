@@ -14,7 +14,7 @@ import {
   MapPin, User, Users, Mail, Phone, Calendar, ArrowLeft, Trash2,
   ClipboardCheck, Send, UserPlus, LayoutDashboard, GitBranch, Clock,
   DollarSign, FolderOpen, ShieldCheck, PanelLeftClose, PanelLeftOpen,
-  MessageSquare, X, Pencil, Mail as MailIcon, Receipt, CalendarDays,
+  Globe, X, Pencil, Mail as MailIcon, Receipt, CalendarDays,
 } from "lucide-react";
 import { format } from "date-fns";
 import PhaseChecklist from "../components/transactions/PhaseChecklist";
@@ -866,11 +866,11 @@ export default function TransactionDetail() {
 
       {/* Mobile floating Ask AI button */}
       <button
-        className="lg:hidden fixed bottom-6 right-6 z-40 flex items-center gap-2 px-4 py-3 rounded-full shadow-lg hover:opacity-90 transition-opacity"
+        className="lg:hidden fixed bottom-6 right-6 z-40 flex items-center gap-2 px-4 py-3 rounded-full shadow-lg transition-all hover:scale-105 hover:shadow-blue-500/30"
         style={{ background: "#2563eb", color: "#ffffff" }}
         onClick={() => setMobileAIOpen(true)}
       >
-        <MessageSquare className="w-4 h-4" />
+        <Globe className="w-4 h-4" />
         <span className="text-sm font-semibold">Ask AI</span>
       </button>
     </div>

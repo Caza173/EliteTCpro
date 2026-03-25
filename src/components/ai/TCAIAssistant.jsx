@@ -4,7 +4,7 @@ import { useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
-import { Send, Bot, User, Loader2, Sparkles, RefreshCw } from "lucide-react";
+import { Send, User, Loader2, Globe, RefreshCw } from "lucide-react";
 import { format } from "date-fns";
 
 function buildSystemPrompt(transaction, documents, checklistItems, complianceReports, complianceIssuesList = []) {
@@ -230,7 +230,7 @@ Respond to the user's latest message. Be helpful, professional, and reference sp
       <div className="flex items-center justify-between px-5 py-3.5 border-b" style={{ borderColor: "var(--card-border)", background: "var(--bg-tertiary)" }}>
         <div className="flex items-center gap-2.5">
           <div className="w-8 h-8 rounded-lg bg-blue-600 flex items-center justify-center">
-            <Sparkles className="w-4 h-4 text-white" />
+            <Globe className="w-4 h-4 text-white" />
           </div>
           <div>
             <p className="text-sm font-semibold" style={{ color: "var(--text-primary)" }}>AI Transaction Assistant</p>
@@ -287,7 +287,7 @@ Respond to the user's latest message. Be helpful, professional, and reference sp
         {loading && (
           <div className="flex gap-3">
             <div className="w-7 h-7 rounded-full bg-slate-700 flex items-center justify-center flex-shrink-0">
-              <Bot className="w-3.5 h-3.5 text-white" />
+              <Globe className="w-3.5 h-3.5 text-white" />
             </div>
             <div className="rounded-xl px-4 py-3 flex items-center gap-2" style={{ background: "var(--bg-tertiary)", border: "1px solid var(--card-border)" }}>
               <Loader2 className="w-3.5 h-3.5 animate-spin text-blue-500" />
