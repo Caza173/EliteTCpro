@@ -13,6 +13,7 @@ import {
 import {
   Users, Search, UserPlus, Loader2, CheckCircle, Pencil, Trash2, Eye, ShieldAlert, Mail
 } from "lucide-react";
+import AgentCodePanel from "../components/agents/AgentCodePanel";
 import { Switch } from "@/components/ui/switch";
 import { useCurrentUser, hasFullAccess, canDeleteRecords } from "../components/auth/useCurrentUser";
 import { ROLE_COLORS, writeAuditLog } from "../components/utils/tenantUtils";
