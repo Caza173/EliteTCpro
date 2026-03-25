@@ -100,6 +100,12 @@ function UserDetailDialog({ user, transactions, onClose, onRoleChange, currentUs
               </div>
             )}
           </div>
+          {(user?.role === "agent") && (
+            <div>
+              <p className="text-xs text-gray-400 mb-1 font-medium uppercase tracking-wide">Agent Portal Code</p>
+              <AgentCodePanel agentUser={user} transactions={transactions} />
+            </div>
+          )}
         </div>
         <DialogFooter>
           <Button variant="outline" size="sm" onClick={onClose}>Close</Button>
