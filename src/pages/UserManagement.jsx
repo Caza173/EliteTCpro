@@ -305,6 +305,7 @@ export default function UserManagement() {
                     <th className="px-4 py-2.5 text-left font-medium hidden sm:table-cell">Transactions</th>
                     <th className="px-4 py-2.5 text-left font-medium hidden md:table-cell">Joined</th>
                     <th className="px-4 py-2.5 text-left font-medium hidden lg:table-cell">Weekly Updates</th>
+                    <th className="px-4 py-2.5 text-left font-medium hidden xl:table-cell">Portal Code</th>
                     <th className="px-4 py-2.5 text-right font-medium">Actions</th>
                   </tr>
                 </thead>
