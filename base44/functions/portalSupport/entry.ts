@@ -52,8 +52,12 @@ Deno.serve(async (req) => {
     return Response.json({ success: true });
   }
 
-  // ── TRANSACTION UPDATE REQUEST ───────────────────────────────────────────────
+  // ── TRANSACTION UPDATE REQUEST — legacy, now handled by agentCodeLookup ─────
   if (action === "transaction_update") {
+    return Response.json({ error: "This endpoint has been replaced. Please use your Agent Reference Code." }, { status: 410 });
+  }
+
+  if (action === "_legacy_transaction_update") {
     const { agent_email } = body;
     if (!agent_email) {
       return Response.json({ error: "Email is required" }, { status: 400 });
