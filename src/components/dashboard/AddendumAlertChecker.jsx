@@ -101,12 +101,7 @@ async function checkAndNotify(transactions, currentUser) {
           addendum_response: "pending",
         });
 
-        // Send email notification
-        base44.integrations.Core.SendEmail({
-          to: email,
-          subject: title,
-          body: `${body}\n\nPlease log in to TC Manager to respond: Yes, I need an addendum — or — No, we're good.\n\nThis is reminder ${triggeredInterval}h before the deadline.`,
-        }).catch(() => {}); // fire-and-forget
+        // Email notifications are handled by the scheduled backend function (sendDeadlineAlerts)
       });
     });
   });
