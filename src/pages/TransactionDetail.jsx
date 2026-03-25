@@ -867,7 +867,7 @@ export default function TransactionDetail() {
       {/* Mobile floating Ask AI button */}
       <button
         className="lg:hidden fixed bottom-6 right-6 z-40 flex items-center gap-2 px-4 py-3 rounded-full shadow-lg hover:opacity-90 transition-opacity"
-        style={{ background: "var(--accent)", color: "var(--accent-text)" }}
+        style={{ background: "#2563eb", color: "#ffffff" }}
         onClick={() => setMobileAIOpen(true)}
       >
         <MessageSquare className="w-4 h-4" />
