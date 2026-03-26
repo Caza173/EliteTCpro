@@ -2,7 +2,7 @@ import React, { useState, useRef } from "react";
 import { DragDropContext, Droppable, Draggable } from "@hello-pangea/dnd";
 import { CheckCircle2, Circle, AlertCircle, GripVertical, Plus, Trash2, Pencil, BookOpen } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
-import { PHASE_MAP, getPhaseProgress } from "@/lib/taskLibrary";
+import { getPhasesForType, getPhaseProgress } from "@/lib/taskLibrary";
 import { base44 } from "@/api/base44Client";
 import { useQueryClient } from "@tanstack/react-query";
 import TaskLibraryModal from "@/components/tasks/TaskLibraryModal";
@@ -14,8 +14,10 @@ export default function PhaseTaskPanelV2({
   onTasksChanged,       // () => void — refetch signal
   transactionId,
   brokerageId,
+  transactionType,
 }) {
-  const phaseDef = PHASE_MAP[phaseNum];
+  const allPhases = getPhasesForType(transactionType);
+  const phaseDef = allPhases.find(p => p.phaseNum === phaseNum);
   const queryClient = useQueryClient();
   const phaseTasks = tasks
     .filter(t => t.phase === phaseNum)

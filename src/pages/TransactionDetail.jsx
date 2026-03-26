@@ -777,6 +777,7 @@ export default function TransactionDetail() {
                     onTasksChanged={refetchTxTasks}
                     transactionId={transaction.id}
                     brokerageId={transaction.brokerage_id}
+                    transactionType={transaction.transaction_type}
                   />
                 ) : (
                   <TaskList
