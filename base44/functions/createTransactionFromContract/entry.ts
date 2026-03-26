@@ -155,7 +155,58 @@ Deno.serve(async (req) => {
       description: `Transaction created via AI Contract Intake from file: ${file_name || "uploaded file"}`,
     });
 
-    // --- 8. Auto compliance scan (document + deadline check) ---
+    // --- 8. Seed Contingencies from parsed data ---
+    const acceptanceDate = extracted.acceptance_date || null;
+    const addDays = (dateStr, days) => {
+      if (!dateStr || days == null) return null;
+      try {
+        const d = new Date(dateStr + "T12:00:00Z");
+        d.setUTCDate(d.getUTCDate() + Math.round(Number(days)));
+        return d.toISOString().split("T")[0];
+      } catch { return null; }
+    };
+
+    const contingenciesToCreate = [];
+    const inspectionTypes = [
+      { key: "inspection_days", label: "General Building" },
+      { key: "sewage_days", label: "Sewage / Septic" },
+      { key: "water_quality_days", label: "Water Quality" },
+      { key: "radon_days", label: "Radon" },
+    ];
+    for (const { key, label } of inspectionTypes) {
+      if (extracted[key] && Number(extracted[key]) > 0) {
+        contingenciesToCreate.push({
+          transaction_id: txId, brokerage_id,
+          contingency_type: "Inspection", sub_type: label,
+          days_from_effective: Number(extracted[key]),
+          due_date: addDays(acceptanceDate, extracted[key]),
+          is_active: true, is_custom: false, source: "Parsed", status: "Pending",
+        });
+      }
+    }
+    if (extracted.financing_commitment_date) {
+      contingenciesToCreate.push({
+        transaction_id: txId, brokerage_id,
+        contingency_type: "Financing", sub_type: "Mortgage Commitment",
+        due_date: extracted.financing_commitment_date,
+        is_active: true, is_custom: false, source: "Parsed", status: "Pending",
+      });
+    }
+    if (extracted.due_diligence_days && Number(extracted.due_diligence_days) > 0) {
+      contingenciesToCreate.push({
+        transaction_id: txId, brokerage_id,
+        contingency_type: "Due Diligence", sub_type: "Due Diligence Period",
+        days_from_effective: Number(extracted.due_diligence_days),
+        due_date: addDays(acceptanceDate, extracted.due_diligence_days),
+        is_active: true, is_custom: false, source: "Parsed", status: "Pending",
+      });
+    }
+    if (contingenciesToCreate.length > 0) {
+      await Promise.all(contingenciesToCreate.map(c => base44.asServiceRole.entities.Contingency.create(c)));
+      console.log(`Seeded ${contingenciesToCreate.length} contingencies for transaction ${txId}`);
+    }
+
+    // --- 9. Auto compliance scan (document + deadline check) ---
     if (file_url) {
       base44.asServiceRole.functions.invoke("complianceEngine", {
         document_url: file_url,

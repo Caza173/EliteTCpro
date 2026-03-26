@@ -1,4 +1,4 @@
-import { createClientFromRequest } from 'npm:@base44/sdk@0.8.20';
+import { createClientFromRequest } from 'npm:@base44/sdk@0.8.23';
 
 function addDays(isoDate, days) {
   if (!isoDate || days == null) return null;
@@ -15,7 +15,7 @@ Deno.serve(async (req) => {
     const user = await base44.auth.me();
     if (!user) return Response.json({ error: "Unauthorized" }, { status: 401 });
 
-    const { file_url } = await req.json();
+    const { file_url, transaction_id, brokerage_id } = await req.json();
     if (!file_url) return Response.json({ error: "No file_url provided" }, { status: 400 });
 
     console.log("Extracting data from document...");
@@ -108,6 +108,79 @@ Deno.serve(async (req) => {
       price: result.purchase_price,
       closing: result.closing_date,
     });
+
+    // ── Auto-create Contingency records if transaction_id provided ──
+    if (transaction_id) {
+      const contingenciesToCreate = [];
+
+      const inspectionTypes = [
+        { key: "inspection_days", label: "General Building" },
+        { key: "sewage_days", label: "Sewage / Septic" },
+        { key: "water_quality_days", label: "Water Quality" },
+        { key: "radon_days", label: "Radon" },
+      ];
+
+      for (const { key, label } of inspectionTypes) {
+        if (result[key] && Number(result[key]) > 0) {
+          const dueDate = addDays(acceptanceDate, result[key]);
+          contingenciesToCreate.push({
+            transaction_id,
+            brokerage_id: brokerage_id || null,
+            contingency_type: "Inspection",
+            sub_type: label,
+            days_from_effective: Number(result[key]),
+            due_date: dueDate,
+            is_active: true,
+            is_custom: false,
+            source: "Parsed",
+            status: "Pending",
+          });
+        }
+      }
+
+      if (result.financing_commitment_date) {
+        contingenciesToCreate.push({
+          transaction_id,
+          brokerage_id: brokerage_id || null,
+          contingency_type: "Financing",
+          sub_type: "Mortgage Commitment",
+          due_date: result.financing_commitment_date,
+          is_active: true,
+          is_custom: false,
+          source: "Parsed",
+          status: "Pending",
+        });
+      }
+
+      if (result.due_diligence_days && Number(result.due_diligence_days) > 0) {
+        const dueDate = addDays(acceptanceDate, result.due_diligence_days);
+        contingenciesToCreate.push({
+          transaction_id,
+          brokerage_id: brokerage_id || null,
+          contingency_type: "Due Diligence",
+          sub_type: "Due Diligence Period",
+          days_from_effective: Number(result.due_diligence_days),
+          due_date: dueDate,
+          is_active: true,
+          is_custom: false,
+          source: "Parsed",
+          status: "Pending",
+        });
+      }
+
+      if (contingenciesToCreate.length > 0) {
+        // Remove existing parsed contingencies to avoid duplicates on re-parse
+        const existing = await base44.asServiceRole.entities.Contingency.filter({
+          transaction_id,
+          source: "Parsed",
+        });
+        await Promise.all(existing.map(e => base44.asServiceRole.entities.Contingency.delete(e.id)));
+        // Create new ones
+        await Promise.all(contingenciesToCreate.map(c => base44.asServiceRole.entities.Contingency.create(c)));
+        console.log(`Created ${contingenciesToCreate.length} contingencies for transaction ${transaction_id}`);
+        result._contingencies_created = contingenciesToCreate.length;
+      }
+    }
 
     return Response.json(result);
   } catch (error) {

@@ -7,7 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Send, User, Loader2, Globe, RefreshCw } from "lucide-react";
 import { format } from "date-fns";
 
-function buildSystemPrompt(transaction, documents, checklistItems, complianceReports, complianceIssuesList = []) {
+function buildSystemPrompt(transaction, documents, checklistItems, complianceReports, complianceIssuesList = [], contingencies = []) {
   const buyers = transaction.buyers?.length ? transaction.buyers.join(", ") : (transaction.buyer || "Unknown");
   const sellers = transaction.sellers?.length ? transaction.sellers.join(", ") : (transaction.seller || "Unknown");
 
@@ -112,6 +112,23 @@ ${missingDocs}
 === COMPLIANCE ISSUES ===
 ${complianceIssues}
 
+=== CONTINGENCIES ===
+${(() => {
+  if (!contingencies.length) return "  No contingencies on file.";
+  const today = new Date();
+  return contingencies.map(c => {
+    const label = [c.contingency_type, c.sub_type].filter(Boolean).join(" – ");
+    let duePart = c.due_date ? ` | Due: ${format(new Date(c.due_date), "MMM d, yyyy")}` : "";
+    if (c.due_date) {
+      const days = Math.ceil((new Date(c.due_date) - today) / (1000 * 60 * 60 * 24));
+      if (days < 0) duePart += ` (${Math.abs(days)} days OVERDUE)`;
+      else if (days === 0) duePart += " (TODAY)";
+      else duePart += ` (${days} days away)`;
+    }
+    return `  - ${label}${duePart} | Status: ${c.status}`;
+  }).join("\n");
+})()}
+
 === YOUR CAPABILITIES ===
 You can help with:
 - Answering questions about this transaction
@@ -178,6 +195,12 @@ export default function TCAIAssistant({ transaction: initialTransaction, current
     queryFn: () => base44.entities.ComplianceIssue.filter({ transaction_id: transaction.id, status: "open" }),
   });
 
+  const { data: contingencies = [] } = useQuery({
+    queryKey: ["contingencies", transaction.id],
+    queryFn: () => base44.entities.Contingency.filter({ transaction_id: transaction.id }),
+    staleTime: 0,
+  });
+
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages, loading]);
@@ -191,7 +214,7 @@ export default function TCAIAssistant({ transaction: initialTransaction, current
     setMessages(newMessages);
     setLoading(true);
 
-    const systemPrompt = buildSystemPrompt(transaction, documents, checklistItems, complianceReports, complianceIssuesList);
+    const systemPrompt = buildSystemPrompt(transaction, documents, checklistItems, complianceReports, complianceIssuesList, contingencies);
 
     const conversationHistory = newMessages
       .map((m) => `${m.role === "user" ? "User" : "Assistant"}: ${m.content}`)

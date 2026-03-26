@@ -63,7 +63,7 @@ const STAGE_LABELS = {
   combining:   "Stage 4: Combining fields & calculating deadlines...",
 };
 
-export default function PurchaseAgreementUpload({ onParsed }) {
+export default function PurchaseAgreementUpload({ onParsed, transactionId, brokerageId }) {
   const [file, setFile]               = useState(null);
   const [status, setStatus]           = useState("idle");
   const [stageLabel, setStageLabel]   = useState("");
@@ -120,7 +120,11 @@ export default function PurchaseAgreementUpload({ onParsed }) {
     setStageLabel(STAGE_LABELS.parsing);
 
     // Call the new V2 function — it handles text extraction + section splitting + parallel AI
-    const response = await base44.functions.invoke("parsePurchaseAgreementV2", { file_url });
+    const response = await base44.functions.invoke("parsePurchaseAgreementV2", {
+      file_url,
+      transaction_id: transactionId || null,
+      brokerage_id: brokerageId || null,
+    });
     const raw = response?.data;
 
     if (!raw || raw.error) {

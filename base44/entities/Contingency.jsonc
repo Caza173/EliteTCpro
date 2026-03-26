@@ -1,0 +1,77 @@
+{
+  "name": "Contingency",
+  "type": "object",
+  "properties": {
+    "transaction_id": {
+      "type": "string"
+    },
+    "brokerage_id": {
+      "type": "string"
+    },
+    "contingency_type": {
+      "type": "string",
+      "enum": [
+        "Inspection",
+        "Financing",
+        "Appraisal",
+        "Title",
+        "Due Diligence",
+        "Other"
+      ],
+      "default": "Inspection"
+    },
+    "sub_type": {
+      "type": "string",
+      "description": "e.g. General Building, Septic, Conventional Financing"
+    },
+    "is_active": {
+      "type": "boolean",
+      "default": true
+    },
+    "days_from_effective": {
+      "type": "number"
+    },
+    "due_date": {
+      "type": "string",
+      "format": "date"
+    },
+    "scheduled_date": {
+      "type": "string",
+      "format": "date"
+    },
+    "completed_date": {
+      "type": "string",
+      "format": "date"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "Pending",
+        "Scheduled",
+        "Completed",
+        "Waived",
+        "Overdue"
+      ],
+      "default": "Pending"
+    },
+    "is_custom": {
+      "type": "boolean",
+      "default": false
+    },
+    "notes": {
+      "type": "string"
+    },
+    "source": {
+      "type": "string",
+      "enum": [
+        "Parsed",
+        "Manual"
+      ],
+      "default": "Manual"
+    }
+  },
+  "required": [
+    "transaction_id",
+    "contingency_type"
+  ]
+}

@@ -14,7 +14,7 @@ import {
   MapPin, User, Users, Mail, Phone, Calendar, ArrowLeft, Trash2,
   ClipboardCheck, Send, UserPlus, LayoutDashboard, GitBranch, Clock,
   DollarSign, FolderOpen, ShieldCheck, PanelLeftClose, PanelLeftOpen,
-  Globe, X, Pencil, Mail as MailIcon, Receipt, CalendarDays,
+  Globe, X, Pencil, Mail as MailIcon, Receipt, CalendarDays, Zap,
 } from "lucide-react";
 import { format } from "date-fns";
 import PhaseChecklist from "../components/transactions/PhaseChecklist";
@@ -42,23 +42,26 @@ import EmailComposerModal from "../components/email/EmailComposerModal";
 import UnderContractEmailButton from "../components/email/UnderContractEmailButton";
 import ConvertToTransactionButton from "../components/transactions/ConvertToTransactionButton";
 import ListingIntakeTab from "../components/transactions/ListingIntakeTab";
+import ContingencyPanel from "../components/contingencies/ContingencyPanel";
 
 const TX_TABS = [
-  { id: "overview",   label: "Overview",   icon: LayoutDashboard },
-  { id: "timeline",   label: "Timeline",   icon: GitBranch },
-  { id: "deadlines",  label: "Deadlines",  icon: Clock },
-  { id: "documents",  label: "Documents",  icon: FolderOpen },
-  { id: "compliance", label: "Compliance", icon: ShieldCheck },
+  { id: "overview",      label: "Overview",      icon: LayoutDashboard },
+  { id: "contingencies", label: "Contingencies", icon: Zap },
+  { id: "timeline",      label: "Timeline",      icon: GitBranch },
+  { id: "deadlines",     label: "Deadlines",     icon: Clock },
+  { id: "documents",     label: "Documents",     icon: FolderOpen },
+  { id: "compliance",    label: "Compliance",    icon: ShieldCheck },
   { id: "financial_tools", label: "Financial Tools", icon: Receipt },
 ];
 
 const LISTING_TABS = [
   { id: "listing_intake", label: "Listing Intake", icon: ClipboardCheck },
-  { id: "overview",   label: "Overview",   icon: LayoutDashboard },
-  { id: "timeline",   label: "Timeline",   icon: GitBranch },
-  { id: "deadlines",  label: "Deadlines",  icon: Clock },
-  { id: "documents",  label: "Documents",  icon: FolderOpen },
-  { id: "compliance", label: "Compliance", icon: ShieldCheck },
+  { id: "overview",      label: "Overview",      icon: LayoutDashboard },
+  { id: "contingencies", label: "Contingencies", icon: Zap },
+  { id: "timeline",      label: "Timeline",      icon: GitBranch },
+  { id: "deadlines",     label: "Deadlines",     icon: Clock },
+  { id: "documents",     label: "Documents",     icon: FolderOpen },
+  { id: "compliance",    label: "Compliance",    icon: ShieldCheck },
   { id: "financial_tools", label: "Financial Tools", icon: Receipt },
 ];
 
@@ -883,6 +886,21 @@ export default function TransactionDetail() {
                 onSave={(changes) => updateMutation.mutate({ id: transaction.id, data: { ...changes, last_activity_at: new Date().toISOString() } })} />
             </CardContent>
           </Card>
+        )}
+
+        {activeTab === "contingencies" && (
+          <div className="space-y-4">
+            <div>
+              <h3 className="text-base font-semibold" style={{ color: "var(--text-primary)" }}>Contingencies</h3>
+              <p className="text-sm mt-0.5" style={{ color: "var(--text-muted)" }}>
+                Manage all contract contingencies — inspections, financing, appraisal, and more.
+                {transaction.contract_date && (
+                  <span className="ml-1">Effective date: <strong>{transaction.contract_date}</strong>.</span>
+                )}
+              </p>
+            </div>
+            <ContingencyPanel transaction={transaction} />
+          </div>
         )}
 
         {activeTab === "documents" && (
