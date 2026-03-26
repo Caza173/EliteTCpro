@@ -23,7 +23,7 @@ Deno.serve(async (req) => {
     const user = await base44.auth.me();
     if (!user) return Response.json({ error: 'Unauthorized' }, { status: 401 });
 
-    const { transaction_id, field_key } = await req.json();
+    const { transaction_id, field_key, contingency_id, date: contingencyDate, title: contingencyTitle } = await req.json();
     if (!transaction_id) return Response.json({ error: 'transaction_id required' }, { status: 400 });
 
     const transactions = await base44.entities.Transaction.filter({ id: transaction_id });
@@ -42,35 +42,27 @@ Deno.serve(async (req) => {
     const updated = [];
     const errors = [];
 
-    // Filter to a single field if field_key provided (individual sync)
-    const fieldsToSync = field_key
-      ? DEADLINE_FIELDS.filter(f => f.field === field_key)
-      : DEADLINE_FIELDS;
+    // Build attendees: agent + client
+    const attendees = [];
+    if (transaction.agent_email) attendees.push({ email: transaction.agent_email });
+    if (transaction.client_email) attendees.push({ email: transaction.client_email });
 
-    for (const { field, title } of fieldsToSync) {
-      const dateStr = transaction[field];
-      if (!dateStr) continue;
+    const buildBody = (title, dateStr) => ({
+      summary: `${title} — ${transaction.address}`,
+      description: `Transaction: ${transaction.address}\nTC: ${transaction.agent || ''}\nAgent: ${transaction.buyers_agent_name || transaction.sellers_agent_name || ''}\n\nManaged via EliteTC.`,
+      start: { date: dateStr },
+      end: { date: nextDay(dateStr) },
+      reminders: { useDefault: false, overrides: [{ method: 'email', minutes: 1440 }, { method: 'popup', minutes: 60 }] },
+      attendees,
+      guestsCanSeeOtherGuests: false,
+      sendUpdates: 'all',
+    });
 
-      // Build attendees: agent + client
-      const attendees = [];
-      if (transaction.agent_email) attendees.push({ email: transaction.agent_email });
-      if (transaction.client_email) attendees.push({ email: transaction.client_email });
-
-      const eventBody = {
-        summary: `${title} — ${transaction.address}`,
-        description: `Transaction: ${transaction.address}\nTC: ${transaction.agent || ''}\nAgent: ${transaction.buyers_agent_name || transaction.sellers_agent_name || ''}\n\nManaged via EliteTC.`,
-        start: { date: dateStr },
-        end: { date: nextDay(dateStr) },
-        reminders: { useDefault: false, overrides: [{ method: 'email', minutes: 1440 }, { method: 'popup', minutes: 60 }] },
-        attendees,
-        guestsCanSeeOtherGuests: false,
-        sendUpdates: 'all',
-      };
-
-      const existingMap = mapByField[field];
+    const syncOne = async (mapKey, title, dateStr) => {
+      const existingMap = mapByField[mapKey];
+      const eventBody = buildBody(title, dateStr);
 
       if (existingMap?.calendar_event_id) {
-        // Try to update existing event
         const res = await fetch(
           `https://www.googleapis.com/calendar/v3/calendars/primary/events/${existingMap.calendar_event_id}`,
           { method: 'PUT', headers: authHeader, body: JSON.stringify(eventBody) }
@@ -78,41 +70,48 @@ Deno.serve(async (req) => {
         if (res.ok) {
           updated.push(title);
         } else if (res.status === 404) {
-          // Event was deleted from calendar — create a new one
-          const createRes = await fetch(
-            'https://www.googleapis.com/calendar/v3/calendars/primary/events',
-            { method: 'POST', headers: authHeader, body: JSON.stringify(eventBody) }
-          );
+          const createRes = await fetch('https://www.googleapis.com/calendar/v3/calendars/primary/events',
+            { method: 'POST', headers: authHeader, body: JSON.stringify(eventBody) });
           if (createRes.ok) {
             const newEvent = await createRes.json();
             await base44.asServiceRole.entities.CalendarEventMap.update(existingMap.id, { calendar_event_id: newEvent.id });
             created.push(title);
-          } else {
-            errors.push(title);
-          }
-        } else {
-          errors.push(title);
-        }
+          } else { errors.push(title); }
+        } else { errors.push(title); }
       } else {
-        // Create new event
-        const res = await fetch(
-          'https://www.googleapis.com/calendar/v3/calendars/primary/events',
-          { method: 'POST', headers: authHeader, body: JSON.stringify(eventBody) }
-        );
+        const res = await fetch('https://www.googleapis.com/calendar/v3/calendars/primary/events',
+          { method: 'POST', headers: authHeader, body: JSON.stringify(eventBody) });
         if (res.ok) {
           const newEvent = await res.json();
           await base44.asServiceRole.entities.CalendarEventMap.create({
-            transaction_id,
-            field_key: field,
-            calendar_event_id: newEvent.id,
+            transaction_id, field_key: mapKey, calendar_event_id: newEvent.id,
             brokerage_id: transaction.brokerage_id || '',
           });
           created.push(title);
         } else {
           const errText = await res.text();
-          console.error(`Failed to create event for ${field}:`, errText);
+          console.error(`Failed to create event for ${mapKey}:`, errText);
           errors.push(title);
         }
+      }
+    };
+
+    // Case 1: single contingency sync
+    if (contingency_id && contingencyDate && contingencyTitle) {
+      const mapKey = field_key || `contingency_${contingency_id}`;
+      await syncOne(mapKey, contingencyTitle, contingencyDate);
+    }
+    // Case 2: single system field sync
+    else if (field_key) {
+      const fieldDef = DEADLINE_FIELDS.find(f => f.field === field_key);
+      const dateStr = transaction[field_key];
+      if (fieldDef && dateStr) await syncOne(field_key, fieldDef.title, dateStr);
+    }
+    // Case 3: sync all system fields
+    else {
+      for (const { field, title } of DEADLINE_FIELDS) {
+        const dateStr = transaction[field];
+        if (dateStr) await syncOne(field, title, dateStr);
       }
     }
 
@@ -121,7 +120,7 @@ Deno.serve(async (req) => {
       created: created.length,
       updated: updated.length,
       errors,
-      message: `Created ${created.length} events, updated ${updated.length} events on Google Calendar. Attendees (agent & client) will receive calendar invitations.`,
+      message: `Created ${created.length} events, updated ${updated.length} events on Google Calendar.`,
     });
   } catch (error) {
     console.error('syncTransactionDeadlinesToCalendar error:', error.message);

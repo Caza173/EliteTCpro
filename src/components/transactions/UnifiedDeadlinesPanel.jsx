@@ -1,0 +1,386 @@
+/**
+ * UnifiedDeadlinesPanel — Deadlines Tab (OUTPUT / ACTION)
+ *
+ * Shows ALL deadlines in one place:
+ *  - System deadlines (effective date, earnest money, closing) stored on Transaction fields
+ *  - Contingency-derived deadlines pulled from the Contingency entity (source of truth)
+ *  - Custom manual deadlines (Contingency records with source = "Manual" and no contingency category match)
+ *
+ * Editing a contingency-derived deadline updates the Contingency record directly.
+ * Editing a system deadline updates the Transaction record via onSave.
+ * Calendar sync is available per row.
+ */
+import React, { useState } from "react";
+import { base44 } from "@/api/base44Client";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { format, parseISO, differenceInDays } from "date-fns";
+import {
+  Pencil, Check, X, Calendar, DollarSign, Home,
+  CalendarCheck, CalendarPlus, Loader2, AlertTriangle,
+  Plus, Tag, Zap,
+} from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Badge } from "@/components/ui/badge";
+import { toast } from "sonner";
+
+// System deadlines stored directly on the transaction record
+const SYSTEM_FIELDS = [
+  { key: "contract_date",          label: "Effective / Acceptance Date", category: "effective_date",  color: "blue" },
+  { key: "earnest_money_deadline", label: "Earnest Money Due",           category: "earnest_money",   color: "indigo", cashExcluded: false },
+  { key: "closing_date",           label: "Closing / Transfer of Title", category: "closing",         color: "rose" },
+];
+
+const CATEGORY_COLORS = {
+  effective_date:   { bg: "bg-blue-50",   border: "border-blue-200",   text: "text-blue-700",   dot: "bg-blue-400" },
+  earnest_money:    { bg: "bg-indigo-50", border: "border-indigo-200", text: "text-indigo-700", dot: "bg-indigo-400" },
+  closing:          { bg: "bg-rose-50",   border: "border-rose-200",   text: "text-rose-700",   dot: "bg-rose-400" },
+  Inspection:       { bg: "bg-orange-50", border: "border-orange-200", text: "text-orange-700", dot: "bg-orange-400" },
+  Financing:        { bg: "bg-emerald-50",border: "border-emerald-200",text: "text-emerald-700",dot: "bg-emerald-500" },
+  Appraisal:        { bg: "bg-teal-50",   border: "border-teal-200",   text: "text-teal-700",   dot: "bg-teal-500" },
+  Title:            { bg: "bg-purple-50", border: "border-purple-200", text: "text-purple-700", dot: "bg-purple-500" },
+  "Due Diligence":  { bg: "bg-violet-50", border: "border-violet-200", text: "text-violet-700", dot: "bg-violet-500" },
+  Other:            { bg: "bg-gray-50",   border: "border-gray-200",   text: "text-gray-700",   dot: "bg-gray-400" },
+};
+
+function fmtDate(d) {
+  if (!d) return null;
+  try { return format(parseISO(d), "MMM d, yyyy"); } catch { return d; }
+}
+
+function getDaysLabel(dateStr) {
+  if (!dateStr) return null;
+  try {
+    const days = differenceInDays(parseISO(dateStr), new Date());
+    if (days < 0)  return { label: `${Math.abs(days)}d overdue`, cls: "text-red-600 font-semibold" };
+    if (days === 0) return { label: "Today", cls: "text-orange-600 font-semibold" };
+    if (days <= 3)  return { label: `${days}d left`, cls: "text-amber-600 font-semibold" };
+    if (days <= 7)  return { label: `${days}d left`, cls: "text-yellow-600" };
+    return { label: `${days}d away`, cls: "text-gray-400" };
+  } catch { return null; }
+}
+
+// ── Single deadline row ──────────────────────────────────────────────────────
+function DeadlineRow({ item, calendarMaps, transactionId, onUpdateContingency, onUpdateTransaction, onAddManual, onRefreshCalendar }) {
+  const [editing, setEditing] = useState(false);
+  const [editDate, setEditDate] = useState(item.date || "");
+  const [syncing, setSyncing] = useState(false);
+
+  const colors = CATEGORY_COLORS[item.category] || CATEGORY_COLORS.Other;
+  const daysInfo = getDaysLabel(item.date);
+  const isOverdue = daysInfo?.cls?.includes("red");
+
+  // Check if this item has a calendar sync
+  const calMapKey = item.sourceType === "system" ? item.key : `contingency_${item.id}`;
+  const calEntry = calendarMaps.find(m => m.field_key === calMapKey);
+  const isSynced = !!calEntry;
+
+  const handleSave = async () => {
+    if (item.sourceType === "system") {
+      onUpdateTransaction({ [item.key]: editDate });
+    } else {
+      await onUpdateContingency(item.id, { due_date: editDate });
+    }
+    setEditing(false);
+  };
+
+  const handleSync = async () => {
+    setSyncing(true);
+    try {
+      const payload = item.sourceType === "system"
+        ? { transaction_id: transactionId, field_key: item.key }
+        : { transaction_id: transactionId, contingency_id: item.id, field_key: calMapKey, date: item.date, title: item.label };
+
+      const res = await base44.functions.invoke("syncTransactionDeadlinesToCalendar", payload);
+      if (res.data?.error) throw new Error(res.data.error);
+      onRefreshCalendar();
+      toast.success(isSynced ? "Calendar event updated" : "Added to Google Calendar");
+    } catch (e) {
+      toast.error(e.message || "Calendar sync failed");
+    }
+    setSyncing(false);
+  };
+
+  return (
+    <div className={`rounded-xl border p-3.5 ${colors.bg} ${colors.border} transition-all ${isOverdue ? "ring-1 ring-red-300" : ""}`}>
+      <div className="flex items-start gap-3">
+        {/* Color dot */}
+        <div className={`w-2.5 h-2.5 rounded-full mt-1.5 flex-shrink-0 ${colors.dot}`} />
+
+        <div className="flex-1 min-w-0">
+          {/* Label row */}
+          <div className="flex items-center gap-1.5 flex-wrap mb-0.5">
+            <span className={`text-sm font-semibold ${colors.text}`}>{item.label}</span>
+            {item.sourceType === "contingency" && (
+              <span className="text-[10px] bg-white/70 border border-current/20 px-1.5 py-0.5 rounded font-medium opacity-70">
+                From Contingency
+              </span>
+            )}
+            {item.sourceType === "manual" && (
+              <span className="text-[10px] bg-white/70 border border-current/20 px-1.5 py-0.5 rounded font-medium opacity-70">
+                Custom
+              </span>
+            )}
+          </div>
+
+          {editing ? (
+            <div className="flex items-center gap-1.5 mt-1">
+              <Input
+                type="date"
+                value={editDate}
+                onChange={e => setEditDate(e.target.value)}
+                className="h-7 text-xs py-0 bg-white/80 border-white"
+                autoFocus
+              />
+              <Button size="icon" variant="ghost" className="h-7 w-7 text-emerald-600 hover:bg-white/40" onClick={handleSave}>
+                <Check className="w-3.5 h-3.5" />
+              </Button>
+              <Button size="icon" variant="ghost" className="h-7 w-7 text-red-500 hover:bg-white/40" onClick={() => { setEditing(false); setEditDate(item.date || ""); }}>
+                <X className="w-3.5 h-3.5" />
+              </Button>
+            </div>
+          ) : (
+            <div className="flex items-center justify-between gap-2">
+              <div>
+                {item.date ? (
+                  <span className="text-sm font-medium text-gray-800">{fmtDate(item.date)}</span>
+                ) : (
+                  <span className="text-xs italic text-gray-400">Not set</span>
+                )}
+                {daysInfo && item.date && (
+                  <span className={`ml-2 text-xs ${daysInfo.cls}`}>{daysInfo.label}</span>
+                )}
+                {item.daysFromEffective && (
+                  <span className="ml-2 text-xs text-gray-400">{item.daysFromEffective}d from effective</span>
+                )}
+              </div>
+
+              {/* Action buttons */}
+              <div className="flex items-center gap-1 flex-shrink-0">
+                {item.date && (
+                  <Button
+                    size="icon" variant="ghost"
+                    className={`h-6 w-6 hover:bg-white/50 transition-colors ${isSynced ? "text-emerald-600" : "text-gray-400 hover:text-gray-600"}`}
+                    onClick={handleSync}
+                    disabled={syncing}
+                    title={isSynced ? "Update calendar event" : "Sync to Google Calendar"}
+                  >
+                    {syncing
+                      ? <Loader2 className="w-3 h-3 animate-spin" />
+                      : isSynced ? <CalendarCheck className="w-3 h-3" /> : <CalendarPlus className="w-3 h-3" />
+                    }
+                  </Button>
+                )}
+                <Button
+                  size="icon" variant="ghost"
+                  className="h-6 w-6 text-gray-400 hover:text-gray-700 hover:bg-white/50"
+                  onClick={() => { setEditDate(item.date || ""); setEditing(true); }}
+                  title="Edit date"
+                >
+                  <Pencil className="w-3 h-3" />
+                </Button>
+              </div>
+            </div>
+          )}
+
+          {/* Calendar synced label */}
+          {isSynced && !editing && (
+            <p className="text-[10px] text-gray-500 mt-0.5 flex items-center gap-1">
+              <CalendarCheck className="w-2.5 h-2.5 text-emerald-500" /> Synced to calendar
+            </p>
+          )}
+
+          {/* Notes if any (contingency records) */}
+          {item.notes && (
+            <p className="text-xs text-gray-500 mt-0.5 italic truncate">{item.notes}</p>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ── Add Custom Deadline modal (inline) ──────────────────────────────────────
+function AddCustomDeadlineRow({ transactionId, brokerageId, onAdded, onCancel }) {
+  const [form, setForm] = useState({ label: "", date: "", notes: "" });
+
+  const handleSave = async () => {
+    if (!form.label || !form.date) { toast.error("Name and date are required"); return; }
+    await base44.entities.Contingency.create({
+      transaction_id: transactionId,
+      brokerage_id: brokerageId,
+      contingency_type: "Other",
+      sub_type: form.label,
+      due_date: form.date,
+      notes: form.notes,
+      status: "Pending",
+      is_active: true,
+      is_custom: true,
+      source: "Manual",
+    });
+    onAdded();
+  };
+
+  return (
+    <div className="rounded-xl border border-dashed border-blue-300 bg-blue-50/40 p-3.5 space-y-2">
+      <p className="text-xs font-semibold text-blue-700">Add Custom Deadline</p>
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+        <Input
+          placeholder="Name (e.g. HOA Docs Due)"
+          value={form.label}
+          onChange={e => setForm(f => ({ ...f, label: e.target.value }))}
+          className="h-7 text-xs"
+          autoFocus
+        />
+        <Input
+          type="date"
+          value={form.date}
+          onChange={e => setForm(f => ({ ...f, date: e.target.value }))}
+          className="h-7 text-xs"
+        />
+        <Input
+          placeholder="Notes (optional)"
+          value={form.notes}
+          onChange={e => setForm(f => ({ ...f, notes: e.target.value }))}
+          className="h-7 text-xs"
+        />
+      </div>
+      <div className="flex gap-2">
+        <Button size="sm" className="h-7 text-xs bg-blue-600 hover:bg-blue-700" onClick={handleSave}>
+          <Check className="w-3 h-3 mr-1" /> Save
+        </Button>
+        <Button size="sm" variant="outline" className="h-7 text-xs" onClick={onCancel}>Cancel</Button>
+      </div>
+    </div>
+  );
+}
+
+// ── Main component ───────────────────────────────────────────────────────────
+export default function UnifiedDeadlinesPanel({ transaction, onSave }) {
+  const queryClient = useQueryClient();
+  const [addingCustom, setAddingCustom] = useState(false);
+
+  const { data: contingencies = [] } = useQuery({
+    queryKey: ["contingencies", transaction.id],
+    queryFn: () => base44.entities.Contingency.filter({ transaction_id: transaction.id }),
+    enabled: !!transaction.id,
+  });
+
+  const { data: calendarMaps = [] } = useQuery({
+    queryKey: ["calendarMaps", transaction.id],
+    queryFn: () => base44.entities.CalendarEventMap.filter({ transaction_id: transaction.id }),
+    enabled: !!transaction.id,
+  });
+
+  const refreshCalendar = () => queryClient.invalidateQueries({ queryKey: ["calendarMaps", transaction.id] });
+  const refreshContingencies = () => queryClient.invalidateQueries({ queryKey: ["contingencies", transaction.id] });
+
+  const handleUpdateContingency = async (id, data) => {
+    await base44.entities.Contingency.update(id, data);
+    refreshContingencies();
+  };
+
+  // ── Build unified deadline list ──────────────────────────────────────────
+  // 1. System fields from Transaction
+  const systemItems = SYSTEM_FIELDS.map(f => ({
+    id: f.key,
+    key: f.key,
+    label: f.label,
+    date: transaction[f.key] || null,
+    category: f.category,
+    sourceType: "system",
+    sortOrder: f.key === "contract_date" ? 0 : f.key === "closing_date" ? 999 : 1,
+  }));
+
+  // 2. Contingency-derived deadlines
+  const contingencyItems = contingencies
+    .filter(c => c.is_active !== false)
+    .map(c => ({
+      id: c.id,
+      key: `contingency_${c.id}`,
+      label: [c.contingency_type, c.sub_type].filter(Boolean).join(" – "),
+      date: c.due_date || null,
+      category: c.contingency_type,
+      sourceType: c.source === "Manual" && c.is_custom ? "manual" : "contingency",
+      daysFromEffective: c.days_from_effective || null,
+      notes: c.notes || null,
+      status: c.status,
+      sortOrder: 50,
+    }));
+
+  // Merge: sort by date, putting null dates last
+  const allItems = [...systemItems, ...contingencyItems].sort((a, b) => {
+    if (a.sortOrder !== b.sortOrder) return a.sortOrder - b.sortOrder;
+    if (!a.date && !b.date) return 0;
+    if (!a.date) return 1;
+    if (!b.date) return -1;
+    return new Date(a.date) - new Date(b.date);
+  });
+
+  // Stats
+  const today = new Date();
+  const overdue = allItems.filter(i => i.date && differenceInDays(parseISO(i.date), today) < 0 && i.status !== "Completed" && i.status !== "Waived").length;
+  const upcoming = allItems.filter(i => i.date && differenceInDays(parseISO(i.date), today) >= 0 && differenceInDays(parseISO(i.date), today) <= 7).length;
+  const synced = calendarMaps.length;
+
+  return (
+    <div className="space-y-4">
+      {/* Stats bar */}
+      <div className="flex flex-wrap gap-2">
+        <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white border border-gray-200 text-xs text-gray-600">
+          <Calendar className="w-3.5 h-3.5 text-gray-400" />
+          {allItems.filter(i => i.date).length} deadlines
+        </div>
+        {overdue > 0 && (
+          <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-red-50 border border-red-200 text-xs text-red-700 font-semibold">
+            <AlertTriangle className="w-3.5 h-3.5" /> {overdue} overdue
+          </div>
+        )}
+        {upcoming > 0 && (
+          <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-amber-50 border border-amber-200 text-xs text-amber-700">
+            <Zap className="w-3.5 h-3.5" /> {upcoming} this week
+          </div>
+        )}
+        {synced > 0 && (
+          <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-50 border border-emerald-200 text-xs text-emerald-700">
+            <CalendarCheck className="w-3.5 h-3.5" /> {synced} synced
+          </div>
+        )}
+      </div>
+
+      {/* Deadline grid */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+        {allItems.map(item => (
+          <DeadlineRow
+            key={item.id}
+            item={item}
+            calendarMaps={calendarMaps}
+            transactionId={transaction.id}
+            onUpdateContingency={handleUpdateContingency}
+            onUpdateTransaction={onSave}
+            onRefreshCalendar={refreshCalendar}
+          />
+        ))}
+      </div>
+
+      {/* Custom deadline add */}
+      {addingCustom ? (
+        <AddCustomDeadlineRow
+          transactionId={transaction.id}
+          brokerageId={transaction.brokerage_id}
+          onAdded={() => { refreshContingencies(); setAddingCustom(false); }}
+          onCancel={() => setAddingCustom(false)}
+        />
+      ) : (
+        <Button
+          variant="outline"
+          size="sm"
+          className="h-8 text-xs gap-1.5 text-gray-600 border-dashed"
+          onClick={() => setAddingCustom(true)}
+        >
+          <Plus className="w-3.5 h-3.5" /> Add Custom Deadline
+        </Button>
+      )}
+    </div>
+  );
+}
