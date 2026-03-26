@@ -75,6 +75,8 @@ function ContingencyRow({ c, effectiveDate, onUpdate, onDelete }) {
     sub_type: c.sub_type || "",
     days_from_effective: c.days_from_effective || "",
     due_date: c.due_date || "",
+    due_time: c.due_time || "",
+    is_all_day: c.is_all_day ?? true,
     scheduled_date: c.scheduled_date || "",
     scheduled_time: c.scheduled_time || "",
     status: c.status || "Pending",
@@ -91,6 +93,8 @@ function ContingencyRow({ c, effectiveDate, onUpdate, onDelete }) {
       sub_type: form.sub_type,
       days_from_effective: form.days_from_effective ? Number(form.days_from_effective) : null,
       due_date: form.due_date || null,
+      due_time: form.is_all_day ? null : (form.due_time || null),
+      is_all_day: form.is_all_day,
       scheduled_date: form.scheduled_date || null,
       scheduled_time: form.scheduled_time || null,
       status: form.status,
@@ -104,7 +108,10 @@ function ContingencyRow({ c, effectiveDate, onUpdate, onDelete }) {
       sub_type: c.sub_type || "",
       days_from_effective: c.days_from_effective || "",
       due_date: c.due_date || "",
+      due_time: c.due_time || "",
+      is_all_day: c.is_all_day ?? true,
       scheduled_date: c.scheduled_date || "",
+      scheduled_time: c.scheduled_time || "",
       status: c.status || "Pending",
       notes: c.notes || "",
     });
@@ -143,6 +150,27 @@ function ContingencyRow({ c, effectiveDate, onUpdate, onDelete }) {
                 className="h-7 text-xs"
               />
             </div>
+            {!form.days_from_effective && (
+              <div className="flex items-center gap-2 mt-1">
+                <label className="flex items-center gap-1 text-xs text-gray-600">
+                  <input
+                    type="checkbox"
+                    checked={form.is_all_day}
+                    onChange={e => setForm(f => ({ ...f, is_all_day: e.target.checked, due_time: e.target.checked ? "" : f.due_time }))}
+                    className="rounded border-gray-300 text-blue-600 focus:ring-blue-300"
+                  />
+                  All Day
+                </label>
+                {!form.is_all_day && (
+                  <Input
+                    type="time"
+                    value={form.due_time}
+                    onChange={e => setForm(f => ({ ...f, due_time: e.target.value }))}
+                    className="h-6 text-xs w-28"
+                  />
+                )}
+              </div>
+            )}
           </td>
           <td className="px-3 py-2">
             <div className="flex gap-1.5 flex-col">
@@ -194,7 +222,12 @@ function ContingencyRow({ c, effectiveDate, onUpdate, onDelete }) {
           </td>
           <td className="px-3 py-2.5">
             <div>
-              <p className="text-sm text-gray-800">{fmtDate(c.due_date)}</p>
+              <div className="flex items-center gap-1.5">
+                <p className="text-sm text-gray-800">{fmtDate(c.due_date)}</p>
+                {!c.is_all_day && c.due_time && (
+                  <span className="text-xs font-medium text-blue-600">{formatTime(c.due_time)}</span>
+                )}
+              </div>
               {daysInfo && <p className={`text-xs ${daysInfo.cls}`}>{daysInfo.label}</p>}
               {c.days_from_effective && <p className="text-xs text-gray-400">{c.days_from_effective} days from effective</p>}
             </div>
@@ -226,30 +259,34 @@ function AddContingencyRow({ transactionId, brokerageId, effectiveDate, type, on
     sub_type: "",
     days_from_effective: "",
     due_date: "",
+    due_time: "",
+    is_all_day: type === "Inspection" ? false : true,
     scheduled_date: "",
     scheduled_time: "",
     status: "Pending",
     notes: "",
-    });
+  });
 
-    const handleDaysChange = (val) => {
+  const handleDaysChange = (val) => {
     const recalcDate = addDaysToDate(effectiveDate, val);
     setForm(f => ({ ...f, days_from_effective: val, due_date: recalcDate }));
-    };
+  };
 
-    const handleSave = async () => {
+  const handleSave = async () => {
     await base44.entities.Contingency.create({
-    transaction_id: transactionId,
-    brokerage_id: brokerageId,
-    contingency_type: type,
-    sub_type: form.sub_type,
-    days_from_effective: form.days_from_effective ? Number(form.days_from_effective) : null,
-    due_date: form.due_date || null,
-    scheduled_date: form.scheduled_date || null,
-    scheduled_time: form.scheduled_time || null,
-    status: form.status,
-    notes: form.notes,
-    is_active: true,
+      transaction_id: transactionId,
+      brokerage_id: brokerageId,
+      contingency_type: type,
+      sub_type: form.sub_type,
+      days_from_effective: form.days_from_effective ? Number(form.days_from_effective) : null,
+      due_date: form.due_date || null,
+      due_time: form.is_all_day ? null : (form.due_time || null),
+      is_all_day: form.is_all_day,
+      scheduled_date: form.scheduled_date || null,
+      scheduled_time: form.scheduled_time || null,
+      status: form.status,
+      notes: form.notes,
+      is_active: true,
       is_custom: true,
       source: "Manual",
     });
@@ -267,6 +304,27 @@ function AddContingencyRow({ transactionId, brokerageId, effectiveDate, type, on
           <span className="text-xs text-gray-400">or</span>
           <Input type="date" value={form.due_date} onChange={e => setForm(f => ({ ...f, due_date: e.target.value, days_from_effective: "" }))} className="h-7 text-xs" />
         </div>
+        {!form.days_from_effective && (
+          <div className="flex items-center gap-2 mt-1">
+            <label className="flex items-center gap-1 text-xs text-gray-600">
+              <input
+                type="checkbox"
+                checked={form.is_all_day}
+                onChange={e => setForm(f => ({ ...f, is_all_day: e.target.checked, due_time: e.target.checked ? "" : f.due_time }))}
+                className="rounded border-gray-300 text-blue-600 focus:ring-blue-300"
+              />
+              All Day
+            </label>
+            {!form.is_all_day && (
+              <Input
+                type="time"
+                value={form.due_time}
+                onChange={e => setForm(f => ({ ...f, due_time: e.target.value }))}
+                className="h-6 text-xs w-28"
+              />
+            )}
+          </div>
+        )}
       </td>
       <td className="px-3 py-2">
         <div className="flex flex-col gap-1">

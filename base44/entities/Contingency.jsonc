@@ -35,6 +35,15 @@
       "type": "string",
       "format": "date"
     },
+    "due_time": {
+      "type": "string",
+      "description": "Time of deadline (for timed events like inspections). Format: HH:MM"
+    },
+    "is_all_day": {
+      "type": "boolean",
+      "default": true,
+      "description": "If false, this is a timed event. If true, it's an all-day deadline."
+    },
     "scheduled_date": {
       "type": "string",
       "format": "date"

@@ -100,7 +100,15 @@ function DeadlineRow({ item, calendarMaps, transactionId, onUpdateContingency, o
     try {
       const payload = item.sourceType === "system"
         ? { transaction_id: transactionId, field_key: item.key }
-        : { transaction_id: transactionId, contingency_id: item.id, field_key: calMapKey, date: item.date, title: item.label };
+        : { 
+            transaction_id: transactionId, 
+            contingency_id: item.id, 
+            field_key: calMapKey, 
+            date: item.date, 
+            title: item.label,
+            due_time: item.due_time,
+            is_all_day: item.is_all_day
+          };
 
       const res = await base44.functions.invoke("syncTransactionDeadlinesToCalendar", payload);
       if (res.data?.error) throw new Error(res.data.error);
@@ -153,11 +161,16 @@ function DeadlineRow({ item, calendarMaps, transactionId, onUpdateContingency, o
           ) : (
             <div className="flex items-center justify-between gap-2">
               <div>
-                {item.date ? (
-                  <span className="text-sm font-medium text-gray-800">{fmtDate(item.date)}</span>
-                ) : (
-                  <span className="text-xs italic text-gray-400">Not set</span>
-                )}
+                <div className="flex items-center gap-1.5">
+                  {item.date ? (
+                    <span className="text-sm font-medium text-gray-800">{fmtDate(item.date)}</span>
+                  ) : (
+                    <span className="text-xs italic text-gray-400">Not set</span>
+                  )}
+                  {!item.is_all_day && item.due_time && (
+                    <span className="text-xs font-semibold text-blue-600">{formatTime(item.due_time)}</span>
+                  )}
+                </div>
                 {daysInfo && item.date && (
                   <span className={`ml-2 text-xs ${daysInfo.cls}`}>{daysInfo.label}</span>
                 )}
@@ -218,7 +231,7 @@ function DeadlineRow({ item, calendarMaps, transactionId, onUpdateContingency, o
 
 // ── Add Custom Deadline modal (inline) ──────────────────────────────────────
 function AddCustomDeadlineRow({ transactionId, brokerageId, onAdded, onCancel }) {
-  const [form, setForm] = useState({ label: "", date: "", notes: "" });
+  const [form, setForm] = useState({ label: "", date: "", due_time: "", is_all_day: true, notes: "" });
 
   const handleSave = async () => {
     if (!form.label || !form.date) { toast.error("Name and date are required"); return; }
@@ -228,6 +241,8 @@ function AddCustomDeadlineRow({ transactionId, brokerageId, onAdded, onCancel })
       contingency_type: "Other",
       sub_type: form.label,
       due_date: form.date,
+      due_time: form.is_all_day ? null : (form.due_time || null),
+      is_all_day: form.is_all_day,
       notes: form.notes,
       status: "Pending",
       is_active: true,
@@ -240,12 +255,12 @@ function AddCustomDeadlineRow({ transactionId, brokerageId, onAdded, onCancel })
   return (
     <div className="rounded-xl border border-dashed border-blue-300 bg-blue-50/40 p-3.5 space-y-2">
       <p className="text-xs font-semibold text-blue-700">Add Custom Deadline</p>
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+      <div className="grid grid-cols-1 sm:grid-cols-4 gap-2">
         <Input
           placeholder="Name (e.g. HOA Docs Due)"
           value={form.label}
           onChange={e => setForm(f => ({ ...f, label: e.target.value }))}
-          className="h-7 text-xs"
+          className="h-7 text-xs sm:col-span-2"
           autoFocus
         />
         <Input
@@ -254,14 +269,33 @@ function AddCustomDeadlineRow({ transactionId, brokerageId, onAdded, onCancel })
           onChange={e => setForm(f => ({ ...f, date: e.target.value }))}
           className="h-7 text-xs"
         />
-        <Input
-          placeholder="Notes (optional)"
-          value={form.notes}
-          onChange={e => setForm(f => ({ ...f, notes: e.target.value }))}
-          className="h-7 text-xs"
-        />
       </div>
-      <div className="flex gap-2">
+      <div className="flex items-center gap-3 mt-2">
+        <label className="flex items-center gap-1.5 text-xs text-gray-600">
+          <input
+            type="checkbox"
+            checked={form.is_all_day}
+            onChange={e => setForm(f => ({ ...f, is_all_day: e.target.checked, due_time: e.target.checked ? "" : f.due_time }))}
+            className="rounded border-gray-300 text-blue-600 focus:ring-blue-300"
+          />
+          All Day Event
+        </label>
+        {!form.is_all_day && (
+          <Input
+            type="time"
+            value={form.due_time}
+            onChange={e => setForm(f => ({ ...f, due_time: e.target.value }))}
+            className="h-7 text-xs w-32"
+          />
+        )}
+      </div>
+      <Input
+        placeholder="Notes (optional)"
+        value={form.notes}
+        onChange={e => setForm(f => ({ ...f, notes: e.target.value }))}
+        className="h-7 text-xs mt-2"
+      />
+      <div className="flex gap-2 pt-1">
         <Button size="sm" className="h-7 text-xs bg-blue-600 hover:bg-blue-700" onClick={handleSave}>
           <Check className="w-3 h-3 mr-1" /> Save
         </Button>
@@ -316,6 +350,8 @@ export default function UnifiedDeadlinesPanel({ transaction, onSave }) {
       key: `contingency_${c.id}`,
       label: [c.contingency_type, c.sub_type].filter(Boolean).join(" – "),
       date: c.due_date || null,
+      due_time: c.due_time || null,
+      is_all_day: c.is_all_day ?? true,
       category: c.contingency_type,
       sourceType: c.source === "Manual" && c.is_custom ? "manual" : "contingency",
       daysFromEffective: c.days_from_effective || null,
