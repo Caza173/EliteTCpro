@@ -72,7 +72,15 @@ function getPriorityReasons(tx) {
 
 function PriorityBadge({ score, tx }) {
   const reasons = tx ? getPriorityReasons(tx) : [];
-  const [show, setShow] = React.useState(false);
+  const [pos, setPos] = React.useState(null);
+  const ref = React.useRef(null);
+
+  const handleMouseEnter = () => {
+    if (!ref.current) return;
+    const rect = ref.current.getBoundingClientRect();
+    setPos({ top: rect.top + window.scrollY, left: rect.left + rect.width / 2 + window.scrollX });
+  };
+  const handleMouseLeave = () => setPos(null);
 
   const badge = score >= 80 ? (
     <span className="inline-flex items-center gap-1 text-[10px] font-semibold px-1.5 py-0.5 rounded-full bg-red-50 text-red-600 border border-red-200 whitespace-nowrap cursor-default">
@@ -91,10 +99,15 @@ function PriorityBadge({ score, tx }) {
   if (reasons.length === 0) return badge;
 
   return (
-    <div className="relative inline-block" onMouseEnter={() => setShow(true)} onMouseLeave={() => setShow(false)}>
-      {badge}
-      {show && (
-        <div className="absolute z-50 bottom-full left-1/2 -translate-x-1/2 mb-2 w-48 bg-gray-900 text-white text-xs rounded-lg px-3 py-2 shadow-xl pointer-events-none">
+    <>
+      <div ref={ref} className="inline-block" onMouseEnter={handleMouseEnter} onMouseLeave={handleMouseLeave}>
+        {badge}
+      </div>
+      {pos && (
+        <div
+          className="fixed z-[9999] w-48 bg-gray-900 text-white text-xs rounded-lg px-3 py-2 shadow-xl pointer-events-none"
+          style={{ top: pos.top - 8, left: pos.left, transform: "translate(-50%, -100%)" }}
+        >
           <p className="font-semibold mb-1 text-gray-300">Needs attention:</p>
           <ul className="space-y-0.5">
             {reasons.map((r, i) => (
@@ -107,7 +120,7 @@ function PriorityBadge({ score, tx }) {
           <div className="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-gray-900" />
         </div>
       )}
-    </div>
+    </>
   );
 }
 
