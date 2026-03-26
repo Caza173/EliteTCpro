@@ -55,6 +55,8 @@ const ROLE_FIELD_MAP = {
   "Inspector":      { name: "inspector_name", email: "inspector_email", phone: "inspector_phone", company: "inspector_company" },
   "Appraiser":      { name: "appraiser_name", email: "appraiser_email", phone: "appraiser_phone", company: "appraiser_company" },
   "Attorney":       { name: "attorney_name", email: "attorney_email", phone: "attorney_phone", company: "attorney_firm" },
+  "Buyer":          { name: "__buyer_array__", email: null, phone: null, company: null },
+  "Seller":         { name: "__seller_array__", email: null, phone: null, company: null },
 };
 
 function extractContacts(transactions) {
@@ -125,13 +127,29 @@ function EditContactModal({ contact, transactions, onClose, onSave }) {
   const handleSave = async () => {
     if (!fieldMap) { onClose(); return; }
     setSaving(true);
-    // Update all transactions this contact appears in
     const updates = contact.transactions.map(({ txId }) => {
+      const tx = transactions.find(t => t.id === txId);
       const data = {};
-      if (fieldMap.name) data[fieldMap.name] = form.name;
-      if (fieldMap.email) data[fieldMap.email] = form.email;
-      if (fieldMap.phone) data[fieldMap.phone] = form.phone;
-      if (fieldMap.company) data[fieldMap.company] = form.company;
+
+      // Special handling for Buyer/Seller name arrays
+      if (fieldMap.name === "__buyer_array__") {
+        const arr = tx?.buyers?.length ? [...tx.buyers] : (tx?.buyer ? [tx.buyer] : []);
+        const idx = arr.findIndex(n => n === contact.name);
+        if (idx >= 0) arr[idx] = form.name; else arr.push(form.name);
+        data.buyers = arr;
+        data.buyer = arr[0] || form.name;
+      } else if (fieldMap.name === "__seller_array__") {
+        const arr = tx?.sellers?.length ? [...tx.sellers] : (tx?.seller ? [tx.seller] : []);
+        const idx = arr.findIndex(n => n === contact.name);
+        if (idx >= 0) arr[idx] = form.name; else arr.push(form.name);
+        data.sellers = arr;
+        data.seller = arr[0] || form.name;
+      } else {
+        if (fieldMap.name) data[fieldMap.name] = form.name;
+        if (fieldMap.email) data[fieldMap.email] = form.email;
+        if (fieldMap.phone) data[fieldMap.phone] = form.phone;
+        if (fieldMap.company) data[fieldMap.company] = form.company;
+      }
       return base44.functions.invoke("updateTransaction", { transaction_id: txId, data });
     });
     await Promise.allSettled(updates);
@@ -155,10 +173,12 @@ function EditContactModal({ contact, transactions, onClose, onSave }) {
             <label className="text-xs font-medium mb-1 block" style={{ color: "var(--text-muted)" }}>Name</label>
             <Input value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} placeholder="Full name" />
           </div>
-          <div>
-            <label className="text-xs font-medium mb-1 block" style={{ color: "var(--text-muted)" }}>Email</label>
-            <Input value={form.email} onChange={e => setForm(f => ({ ...f, email: e.target.value }))} placeholder="Email address" type="email" />
-          </div>
+          {fieldMap?.email && (
+            <div>
+              <label className="text-xs font-medium mb-1 block" style={{ color: "var(--text-muted)" }}>Email</label>
+              <Input value={form.email} onChange={e => setForm(f => ({ ...f, email: e.target.value }))} placeholder="Email address" type="email" />
+            </div>
+          )}
           {fieldMap?.phone && (
             <div>
               <label className="text-xs font-medium mb-1 block" style={{ color: "var(--text-muted)" }}>Phone</label>
@@ -365,15 +385,13 @@ export default function Contacts() {
                     </div>
                   </td>
                   <td className="px-2 py-3">
-                    {ROLE_FIELD_MAP[contact.roles[0]] && (
-                      <button
-                        onClick={() => setEditingContact(contact)}
-                        className="opacity-0 group-hover:opacity-100 transition-opacity p-1.5 rounded-lg hover:bg-gray-100"
-                        title="Edit contact"
-                      >
-                        <Pencil className="w-3.5 h-3.5" style={{ color: "var(--text-muted)" }} />
-                      </button>
-                    )}
+                    <button
+                      onClick={() => setEditingContact(contact)}
+                      className="p-1.5 rounded-lg hover:bg-gray-100 transition-colors"
+                      title="Edit contact"
+                    >
+                      <Pencil className="w-3.5 h-3.5" style={{ color: "var(--text-muted)" }} />
+                    </button>
                   </td>
                 </tr>
               ))}
