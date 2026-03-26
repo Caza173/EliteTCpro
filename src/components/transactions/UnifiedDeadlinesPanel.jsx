@@ -43,6 +43,17 @@ const CATEGORY_COLORS = {
   Other:            { bg: "bg-gray-50",   border: "border-gray-200",   text: "text-gray-700",   dot: "bg-gray-400" },
 };
 
+function formatTime(t) {
+  if (!t) return "";
+  try {
+    const [h, m] = t.split(":");
+    const hour = parseInt(h, 10);
+    const ampm = hour >= 12 ? "PM" : "AM";
+    const display = hour % 12 === 0 ? 12 : hour % 12;
+    return `${display}:${m} ${ampm}`;
+  } catch { return t; }
+}
+
 function fmtDate(d) {
   if (!d) return null;
   try { return format(parseISO(d), "MMM d, yyyy"); } catch { return d; }
@@ -191,6 +202,11 @@ function DeadlineRow({ item, calendarMaps, transactionId, onUpdateContingency, o
           )}
 
           {/* Notes if any (contingency records) */}
+          {item.scheduledDate && (
+            <p className="text-xs text-gray-500 mt-0.5">
+              Scheduled: {item.scheduledDate}{item.scheduledTime ? ` at ${formatTime(item.scheduledTime)}` : ""}
+            </p>
+          )}
           {item.notes && (
             <p className="text-xs text-gray-500 mt-0.5 italic truncate">{item.notes}</p>
           )}
@@ -304,6 +320,8 @@ export default function UnifiedDeadlinesPanel({ transaction, onSave }) {
       sourceType: c.source === "Manual" && c.is_custom ? "manual" : "contingency",
       daysFromEffective: c.days_from_effective || null,
       notes: c.notes || null,
+      scheduledDate: c.scheduled_date ? fmtDate(c.scheduled_date) : null,
+      scheduledTime: c.scheduled_time || null,
       status: c.status,
       sortOrder: 50,
     }));

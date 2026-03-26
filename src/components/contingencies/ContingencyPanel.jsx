@@ -42,6 +42,17 @@ function addDaysToDate(dateStr, days) {
   } catch { return ""; }
 }
 
+function formatTime(t) {
+  if (!t) return "";
+  try {
+    const [h, m] = t.split(":");
+    const hour = parseInt(h, 10);
+    const ampm = hour >= 12 ? "PM" : "AM";
+    const display = hour % 12 === 0 ? 12 : hour % 12;
+    return `${display}:${m} ${ampm}`;
+  } catch { return t; }
+}
+
 function fmtDate(d) {
   if (!d) return "—";
   try { return format(parseISO(d), "MMM d, yyyy"); } catch { return d; }
@@ -65,6 +76,7 @@ function ContingencyRow({ c, effectiveDate, onUpdate, onDelete }) {
     days_from_effective: c.days_from_effective || "",
     due_date: c.due_date || "",
     scheduled_date: c.scheduled_date || "",
+    scheduled_time: c.scheduled_time || "",
     status: c.status || "Pending",
     notes: c.notes || "",
   });
@@ -80,6 +92,7 @@ function ContingencyRow({ c, effectiveDate, onUpdate, onDelete }) {
       days_from_effective: form.days_from_effective ? Number(form.days_from_effective) : null,
       due_date: form.due_date || null,
       scheduled_date: form.scheduled_date || null,
+      scheduled_time: form.scheduled_time || null,
       status: form.status,
       notes: form.notes,
     });
@@ -132,12 +145,23 @@ function ContingencyRow({ c, effectiveDate, onUpdate, onDelete }) {
             </div>
           </td>
           <td className="px-3 py-2">
-            <Input
-              type="date"
-              value={form.scheduled_date}
-              onChange={e => setForm(f => ({ ...f, scheduled_date: e.target.value }))}
-              className="h-7 text-xs"
-            />
+            <div className="flex gap-1.5 flex-col">
+              <Input
+                type="date"
+                value={form.scheduled_date}
+                onChange={e => setForm(f => ({ ...f, scheduled_date: e.target.value }))}
+                className="h-7 text-xs"
+              />
+              {c.contingency_type === "Inspection" && (
+                <Input
+                  type="time"
+                  value={form.scheduled_time}
+                  onChange={e => setForm(f => ({ ...f, scheduled_time: e.target.value }))}
+                  className="h-7 text-xs"
+                  placeholder="Time"
+                />
+              )}
+            </div>
           </td>
           <td className="px-3 py-2">
             <Select value={form.status} onValueChange={v => setForm(f => ({ ...f, status: v }))}>
@@ -175,7 +199,12 @@ function ContingencyRow({ c, effectiveDate, onUpdate, onDelete }) {
               {c.days_from_effective && <p className="text-xs text-gray-400">{c.days_from_effective} days from effective</p>}
             </div>
           </td>
-          <td className="px-3 py-2.5 text-sm text-gray-600">{fmtDate(c.scheduled_date)}</td>
+          <td className="px-3 py-2.5 text-sm text-gray-600">
+            {fmtDate(c.scheduled_date)}
+            {c.scheduled_time && (
+              <p className="text-xs text-gray-500 mt-0.5">{formatTime(c.scheduled_time)}</p>
+            )}
+          </td>
           <td className="px-3 py-2.5">
             <Badge variant="outline" className={`text-xs ${STATUS_STYLES[c.status] || STATUS_STYLES.Pending}`}>
               {c.status}
@@ -198,6 +227,7 @@ function AddContingencyRow({ transactionId, brokerageId, effectiveDate, type, on
     days_from_effective: "",
     due_date: "",
     scheduled_date: "",
+    scheduled_time: "",
     status: "Pending",
     notes: "",
     });
@@ -216,9 +246,10 @@ function AddContingencyRow({ transactionId, brokerageId, effectiveDate, type, on
     days_from_effective: form.days_from_effective ? Number(form.days_from_effective) : null,
     due_date: form.due_date || null,
     scheduled_date: form.scheduled_date || null,
+    scheduled_time: form.scheduled_time || null,
     status: form.status,
     notes: form.notes,
-      is_active: true,
+    is_active: true,
       is_custom: true,
       source: "Manual",
     });
@@ -237,7 +268,14 @@ function AddContingencyRow({ transactionId, brokerageId, effectiveDate, type, on
           <Input type="date" value={form.due_date} onChange={e => setForm(f => ({ ...f, due_date: e.target.value, days_from_effective: "" }))} className="h-7 text-xs" />
         </div>
       </td>
-      <td className="px-3 py-2"><Input type="date" value={form.scheduled_date} onChange={e => setForm(f => ({ ...f, scheduled_date: e.target.value }))} className="h-7 text-xs" /></td>
+      <td className="px-3 py-2">
+        <div className="flex flex-col gap-1">
+          <Input type="date" value={form.scheduled_date} onChange={e => setForm(f => ({ ...f, scheduled_date: e.target.value }))} className="h-7 text-xs" />
+          {type === "Inspection" && (
+            <Input type="time" value={form.scheduled_time} onChange={e => setForm(f => ({ ...f, scheduled_time: e.target.value }))} className="h-7 text-xs" placeholder="Time" />
+          )}
+        </div>
+      </td>
       <td className="px-3 py-2">
         <Select value={form.status} onValueChange={v => setForm(f => ({ ...f, status: v }))}>
           <SelectTrigger className="h-7 text-xs w-28"><SelectValue /></SelectTrigger>

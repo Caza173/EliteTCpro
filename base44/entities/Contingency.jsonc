@@ -39,6 +39,10 @@
       "type": "string",
       "format": "date"
     },
+    "scheduled_time": {
+      "type": "string",
+      "description": "Time of scheduled inspection, e.g. 10:00 AM (for inspection types)"
+    },
     "completed_date": {
       "type": "string",
       "format": "date"
