@@ -214,6 +214,10 @@ export default function TransactionDetail() {
   const handleToggleTxTask = async (taskId) => {
     const task = txTasks.find(t => t.id === taskId);
     if (!task) return;
+    // Optimistic update so PhaseChecklist re-renders immediately
+    queryClient.setQueryData(["txTasks", id], (old = []) =>
+      old.map(t => t.id === taskId ? { ...t, is_completed: !t.is_completed } : t)
+    );
     await base44.entities.TransactionTask.update(taskId, { is_completed: !task.is_completed });
     refetchTxTasks();
     await writeAuditLog({

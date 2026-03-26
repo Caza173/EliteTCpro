@@ -66,11 +66,11 @@ export default function PhaseChecklist({ phasesCompleted = [], currentPhase, onT
               }`}>
                 {phase.label}
               </span>
-              {progress.total > 0 && !isCompleted && (
+              {progress.total > 0 && (
                 <div className="flex items-center gap-1.5 mt-0.5">
                   <div className="flex-1 h-1 rounded-full bg-gray-200 overflow-hidden">
                     <div
-                      className={`h-full rounded-full transition-all ${pct === 100 ? "bg-emerald-400" : "bg-blue-400"}`}
+                      className={`h-full rounded-full transition-all ${isCompleted ? "bg-emerald-400" : "bg-blue-400"}`}
                       style={{ width: `${pct}%` }}
                     />
                   </div>
