@@ -8,10 +8,11 @@ import {
   ShieldCheck, ShieldAlert, ShieldX, AlertTriangle,
   Info, Plus, Mail, RefreshCw, Loader2,
   ChevronDown, ChevronUp, FileText, Scan,
-  CheckCircle2, XCircle, MinusCircle, Wand2
+  CheckCircle2, XCircle, MinusCircle, Wand2, ExternalLink
 } from "lucide-react";
 import { format } from "date-fns";
 import EmailGeneratorModal from "./EmailGeneratorModal";
+import DocumentViewerModal from "../transactions/DocumentViewerModal";
 
 const SEVERITY_CONFIG = {
   blocker: {
@@ -155,7 +156,7 @@ function IssueCard({ issue, onAddTask, transaction }) {
   );
 }
 
-function ReportCard({ report, onRescan, onAddTask, scanning, transaction }) {
+function ReportCard({ report, onRescan, onAddTask, scanning, transaction, linkedDoc, onViewDoc }) {
   const [expanded, setExpanded] = useState(true);
   const [showFields, setShowFields] = useState(false);
 
@@ -172,7 +173,15 @@ function ReportCard({ report, onRescan, onAddTask, scanning, transaction }) {
               <FileText className="w-4 h-4 text-blue-500" />
             </div>
             <div className="min-w-0">
-              <p className="text-sm font-semibold text-gray-900 truncate">{report.document_name}</p>
+              <div className="flex items-center gap-2">
+                <p className="text-sm font-semibold text-gray-900 truncate">{report.document_name}</p>
+                {linkedDoc && onViewDoc && (
+                  <button onClick={() => onViewDoc(linkedDoc)}
+                    className="text-xs text-blue-600 hover:underline flex items-center gap-0.5 flex-shrink-0">
+                    <ExternalLink className="w-3 h-3" /> View
+                  </button>
+                )}
+              </div>
               <div className="flex items-center gap-2 mt-0.5 flex-wrap">
                 <Badge variant="outline" className="text-[11px] text-gray-500">{report.document_type || "Unknown"}</Badge>
                 {report.status === 'compliant' && <span className="text-xs text-emerald-600 font-medium flex items-center gap-0.5"><ShieldCheck className="w-3 h-3" /> Compliant</span>}
@@ -283,6 +292,7 @@ export default function ComplianceScanPanel({ transaction, currentUser }) {
   const queryClient = useQueryClient();
   const [scanningId, setScanningId] = useState(null);
   const [runningAll, setRunningAll] = useState(false);
+  const [viewingDoc, setViewingDoc] = useState(null);
 
   const { data: reports = [], isLoading } = useQuery({
     queryKey: ["compliance-reports", transaction.id],
@@ -363,6 +373,9 @@ export default function ComplianceScanPanel({ transaction, currentUser }) {
 
   return (
     <div className="space-y-5">
+      {viewingDoc && (
+        <DocumentViewerModal doc={viewingDoc} onClose={() => setViewingDoc(null)} />
+      )}
       {/* Overall Compliance Summary */}
       <div className="rounded-2xl border p-5" style={{ backgroundColor: "var(--card-bg)", borderColor: "var(--card-border)" }}>
         <div className="flex flex-col sm:flex-row items-start sm:items-center gap-5">
@@ -447,6 +460,8 @@ export default function ComplianceScanPanel({ transaction, currentUser }) {
               onAddTask={handleAddTask}
               scanning={scanningId === report.document_id}
               transaction={transaction}
+              linkedDoc={documents.find(d => d.id === report.document_id)}
+              onViewDoc={setViewingDoc}
             />
           ))}
         </div>

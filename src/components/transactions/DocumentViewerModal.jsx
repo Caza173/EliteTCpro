@@ -1,13 +1,42 @@
 import React, { useState } from "react";
-import { X, Download, ExternalLink, FileText, AlertCircle } from "lucide-react";
+import { X, Download, ExternalLink, FileText, AlertCircle, Mail } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 
-export default function DocumentViewerModal({ doc, onClose }) {
+const DOC_LABELS = {
+  purchase_and_sale: "Purchase & Sale",
+  listing_agreement: "Listing Agreement",
+  addendum: "Addendum",
+  buyer_agency_agreement: "Buyer Agency",
+  disclosure: "Disclosure",
+  inspection: "Inspection",
+  appraisal: "Appraisal",
+  title: "Title",
+  closing: "Closing",
+  other: "Other",
+};
+
+const TYPE_COLORS = {
+  purchase_and_sale: "bg-blue-50 text-blue-700 border-blue-200",
+  listing_agreement: "bg-emerald-50 text-emerald-700 border-emerald-200",
+  addendum: "bg-amber-50 text-amber-700 border-amber-200",
+  buyer_agency_agreement: "bg-purple-50 text-purple-700 border-purple-200",
+  disclosure: "bg-orange-50 text-orange-700 border-orange-200",
+  inspection: "bg-cyan-50 text-cyan-700 border-cyan-200",
+  appraisal: "bg-indigo-50 text-indigo-700 border-indigo-200",
+  title: "bg-teal-50 text-teal-700 border-teal-200",
+  closing: "bg-rose-50 text-rose-700 border-rose-200",
+  other: "bg-gray-50 text-gray-600 border-gray-200",
+};
+
+export default function DocumentViewerModal({ doc, onClose, onAttachToEmail }) {
   const [iframeError, setIframeError] = useState(false);
 
   if (!doc) return null;
 
-  const isPdf = doc.file_name?.toLowerCase().endsWith(".pdf") || doc.file_url?.includes(".pdf");
+  const isPdf = doc.file_name?.toLowerCase().endsWith(".pdf") || doc.file_url?.toLowerCase().includes(".pdf");
+  const docTypeLabel = DOC_LABELS[doc.doc_type] || doc.doc_type || "Other";
+  const docTypeColor = TYPE_COLORS[doc.doc_type] || TYPE_COLORS.other;
 
   return (
     <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
@@ -17,8 +46,19 @@ export default function DocumentViewerModal({ doc, onClose }) {
           <div className="flex items-center gap-2 min-w-0">
             <FileText className="w-4 h-4 text-blue-500 flex-shrink-0" />
             <span className="text-sm font-semibold text-gray-900 truncate">{doc.file_name || "Document"}</span>
+            {doc.doc_type && (
+              <Badge variant="outline" className={`text-xs hidden sm:inline-flex ${docTypeColor}`}>
+                {docTypeLabel}
+              </Badge>
+            )}
           </div>
           <div className="flex items-center gap-2 flex-shrink-0 ml-3">
+            {onAttachToEmail && (
+              <Button variant="outline" size="sm" className="text-xs gap-1.5 text-indigo-600 border-indigo-200 hover:bg-indigo-50"
+                onClick={() => onAttachToEmail(doc)}>
+                <Mail className="w-3.5 h-3.5" /> Attach to Email
+              </Button>
+            )}
             <a href={doc.file_url} download={doc.file_name} target="_blank" rel="noopener noreferrer">
               <Button variant="outline" size="sm" className="text-xs gap-1.5">
                 <Download className="w-3.5 h-3.5" /> Download

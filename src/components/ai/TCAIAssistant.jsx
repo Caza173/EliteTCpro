@@ -39,8 +39,9 @@ function buildSystemPrompt(transaction, documents, checklistItems, complianceRep
   const pendingTasks = tasks.filter((t) => !t.completed);
   const completedTasks = tasks.filter((t) => t.completed);
 
+  const DOC_TYPE_LABELS = { purchase_and_sale: "Purchase & Sale Agreement", listing_agreement: "Listing Agreement", addendum: "Addendum", buyer_agency_agreement: "Buyer Agency Agreement", disclosure: "Disclosure", inspection: "Inspection Report", appraisal: "Appraisal", title: "Title/Closing", closing: "Closing Document", other: "Other" };
   const docList = documents.length > 0
-    ? documents.map((d) => `  - ${d.file_name || d.doc_type} (${d.doc_type}, uploaded ${d.created_date ? format(new Date(d.created_date), "MMM d") : "unknown date"})`).join("\n")
+    ? documents.map((d) => `  - "${d.file_name || "Unnamed"}" [Type: ${DOC_TYPE_LABELS[d.doc_type] || d.doc_type || "Other"}] uploaded by ${d.uploaded_by || "unknown"} on ${d.created_date ? format(new Date(d.created_date), "MMM d, yyyy") : "unknown date"}`).join("\n")
     : "  No documents uploaded yet.";
 
   const missingDocs = checklistItems.filter((i) => i.status === "missing").map((i) => `  - ${i.label || i.doc_type}`).join("\n") || "  None identified.";
@@ -128,10 +129,10 @@ Always be professional, concise, and transaction-specific. Reference the actual 
 
 const QUICK_PROMPTS = [
   "What deadlines are coming up?",
-  "What documents are missing?",
+  "What documents are uploaded?",
   "Summarize this deal",
-  "Draft an email to the lender requesting commitment letter",
   "Any compliance issues?",
+  "Draft an email to the lender",
   "What are the next steps?",
 ];
 

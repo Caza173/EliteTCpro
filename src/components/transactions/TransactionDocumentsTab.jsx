@@ -6,13 +6,14 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Upload, FileText, Trash2, Download, Loader2, FolderOpen, ClipboardCheck, Eye } from "lucide-react";
+import { Upload, FileText, Trash2, Download, Loader2, FolderOpen, ClipboardCheck, Eye, Mail, Filter } from "lucide-react";
 import DocumentViewerModal from "./DocumentViewerModal";
 import { format } from "date-fns";
 import { writeAuditLog } from "../utils/tenantUtils";
 import DocChecklistPanel from "./DocChecklistPanel";
 import ConfirmDialog from "@/components/ui/ConfirmDialog";
 import SuggestedDocuments from "./SuggestedDocuments";
+import EmailComposerModal from "../email/EmailComposerModal";
 
 const DOC_TYPES = [
   { value: "purchase_and_sale", label: "Purchase & Sale Agreement" },
@@ -60,6 +61,8 @@ export default function TransactionDocumentsTab({ transaction, currentUser }) {
   const [dragOver, setDragOver] = useState(false);
   const [confirmDeleteDoc, setConfirmDeleteDoc] = useState(null);
   const [viewingDoc, setViewingDoc] = useState(null);
+  const [emailModal, setEmailModal] = useState({ open: false, preselectedDoc: null });
+  const [typeFilter, setTypeFilter] = useState("all");
   const fileInputRef = useRef(null);
 
   const { data: documents = [], isLoading } = useQuery({
@@ -90,12 +93,28 @@ export default function TransactionDocumentsTab({ transaction, currentUser }) {
     onSettled: () => queryClient.invalidateQueries({ queryKey: ["tx-documents", transaction.id] }),
   });
 
+  // Auto-classify document type from filename
+  const classifyDocType = (fileName) => {
+    const n = (fileName || "").toLowerCase();
+    if (n.includes("purchase") || n.includes("p&s") || n.includes("psa")) return "purchase_and_sale";
+    if (n.includes("listing agreement") || n.includes("listing_agreement")) return "listing_agreement";
+    if (n.includes("buyer agency") || n.includes("buyer representation") || n.includes("baa")) return "buyer_agency_agreement";
+    if (n.includes("addendum")) return "addendum";
+    if (n.includes("disclosure")) return "disclosure";
+    if (n.includes("inspection")) return "inspection";
+    if (n.includes("appraisal")) return "appraisal";
+    if (n.includes("title") || n.includes("closing") || n.includes("hud") || n.includes("settlement")) return "title";
+    return null; // no match — use user-selected type
+  };
+
   const uploadFile = async (file) => {
+    const autoType = classifyDocType(file.name);
+    const docType = autoType || selectedDocType;
     const { file_url } = await base44.integrations.Core.UploadFile({ file });
     const response = await base44.functions.invoke('createDocument', {
       brokerage_id: transaction.brokerage_id,
       transaction_id: transaction.id,
-      doc_type: selectedDocType,
+      doc_type: docType,
       file_url,
       file_name: file.name,
       uploaded_by: currentUser?.email || "unknown",
@@ -119,7 +138,7 @@ export default function TransactionDocumentsTab({ transaction, currentUser }) {
       action: "doc_uploaded",
       entityType: "document",
       entityId: doc.id,
-      description: `${currentUser?.email} uploaded ${file.name} (${selectedDocType})`,
+      description: `${currentUser?.email} uploaded ${file.name} (${docType}${autoType ? " — auto-classified" : ""})`,
     });
 
     // Auto-trigger compliance scan in the background
@@ -170,7 +189,18 @@ export default function TransactionDocumentsTab({ transaction, currentUser }) {
 
   return (
     <div className="space-y-5">
-      <DocumentViewerModal doc={viewingDoc} onClose={() => setViewingDoc(null)} />
+      <DocumentViewerModal
+        doc={viewingDoc}
+        onClose={() => setViewingDoc(null)}
+        onAttachToEmail={(doc) => { setViewingDoc(null); setEmailModal({ open: true, preselectedDoc: doc }); }}
+      />
+      <EmailComposerModal
+        open={emailModal.open}
+        onClose={() => setEmailModal({ open: false, preselectedDoc: null })}
+        transaction={transaction}
+        documents={documents}
+        preselectedDocId={emailModal.preselectedDoc?.id}
+      />
       <ConfirmDialog
         open={!!confirmDeleteDoc}
         title="Delete Document"
@@ -258,12 +288,30 @@ export default function TransactionDocumentsTab({ transaction, currentUser }) {
 
       <Card className="shadow-sm border-gray-100">
         <CardHeader className="pb-3">
-          <CardTitle className="text-sm font-semibold flex items-center gap-2">
-            <FolderOpen className="w-4 h-4 text-gray-500" /> Uploaded Files
+          <div className="flex items-center justify-between flex-wrap gap-2">
+            <CardTitle className="text-sm font-semibold flex items-center gap-2">
+              <FolderOpen className="w-4 h-4 text-gray-500" /> Uploaded Files
+              {documents.length > 0 && (
+                <Badge variant="outline" className="text-xs">{documents.length}</Badge>
+              )}
+            </CardTitle>
             {documents.length > 0 && (
-              <Badge variant="outline" className="text-xs">{documents.length}</Badge>
+              <div className="flex items-center gap-1.5">
+                <Filter className="w-3.5 h-3.5 text-gray-400" />
+                <Select value={typeFilter} onValueChange={setTypeFilter}>
+                  <SelectTrigger className="h-7 text-xs w-44">
+                    <SelectValue placeholder="All Types" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Types</SelectItem>
+                    {DOC_TYPES.map(t => (
+                      <SelectItem key={t.value} value={t.value}>{t.label}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
             )}
-          </CardTitle>
+          </div>
         </CardHeader>
         <CardContent>
           {isLoading ? (
@@ -277,7 +325,9 @@ export default function TransactionDocumentsTab({ transaction, currentUser }) {
             </div>
           ) : (
             <div className="space-y-2">
-              {documents.map((doc) => (
+              {documents
+                .filter(d => typeFilter === "all" || d.doc_type === typeFilter)
+                .map((doc) => (
                 <div key={doc.id} className="flex items-center gap-3 p-3 rounded-lg border border-gray-100 hover:border-gray-200 bg-white transition-colors">
                   <div className="w-9 h-9 rounded-lg bg-gray-50 flex items-center justify-center flex-shrink-0">
                     <FileText className={`w-4 h-4 ${getFileIcon(doc.file_name)}`} />
@@ -302,6 +352,10 @@ export default function TransactionDocumentsTab({ transaction, currentUser }) {
                         <Download className="w-4 h-4" />
                       </Button>
                     </a>
+                    <Button variant="ghost" size="icon" className="h-8 w-8 text-indigo-500 hover:text-indigo-700" title="Attach to Email"
+                      onClick={() => setEmailModal({ open: true, preselectedDoc: doc })}>
+                      <Mail className="w-4 h-4" />
+                    </Button>
                     {canDelete && (
                       <Button
                         variant="ghost" size="icon"
@@ -314,6 +368,9 @@ export default function TransactionDocumentsTab({ transaction, currentUser }) {
                   </div>
                 </div>
               ))}
+              {documents.filter(d => typeFilter !== "all" && d.doc_type === typeFilter).length === 0 && typeFilter !== "all" && (
+                <p className="text-sm text-center text-gray-400 py-4">No documents of this type.</p>
+              )}
             </div>
           )}
         </CardContent>
