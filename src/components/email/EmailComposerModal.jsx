@@ -212,14 +212,25 @@ export default function EmailComposerModal({
 }
 
 function buildDefaultBody(transaction, issueList) {
-  const issues = issueList?.length
-    ? "\n" + issueList.map(i => `• ${i}`).join("\n") + "\n"
-    : "";
-  return `Hi,
+  if (issueList?.length) {
+    const issues = issueList.map(i => `• ${i}`).join("\n");
+    return `Hi,
 
 We are reviewing the Purchase and Sales Agreement for ${transaction.address} and identified the following items that require your attention:
+
 ${issues}
+
 Please address these at your earliest convenience.
+
+Thank you,
+Team Caza`;
+  }
+
+  return `Hi,
+
+We are following up regarding the transaction at ${transaction.address}.
+
+Please don't hesitate to reach out if you have any questions.
 
 Thank you,
 Team Caza`;
