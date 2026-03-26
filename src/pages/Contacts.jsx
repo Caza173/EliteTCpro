@@ -55,8 +55,8 @@ const ROLE_FIELD_MAP = {
   "Inspector":      { name: "inspector_name", email: "inspector_email", phone: "inspector_phone", company: "inspector_company" },
   "Appraiser":      { name: "appraiser_name", email: "appraiser_email", phone: "appraiser_phone", company: "appraiser_company" },
   "Attorney":       { name: "attorney_name", email: "attorney_email", phone: "attorney_phone", company: "attorney_firm" },
-  "Buyer":          { name: "__buyer_array__", email: null, phone: null, company: null },
-  "Seller":         { name: "__seller_array__", email: null, phone: null, company: null },
+  "Buyer":          { name: "__buyer_array__", email: "client_email", phone: "client_phone", company: null },
+  "Seller":         { name: "__seller_array__", email: "sellerEmail", phone: "sellerPhone", company: null },
 };
 
 function extractContacts(transactions) {
@@ -138,12 +138,16 @@ function EditContactModal({ contact, transactions, onClose, onSave }) {
         if (idx >= 0) arr[idx] = form.name; else arr.push(form.name);
         data.buyers = arr;
         data.buyer = arr[0] || form.name;
+        if (form.email) data.client_email = form.email;
+        if (form.phone) data.client_phone = form.phone;
       } else if (fieldMap.name === "__seller_array__") {
         const arr = tx?.sellers?.length ? [...tx.sellers] : (tx?.seller ? [tx.seller] : []);
         const idx = arr.findIndex(n => n === contact.name);
         if (idx >= 0) arr[idx] = form.name; else arr.push(form.name);
         data.sellers = arr;
         data.seller = arr[0] || form.name;
+        if (form.email) data.sellerEmail = form.email;
+        if (form.phone) data.sellerPhone = form.phone;
       } else {
         if (fieldMap.name) data[fieldMap.name] = form.name;
         if (fieldMap.email) data[fieldMap.email] = form.email;
