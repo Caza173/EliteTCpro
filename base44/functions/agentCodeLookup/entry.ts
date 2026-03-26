@@ -42,7 +42,9 @@ Deno.serve(async (req) => {
   }
 
   // Exact match only — no partial search, no list exposure
-  const agents = await base44.asServiceRole.entities.Agent.list();
+  // Use service role for unauthenticated public lookup
+  const base44Service = base44.asServiceRole;
+  const agents = await base44Service.entities.Agent.list();
   const agent = agents.find(a => a.reference_code?.trim().toUpperCase() === code);
 
   if (!agent) {
@@ -50,7 +52,7 @@ Deno.serve(async (req) => {
   }
 
   // Fetch transactions tied to this agent via allowed_agent_code
-  const allTx = await base44.asServiceRole.entities.Transaction.list();
+  const allTx = await base44Service.entities.Transaction.list();
   const matched = allTx.filter(tx =>
     tx.allowed_agent_code?.trim().toUpperCase() === code
   );
@@ -70,9 +72,9 @@ Deno.serve(async (req) => {
 
   // Fetch supporting data
   const [allDocuments, allChecklists, allFinances] = await Promise.all([
-    base44.asServiceRole.entities.Document.list(),
-    base44.asServiceRole.entities.DocumentChecklistItem.list(),
-    base44.asServiceRole.entities.TransactionFinance.list(),
+    base44Service.entities.Document.list(),
+    base44Service.entities.DocumentChecklistItem.list(),
+    base44Service.entities.TransactionFinance.list(),
   ]);
 
   const today = new Date();
@@ -221,12 +223,12 @@ Deno.serve(async (req) => {
   }).join("");
 
   // Get agent contact info for the email recipient
-  const allContacts = await base44.asServiceRole.entities.Contact.list();
+  const allContacts = await base44Service.entities.Contact.list();
   const contact = allContacts.find(c => c.id === agent.contact_id);
   const agentEmail = contact?.email;
 
   if (agentEmail) {
-    await base44.asServiceRole.integrations.Core.SendEmail({
+    await base44Service.integrations.Core.SendEmail({
       to: agentEmail,
       from_name: "EliteTC",
       subject: `Transaction Update – ${active.length} Active Deal${active.length !== 1 ? "s" : ""}`,
