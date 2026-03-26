@@ -6,7 +6,8 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Upload, FileText, Trash2, Download, Loader2, FolderOpen, ClipboardCheck, Scan } from "lucide-react";
+import { Upload, FileText, Trash2, Download, Loader2, FolderOpen, ClipboardCheck, Eye } from "lucide-react";
+import DocumentViewerModal from "./DocumentViewerModal";
 import { format } from "date-fns";
 import { writeAuditLog } from "../utils/tenantUtils";
 import DocChecklistPanel from "./DocChecklistPanel";
@@ -58,6 +59,7 @@ export default function TransactionDocumentsTab({ transaction, currentUser }) {
   const [uploading, setUploading] = useState(false);
   const [dragOver, setDragOver] = useState(false);
   const [confirmDeleteDoc, setConfirmDeleteDoc] = useState(null);
+  const [viewingDoc, setViewingDoc] = useState(null);
   const fileInputRef = useRef(null);
 
   const { data: documents = [], isLoading } = useQuery({
@@ -160,8 +162,15 @@ export default function TransactionDocumentsTab({ transaction, currentUser }) {
 
   const canDelete = ["tc", "tc_lead", "admin", "owner"].includes(currentUser?.role);
 
+  const getFileIcon = (fileName) => {
+    const ext = (fileName || "").split(".").pop().toLowerCase();
+    const colors = { pdf: "text-red-500", docx: "text-blue-600", doc: "text-blue-600", xlsx: "text-green-600", xls: "text-green-600", png: "text-purple-500", jpg: "text-purple-500", jpeg: "text-purple-500" };
+    return colors[ext] || "text-gray-400";
+  };
+
   return (
     <div className="space-y-5">
+      <DocumentViewerModal doc={viewingDoc} onClose={() => setViewingDoc(null)} />
       <ConfirmDialog
         open={!!confirmDeleteDoc}
         title="Delete Document"
@@ -271,10 +280,10 @@ export default function TransactionDocumentsTab({ transaction, currentUser }) {
               {documents.map((doc) => (
                 <div key={doc.id} className="flex items-center gap-3 p-3 rounded-lg border border-gray-100 hover:border-gray-200 bg-white transition-colors">
                   <div className="w-9 h-9 rounded-lg bg-gray-50 flex items-center justify-center flex-shrink-0">
-                    <FileText className="w-4 h-4 text-gray-400" />
+                    <FileText className={`w-4 h-4 ${getFileIcon(doc.file_name)}`} />
                   </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium text-gray-900 truncate">{doc.file_name || "Document"}</p>
+                  <div className="flex-1 min-w-0 cursor-pointer" onClick={() => setViewingDoc(doc)}>
+                    <p className="text-sm font-medium text-gray-900 truncate hover:text-blue-600 transition-colors">{doc.file_name || "Document"}</p>
                     <p className="text-xs text-gray-400">
                       {doc.uploaded_by || "unknown"}
                       {doc.created_date ? ` · ${format(new Date(doc.created_date), "MMM d, yyyy")}` : ""}
@@ -284,8 +293,12 @@ export default function TransactionDocumentsTab({ transaction, currentUser }) {
                     {DOC_LABELS[doc.doc_type] || doc.doc_type}
                   </Badge>
                   <div className="flex items-center gap-1">
-                    <a href={doc.file_url} target="_blank" rel="noopener noreferrer">
-                      <Button variant="ghost" size="icon" className="h-8 w-8 text-blue-500 hover:text-blue-700">
+                    <Button variant="ghost" size="icon" className="h-8 w-8 text-blue-500 hover:text-blue-700" title="Preview"
+                      onClick={() => setViewingDoc(doc)}>
+                      <Eye className="w-4 h-4" />
+                    </Button>
+                    <a href={doc.file_url} download={doc.file_name} target="_blank" rel="noopener noreferrer">
+                      <Button variant="ghost" size="icon" className="h-8 w-8 text-gray-500 hover:text-gray-700" title="Download">
                         <Download className="w-4 h-4" />
                       </Button>
                     </a>
