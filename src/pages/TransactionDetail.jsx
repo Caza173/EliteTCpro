@@ -295,22 +295,48 @@ export default function TransactionDetail() {
   };
 
   const handleInviteClient = async () => {
-    if (!transaction?.client_email) {
+    const emails = transaction?.client_emails?.length
+      ? transaction.client_emails
+      : transaction?.client_email ? [transaction.client_email] : [];
+    if (!emails.length) {
       setAlertDialog({ open: true, title: "No Client Email", message: "No client email on this transaction." });
       return;
     }
     setInvitingClient(true);
-    try {
-      await base44.users.inviteUser(transaction.client_email, "user");
-      await base44.integrations.Core.SendEmail({
-        to: transaction.client_email,
-        subject: `You've been invited to track your transaction — ${transaction.address}`,
-        body: `<p>Hello,</p><p>Your transaction coordinator has invited you to view the progress of your transaction at <strong>${transaction.address}</strong>.</p><p>Best regards,<br/>TC Manager</p>`,
-      });
-      setAlertDialog({ open: true, title: "Invite Sent", message: `Client invite sent to ${transaction.client_email}` });
-    } catch (e) {
-      setAlertDialog({ open: true, title: "Invite Sent", message: "Invite sent (client may already have an account)." });
+
+    // Generate a unique access code if one doesn't exist
+    let code = transaction.client_access_code;
+    if (!code) {
+      const rand = Math.random().toString(36).substring(2, 8).toUpperCase();
+      code = `TC-${rand}`;
+      await base44.functions.invoke("updateTransaction", { transaction_id: transaction.id, data: { client_access_code: code } });
+      queryClient.invalidateQueries({ queryKey: ["transactions"] });
     }
+
+    const appUrl = window.location.origin + window.location.pathname.replace(/\/[^/]*$/, "") + "/#/ClientLookup";
+    const emailBody = `<p>Hello,</p>
+<p>Your transaction coordinator has set up a status portal for your transaction at <strong>${transaction.address}</strong>.</p>
+<p>Use the link and code below to check your transaction progress and key deadlines at any time — no account needed:</p>
+<p style="margin:20px 0;">
+  <a href="${appUrl}" style="background:#2563EB;color:white;padding:12px 24px;border-radius:8px;text-decoration:none;font-weight:600;">View Transaction Status</a>
+</p>
+<p><strong>Your Access Code: <span style="font-size:20px;letter-spacing:2px;color:#2563EB;">${code}</span></strong></p>
+<p style="color:#666;font-size:13px;">Keep this code handy — you'll use it each time you check your status.</p>
+<p>Best regards,<br/>TC Manager</p>`;
+
+    await Promise.allSettled(emails.map(to =>
+      base44.integrations.Core.SendEmail({
+        to,
+        subject: `Your Transaction Access Code — ${transaction.address}`,
+        body: emailBody,
+      })
+    ));
+
+    setAlertDialog({
+      open: true,
+      title: "Invite Sent!",
+      message: `Access code ${code} sent to ${emails.join(", ")}. They can use it at the Client Lookup page — no login required.`,
+    });
     setInvitingClient(false);
   };
 

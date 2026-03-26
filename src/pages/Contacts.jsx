@@ -335,9 +335,14 @@ export default function Contacts() {
                         style={{ background: "var(--accent-subtle)", color: "var(--accent)" }}>
                         {(contact.name || contact.email || "?")[0].toUpperCase()}
                       </div>
-                      <span className="font-medium text-xs" style={{ color: "var(--text-primary)" }}>
-                        {contact.name || <span style={{ color: "var(--text-muted)" }}>—</span>}
-                      </span>
+                      <div>
+                        <span className="font-medium text-xs" style={{ color: "var(--text-primary)" }}>
+                          {contact.name || <span style={{ color: "var(--text-muted)" }}>—</span>}
+                        </span>
+                        {(contact.roles[0] === "Buyer" || contact.roles[0] === "Seller") && contact.transactions[0]?.address && (
+                          <p className="text-[11px] mt-0.5 truncate" style={{ color: "var(--text-muted)" }}>{contact.transactions[0].address}</p>
+                        )}
+                      </div>
                     </div>
                   </td>
                   <td className="px-4 py-3">
