@@ -47,7 +47,7 @@ const initialListing = {
   sellers_agent_name: "", seller_brokerage: "",
   address: "", mls_number: "", commission: "",
   sale_price: "", list_price: "",
-  client_email: "", client_phone: "",
+  client_phone: "",
   contract_date: "", closing_date: "",
   transaction_type: "seller",
 };
@@ -61,7 +61,7 @@ const initialListingUC = {
   sale_price: "",
   transaction_type: "seller",
   is_cash_transaction: false,
-  client_email: "", client_phone: "",
+  client_phone: "",
   contract_date: "", closing_date: "",
   earnest_money_deadline: "", inspection_deadline: "",
   due_diligence_deadline: "", financing_deadline: "",
@@ -77,7 +77,7 @@ const initialBuyerUC = {
   sale_price: "",
   transaction_type: "buyer",
   is_cash_transaction: false,
-  client_email: "", client_phone: "",
+  client_phone: "",
   contract_date: "", closing_date: "",
   earnest_money_deadline: "", inspection_deadline: "",
   due_diligence_deadline: "", financing_deadline: "",
@@ -88,6 +88,7 @@ export default function AgentIntake() {
   const [form, setForm] = useState({});
   const [buyers, setBuyers] = useState([""]);
   const [sellers, setSellers] = useState([""]);
+  const [clientEmails, setClientEmails] = useState([""]);
   const [parsedData, setParsedData] = useState(null);
   const [submitted, setSubmitted] = useState(false);
   const [docType, setDocType] = useState("ps");
@@ -98,12 +99,13 @@ export default function AgentIntake() {
     mutationFn: async (data) => {
       const res = await base44.functions.invoke('createTransaction', data);
       const tx = res.data;
-      if (data.client_email) {
-        try { await base44.users.inviteUser(data.client_email, "user"); } catch (_) {}
+      const emails = (data.client_emails || []).filter(Boolean);
+      for (const email of emails) {
+        try { await base44.users.inviteUser(email, "user"); } catch (_) {}
         try {
           const portalUrl = `${window.location.origin}${window.location.pathname}#/ClientPortal?id=${tx.id}`;
           await base44.integrations.Core.SendEmail({
-            to: data.client_email,
+            to: email,
             subject: `You're invited to track your transaction — ${data.address}`,
             body: `<p>Hello,</p><p>Your transaction has been submitted and you've been invited to track its progress online.</p><p><strong>Property:</strong> ${data.address}</p><p><a href="${portalUrl}" style="display:inline-block;padding:10px 20px;background:#3b82f6;color:#fff;border-radius:6px;text-decoration:none;font-weight:600;">View My Transaction</a></p><p>Best regards,<br/>TC Manager</p>`,
           });
@@ -126,6 +128,7 @@ export default function AgentIntake() {
     else setForm({ ...initialBuyerUC });
     setBuyers([""]);
     setSellers([""]);
+    setClientEmails([""]);
     setParsedData(null);
   };
 
@@ -188,12 +191,15 @@ export default function AgentIntake() {
       tasks = [...tasks, ...phase3Tasks.filter(t => !existingIds.has(t.id))];
     }
 
+    const cleanClientEmails = clientEmails.filter(Boolean);
     createMutation.mutate({
       ...form,
       buyer: isListing ? "" : buyerList.join(" & "),
       buyers: isListing ? [] : buyerList,
       seller: sellerList.join(" & "),
       sellers: sellerList,
+      client_email: cleanClientEmails[0] || "",
+      client_emails: cleanClientEmails,
       sale_price: form.sale_price ? Number(form.sale_price) : (parsedData?.purchasePrice || undefined),
       transaction_type: txType,
       transaction_phase: txPhase,
@@ -467,14 +473,37 @@ export default function AgentIntake() {
 
             {/* Client Contact */}
             <Section label="Client Contact">
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <F label="Client Email (gets portal invite)" id="client_email">
-                  <Input id="client_email" type="email" value={form.client_email || ""} onChange={(e) => set("client_email", e.target.value)} placeholder="client@email.com" className="mt-1.5" />
-                </F>
-                <F label="Client Phone" id="client_phone">
-                  <Input id="client_phone" type="tel" value={form.client_phone || ""} onChange={(e) => set("client_phone", e.target.value)} placeholder="(555) 123-4567" className="mt-1.5" />
-                </F>
+              <div className="space-y-2">
+                <Label className="text-sm font-medium text-gray-700">Client Email(s) <span className="text-gray-400 font-normal">(each gets a portal invite)</span></Label>
+                {clientEmails.map((email, i) => (
+                  <div key={i} className="flex gap-2 items-center">
+                    <Input
+                      type="email"
+                      value={email}
+                      onChange={(e) => {
+                        const next = [...clientEmails];
+                        next[i] = e.target.value;
+                        setClientEmails(next);
+                      }}
+                      placeholder={i === 0 ? "client@email.com" : "Additional client email"}
+                      className="flex-1"
+                    />
+                    {clientEmails.length > 1 && (
+                      <Button type="button" variant="ghost" size="icon" className="h-9 w-9 text-gray-400 hover:text-red-500"
+                        onClick={() => setClientEmails(clientEmails.filter((_, idx) => idx !== i))}>
+                        <X className="w-4 h-4" />
+                      </Button>
+                    )}
+                  </div>
+                ))}
+                <Button type="button" variant="outline" size="sm" className="text-xs h-8 mt-1"
+                  onClick={() => setClientEmails([...clientEmails, ""])}>
+                  <Plus className="w-3 h-3 mr-1" /> Add Another Email
+                </Button>
               </div>
+              <F label="Client Phone" id="client_phone">
+                <Input id="client_phone" type="tel" value={form.client_phone || ""} onChange={(e) => set("client_phone", e.target.value)} placeholder="(555) 123-4567" className="mt-1.5" />
+              </F>
             </Section>
 
             <Separator />

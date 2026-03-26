@@ -644,10 +644,10 @@ export default function TransactionDetail() {
                 value={transaction.attorney_phone || ""}
                 type="tel"
                 onSave={v => updateMutation.mutate({ id: transaction.id, data: { attorney_phone: v } })} />
-              <EditableInfoItem icon={Mail} label="Client Email"
-                value={transaction.client_email || ""}
-                type="email"
-                onSave={v => updateMutation.mutate({ id: transaction.id, data: { client_email: v } })} />
+              <ClientEmailsField
+                emails={transaction.client_emails?.length ? transaction.client_emails : (transaction.client_email ? [transaction.client_email] : [])}
+                onSave={emails => updateMutation.mutate({ id: transaction.id, data: { client_emails: emails, client_email: emails[0] || "" } })}
+              />
               <EditableInfoItem icon={Phone} label="Client Phone"
                 value={transaction.client_phone || ""}
                 type="tel"
@@ -919,6 +919,70 @@ function EditableAddress({ value, onSave }) {
     <div className="flex items-center gap-1.5 group cursor-pointer" onClick={() => { setDraft(value || ""); setEditing(true); }}>
       <span className="text-xl font-semibold text-gray-900">{value}</span>
       <Pencil className="w-3.5 h-3.5 text-gray-400 opacity-0 group-hover:opacity-100 transition-opacity" />
+    </div>
+  );
+}
+
+function ClientEmailsField({ emails, onSave }) {
+  const [editing, setEditing] = useState(false);
+  const [draft, setDraft] = useState(emails);
+
+  const startEdit = () => { setDraft(emails.length ? [...emails] : [""]); setEditing(true); };
+  const handleSave = () => { setEditing(false); onSave(draft.filter(Boolean)); };
+
+  if (!editing) {
+    return (
+      <div className="flex items-start gap-2.5 group">
+        <div className="w-8 h-8 rounded-lg bg-gray-50 flex items-center justify-center flex-shrink-0 mt-0.5">
+          <Mail className="w-4 h-4 text-gray-400" />
+        </div>
+        <div className="flex-1 min-w-0">
+          <p className="text-xs text-gray-500 font-medium">Client Email(s)</p>
+          <div className="flex items-start gap-1 flex-wrap">
+            <div className="flex-1 min-w-0">
+              {emails.length === 0
+                ? <p className="text-sm font-medium text-gray-900">—</p>
+                : emails.map((e, i) => <p key={i} className="text-sm font-medium break-words text-gray-900">{e}</p>)
+              }
+            </div>
+            <button onClick={startEdit} className="opacity-0 group-hover:opacity-100 transition-opacity p-0.5 rounded hover:bg-gray-100 mt-0.5" title="Edit">
+              <Pencil className="w-3 h-3 text-gray-400" />
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="flex items-start gap-2.5">
+      <div className="w-8 h-8 rounded-lg bg-gray-50 flex items-center justify-center flex-shrink-0 mt-0.5">
+        <Mail className="w-4 h-4 text-gray-400" />
+      </div>
+      <div className="flex-1 min-w-0 space-y-1.5">
+        <p className="text-xs text-gray-500 font-medium">Client Email(s)</p>
+        {draft.map((e, i) => (
+          <div key={i} className="flex gap-1 items-center">
+            <input
+              type="email"
+              className="text-sm border border-blue-300 rounded px-2 py-0.5 focus:outline-none focus:ring-1 focus:ring-blue-400 flex-1"
+              value={e}
+              onChange={ev => { const n = [...draft]; n[i] = ev.target.value; setDraft(n); }}
+              autoFocus={i === 0}
+            />
+            {draft.length > 1 && (
+              <button onClick={() => setDraft(draft.filter((_, idx) => idx !== i))} className="text-red-400 hover:text-red-600 p-0.5">
+                <X className="w-3 h-3" />
+              </button>
+            )}
+          </div>
+        ))}
+        <div className="flex items-center gap-2 pt-0.5">
+          <button onClick={() => setDraft([...draft, ""])} className="text-xs text-blue-600 hover:underline">+ Add email</button>
+          <button onClick={handleSave} className="text-blue-600 hover:text-blue-800 text-xs font-semibold px-1">✓ Save</button>
+          <button onClick={() => setEditing(false)} className="text-gray-400 hover:text-gray-600 text-xs px-1">✕</button>
+        </div>
+      </div>
     </div>
   );
 }

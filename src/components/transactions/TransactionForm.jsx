@@ -30,7 +30,7 @@ const initialForm = {
   agent: "",
   agent_email: "",
   closing_title_company: "",
-  client_email: "",
+  client_emails: [""],
   client_phone: "",
   is_cash_transaction: false,
   contract_date: "",
@@ -101,6 +101,8 @@ export default function TransactionForm({ onSubmit, isSubmitting }) {
       sellers: cleanSellers,
       buyer: cleanBuyers.join(", ") || form.buyer,
       seller: cleanSellers.join(", ") || form.seller,
+      client_emails: (form.client_emails || []).filter(Boolean),
+      client_email: ((form.client_emails || []).filter(Boolean))[0] || "",
       phase: 1,
       phases_completed: [],
       status: "active",
@@ -238,8 +240,38 @@ export default function TransactionForm({ onSubmit, isSubmitting }) {
       </div>
 
       {/* Client Contact */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        {field("client_email", "Client Email", "email", "client@email.com")}
+      <div className="space-y-3">
+        <div>
+          <Label className="text-sm font-medium text-gray-700">Client Email(s) <span className="text-gray-400 font-normal">(each gets a portal invite)</span></Label>
+          <div className="space-y-2 mt-1.5">
+            {(form.client_emails || [""]).map((email, i) => (
+              <div key={i} className="flex gap-2 items-center">
+                <Input
+                  type="email"
+                  value={email}
+                  onChange={(e) => {
+                    const next = [...(form.client_emails || [""])];
+                    next[i] = e.target.value;
+                    handleChange("client_emails", next);
+                  }}
+                  placeholder={i === 0 ? "client@email.com" : "Additional client email"}
+                  className="flex-1"
+                />
+                {(form.client_emails || [""]).length > 1 && (
+                  <Button type="button" variant="ghost" size="icon" className="text-red-400 hover:text-red-600 flex-shrink-0"
+                    onClick={() => handleChange("client_emails", (form.client_emails || [""]).filter((_, idx) => idx !== i))}>
+                    <X className="w-4 h-4" />
+                  </Button>
+                )}
+              </div>
+            ))}
+            <Button type="button" variant="outline" size="sm"
+              onClick={() => handleChange("client_emails", [...(form.client_emails || [""]), ""])}
+              className="text-blue-600 border-blue-200 hover:bg-blue-50">
+              <Plus className="w-3.5 h-3.5 mr-1.5" /> Add Another Email
+            </Button>
+          </div>
+        </div>
         {field("client_phone", "Client Phone", "tel", "(555) 123-4567")}
       </div>
 
