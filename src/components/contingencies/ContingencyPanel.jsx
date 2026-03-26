@@ -197,25 +197,27 @@ function AddContingencyRow({ transactionId, brokerageId, effectiveDate, type, on
     sub_type: "",
     days_from_effective: "",
     due_date: "",
+    scheduled_date: "",
     status: "Pending",
     notes: "",
-  });
+    });
 
-  const handleDaysChange = (val) => {
+    const handleDaysChange = (val) => {
     const recalcDate = addDaysToDate(effectiveDate, val);
     setForm(f => ({ ...f, days_from_effective: val, due_date: recalcDate }));
-  };
+    };
 
-  const handleSave = async () => {
+    const handleSave = async () => {
     await base44.entities.Contingency.create({
-      transaction_id: transactionId,
-      brokerage_id: brokerageId,
-      contingency_type: type,
-      sub_type: form.sub_type,
-      days_from_effective: form.days_from_effective ? Number(form.days_from_effective) : null,
-      due_date: form.due_date || null,
-      status: form.status,
-      notes: form.notes,
+    transaction_id: transactionId,
+    brokerage_id: brokerageId,
+    contingency_type: type,
+    sub_type: form.sub_type,
+    days_from_effective: form.days_from_effective ? Number(form.days_from_effective) : null,
+    due_date: form.due_date || null,
+    scheduled_date: form.scheduled_date || null,
+    status: form.status,
+    notes: form.notes,
       is_active: true,
       is_custom: true,
       source: "Manual",
@@ -235,7 +237,7 @@ function AddContingencyRow({ transactionId, brokerageId, effectiveDate, type, on
           <Input type="date" value={form.due_date} onChange={e => setForm(f => ({ ...f, due_date: e.target.value, days_from_effective: "" }))} className="h-7 text-xs" />
         </div>
       </td>
-      <td className="px-3 py-2"><Input type="date" className="h-7 text-xs" /></td>
+      <td className="px-3 py-2"><Input type="date" value={form.scheduled_date} onChange={e => setForm(f => ({ ...f, scheduled_date: e.target.value }))} className="h-7 text-xs" /></td>
       <td className="px-3 py-2">
         <Select value={form.status} onValueChange={v => setForm(f => ({ ...f, status: v }))}>
           <SelectTrigger className="h-7 text-xs w-28"><SelectValue /></SelectTrigger>
