@@ -311,12 +311,11 @@ export default function Contacts() {
         <div className="theme-card overflow-hidden">
           <table className="w-full text-sm table-fixed">
             <colgroup>
+              <col style={{ width: "25%" }} />
+              <col style={{ width: "28%" }} />
+              <col style={{ width: "22%" }} />
               <col style={{ width: "18%" }} />
-              <col style={{ width: "18%" }} />
-              <col style={{ width: "16%" }} />
-              <col style={{ width: "13%" }} />
-              <col style={{ width: "30%" }} />
-              <col style={{ width: "5%" }} />
+              <col style={{ width: "7%" }} />
             </colgroup>
             <thead>
               <tr style={{ borderBottom: "1px solid var(--border)", background: "var(--bg-tertiary)" }}>
@@ -324,7 +323,6 @@ export default function Contacts() {
                 <th className="text-left px-4 py-2.5 font-semibold text-xs uppercase tracking-wider" style={{ color: "var(--text-muted)" }}>Contact</th>
                 <th className="text-left px-4 py-2.5 font-semibold text-xs uppercase tracking-wider" style={{ color: "var(--text-muted)" }}>Company</th>
                 <th className="text-left px-4 py-2.5 font-semibold text-xs uppercase tracking-wider" style={{ color: "var(--text-muted)" }}>Role</th>
-                <th className="text-left px-4 py-2.5 font-semibold text-xs uppercase tracking-wider" style={{ color: "var(--text-muted)" }}>Transactions</th>
                 <th className="px-2 py-2.5" />
               </tr>
             </thead>
@@ -376,16 +374,6 @@ export default function Contacts() {
                           {r}
                         </Badge>
                       ))}
-                    </div>
-                  </td>
-                  <td className="px-4 py-3">
-                    <div className="space-y-0.5">
-                      {contact.transactions.slice(0, 3).map(({ address }, j) => (
-                        <p key={j} className="text-xs" style={{ color: "var(--text-muted)" }}>{address}</p>
-                      ))}
-                      {contact.transactions.length > 3 && (
-                        <p className="text-xs" style={{ color: "var(--accent)" }}>+{contact.transactions.length - 3} more</p>
-                      )}
                     </div>
                   </td>
                   <td className="px-2 py-3">
