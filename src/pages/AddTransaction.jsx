@@ -89,6 +89,8 @@ export default function AddTransaction() {
       risk_level: "on_track",
       last_activity_at: new Date().toISOString(),
       tasks,
+      // Normalize transaction_type for new workflow system
+      transaction_type: data.transaction_type || "buyer_under_contract",
     });
   };
 

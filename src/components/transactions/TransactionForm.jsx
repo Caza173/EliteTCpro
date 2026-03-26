@@ -18,6 +18,7 @@ import ParsedDeadlinesPreview from "../forms/ParsedDeadlinesPreview";
 import AddressAutocomplete from "../forms/AddressAutocomplete";
 
 const initialForm = {
+  transaction_type: "",
   address: "",
   buyer: "",
   seller: "",
@@ -40,9 +41,15 @@ const initialForm = {
   earnest_money_deadline: "",
   appraisal_deadline: "",
   financing_deadline: "",
-  transaction_type: "buyer",
   property_type: "residential",
 };
+
+const TX_TYPE_OPTIONS = [
+  { value: "buyer_under_contract", label: "Buyer — Under Contract" },
+  { value: "listing",              label: "Listing" },
+  { value: "dual",                 label: "Dual Agency" },
+  { value: "other",                label: "Other" },
+];
 
 export default function TransactionForm({ onSubmit, isSubmitting }) {
   const [form, setForm] = useState(initialForm);
@@ -93,6 +100,10 @@ export default function TransactionForm({ onSubmit, isSubmitting }) {
 
   const handleSubmit = (e) => {
     e.preventDefault();
+    if (!form.transaction_type) {
+      alert("Please select a Transaction Type before continuing.");
+      return;
+    }
     const cleanBuyers = (form.buyers || [""]).filter(Boolean);
     const cleanSellers = (form.sellers || [""]).filter(Boolean);
     onSubmit({
@@ -128,6 +139,32 @@ export default function TransactionForm({ onSubmit, isSubmitting }) {
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
+
+      {/* Transaction Type — REQUIRED FIRST */}
+      <div className="rounded-xl border-2 border-blue-200 bg-blue-50/40 p-4">
+        <Label className="text-sm font-semibold text-blue-800 block mb-2">
+          Transaction Type <span className="text-red-500">*</span>
+        </Label>
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+          {TX_TYPE_OPTIONS.map(opt => (
+            <button
+              key={opt.value}
+              type="button"
+              onClick={() => handleChange("transaction_type", opt.value)}
+              className={`px-3 py-2.5 rounded-lg border-2 text-sm font-medium transition-all text-left ${
+                form.transaction_type === opt.value
+                  ? "border-blue-500 bg-blue-600 text-white"
+                  : "border-gray-200 bg-white text-gray-700 hover:border-blue-300 hover:bg-blue-50"
+              }`}
+            >
+              {opt.label}
+            </button>
+          ))}
+        </div>
+        {!form.transaction_type && (
+          <p className="text-xs text-blue-600 mt-2 font-medium">Select a type to determine which workflow phases and tasks are loaded.</p>
+        )}
+      </div>
 
       {/* P&S Upload Section */}
       <div className="rounded-xl border border-dashed border-blue-200 bg-blue-50/30 p-4 space-y-3">
@@ -289,37 +326,22 @@ export default function TransactionForm({ onSubmit, isSubmitting }) {
         </div>
       </div>
 
-      {/* Type */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <div>
-          <Label className="text-sm font-medium text-gray-700">Transaction Type</Label>
-          <Select value={form.transaction_type} onValueChange={(v) => handleChange("transaction_type", v)}>
-            <SelectTrigger className="mt-1.5">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="buyer">Buyer</SelectItem>
-              <SelectItem value="seller">Seller</SelectItem>
-              <SelectItem value="dual">Dual</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
-        <div>
-          <Label className="text-sm font-medium text-gray-700">Property Type</Label>
-          <Select value={form.property_type} onValueChange={(v) => handleChange("property_type", v)}>
-            <SelectTrigger className="mt-1.5">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="residential">Residential</SelectItem>
-              <SelectItem value="condo">Condo</SelectItem>
-              <SelectItem value="land">Land</SelectItem>
-              <SelectItem value="commercial">Commercial</SelectItem>
-              <SelectItem value="multi_family">Multi-Family</SelectItem>
-              <SelectItem value="other">Other</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
+      {/* Property Type */}
+      <div>
+        <Label className="text-sm font-medium text-gray-700">Property Type</Label>
+        <Select value={form.property_type} onValueChange={(v) => handleChange("property_type", v)}>
+          <SelectTrigger className="mt-1.5">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="residential">Residential</SelectItem>
+            <SelectItem value="condo">Condo</SelectItem>
+            <SelectItem value="land">Land</SelectItem>
+            <SelectItem value="commercial">Commercial</SelectItem>
+            <SelectItem value="multi_family">Multi-Family</SelectItem>
+            <SelectItem value="other">Other</SelectItem>
+          </SelectContent>
+        </Select>
       </div>
 
       <div className="flex justify-end pt-2">

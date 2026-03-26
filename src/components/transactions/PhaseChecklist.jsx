@@ -1,23 +1,16 @@
 import React from "react";
 import { Check, Lock, ChevronRight } from "lucide-react";
-import { PHASE_TASK_LIBRARY, getPhaseProgress, isPhaseComplete } from "@/lib/taskLibrary";
-
-function getPhasesForTransaction(txType, currentPhase) {
-  // Listing-only: show pre-listing + active listing. Once converted (phase >= 3), show all.
-  if ((txType === "seller") && currentPhase <= 2) {
-    return PHASE_TASK_LIBRARY.filter(p => p.phaseNum <= 2).map(p => ({ num: p.phaseNum, label: p.label }));
-  }
-  return PHASE_TASK_LIBRARY.map(p => ({ num: p.phaseNum, label: p.label }));
-}
+import { getPhasesForType, getPhaseProgress, isPhaseComplete } from "@/lib/taskLibrary";
 
 export default function PhaseChecklist({ phasesCompleted = [], currentPhase, onTogglePhase, tasks = [], txTasks = [], selectedPhase, onSelectPhase, transactionType }) {
-  const PHASES = getPhasesForTransaction(transactionType, currentPhase);
+  const phases = getPhasesForType(transactionType);
+
   return (
     <div className="space-y-1">
-      {PHASES.map((phase) => {
-        // Prefer TransactionTask records if available for this phase
-        const newPhaseTasks = txTasks.filter(t => t.phase === phase.num);
+      {phases.map((phase) => {
+        const newPhaseTasks = txTasks.filter(t => t.phase === phase.phaseNum);
         let progress, isCompleted, isLocked, pct;
+
         if (newPhaseTasks.length > 0) {
           const total = newPhaseTasks.length;
           const completed = newPhaseTasks.filter(t => t.is_completed).length;
@@ -28,18 +21,21 @@ export default function PhaseChecklist({ phasesCompleted = [], currentPhase, onT
           isLocked = false;
           pct = total > 0 ? Math.round((completed / total) * 100) : 0;
         } else {
-          progress = getPhaseProgress(phase.num, tasks);
+          progress = getPhaseProgress(phase.phaseNum, tasks);
           const tasksDriven = progress.total > 0;
-          isCompleted = tasksDriven ? isPhaseComplete(phase.num, tasks) : phasesCompleted.includes(phase.num);
+          isCompleted = tasksDriven
+            ? isPhaseComplete(phase.phaseNum, tasks)
+            : phasesCompleted.includes(phase.phaseNum);
           isLocked = tasksDriven && !isCompleted && progress.requiredDone < progress.required;
           pct = progress.total > 0 ? Math.round((progress.completed / progress.total) * 100) : 0;
         }
-        const isCurrent = phase.num === currentPhase;
-        const isSelected = selectedPhase === phase.num;
+
+        const isCurrent = phase.phaseNum === currentPhase;
+        const isSelected = selectedPhase === phase.phaseNum;
 
         return (
           <div
-            key={phase.num}
+            key={phase.phaseNum}
             className={`flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-150 cursor-pointer group ${
               isSelected
                 ? "bg-blue-50 border border-blue-300"
@@ -47,7 +43,7 @@ export default function PhaseChecklist({ phasesCompleted = [], currentPhase, onT
                 ? "bg-emerald-50/50 hover:bg-emerald-50"
                 : "hover:bg-gray-50"
             } ${isLocked ? "opacity-70" : ""}`}
-            onClick={() => onSelectPhase?.(phase.num)}
+            onClick={() => onSelectPhase?.(phase.phaseNum)}
             title={isLocked ? "Complete required tasks to unlock this phase" : phase.label}
           >
             {/* Status circle */}
@@ -60,7 +56,7 @@ export default function PhaseChecklist({ phasesCompleted = [], currentPhase, onT
                 ? "bg-gray-100 text-gray-300"
                 : "bg-gray-100 text-gray-400 group-hover:bg-gray-200"
             }`}>
-              {isCompleted ? <Check className="w-3.5 h-3.5" /> : isLocked ? <Lock className="w-3 h-3" /> : phase.num}
+              {isCompleted ? <Check className="w-3.5 h-3.5" /> : isLocked ? <Lock className="w-3 h-3" /> : phase.phaseNum}
             </div>
 
             {/* Label + progress bar */}

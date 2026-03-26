@@ -22,7 +22,7 @@ import PhaseTaskPanel from "../components/transactions/PhaseTaskPanel";
 import PhaseTaskPanelV2 from "../components/transactions/PhaseTaskPanelV2";
 import TransactionTimeline from "../components/transactions/TransactionTimeline";
 import TaskList from "../components/transactions/TaskList";
-import { generateTasksForPhase, isPhaseComplete, PHASE_TASK_LIBRARY } from "../lib/taskLibrary";
+import { generateTasksForPhase, isPhaseComplete, getPhasesForType, normalizeTransactionType } from "../lib/taskLibrary";
 import DocChecklistPanel from "../components/transactions/DocChecklistPanel";
 import HealthScoreBadge from "../components/dashboard/HealthScoreBadge";
 import { useCurrentUser } from "../components/auth/useCurrentUser";
@@ -194,7 +194,7 @@ export default function TransactionDetail() {
       return;
     }
 
-    const libTasks = generateTasksForPhase(phaseNum, id, transaction?.transaction_type);
+    const libTasks = generateTasksForPhase(phaseNum, id, normalizeTransactionType(transaction?.transaction_type));
     await Promise.all(libTasks.map((t, i) =>
       base44.entities.TransactionTask.create({
         transaction_id: id,
@@ -749,6 +749,7 @@ export default function TransactionDetail() {
                   txTasks={txTasks}
                   transactionType={transaction.transaction_type}
                   selectedPhase={selectedPhase}
+                  transactionType={transaction.transaction_type}
                   onSelectPhase={async (num) => {
                     const next = selectedPhase === num ? null : num;
                     setSelectedPhase(next);
