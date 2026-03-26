@@ -325,10 +325,12 @@ export default function TransactionDetail() {
 <p>Best regards,<br/>TC Manager</p>`;
 
     await Promise.allSettled(emails.map(to =>
-      base44.integrations.Core.SendEmail({
-        to,
+      base44.functions.invoke("sendGmailEmail", {
+        to: [to],
         subject: `Your Transaction Access Code — ${transaction.address}`,
         body: emailBody,
+        transaction_id: transaction.id,
+        brokerage_id: transaction.brokerage_id,
       })
     ));
 
