@@ -23,7 +23,7 @@ Deno.serve(async (req) => {
     const user = await base44.auth.me();
     if (!user) return Response.json({ error: 'Unauthorized' }, { status: 401 });
 
-    const { transaction_id } = await req.json();
+    const { transaction_id, field_key } = await req.json();
     if (!transaction_id) return Response.json({ error: 'transaction_id required' }, { status: 400 });
 
     const transactions = await base44.entities.Transaction.filter({ id: transaction_id });
@@ -42,7 +42,12 @@ Deno.serve(async (req) => {
     const updated = [];
     const errors = [];
 
-    for (const { field, title } of DEADLINE_FIELDS) {
+    // Filter to a single field if field_key provided (individual sync)
+    const fieldsToSync = field_key
+      ? DEADLINE_FIELDS.filter(f => f.field === field_key)
+      : DEADLINE_FIELDS;
+
+    for (const { field, title } of fieldsToSync) {
       const dateStr = transaction[field];
       if (!dateStr) continue;
 

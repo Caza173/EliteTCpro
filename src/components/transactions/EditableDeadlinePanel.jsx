@@ -1,10 +1,12 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
+import { base44 } from "@/api/base44Client";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { format, parseISO } from "date-fns";
-import { Pencil, Check, X, Calendar, DollarSign, Search, FileCheck, Clock, Home } from "lucide-react";
-import { Badge } from "@/components/ui/badge";
+import { Pencil, Check, X, Calendar, DollarSign, Search, FileCheck, Clock, Home, CalendarCheck, CalendarPlus, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { recalculateTaskDueDates } from "./deadlineUtils";
+import { toast } from "sonner";
 
 const DEADLINE_FIELDS = [
   { key: "contract_date",           label: "Effective / Acceptance Date", icon: Calendar,   color: "blue" },
@@ -31,11 +33,26 @@ function formatSafe(d) {
 }
 
 export default function EditableDeadlinePanel({ transaction, onSave }) {
+  const queryClient = useQueryClient();
   const [editing, setEditing] = useState(null);
   const [editValue, setEditValue] = useState("");
+  const [syncingField, setSyncingField] = useState(null);
   const isCash = transaction.is_cash_transaction;
 
   const fields = DEADLINE_FIELDS.filter((f) => !(f.cashExcluded && isCash));
+
+  // Load CalendarEventMap for this transaction to know which deadlines are synced
+  const { data: calendarMaps = [] } = useQuery({
+    queryKey: ["calendarMaps", transaction.id],
+    queryFn: () => base44.entities.CalendarEventMap.filter({ transaction_id: transaction.id }),
+    enabled: !!transaction.id,
+  });
+
+  // Build a quick lookup: field_key → calendar_event_id
+  const syncedFields = {};
+  for (const m of calendarMaps) {
+    syncedFields[m.field_key] = m.calendar_event_id;
+  }
 
   const startEdit = (key, currentVal) => {
     setEditing(key);
@@ -46,13 +63,29 @@ export default function EditableDeadlinePanel({ transaction, onSave }) {
 
   const saveEdit = () => {
     if (!editing) return;
-    // Build updated transaction with new deadline
     const updated = { ...transaction, [editing]: editValue };
-    // Recalculate linked task due dates
     const updatedTasks = recalculateTaskDueDates(transaction.tasks || [], updated);
     onSave({ [editing]: editValue, tasks: updatedTasks });
     setEditing(null);
     setEditValue("");
+  };
+
+  const syncSingle = async (fieldKey) => {
+    setSyncingField(fieldKey);
+    try {
+      const res = await base44.functions.invoke("syncTransactionDeadlinesToCalendar", {
+        transaction_id: transaction.id,
+        field_key: fieldKey,
+      });
+      if (res.data?.error) throw new Error(res.data.error);
+      // Refresh the map
+      queryClient.invalidateQueries({ queryKey: ["calendarMaps", transaction.id] });
+      const wasSynced = !!syncedFields[fieldKey];
+      toast.success(wasSynced ? "Calendar event updated" : "Added to Google Calendar");
+    } catch (e) {
+      toast.error(e.message || "Calendar sync failed");
+    }
+    setSyncingField(null);
   };
 
   return (
@@ -62,6 +95,8 @@ export default function EditableDeadlinePanel({ transaction, onSave }) {
         const Icon = field.icon;
         const colorCls = COLORS[field.color] || COLORS.blue;
         const isEditingThis = editing === field.key;
+        const isSynced = !!syncedFields[field.key];
+        const isSyncing = syncingField === field.key;
 
         return (
           <div
@@ -90,18 +125,44 @@ export default function EditableDeadlinePanel({ transaction, onSave }) {
                   </Button>
                 </div>
               ) : (
-                <div className="flex items-center justify-between">
+                <div className="flex items-center justify-between gap-1">
                   <p className="text-sm font-semibold">
                     {dateStr ? formatSafe(dateStr) : <span className="italic opacity-50 font-normal">Not set</span>}
                   </p>
-                  <Button
-                    size="icon" variant="ghost"
-                    className="h-6 w-6 opacity-50 hover:opacity-100 hover:bg-white/40 ml-2"
-                    onClick={() => startEdit(field.key, dateStr)}
-                  >
-                    <Pencil className="w-3 h-3" />
-                  </Button>
+                  <div className="flex items-center gap-1 flex-shrink-0">
+                    {/* Calendar sync button — only show if date is set */}
+                    {dateStr && (
+                      <Button
+                        size="icon" variant="ghost"
+                        className={`h-6 w-6 hover:bg-white/40 transition-colors ${isSynced ? "text-emerald-600 opacity-90" : "opacity-50 hover:opacity-100"}`}
+                        onClick={() => syncSingle(field.key)}
+                        disabled={isSyncing}
+                        title={isSynced ? "Update calendar event" : "Sync to Google Calendar"}
+                      >
+                        {isSyncing
+                          ? <Loader2 className="w-3 h-3 animate-spin" />
+                          : isSynced
+                            ? <CalendarCheck className="w-3 h-3" />
+                            : <CalendarPlus className="w-3 h-3" />
+                        }
+                      </Button>
+                    )}
+                    <Button
+                      size="icon" variant="ghost"
+                      className="h-6 w-6 opacity-50 hover:opacity-100 hover:bg-white/40"
+                      onClick={() => startEdit(field.key, dateStr)}
+                      title="Edit date"
+                    >
+                      <Pencil className="w-3 h-3" />
+                    </Button>
+                  </div>
                 </div>
+              )}
+              {/* Synced indicator */}
+              {isSynced && !isEditingThis && (
+                <p className="text-[10px] opacity-60 mt-0.5 flex items-center gap-1">
+                  <CalendarCheck className="w-2.5 h-2.5" /> Synced to calendar
+                </p>
               )}
             </div>
           </div>
