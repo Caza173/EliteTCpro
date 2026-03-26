@@ -4,7 +4,8 @@ import { useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
-import { Send, User, Loader2, Globe, RefreshCw } from "lucide-react";
+import { Send, User, Loader2, Globe, RefreshCw, Mail } from "lucide-react";
+import EmailComposerModal from "@/components/email/EmailComposerModal";
 import { format } from "date-fns";
 
 function buildSystemPrompt(transaction, documents, checklistItems, complianceReports, complianceIssuesList = [], contingencies = []) {
@@ -153,6 +154,25 @@ const QUICK_PROMPTS = [
   "What are the next steps?",
 ];
 
+// Extract a subject line from the beginning of an email draft
+function extractEmailSubject(text) {
+  const subjectMatch = text.match(/subject[:\s]+([^\n]+)/i);
+  if (subjectMatch) return subjectMatch[1].trim();
+  const firstLine = text.split("\n").find(l => l.trim().length > 0);
+  return firstLine ? firstLine.slice(0, 80) : "Draft Email";
+}
+
+// Try to detect if an AI message looks like a drafted email
+function looksLikeEmail(text) {
+  return /subject[:\s]/i.test(text) ||
+    /dear\s+\w/i.test(text) ||
+    /hi\s+\w/i.test(text) ||
+    /hello\s+\w/i.test(text) ||
+    /best regards/i.test(text) ||
+    /sincerely/i.test(text) ||
+    /thank you,/i.test(text);
+}
+
 export default function TCAIAssistant({ transaction: initialTransaction, currentUser }) {
   const [messages, setMessages] = useState([
     {
@@ -162,6 +182,7 @@ export default function TCAIAssistant({ transaction: initialTransaction, current
   ]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
+  const [emailModal, setEmailModal] = useState(null); // { subject, body, recipients }
   const bottomRef = useRef(null);
 
   // Always fetch fresh transaction data so AI has latest edits
@@ -248,7 +269,27 @@ Respond to the user's latest message. Be helpful, professional, and reference sp
     ]);
   };
 
+  const handleConvertToEmail = (msgContent) => {
+    const subject = extractEmailSubject(msgContent);
+    const recipients = [
+      transaction.client_email,
+      transaction.agent_email,
+    ].filter(Boolean);
+    setEmailModal({ subject, body: msgContent, recipients });
+  };
+
   return (
+    <>
+    {emailModal && (
+      <EmailComposerModal
+        open={!!emailModal}
+        onClose={() => setEmailModal(null)}
+        transaction={transaction}
+        defaultRecipients={emailModal.recipients}
+        defaultSubject={emailModal.subject}
+        defaultBody={emailModal.body}
+      />
+    )}
     <div className="flex flex-col h-full overflow-hidden" style={{ background: "var(--card-bg)", borderColor: "var(--card-border)" }}>
       {/* Header */}
       <div className="flex items-center justify-between px-5 py-3.5 border-b" style={{ borderColor: "var(--card-border)", background: "var(--bg-tertiary)" }}>
@@ -298,12 +339,21 @@ Respond to the user's latest message. Be helpful, professional, and reference sp
                 : <Globe className="w-3.5 h-3.5 text-white" />
               }
             </div>
-            <div className={`max-w-[78%] rounded-xl px-4 py-3 text-sm leading-relaxed ${
-              msg.role === "user"
-                ? "bg-blue-600 text-white"
-                : ""
-            }`} style={msg.role !== "user" ? { background: "var(--bg-tertiary)", color: "var(--text-primary)", border: "1px solid var(--card-border)" } : {}}>
-              <FormattedMessage content={msg.content} />
+            <div className="max-w-[78%] flex flex-col gap-1.5">
+              <div className={`rounded-xl px-4 py-3 text-sm leading-relaxed ${
+                msg.role === "user" ? "bg-blue-600 text-white" : ""
+              }`} style={msg.role !== "user" ? { background: "var(--bg-tertiary)", color: "var(--text-primary)", border: "1px solid var(--card-border)" } : {}}>
+                <FormattedMessage content={msg.content} />
+              </div>
+              {msg.role === "assistant" && i > 0 && looksLikeEmail(msg.content) && (
+                <button
+                  onClick={() => handleConvertToEmail(msg.content)}
+                  className="self-start flex items-center gap-1.5 text-xs px-2.5 py-1 rounded-full border font-medium transition-colors hover:opacity-80"
+                  style={{ borderColor: "var(--accent)", color: "var(--accent)", background: "var(--accent-subtle)" }}
+                >
+                  <Mail className="w-3 h-3" /> Send as Email
+                </button>
+              )}
             </div>
           </div>
         ))}
@@ -345,6 +395,7 @@ Respond to the user's latest message. Be helpful, professional, and reference sp
         <p className="text-xs mt-1.5" style={{ color: "var(--text-muted)" }}>Press Enter to send · Shift+Enter for new line</p>
       </div>
     </div>
+    </>
   );
 }
 
