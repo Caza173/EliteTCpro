@@ -16,12 +16,16 @@ function buildTransactionContext(transaction) {
     buyer_name: (transaction.buyers || []).join(", ") || transaction.buyer || "N/A",
     seller_name: (transaction.sellers || []).join(", ") || transaction.seller || "N/A",
     buyer_agent_name: transaction.buyers_agent_name || "N/A",
-    buyer_agent_email: transaction.agent_email || "",
+    buyer_agent_email: transaction.buyers_agent_email || "",
     buyer_agent_brokerage: transaction.buyer_brokerage || "N/A",
     seller_agent_name: transaction.sellers_agent_name || "N/A",
-    seller_agent_email: "",
+    seller_agent_email: transaction.sellers_agent_email || "",
     seller_agent_brokerage: transaction.seller_brokerage || "N/A",
     title_company_name: transaction.closing_title_company || "N/A",
+    title_company_email: transaction.title_company_email || "",
+    lender_email: transaction.lender_email || "",
+    client_email: transaction.client_email || (transaction.client_emails?.[0] ?? ""),
+    tc_email: transaction.agent_email || "",
     closing_date: fmt(transaction.closing_date),
     inspection_deadline: fmt(transaction.inspection_deadline),
     financing_deadline: fmt(transaction.financing_deadline),
@@ -29,12 +33,74 @@ function buildTransactionContext(transaction) {
   };
 }
 
+/**
+ * Resolve real email recipients from transaction fields based on issue type.
+ * No guessing — only uses actual stored emails.
+ */
+function resolveRecipients(issue, ctx) {
+  const add = (set, email) => { if (email) set.add(email); };
+  const toSet = new Set();
+  const ccSet = new Set();
+  const category = (issue.category || "").toLowerCase();
+  const issueType = (issue.issue_type || "").toLowerCase();
+  const msg = (issue.message || "").toLowerCase();
+
+  // Inspection issues → buyer_agent, buyer
+  if (category === "inspection" || msg.includes("inspection")) {
+    add(toSet, ctx.buyer_agent_email);
+    add(ccSet, ctx.client_email);
+  }
+  // Financing issues → lender, buyer_agent
+  else if (category === "financing" || issueType === "financial" || msg.includes("financ") || msg.includes("loan") || msg.includes("lender")) {
+    add(toSet, ctx.lender_email);
+    add(ccSet, ctx.buyer_agent_email);
+  }
+  // Title / closing issues → title_company, both agents
+  else if (category === "title" || category === "closing" || msg.includes("title") || msg.includes("closing")) {
+    add(toSet, ctx.title_company_email);
+    add(ccSet, ctx.buyer_agent_email);
+    add(ccSet, ctx.seller_agent_email);
+  }
+  // Listing issues → seller_agent, seller
+  else if (category === "listing" || msg.includes("listing") || msg.includes("seller")) {
+    add(toSet, ctx.seller_agent_email);
+    add(ccSet, ctx.client_email);
+  }
+  // Missing signatures → all responsible parties + agents
+  else if (issueType === "signature" || msg.includes("signature") || msg.includes("sign")) {
+    if (msg.includes("buyer")) {
+      add(toSet, ctx.buyer_agent_email);
+      add(ccSet, ctx.client_email);
+    } else if (msg.includes("seller")) {
+      add(toSet, ctx.seller_agent_email);
+    } else {
+      add(toSet, ctx.buyer_agent_email);
+      add(toSet, ctx.seller_agent_email);
+      add(ccSet, ctx.client_email);
+    }
+  }
+  // Default fallback → TC + buyer agent
+  else {
+    add(toSet, ctx.buyer_agent_email);
+    add(ccSet, ctx.tc_email);
+  }
+
+  // Always CC the TC
+  add(ccSet, ctx.tc_email);
+
+  return {
+    to: Array.from(toSet).filter(Boolean).join(", "),
+    cc: Array.from(ccSet).filter(e => !toSet.has(e) && e).join(", "),
+  };
+}
+
 export default function EmailGeneratorModal({ issue, transaction, onClose }) {
   const ctx = buildTransactionContext(transaction);
+  const resolved = resolveRecipients(issue, ctx);
 
   const [loading, setLoading] = useState(false);
-  const [emailTo, setEmailTo] = useState(ctx.seller_agent_email || "");
-  const [emailCc, setEmailCc] = useState(ctx.buyer_agent_email || "");
+  const [emailTo, setEmailTo] = useState(resolved.to);
+  const [emailCc, setEmailCc] = useState(resolved.cc);
   const [subject, setSubject] = useState("");
   const [body, setBody] = useState("");
   const [generated, setGenerated] = useState(false);
@@ -44,7 +110,11 @@ export default function EmailGeneratorModal({ issue, transaction, onClose }) {
     setLoading(true);
     const prompt = `
 You are a professional real estate transaction coordinator at a brokerage.
-Generate a professional, concise email to a real estate agent about a compliance issue found in a transaction document.
+Generate a professional, concise email about a compliance issue found in a transaction document.
+
+Recipients already determined (do NOT suggest recipients):
+- To: ${emailTo || "(none set)"}
+- CC: ${emailCc || "(none)"}
 
 Transaction details:
 - Property Address: ${ctx.property_address}
@@ -61,9 +131,8 @@ Compliance Issue Detected:
 Category: ${issue.category || "general"}
 Severity: ${issue.severity || "warning"}
 
-Generate a professional email. Return JSON with these exact keys:
+Return JSON with these exact keys:
 {
-  "to": "seller agent email if relevant, otherwise buyer agent email",
   "subject": "email subject line",
   "body": "full email body text (no HTML, plain text, use line breaks)"
 }
@@ -83,7 +152,6 @@ The email should:
         response_json_schema: {
           type: "object",
           properties: {
-            to: { type: "string" },
             subject: { type: "string" },
             body: { type: "string" },
           },
@@ -93,7 +161,7 @@ The email should:
 
       setSubject(result.subject || `Action Required: ${issue.message} – ${ctx.property_address}`);
       setBody(result.body || "");
-      if (result.to) setEmailTo(result.to);
+      // Never overwrite resolved recipients from LLM output
       setGenerated(true);
     } catch (e) {
       console.error("Email generation failed:", e);
@@ -128,6 +196,12 @@ The email should:
           <div className="rounded-lg bg-amber-50 border border-amber-100 px-4 py-3 text-sm text-amber-800">
             <span className="font-medium">Issue: </span>{issue.message}
           </div>
+          {/* Warn if no recipients resolved */}
+          {!resolved.to && (
+            <div className="rounded-lg bg-red-50 border border-red-100 px-4 py-3 text-sm text-red-700">
+              ⚠ No recipient email found for this issue type. Please add contact emails to the transaction and try again, or enter recipients manually.
+            </div>
+          )}
 
           {!generated ? (
             <div className="flex flex-col items-center gap-4 py-6">
