@@ -39,6 +39,7 @@ import TCAIAssistant from "../components/ai/TCAIAssistant";
 import ConfirmDialog from "../components/ui/ConfirmDialog";
 import SkySlopeSyncBadge from "../components/skyslope/SkySlopeSyncBadge";
 import EmailComposerModal from "../components/email/EmailComposerModal";
+import UnderContractEmailButton from "../components/email/UnderContractEmailButton";
 import ConvertToTransactionButton from "../components/transactions/ConvertToTransactionButton";
 import ListingIntakeTab from "../components/transactions/ListingIntakeTab";
 
@@ -136,6 +137,12 @@ export default function TransactionDetail() {
   const { data: txTasks = [], refetch: refetchTxTasks } = useQuery({
     queryKey: ["txTasks", id],
     queryFn: () => base44.entities.TransactionTask.filter({ transaction_id: id }),
+    enabled: !!id,
+  });
+
+  const { data: documents = [] } = useQuery({
+    queryKey: ["tx-documents", id],
+    queryFn: () => base44.entities.Document.filter({ transaction_id: id }, "-created_date"),
     enabled: !!id,
   });
 
@@ -397,6 +404,7 @@ export default function TransactionDetail() {
         open={emailModalOpen}
         onClose={() => setEmailModalOpen(false)}
         transaction={transaction}
+        documents={documents}
       />
       <ConfirmDialog
         open={confirmDelete}
@@ -523,6 +531,11 @@ export default function TransactionDetail() {
               onClick={() => setEmailModalOpen(true)}>
               <MailIcon className="w-4 h-4 mr-1" /> Send Email
             </Button>
+            <UnderContractEmailButton
+              transaction={transaction}
+              currentUser={currentUser}
+              documents={documents}
+            />
             <Button variant="outline" size="sm" className="text-indigo-600 hover:text-indigo-700 hover:bg-indigo-50 border-indigo-200"
               onClick={handleInviteClient} disabled={invitingClient}>
               <UserPlus className="w-4 h-4 mr-1" />

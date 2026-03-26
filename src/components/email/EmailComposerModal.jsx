@@ -36,6 +36,7 @@ export default function EmailComposerModal({
   issueList,
   documents = [],
   preselectedDocId,
+  htmlBody: defaultHtmlBody,   // pre-built HTML (renders as preview, editable via plain text override)
 }) {
   const initRecipients = () => {
     if (defaultRecipients?.length) return defaultRecipients;
@@ -53,6 +54,9 @@ export default function EmailComposerModal({
   const [body, setBody] = useState(
     defaultBody || (transaction ? buildDefaultBody(transaction, issueList) : "")
   );
+  // If an HTML body was provided, we send it as HTML. User can switch to plain text override.
+  const [htmlBody, setHtmlBody] = useState(defaultHtmlBody || null);
+  const [showHtmlPreview, setShowHtmlPreview] = useState(!!defaultHtmlBody);
   const [sending, setSending] = useState(false);
   const [selectedDocIds, setSelectedDocIds] = useState(preselectedDocId ? [preselectedDocId] : []);
 
@@ -75,23 +79,33 @@ export default function EmailComposerModal({
     const validTo = recipients.filter(r => r.trim());
     if (!validTo.length) { toast.error("Add at least one recipient"); return; }
     if (!subject.trim()) { toast.error("Subject is required"); return; }
-    if (!body.trim()) { toast.error("Body is required"); return; }
+    const hasContent = htmlBody || body.trim();
+    if (!hasContent) { toast.error("Body is required"); return; }
 
     setSending(true);
     const attachedDocs = documents.filter(d => selectedDocIds.includes(d.id));
 
-    // Build body with attachment links if any
+    // If HTML body — append attachment links as an HTML block
+    let finalHtmlBody = htmlBody || null;
     let finalBody = body;
+
     if (attachedDocs.length > 0) {
       const links = attachedDocs.map(d => `• ${d.file_name}: ${d.file_url}`).join("\n");
-      finalBody += `\n\nAttached Documents:\n${links}`;
+      if (finalHtmlBody) {
+        const linksHtml = attachedDocs.map(d =>
+          `<li><a href="${d.file_url}" style="color:#2563eb;">${d.file_name}</a></li>`
+        ).join("");
+        finalHtmlBody += `<hr style="border:none;border-top:1px solid #e2e8f0;margin:20px 0;"/><p style="font-size:11px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:#64748b;margin:0 0 8px;">Attachments</p><ul style="margin:0;padding:0 0 0 16px;">${linksHtml}</ul>`;
+      } else {
+        finalBody += `\n\nAttached Documents:\n${links}`;
+      }
     }
 
     try {
       const res = await base44.functions.invoke("sendGmailEmail", {
         to: validTo,
         subject,
-        body: finalBody,
+        ...(finalHtmlBody ? { htmlBody: finalHtmlBody } : { body: finalBody }),
         transaction_id: transaction?.id,
         brokerage_id: transaction?.brokerage_id,
         attachment_document_ids: selectedDocIds,
@@ -159,13 +173,32 @@ export default function EmailComposerModal({
 
           {/* Body */}
           <div>
-            <label className="text-xs font-semibold text-gray-500 uppercase tracking-wide block mb-1">Message</label>
-            <textarea
-              className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-300 resize-none"
-              rows={10}
-              value={body}
-              onChange={e => setBody(e.target.value)}
-            />
+            <div className="flex items-center justify-between mb-1">
+              <label className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Message</label>
+              {htmlBody && (
+                <button
+                  onClick={() => setShowHtmlPreview(p => !p)}
+                  className="text-xs text-blue-600 hover:underline"
+                >
+                  {showHtmlPreview ? "Edit as plain text" : "Show preview"}
+                </button>
+              )}
+            </div>
+            {showHtmlPreview && htmlBody ? (
+              <div
+                className="w-full border border-gray-200 rounded-lg p-3 bg-gray-50 overflow-auto text-sm"
+                style={{ maxHeight: "360px" }}
+                dangerouslySetInnerHTML={{ __html: htmlBody }}
+              />
+            ) : (
+              <textarea
+                className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-300 resize-none"
+                rows={10}
+                value={body}
+                onChange={e => { setBody(e.target.value); setHtmlBody(null); }}
+                placeholder={htmlBody ? "Type here to override the HTML template with plain text…" : ""}
+              />
+            )}
           </div>
 
           {/* Document Attachments */}
