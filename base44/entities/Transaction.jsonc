@@ -1,0 +1,404 @@
+{
+  "name": "Transaction",
+  "type": "object",
+  "properties": {
+    "brokerage_id": {
+      "type": "string"
+    },
+    "address": {
+      "type": "string",
+      "description": "Property address"
+    },
+    "client_access_code": {
+      "type": "string",
+      "description": "Unique code for client portal lookup (no login required)"
+    },
+    "property_type": {
+      "type": "string",
+      "enum": [
+        "residential",
+        "condo",
+        "land",
+        "commercial",
+        "multi_family",
+        "other"
+      ],
+      "default": "residential"
+    },
+    "transaction_phase": {
+      "type": "string",
+      "enum": [
+        "intake",
+        "under_contract",
+        "inspection",
+        "financing",
+        "appraisal",
+        "clear_to_close",
+        "closing",
+        "closed"
+      ],
+      "default": "intake"
+    },
+    "transactionType": {
+      "type": "string",
+      "enum": [
+        "buyer",
+        "listing"
+      ],
+      "default": "buyer"
+    },
+    "allowed_agent_code": {
+      "type": "string"
+    },
+    "dotloop_loop_id": {
+      "type": "string"
+    },
+    "skyslope_transaction_id": {
+      "type": "string"
+    },
+    "skyslope_file_guid": {
+      "type": "string"
+    },
+    "skyslope_sale_guid": {
+      "type": "string"
+    },
+    "skyslope_listing_guid": {
+      "type": "string"
+    },
+    "skyslope_last_sync": {
+      "type": "string"
+    },
+    "skyslope_sync_status": {
+      "type": "string",
+      "enum": [
+        "pending",
+        "synced",
+        "error",
+        "not_synced"
+      ],
+      "default": "not_synced"
+    },
+    "skyslope_sync_error": {
+      "type": "string"
+    },
+    "buyer": {
+      "type": "string"
+    },
+    "seller": {
+      "type": "string"
+    },
+    "buyers": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "sellers": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "buyers_agent_name": {
+      "type": "string"
+    },
+    "buyers_agent_email": {
+      "type": "string"
+    },
+    "buyers_agent_phone": {
+      "type": "string"
+    },
+    "sellers_agent_name": {
+      "type": "string"
+    },
+    "sellers_agent_email": {
+      "type": "string"
+    },
+    "sellers_agent_phone": {
+      "type": "string"
+    },
+    "buyer_brokerage": {
+      "type": "string"
+    },
+    "seller_brokerage": {
+      "type": "string"
+    },
+    "agent": {
+      "type": "string"
+    },
+    "agent_email": {
+      "type": "string"
+    },
+    "agent_company": {
+      "type": "string",
+      "description": "TC / transaction coordinator's company or brokerage"
+    },
+    "closing_title_company": {
+      "type": "string"
+    },
+    "title_company_contact_name": {
+      "type": "string"
+    },
+    "title_company_email": {
+      "type": "string"
+    },
+    "title_company_phone": {
+      "type": "string"
+    },
+    "inspector_name": {
+      "type": "string"
+    },
+    "inspector_email": {
+      "type": "string"
+    },
+    "inspector_phone": {
+      "type": "string"
+    },
+    "inspector_company": {
+      "type": "string"
+    },
+    "attorney_name": {
+      "type": "string"
+    },
+    "attorney_email": {
+      "type": "string"
+    },
+    "attorney_phone": {
+      "type": "string"
+    },
+    "attorney_firm": {
+      "type": "string"
+    },
+    "lender_name": {
+      "type": "string"
+    },
+    "lender_email": {
+      "type": "string"
+    },
+    "lender_phone": {
+      "type": "string"
+    },
+    "lender_company": {
+      "type": "string"
+    },
+    "appraiser_name": {
+      "type": "string"
+    },
+    "appraiser_email": {
+      "type": "string"
+    },
+    "appraiser_phone": {
+      "type": "string"
+    },
+    "appraiser_company": {
+      "type": "string"
+    },
+    "mls_number": {
+      "type": "string"
+    },
+    "commission": {
+      "type": "string"
+    },
+    "commission_percent": {
+      "type": "number"
+    },
+    "sale_price": {
+      "type": "number"
+    },
+    "client_email": {
+      "type": "string"
+    },
+    "client_emails": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "client_phone": {
+      "type": "string"
+    },
+    "is_cash_transaction": {
+      "type": "boolean",
+      "default": false
+    },
+    "contract_date": {
+      "type": "string",
+      "format": "date"
+    },
+    "closing_date": {
+      "type": "string",
+      "format": "date"
+    },
+    "transaction_type": {
+      "type": "string",
+      "enum": [
+        "buyer",
+        "seller",
+        "dual",
+        "lease",
+        "multifamily"
+      ],
+      "default": "buyer"
+    },
+    "template_id": {
+      "type": "string"
+    },
+    "phase": {
+      "type": "number",
+      "default": 1
+    },
+    "phases_completed": {
+      "type": "array",
+      "items": {
+        "type": "number"
+      }
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "active",
+        "pending",
+        "closed",
+        "cancelled"
+      ],
+      "default": "active"
+    },
+    "pipeline_stage": {
+      "type": "string"
+    },
+    "health_score": {
+      "type": "number",
+      "default": 100
+    },
+    "risk_level": {
+      "type": "string",
+      "enum": [
+        "on_track",
+        "watch",
+        "at_risk"
+      ],
+      "default": "on_track"
+    },
+    "last_activity_at": {
+      "type": "string"
+    },
+    "inspection_deadline": {
+      "type": "string",
+      "format": "date"
+    },
+    "appraisal_deadline": {
+      "type": "string",
+      "format": "date"
+    },
+    "financing_deadline": {
+      "type": "string",
+      "format": "date"
+    },
+    "due_diligence_deadline": {
+      "type": "string",
+      "format": "date"
+    },
+    "earnest_money_deadline": {
+      "type": "string",
+      "format": "date"
+    },
+    "ctc_target": {
+      "type": "string",
+      "format": "date"
+    },
+    "tasks": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "completed": {
+            "type": "boolean"
+          },
+          "phase": {
+            "type": "number"
+          },
+          "assigned_to": {
+            "type": "string"
+          },
+          "due_date": {
+            "type": "string"
+          },
+          "required": {
+            "type": "boolean"
+          }
+        }
+      }
+    },
+    "sellerName": {
+      "type": "string"
+    },
+    "sellerEmail": {
+      "type": "string"
+    },
+    "sellerPhone": {
+      "type": "string"
+    },
+    "listPrice": {
+      "type": "number"
+    },
+    "listingDate": {
+      "type": "string"
+    },
+    "expirationDate": {
+      "type": "string"
+    },
+    "propertyStatus": {
+      "type": "string",
+      "enum": [
+        "pre-listing",
+        "coming-soon",
+        "active",
+        "under-contract",
+        "closed",
+        "expired",
+        "withdrawn"
+      ]
+    },
+    "occupancy": {
+      "type": "string",
+      "enum": [
+        "owner",
+        "tenant",
+        "vacant"
+      ]
+    },
+    "showingInstructions": {
+      "type": "string"
+    },
+    "listSideCommission": {
+      "type": "number"
+    },
+    "buyerAgentCommission": {
+      "type": "number"
+    },
+    "photosScheduledDate": {
+      "type": "string"
+    },
+    "goLiveDate": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "address",
+    "agent"
+  ],
+  "rls": {
+    "read": {
+      "data.brokerage_id": "{{user.data.brokerage_id}}"
+    },
+    "update": {
+      "data.brokerage_id": "{{user.data.brokerage_id}}"
+    }
+  }
+}

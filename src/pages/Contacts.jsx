@@ -1,5 +1,6 @@
 import React, { useState, useMemo } from "react";
 import { base44 } from "@/api/base44Client";
+// base44.functions is available via the same client
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -158,7 +159,7 @@ function EditContactModal({ contact, transactions, onClose, onSave }) {
           if (fieldMap.company && form.company) data[fieldMap.company] = form.company;
         }
 
-        await base44.entities.Transaction.update(txId, data);
+        await base44.functions.invoke("updateTransaction", { transaction_id: txId, data });
       }
       onSave();
       onClose();
