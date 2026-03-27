@@ -14,7 +14,7 @@ import {
   MapPin, User, Users, Mail, Phone, Calendar, ArrowLeft, Trash2,
   ClipboardCheck, Send, UserPlus, LayoutDashboard, GitBranch, Clock,
   DollarSign, FolderOpen, ShieldCheck, PanelLeftClose, PanelLeftOpen,
-  Globe, X, Pencil, Mail as MailIcon, Receipt, CalendarDays,
+  Globe, X, Pencil, Mail as MailIcon, Receipt, CalendarDays, Info,
 } from "lucide-react";
 import { format } from "date-fns";
 import PhaseChecklist from "../components/transactions/PhaseChecklist";
@@ -45,22 +45,22 @@ import ListingIntakeTab from "../components/transactions/ListingIntakeTab";
 import UnifiedDeadlinesPanel from "../components/transactions/UnifiedDeadlinesPanel";
 
 const TX_TABS = [
-  { id: "overview",      label: "Overview",      icon: LayoutDashboard },
-  { id: "timeline",      label: "Timeline",      icon: GitBranch },
-  { id: "deadlines",     label: "Deadlines",     icon: Clock },
-  { id: "documents",     label: "Documents",     icon: FolderOpen },
-  { id: "compliance",    label: "Compliance",    icon: ShieldCheck },
-  { id: "financial_tools", label: "Financial Tools", icon: Receipt },
+  { id: "overview",      label: "Overview",      icon: LayoutDashboard, info: "Phase checklist, tasks, and compliance summary" },
+  { id: "timeline",      label: "Timeline",      icon: GitBranch,       info: "Chronological contract events and activity history" },
+  { id: "deadlines",     label: "Deadlines",     icon: Clock,           info: "All key dates — edit inline or sync to Google Calendar" },
+  { id: "documents",     label: "Documents",     icon: FolderOpen,      info: "Upload, classify, and manage transaction documents" },
+  { id: "compliance",    label: "Compliance",    icon: ShieldCheck,     info: "AI-powered scan for missing signatures and blockers" },
+  { id: "financial_tools", label: "Financial Tools", icon: Receipt,     info: "Commission statements, fuel prorations, and deal expenses" },
 ];
 
 const LISTING_TABS = [
-  { id: "listing_intake", label: "Listing Intake", icon: ClipboardCheck },
-  { id: "overview",      label: "Overview",      icon: LayoutDashboard },
-  { id: "timeline",      label: "Timeline",      icon: GitBranch },
-  { id: "deadlines",     label: "Deadlines",     icon: Clock },
-  { id: "documents",     label: "Documents",     icon: FolderOpen },
-  { id: "compliance",    label: "Compliance",    icon: ShieldCheck },
-  { id: "financial_tools", label: "Financial Tools", icon: Receipt },
+  { id: "listing_intake", label: "Listing Intake", icon: ClipboardCheck, info: "Property details, pricing, photos, and listing checklist" },
+  { id: "overview",      label: "Overview",      icon: LayoutDashboard, info: "Phase checklist, tasks, and compliance summary" },
+  { id: "timeline",      label: "Timeline",      icon: GitBranch,       info: "Chronological contract events and activity history" },
+  { id: "deadlines",     label: "Deadlines",     icon: Clock,           info: "All key dates — edit inline or sync to Google Calendar" },
+  { id: "documents",     label: "Documents",     icon: FolderOpen,      info: "Upload, classify, and manage transaction documents" },
+  { id: "compliance",    label: "Compliance",    icon: ShieldCheck,     info: "AI-powered scan for missing signatures and blockers" },
+  { id: "financial_tools", label: "Financial Tools", icon: Receipt,     info: "Commission statements, fuel prorations, and deal expenses" },
 ];
 
 const PHASES = [
@@ -722,13 +722,19 @@ export default function TransactionDetail() {
 
         {/* Tab Navigation */}
         <div className="flex gap-1 bg-gray-100 p-1 rounded-xl overflow-x-auto scrollbar-none -mx-1 px-1">
-          {(transaction.transaction_type === "seller" ? LISTING_TABS : TX_TABS).map(({ id: tabId, label, icon: Icon }) => (
+          {(transaction.transaction_type === "seller" ? LISTING_TABS : TX_TABS).map(({ id: tabId, label, icon: Icon, info }) => (
             <button key={tabId} onClick={() => setActiveTab(tabId)}
-              className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium whitespace-nowrap transition-all ${
+              className={`group flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium whitespace-nowrap transition-all ${
                 activeTab === tabId ? "bg-white shadow-sm text-gray-900" : "text-gray-500 hover:text-gray-700"
               }`}>
               <Icon className="w-3.5 h-3.5" />
               {label}
+              <span className="relative">
+                <Info className="w-3 h-3 opacity-40 group-hover:opacity-70 transition-opacity" />
+                <span className="pointer-events-none absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-48 text-xs text-white bg-gray-800 rounded-lg px-2.5 py-1.5 opacity-0 group-hover:opacity-100 transition-opacity z-50 text-center shadow-lg">
+                  {info}
+                </span>
+              </span>
             </button>
           ))}
         </div>
