@@ -98,6 +98,7 @@ const TASKS_BY_TYPE = {
     ],
     closing: [
       { id: "closing_scheduled",    name: "Closing scheduled",                           required: true },
+      { id: "confirm_utilities",    name: "Confirm utilities & access",                  required: true },
       { id: "walkthrough_scheduled",name: "Final walkthrough scheduled",                 required: true },
       { id: "walkthrough_completed",name: "Final walkthrough completed",                 required: true },
       { id: "docs_signed",          name: "Closing documents signed",                    required: true },
