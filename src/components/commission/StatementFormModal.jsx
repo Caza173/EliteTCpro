@@ -70,6 +70,13 @@ export default function StatementFormModal({ statement, currentUser, onClose, on
       side: tx.transaction_type === "seller" ? "listing" : "buyer",
       buyer_commission_percent: tx.commission_percent || "",
       listing_commission_percent: tx.commission_percent || "",
+      // Agent details
+      listing_agent_name: tx.sellers_agent_name || "",
+      listing_agent_brokerage: tx.seller_brokerage || "",
+      buyer_agent_name: tx.buyers_agent_name || "",
+      buyer_agent_brokerage: tx.buyer_brokerage || "",
+      // Title company
+      title_company_email: tx.title_company_email || "",
     }));
   };
 
