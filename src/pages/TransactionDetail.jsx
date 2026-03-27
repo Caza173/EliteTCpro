@@ -729,11 +729,8 @@ export default function TransactionDetail() {
               }`}>
               <Icon className="w-3.5 h-3.5" />
               {label}
-              <span className="relative">
+              <span className="relative inline-flex items-center" title={info}>
                 <Info className="w-3 h-3 opacity-40 group-hover:opacity-70 transition-opacity" />
-                <span className="pointer-events-none absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-48 text-xs text-white bg-gray-800 rounded-lg px-2.5 py-1.5 opacity-0 group-hover:opacity-100 transition-opacity z-50 text-center shadow-lg">
-                  {info}
-                </span>
               </span>
             </button>
           ))}
