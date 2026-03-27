@@ -12,15 +12,146 @@ import TaskLibraryModal from "@/components/tasks/TaskLibraryModal";
 import NotifyClientButton from "@/components/transactions/NotifyClientButton";
 import { isTaskIncompatible } from "@/lib/taskLibrary";
 
-/**
- * PhaseTaskPanelV2
- *
- * Renders ALL phases as droppable zones simultaneously so tasks can be
- * dragged freely between phases. The "selected" phase is highlighted/expanded.
- *
- * tasks prop = ALL TransactionTask records for this transaction (all phases).
- * phaseNum   = currently selected/active phase.
- */
+// ── TaskRow extracted as a proper top-level component (fixes hooks-in-render bug) ──
+function TaskRow({
+  task, index, allPhases, editingId, editDraft, onSetEditing, onSaveEdit, onEditDraftChange,
+  onToggleTask, onDelete, onMoveTo, inputRef,
+}) {
+  const [moveMenuOpen, setMoveMenuOpen] = useState(false);
+  const isAtRisk = !task.is_completed && task.due_date && new Date(task.due_date) < new Date();
+  const isEditing = editingId === task.id;
+
+  return (
+    <Draggable key={task.id} draggableId={task.id} index={index}>
+      {(drag, snap) => (
+        <div
+          ref={drag.innerRef}
+          {...drag.draggableProps}
+          className={`flex items-center gap-2 px-2 py-2 rounded-lg border transition-all group ${
+            snap.isDragging
+              ? "shadow-lg border-blue-300 bg-blue-50 opacity-90"
+              : task.is_completed
+              ? "bg-emerald-50/60 border-emerald-100"
+              : isAtRisk
+              ? "bg-red-50/50 border-red-100"
+              : "border-gray-100 hover:border-gray-200"
+          }`}
+          style={{
+            ...drag.draggableProps.style,
+            background: snap.isDragging ? undefined : task.is_completed ? undefined : "var(--card-bg)",
+          }}
+        >
+          {/* Drag handle */}
+          <div
+            {...drag.dragHandleProps}
+            className="cursor-grab flex-shrink-0 opacity-30 hover:opacity-60"
+            title="Drag to reorder or move to another phase"
+          >
+            <GripVertical className="w-3.5 h-3.5 text-gray-400" />
+          </div>
+
+          {/* Toggle complete */}
+          <button onClick={() => onToggleTask(task.id)} className="flex-shrink-0">
+            {task.is_completed
+              ? <CheckCircle2 className="w-5 h-5 text-emerald-500" />
+              : isAtRisk
+              ? <AlertCircle className="w-5 h-5 text-red-400" />
+              : <Circle className="w-5 h-5 text-gray-300 hover:text-gray-400" />}
+          </button>
+
+          {/* Title */}
+          {isEditing ? (
+            <input
+              ref={inputRef}
+              className="flex-1 text-sm border border-blue-300 rounded px-2 py-0.5 focus:outline-none focus:ring-1 focus:ring-blue-400"
+              value={editDraft}
+              onChange={e => onEditDraftChange(e.target.value)}
+              onBlur={() => onSaveEdit(task.id)}
+              onKeyDown={e => {
+                if (e.key === "Enter") onSaveEdit(task.id);
+                if (e.key === "Escape") onSetEditing(null);
+              }}
+              autoFocus
+            />
+          ) : (
+            <span
+              className={`flex-1 text-sm font-medium ${
+                task.is_completed ? "line-through text-gray-400" : "text-gray-700"
+              }`}
+              onDoubleClick={() => onSetEditing(task.id, task.title)}
+            >
+              {task.title}
+            </span>
+          )}
+
+          {/* Badges */}
+          <div className="flex items-center gap-1 flex-shrink-0">
+            {task.is_required && !task.is_completed && (
+              <Badge variant="outline" className="text-[10px] px-1.5 py-0 bg-orange-50 text-orange-600 border-orange-200">Req</Badge>
+            )}
+            {task.is_custom && !task.is_completed && (
+              <Badge variant="outline" className="text-[10px] px-1.5 py-0 bg-purple-50 text-purple-600 border-purple-200">Custom</Badge>
+            )}
+          </div>
+
+          {/* Hover actions */}
+          <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0 relative">
+            {!isEditing && (
+              <button
+                onClick={() => onSetEditing(task.id, task.title)}
+                className="p-1 rounded hover:bg-gray-100"
+                title="Edit title"
+              >
+                <Pencil className="w-3 h-3 text-gray-400" />
+              </button>
+            )}
+
+            {/* Move to phase dropdown */}
+            <div className="relative">
+              <button
+                onClick={() => setMoveMenuOpen(v => !v)}
+                className="p-1 rounded hover:bg-gray-100"
+                title="Move to phase"
+              >
+                <ChevronDown className="w-3 h-3 text-gray-400" />
+              </button>
+              {moveMenuOpen && (
+                <>
+                  <div className="fixed inset-0 z-40" onClick={() => setMoveMenuOpen(false)} />
+                  <div className="absolute right-0 top-6 z-50 bg-white border border-gray-200 rounded-lg shadow-lg py-1 min-w-[160px]">
+                    <p className="text-[10px] font-semibold text-gray-400 px-3 py-1 uppercase tracking-wider">Move to phase</p>
+                    {allPhases.map(p => (
+                      <button
+                        key={p.phaseNum}
+                        disabled={p.phaseNum === task.phase}
+                        onClick={() => { setMoveMenuOpen(false); onMoveTo(task.id, p.phaseNum); }}
+                        className={`w-full text-left px-3 py-1.5 text-xs hover:bg-blue-50 transition-colors ${
+                          p.phaseNum === task.phase ? "text-gray-300 cursor-default" : "text-gray-700"
+                        }`}
+                      >
+                        {p.phaseNum === task.phase ? "✓ " : ""}{p.label}
+                      </button>
+                    ))}
+                  </div>
+                </>
+              )}
+            </div>
+
+            <button
+              onClick={() => onDelete(task.id)}
+              className="p-1 rounded hover:bg-red-50"
+              title="Delete task"
+            >
+              <Trash2 className="w-3 h-3 text-red-400" />
+            </button>
+          </div>
+        </div>
+      )}
+    </Draggable>
+  );
+}
+
+// ── Main Panel ────────────────────────────────────────────────────────────────
 export default function PhaseTaskPanelV2({
   phaseNum,
   tasks = [],
@@ -41,10 +172,8 @@ export default function PhaseTaskPanelV2({
   const [addingTask, setAddingTask] = useState(false);
   const [newTitle, setNewTitle] = useState("");
   const [libraryOpen, setLibraryOpen] = useState(false);
-  // optimistic local task list while drag is in-flight
   const [localTasks, setLocalTasks] = useState(null);
   const [incompatibleWarning, setIncompatibleWarning] = useState(null);
-  // which phases are expanded (others show as compact drop targets)
   const [expandedPhases, setExpandedPhases] = useState(new Set([phaseNum]));
   const inputRef = useRef(null);
 
@@ -57,7 +186,6 @@ export default function PhaseTaskPanelV2({
       .filter(t => t.phase === num)
       .sort((a, b) => (a.order_index ?? 0) - (b.order_index ?? 0));
 
-  // Progress for the active (selected) phase
   const phaseTasks = getPhaseTasksSorted(phaseNum);
   const progress = {
     total: phaseTasks.length,
@@ -77,7 +205,6 @@ export default function PhaseTaskPanelV2({
 
     if (srcPhaseNum === dstPhaseNum && source.index === destination.index) return;
 
-    // Auto-expand destination phase so the moved task is visible
     setExpandedPhases(prev => new Set([...prev, dstPhaseNum]));
 
     const updated = (localTasks || tasks).map(t => ({ ...t }));
@@ -89,7 +216,6 @@ export default function PhaseTaskPanelV2({
     const draggedTask = srcPhaseTasks[source.index];
     if (!draggedTask) return;
 
-    // Remove from source
     srcPhaseTasks.splice(source.index, 1);
 
     const dstPhaseTasks = dstPhaseNum === srcPhaseNum
@@ -98,10 +224,8 @@ export default function PhaseTaskPanelV2({
           .filter(t => t.phase === dstPhaseNum && t.id !== draggedTask.id)
           .sort((a, b) => (a.order_index ?? 0) - (b.order_index ?? 0));
 
-    // Insert at destination
     dstPhaseTasks.splice(destination.index, 0, { ...draggedTask, phase: dstPhaseNum });
 
-    // Build update list
     const updates = [];
     srcPhaseTasks.forEach((t, i) => updates.push({ id: t.id, phase: srcPhaseNum, order_index: i }));
     if (dstPhaseNum !== srcPhaseNum) {
@@ -114,14 +238,12 @@ export default function PhaseTaskPanelV2({
       });
     }
 
-    // Optimistic update
     const nextTasks = updated.map(t => {
       const upd = updates.find(u => u.id === t.id);
       return upd ? { ...t, phase: upd.phase, order_index: upd.order_index } : t;
     });
     setLocalTasks(nextTasks);
 
-    // Persist
     await Promise.all(
       updates.map(u => {
         const payload = { order_index: u.order_index };
@@ -134,7 +256,12 @@ export default function PhaseTaskPanelV2({
     onTasksChanged?.();
   };
 
-  // ── Inline edit ───────────────────────────────────────────────────────────
+  // ── Edit ─────────────────────────────────────────────────────────────────
+  const handleSetEditing = (id, title = "") => {
+    setEditingId(id);
+    setEditDraft(title);
+  };
+
   const saveEdit = async (taskId) => {
     if (editDraft.trim()) {
       await base44.entities.TransactionTask.update(taskId, { title: editDraft.trim() });
@@ -189,7 +316,7 @@ export default function PhaseTaskPanelV2({
     onTasksChanged?.();
   };
 
-  // ── Delete task ───────────────────────────────────────────────────────────
+  // ── Delete ────────────────────────────────────────────────────────────────
   const handleDelete = async (taskId) => {
     const task = allTasks.find(t => t.id === taskId);
     await base44.entities.TransactionTask.delete(taskId);
@@ -204,7 +331,7 @@ export default function PhaseTaskPanelV2({
     onTasksChanged?.();
   };
 
-  // ── Move-to-phase dropdown (backup for mobile) ────────────────────────────
+  // ── Move to phase (dropdown backup) ──────────────────────────────────────
   const handleMoveTo = async (taskId, targetPhaseNum) => {
     const task = allTasks.find(t => t.id === taskId);
     if (!task || task.phase === targetPhaseNum) return;
@@ -214,7 +341,6 @@ export default function PhaseTaskPanelV2({
       ? Math.max(...targetTasks.map(t => t.order_index ?? 0)) + 1
       : 0;
 
-    // Optimistic
     setLocalTasks((localTasks || tasks).map(t =>
       t.id === taskId ? { ...t, phase: targetPhaseNum, order_index: newOrder } : t
     ));
@@ -225,143 +351,6 @@ export default function PhaseTaskPanelV2({
     onTasksChanged?.();
   };
 
-  // ── Render a single task row ──────────────────────────────────────────────
-  const TaskRow = ({ task, index, phaseTasksForPhase }) => {
-    const isAtRisk = !task.is_completed && task.due_date && new Date(task.due_date) < new Date();
-    const isEditing = editingId === task.id;
-    const [moveMenuOpen, setMoveMenuOpen] = useState(false);
-
-    return (
-      <Draggable key={task.id} draggableId={task.id} index={index}>
-        {(drag, snap) => (
-          <div
-            ref={drag.innerRef}
-            {...drag.draggableProps}
-            className={`flex items-center gap-2 px-2 py-2 rounded-lg border transition-all group ${
-              snap.isDragging
-                ? "shadow-lg border-blue-300 bg-blue-50 opacity-90"
-                : task.is_completed
-                ? "bg-emerald-50/60 border-emerald-100"
-                : isAtRisk
-                ? "bg-red-50/50 border-red-100"
-                : "border-gray-100 hover:border-gray-200"
-            }`}
-            style={{
-              ...drag.draggableProps.style,
-              background: snap.isDragging ? undefined : task.is_completed ? undefined : "var(--card-bg)",
-            }}
-          >
-            {/* Drag handle */}
-            <div
-              {...drag.dragHandleProps}
-              className="cursor-grab flex-shrink-0 opacity-30 hover:opacity-60"
-              title="Drag to reorder or move to another phase"
-            >
-              <GripVertical className="w-3.5 h-3.5 text-gray-400" />
-            </div>
-
-            {/* Toggle complete */}
-            <button onClick={() => onToggleTask?.(task.id)} className="flex-shrink-0">
-              {task.is_completed
-                ? <CheckCircle2 className="w-5 h-5 text-emerald-500" />
-                : isAtRisk
-                ? <AlertCircle className="w-5 h-5 text-red-400" />
-                : <Circle className="w-5 h-5 text-gray-300 hover:text-gray-400" />}
-            </button>
-
-            {/* Title */}
-            {isEditing ? (
-              <input
-                ref={inputRef}
-                className="flex-1 text-sm border border-blue-300 rounded px-2 py-0.5 focus:outline-none focus:ring-1 focus:ring-blue-400"
-                value={editDraft}
-                onChange={e => setEditDraft(e.target.value)}
-                onBlur={() => saveEdit(task.id)}
-                onKeyDown={e => {
-                  if (e.key === "Enter") saveEdit(task.id);
-                  if (e.key === "Escape") setEditingId(null);
-                }}
-                autoFocus
-              />
-            ) : (
-              <span
-                className={`flex-1 text-sm font-medium ${
-                  task.is_completed ? "line-through text-gray-400" : "text-gray-700"
-                }`}
-                onDoubleClick={() => { setEditingId(task.id); setEditDraft(task.title); }}
-              >
-                {task.title}
-              </span>
-            )}
-
-            {/* Badges */}
-            <div className="flex items-center gap-1 flex-shrink-0">
-              {task.is_required && !task.is_completed && (
-                <Badge variant="outline" className="text-[10px] px-1.5 py-0 bg-orange-50 text-orange-600 border-orange-200">Req</Badge>
-              )}
-              {task.is_custom && !task.is_completed && (
-                <Badge variant="outline" className="text-[10px] px-1.5 py-0 bg-purple-50 text-purple-600 border-purple-200">Custom</Badge>
-              )}
-            </div>
-
-            {/* Hover actions */}
-            <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0 relative">
-              {!isEditing && (
-                <button
-                  onClick={() => { setEditingId(task.id); setEditDraft(task.title); }}
-                  className="p-1 rounded hover:bg-gray-100"
-                  title="Edit title"
-                >
-                  <Pencil className="w-3 h-3 text-gray-400" />
-                </button>
-              )}
-
-              {/* Move to phase dropdown */}
-              <div className="relative">
-                <button
-                  onClick={() => setMoveMenuOpen(v => !v)}
-                  className="p-1 rounded hover:bg-gray-100"
-                  title="Move to phase"
-                >
-                  <ChevronDown className="w-3 h-3 text-gray-400" />
-                </button>
-                {moveMenuOpen && (
-                  <>
-                    <div className="fixed inset-0 z-40" onClick={() => setMoveMenuOpen(false)} />
-                    <div className="absolute right-0 top-6 z-50 bg-white border border-gray-200 rounded-lg shadow-lg py-1 min-w-[160px]">
-                      <p className="text-[10px] font-semibold text-gray-400 px-3 py-1 uppercase tracking-wider">Move to phase</p>
-                      {allPhases.map(p => (
-                        <button
-                          key={p.phaseNum}
-                          disabled={p.phaseNum === task.phase}
-                          onClick={() => { setMoveMenuOpen(false); handleMoveTo(task.id, p.phaseNum); }}
-                          className={`w-full text-left px-3 py-1.5 text-xs hover:bg-blue-50 transition-colors ${
-                            p.phaseNum === task.phase ? "text-gray-300 cursor-default" : "text-gray-700"
-                          }`}
-                        >
-                          {p.phaseNum === task.phase ? "✓ " : ""}{p.label}
-                        </button>
-                      ))}
-                    </div>
-                  </>
-                )}
-              </div>
-
-              <button
-                onClick={() => handleDelete(task.id)}
-                className="p-1 rounded hover:bg-red-50"
-                title="Delete task"
-              >
-                <Trash2 className="w-3 h-3 text-red-400" />
-              </button>
-            </div>
-          </div>
-        )}
-      </Draggable>
-    );
-  };
-
-  // ── Main render ───────────────────────────────────────────────────────────
   return (
     <div className="space-y-3">
       {/* Header for active phase */}
@@ -400,7 +389,7 @@ export default function PhaseTaskPanelV2({
         />
       </div>
 
-      {/* ALL phases rendered as droppable zones inside a single DragDropContext */}
+      {/* All phases as droppable zones inside one DragDropContext */}
       <DragDropContext onDragEnd={handleDragEnd}>
         <div className="space-y-2">
           {allPhases.map(phase => {
@@ -413,12 +402,10 @@ export default function PhaseTaskPanelV2({
               <div
                 key={phase.phaseNum}
                 className={`rounded-lg border transition-all ${
-                  isActive
-                    ? "border-blue-200 bg-blue-50/30"
-                    : "border-gray-100"
+                  isActive ? "border-blue-200 bg-blue-50/30" : "border-gray-100"
                 }`}
               >
-                {/* Phase header (clickable to expand/collapse non-active) */}
+                {/* Collapsible header for non-active phases */}
                 {!isActive && (
                   <button
                     className="w-full flex items-center gap-2 px-3 py-2 text-left"
@@ -435,35 +422,42 @@ export default function PhaseTaskPanelV2({
                   </button>
                 )}
 
-                {/* Droppable zone — always mounted so cross-phase DnD works */}
+                {/* Droppable — always mounted for cross-phase DnD */}
                 <Droppable droppableId={`phase-${phase.phaseNum}`}>
                   {(provided, snapshot) => (
                     <div
                       ref={provided.innerRef}
                       {...provided.droppableProps}
                       className={`transition-colors rounded-b-lg ${
-                        snapshot.isDraggingOver
-                          ? "bg-blue-50 ring-1 ring-blue-300 ring-inset"
-                          : ""
+                        snapshot.isDraggingOver ? "bg-blue-50 ring-1 ring-blue-300 ring-inset" : ""
                       } ${isExpanded || isActive ? "p-2 space-y-1.5 min-h-[36px]" : "min-h-[8px]"}`}
                     >
-                      {/* Only show task rows when expanded or active */}
                       {(isExpanded || isActive) && (
                         <>
-                          {phTasks.length === 0 && !snapshot.isDraggingOver && (
+                          {phTasks.length === 0 && (
                             <p className="text-xs text-gray-400 py-1 px-1">
-                              {isActive ? "No tasks yet. Click + Add Task below." : "Drop tasks here"}
+                              {snapshot.isDraggingOver
+                                ? "Drop here →"
+                                : isActive
+                                ? "No tasks yet. Click + Add Task below."
+                                : "Drop tasks here"}
                             </p>
-                          )}
-                          {snapshot.isDraggingOver && phTasks.length === 0 && (
-                            <p className="text-xs text-blue-500 py-1 px-1 font-medium">Drop here →</p>
                           )}
                           {phTasks.map((task, index) => (
                             <TaskRow
                               key={task.id}
                               task={task}
                               index={index}
-                              phaseTasksForPhase={phTasks}
+                              allPhases={allPhases}
+                              editingId={editingId}
+                              editDraft={editDraft}
+                              onSetEditing={handleSetEditing}
+                              onSaveEdit={saveEdit}
+                              onEditDraftChange={setEditDraft}
+                              onToggleTask={onToggleTask}
+                              onDelete={handleDelete}
+                              onMoveTo={handleMoveTo}
+                              inputRef={inputRef}
                             />
                           ))}
                         </>
@@ -478,7 +472,7 @@ export default function PhaseTaskPanelV2({
         </div>
       </DragDropContext>
 
-      {/* Add task (always for active phase) */}
+      {/* Add task */}
       {addingTask ? (
         <div className="flex items-center gap-2 mt-1">
           <input
