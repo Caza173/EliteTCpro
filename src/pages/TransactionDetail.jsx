@@ -783,6 +783,7 @@ export default function TransactionDetail() {
                     brokerageId={transaction.brokerage_id}
                     transactionType={transaction.transaction_type}
                     transaction={transaction}
+                    onUpdateTransaction={(data) => updateMutation.mutate({ id: transaction.id, data })}
                   />
                 ) : (
                   <TaskList

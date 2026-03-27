@@ -42,6 +42,7 @@ export default function PhaseTaskPanelV2({
   brokerageId,
   transactionType,
   transaction,
+  onUpdateTransaction,
 }) {
   const allPhases = getPhasesForType(transactionType);
   const phaseDef = allPhases.find(p => p.phaseNum === phaseNum);
@@ -226,20 +227,22 @@ export default function PhaseTaskPanelV2({
             {progress.completed}/{progress.total} completed · {progress.requiredDone}/{progress.required} required
           </p>
         </div>
-        {allRequiredDone && (
-          <div className="flex items-center gap-2 flex-wrap">
+        <div className="flex items-center gap-2 flex-wrap">
+          {allRequiredDone && (
             <span className="text-[11px] font-semibold text-emerald-700 bg-emerald-50 px-2.5 py-1 rounded-full border border-emerald-200">
               ✓ Phase complete
             </span>
-            {transaction && (
-              <NotifyClientButton
-                transaction={transaction}
-                phaseNum={phaseNum}
-                phaseName={phaseDef.label}
-              />
-            )}
-          </div>
-        )}
+          )}
+          {transaction && (
+            <NotifyClientButton
+              transaction={transaction}
+              phaseNum={phaseNum}
+              phaseName={phaseDef.label}
+              allRequiredDone={allRequiredDone}
+              onUpdateTransaction={onUpdateTransaction}
+            />
+          )}
+        </div>
       </div>
 
       {/* Progress bar */}

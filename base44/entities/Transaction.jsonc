@@ -335,6 +335,26 @@
         }
       }
     },
+    "phase_notify_settings": {
+      "type": "object",
+      "description": "Per-phase auto-notify settings. Keys are phase numbers. Each value: { autoEnabled, notified, notifiedAt }",
+      "additionalProperties": {
+        "type": "object",
+        "properties": {
+          "autoEnabled": {
+            "type": "boolean",
+            "default": false
+          },
+          "notified": {
+            "type": "boolean",
+            "default": false
+          },
+          "notifiedAt": {
+            "type": "string"
+          }
+        }
+      }
+    },
     "sellerName": {
       "type": "string"
     },
