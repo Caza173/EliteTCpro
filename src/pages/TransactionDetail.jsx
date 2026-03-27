@@ -577,8 +577,17 @@ export default function TransactionDetail() {
                     <Badge variant="outline" className={`text-xs capitalize ${statusStyles[transaction.status] || statusStyles.active}`}>
                       {transaction.status || "active"}
                     </Badge>
-                    <Badge variant="outline" className="text-xs capitalize bg-gray-50 text-gray-600">
-                      {transaction.transaction_type || "buyer"}
+                    <Badge
+                      variant="outline"
+                      className={`text-xs font-semibold capitalize px-2.5 py-1 ${
+                        (transaction.transaction_type === "seller" || transaction.transaction_type === "listing")
+                          ? "bg-emerald-50 text-emerald-700 border-emerald-300"
+                          : "bg-blue-50 text-blue-700 border-blue-300"
+                      }`}
+                    >
+                      {(transaction.transaction_type === "seller" || transaction.transaction_type === "listing")
+                        ? "🟢 Listing Transaction"
+                        : "🔵 Buyer Transaction"}
                     </Badge>
                     <HealthScoreBadge
                       healthScore={transaction.health_score ?? computeHealthScore(transaction, checklistItems).health_score}
