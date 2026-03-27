@@ -9,6 +9,7 @@ import { getPhasesForType, normalizeTransactionType } from "@/lib/taskLibrary";
 import { base44 } from "@/api/base44Client";
 import { useQueryClient } from "@tanstack/react-query";
 import TaskLibraryModal from "@/components/tasks/TaskLibraryModal";
+import NotifyClientButton from "@/components/transactions/NotifyClientButton";
 
 const VALID_PHASE_IDS = [
   "intake", "under_contract", "due_diligence", "financing",
@@ -40,6 +41,7 @@ export default function PhaseTaskPanelV2({
   transactionId,
   brokerageId,
   transactionType,
+  transaction,
 }) {
   const allPhases = getPhasesForType(transactionType);
   const phaseDef = allPhases.find(p => p.phaseNum === phaseNum);
@@ -225,9 +227,18 @@ export default function PhaseTaskPanelV2({
           </p>
         </div>
         {allRequiredDone && (
-          <span className="text-[11px] font-semibold text-emerald-700 bg-emerald-50 px-2.5 py-1 rounded-full border border-emerald-200">
-            ✓ Phase complete
-          </span>
+          <div className="flex items-center gap-2 flex-wrap">
+            <span className="text-[11px] font-semibold text-emerald-700 bg-emerald-50 px-2.5 py-1 rounded-full border border-emerald-200">
+              ✓ Phase complete
+            </span>
+            {transaction && (
+              <NotifyClientButton
+                transaction={transaction}
+                phaseNum={phaseNum}
+                phaseName={phaseDef.label}
+              />
+            )}
+          </div>
         )}
       </div>
 

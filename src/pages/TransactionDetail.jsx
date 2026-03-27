@@ -782,6 +782,7 @@ export default function TransactionDetail() {
                     transactionId={transaction.id}
                     brokerageId={transaction.brokerage_id}
                     transactionType={transaction.transaction_type}
+                    transaction={transaction}
                   />
                 ) : (
                   <TaskList
