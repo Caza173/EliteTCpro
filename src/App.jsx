@@ -7,6 +7,7 @@ import FuelProrations from './pages/FuelProrations'
 import DeadlineResponse from './pages/DeadlineResponse'
 import ClientLookup from './pages/ClientLookup'
 import AddendumBuilder from './pages/AddendumBuilder'
+import TutorialFAQPage from './pages/TutorialFAQPage'
 import { QueryClientProvider } from '@tanstack/react-query'
 import { queryClientInstance } from '@/lib/query-client'
 import { pagesConfig } from './pages.config'
@@ -88,6 +89,11 @@ const AuthenticatedApp = () => {
       <Route path="/FuelProrations" element={
         <LayoutWrapper currentPageName="FuelProrations">
           <FuelProrations />
+        </LayoutWrapper>
+      } />
+      <Route path="/help" element={
+        <LayoutWrapper currentPageName="TutorialFAQPage">
+          <TutorialFAQPage />
         </LayoutWrapper>
       } />
       <Route path="/DeadlineResponse" element={<DeadlineResponse />} />

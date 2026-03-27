@@ -26,6 +26,7 @@ import {
   Receipt,
   Droplets,
   BookUser,
+  HelpCircle,
 } from "lucide-react";
 import NotificationBell from "./components/dashboard/NotificationBell";
 import { ThemeProvider } from "./components/theme/ThemeContext";
@@ -42,6 +43,7 @@ const TC_NAV = [
   { label: "Commission",     page: "CommissionStatements", icon: Receipt },
   { label: "Fuel Prorations",page: "FuelProrations",   icon: Droplets },
   { label: "Addendum Builder",page: "AddendumBuilder", icon: ClipboardList },
+  { label: "Help & Training", page: "help",             icon: HelpCircle, path: "/help" },
   { label: "Settings",       page: "Settings",         icon: Settings },
 ];
 
@@ -56,6 +58,7 @@ const OWNER_NAV = [
   { label: "Addendum Builder",page: "AddendumBuilder",  icon: ClipboardList },
   { label: "Billing",          page: "Billing",          icon: CreditCard },
   { label: "Audit Log",      page: "AuditLog",       icon: Shield },
+  { label: "Help & Training", page: "help",            icon: HelpCircle, path: "/help" },
   { label: "Settings",       page: "Settings",       icon: Settings },
 ];
 
@@ -88,6 +91,7 @@ const PAGE_TITLES = {
   CommissionStatements: "Commission Statements",
   AddendumBuilder: "Addendum Builder",
   Contacts: "Contacts",
+  TutorialFAQPage: "Help & Training",
 };
 
 export default function Layout({ children, currentPageName }) {
@@ -218,7 +222,7 @@ export default function Layout({ children, currentPageName }) {
               return (
                 <Link
                   key={item.page}
-                  to={createPageUrl(item.page)}
+                  to={item.path || createPageUrl(item.page)}
                   onClick={() => setSidebarOpen(false)}
                   title={sidebarCollapsed ? item.label : undefined}
                   className={`sidebar-nav-item flex items-center gap-2.5 px-2.5 py-2 rounded-lg text-xs font-medium ${
