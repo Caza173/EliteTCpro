@@ -201,10 +201,10 @@ function EditContactModal({ contact, transactions, onClose, onSave }) {
           Changes will update across {contact.transactions.length} transaction{contact.transactions.length > 1 ? "s" : ""}.
         </div>
 
-        <div className="flex gap-2 justify-end">
-          <Button variant="outline" size="sm" onClick={onClose}>Cancel</Button>
+        <div className="flex gap-2 justify-end pt-1">
+          <Button variant="outline" size="sm" onClick={onClose} disabled={saving}>Cancel</Button>
           <Button size="sm" onClick={handleSave} disabled={saving}
-            style={{ background: "var(--accent)", color: "var(--accent-text)" }}>
+            className="bg-blue-600 hover:bg-blue-700 text-white min-w-[100px]">
             {saving ? "Saving…" : "Save Changes"}
           </Button>
         </div>
