@@ -213,6 +213,80 @@ export function getPhaseProgress(phaseNum, tasks = []) {
 
 export function getStartingPhase() { return 1; }
 
+// ─── COMPATIBILITY FILTERS ────────────────────────────────────────────────────
+// Hard-block wrong tasks from ever appearing in wrong transaction type.
+
+export const LISTING_ONLY_TASK_KEYWORDS = [
+  "input listing into mls",
+  "upload photos to mls",
+  "map/location verification",
+  "map location verified",
+  "syndication confirmed live",
+  "track showings",
+  "weekly seller update",
+  "weekly seller update sent",
+  "showings active",
+  "listing live",
+  "mls input completed",
+  "mls data verified",
+  "create coming soon",
+  "install sign",
+  "sign install",
+  "showing service",
+  "showing instructions",
+  "active listing",
+  "cma completed",
+  "listing agreement signed",
+  "listing appointment",
+  "mls status to closed",
+  "update mls status",
+  "payoff requested",
+  "marketing closeout",
+  "listing file closed",
+  "pre-listing",
+  "listing prep",
+];
+
+export const BUYER_ONLY_TASK_KEYWORDS = [
+  "earnest money received",
+  "order inspections",
+  "order home inspection",
+  "upload inspections",
+  "inspection addendum",
+  "remove inspection contingency",
+  "order appraisal",
+  "appraisal ordered",
+  "loan commitment",
+  "clear to close",
+  "final walkthrough",
+  "send buyers links to utilities",
+  "buyer representation agreement",
+  "buyer pre-approval",
+  "proof of funds",
+  "buyer agency agreement",
+  "buyer informed of key dates",
+  "initial email sent to lender",
+  "initial email to lender",
+  "wire fraud notice",
+];
+
+/**
+ * Returns true if a task title is incompatible with the given transaction type.
+ * Used to warn or block wrong tasks.
+ */
+export function isTaskIncompatible(taskTitle, transactionType) {
+  const normalized = normalizeTransactionType(transactionType);
+  const lower = taskTitle.toLowerCase();
+
+  if (normalized === "buyer_under_contract") {
+    return LISTING_ONLY_TASK_KEYWORDS.some(kw => lower.includes(kw.toLowerCase()));
+  }
+  if (normalized === "listing") {
+    return BUYER_ONLY_TASK_KEYWORDS.some(kw => lower.includes(kw.toLowerCase()));
+  }
+  return false;
+}
+
 // Legacy exports
 export const PHASE_TASK_LIBRARY = [];
 export const PHASE_MAP = {};

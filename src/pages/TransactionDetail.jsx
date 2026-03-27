@@ -22,7 +22,7 @@ import PhaseTaskPanel from "../components/transactions/PhaseTaskPanel";
 import PhaseTaskPanelV2 from "../components/transactions/PhaseTaskPanelV2";
 import TransactionTimeline from "../components/transactions/TransactionTimeline";
 import TaskList from "../components/transactions/TaskList";
-import { generateTasksForPhase, isPhaseComplete, getPhasesForType, normalizeTransactionType } from "../lib/taskLibrary";
+import { generateTasksForPhase, isPhaseComplete, getPhasesForType, normalizeTransactionType, isTaskIncompatible } from "../lib/taskLibrary";
 import DocChecklistPanel from "../components/transactions/DocChecklistPanel";
 import HealthScoreBadge from "../components/dashboard/HealthScoreBadge";
 import { useCurrentUser } from "../components/auth/useCurrentUser";
@@ -156,6 +156,40 @@ export default function TransactionDetail() {
 
   // Track which phases have already been seeded this session
   const seededPhasesRef = useRef(new Set());
+  const repairedRef = useRef(false);
+
+  // ── Repair routine: archive incompatible tasks, re-seed correct ones ────────
+  useEffect(() => {
+    if (!transaction?.id || !txTasks || txTasks.length === 0) return;
+    if (repairedRef.current) return;
+    repairedRef.current = true;
+
+    const txType = transaction.transaction_type;
+    if (!txType) return; // no type set, skip repair
+
+    const incompatible = txTasks.filter(t => isTaskIncompatible(t.title, txType));
+    if (incompatible.length === 0) return;
+
+    (async () => {
+      // Log incompatible tasks to audit trail before removing
+      await Promise.all(incompatible.map(t =>
+        base44.entities.AuditLog.create({
+          brokerage_id: transaction.brokerage_id,
+          transaction_id: transaction.id,
+          actor_email: "system",
+          action: "incompatible_task_archived",
+          entity_type: "task",
+          entity_id: t.id,
+          before: { title: t.title, phase: t.phase, is_completed: t.is_completed },
+          after: null,
+          description: `Task "${t.title}" archived — incompatible with ${txType} transaction type`,
+        })
+      ));
+      // Delete incompatible tasks
+      await Promise.all(incompatible.map(t => base44.entities.TransactionTask.delete(t.id)));
+      refetchTxTasks();
+    })();
+  }, [transaction?.id, txTasks?.length]);
 
   // Auto-seed phase 1 once tasks are loaded (only once per transaction)
   useEffect(() => {
@@ -748,6 +782,19 @@ export default function TransactionDetail() {
         {/* Tab: Overview */}
         {activeTab === "overview" && (
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            {/* Incompatible task repair notice */}
+            {txTasks.some(t => isTaskIncompatible(t.title, transaction.transaction_type)) && (
+              <div className="lg:col-span-2 flex items-start gap-3 px-4 py-3 rounded-xl bg-amber-50 border border-amber-200 text-amber-800 text-sm">
+                <span className="text-lg">⚠️</span>
+                <div>
+                  <p className="font-semibold">Wrong-type tasks detected</p>
+                  <p className="text-xs text-amber-700 mt-0.5">
+                    This {transaction.transaction_type} transaction has tasks from the wrong workflow template.
+                    Reload the page to auto-repair — incompatible tasks will be archived and correct tasks seeded.
+                  </p>
+                </div>
+              </div>
+            )}
             <Card className="shadow-sm border-gray-100">
               <CardHeader>
                 <CardTitle className="text-base font-semibold">Transaction Phases</CardTitle>

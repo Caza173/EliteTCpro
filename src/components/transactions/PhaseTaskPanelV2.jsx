@@ -10,6 +10,7 @@ import { base44 } from "@/api/base44Client";
 import { useQueryClient } from "@tanstack/react-query";
 import TaskLibraryModal from "@/components/tasks/TaskLibraryModal";
 import NotifyClientButton from "@/components/transactions/NotifyClientButton";
+import { isTaskIncompatible } from "@/lib/taskLibrary";
 
 const VALID_PHASE_IDS = [
   "intake", "under_contract", "due_diligence", "financing",
@@ -54,6 +55,7 @@ export default function PhaseTaskPanelV2({
   const [newTitle, setNewTitle] = useState("");
   const [libraryOpen, setLibraryOpen] = useState(false);
   const [localTasks, setLocalTasks] = useState(null); // optimistic ordering
+  const [incompatibleWarning, setIncompatibleWarning] = useState(null); // { title, onConfirm }
   const inputRef = useRef(null);
 
   if (!phaseDef) return null;
@@ -166,11 +168,23 @@ export default function PhaseTaskPanelV2({
     const title = newTitle.trim();
     if (!title) { setAddingTask(false); return; }
 
+    // Warn if task looks incompatible with transaction type
+    if (transactionType && isTaskIncompatible(title, transactionType)) {
+      setIncompatibleWarning({
+        title,
+        onConfirm: () => { setIncompatibleWarning(null); doAddTask(title); },
+      });
+      return;
+    }
+    doAddTask(title);
+  };
+
+  const doAddTask = async (title) => {
+
     const maxOrder = phaseTasks.length > 0
       ? Math.max(...phaseTasks.map(t => t.order_index ?? 0)) + 1
       : 0;
 
-    // Deduplicate order values within phase
     const finalOrder = phaseTasks.some(t => t.order_index === maxOrder)
       ? phaseTasks.length
       : maxOrder;
@@ -420,6 +434,23 @@ export default function PhaseTaskPanelV2({
           >
             <BookOpen className="w-3.5 h-3.5" /> From Library
           </button>
+        </div>
+      )}
+
+      {/* Incompatible task warning */}
+      {incompatibleWarning && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-black/40" onClick={() => setIncompatibleWarning(null)} />
+          <div className="relative bg-white rounded-xl shadow-2xl p-5 max-w-sm w-full space-y-3">
+            <p className="text-sm font-semibold text-gray-900">⚠️ Task may not belong here</p>
+            <p className="text-sm text-gray-600">
+              "<strong>{incompatibleWarning.title}</strong>" looks like a {transactionType === "buyer" || transactionType === "buyer_under_contract" ? "listing-side" : "buyer-side"} task on a {transactionType === "buyer" || transactionType === "buyer_under_contract" ? "buyer" : "listing"} file. Add anyway?
+            </p>
+            <div className="flex gap-2 justify-end pt-1">
+              <button onClick={() => setIncompatibleWarning(null)} className="px-3 py-1.5 text-xs rounded-lg border border-gray-200 text-gray-600 hover:bg-gray-50">Cancel</button>
+              <button onClick={incompatibleWarning.onConfirm} className="px-3 py-1.5 text-xs rounded-lg bg-amber-500 text-white hover:bg-amber-600 font-semibold">Add Anyway</button>
+            </div>
+          </div>
         </div>
       )}
 
