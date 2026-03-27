@@ -1,6 +1,6 @@
 import React, { useState, useMemo } from "react";
 import { base44 } from "@/api/base44Client";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -121,45 +121,51 @@ function EditContactModal({ contact, transactions, onClose, onSave }) {
     company: contact.company || "",
   });
   const [saving, setSaving] = useState(false);
+  const [error, setError] = useState(null);
 
   const fieldMap = ROLE_FIELD_MAP[contact.roles[0]];
 
   const handleSave = async () => {
     if (!fieldMap) { onClose(); return; }
     setSaving(true);
-    const updates = contact.transactions.map(({ txId }) => {
-      const tx = transactions.find(t => t.id === txId);
-      const data = {};
+    setError(null);
+    try {
+      for (const { txId } of contact.transactions) {
+        const tx = transactions.find(t => t.id === txId);
+        if (!tx) continue;
+        const data = {};
 
-      // Special handling for Buyer/Seller name arrays
-      if (fieldMap.name === "__buyer_array__") {
-        const arr = tx?.buyers?.length ? [...tx.buyers] : (tx?.buyer ? [tx.buyer] : []);
-        const idx = arr.findIndex(n => n === contact.name);
-        if (idx >= 0) arr[idx] = form.name; else arr.push(form.name);
-        data.buyers = arr;
-        data.buyer = arr[0] || form.name;
-        if (form.email) data.client_email = form.email;
-        if (form.phone) data.client_phone = form.phone;
-      } else if (fieldMap.name === "__seller_array__") {
-        const arr = tx?.sellers?.length ? [...tx.sellers] : (tx?.seller ? [tx.seller] : []);
-        const idx = arr.findIndex(n => n === contact.name);
-        if (idx >= 0) arr[idx] = form.name; else arr.push(form.name);
-        data.sellers = arr;
-        data.seller = arr[0] || form.name;
-        if (form.email) data.sellerEmail = form.email;
-        if (form.phone) data.sellerPhone = form.phone;
-      } else {
-        if (fieldMap.name) data[fieldMap.name] = form.name;
-        if (fieldMap.email) data[fieldMap.email] = form.email;
-        if (fieldMap.phone) data[fieldMap.phone] = form.phone;
-        if (fieldMap.company) data[fieldMap.company] = form.company;
+        if (fieldMap.name === "__buyer_array__") {
+          const arr = tx.buyers?.length ? [...tx.buyers] : (tx.buyer ? [tx.buyer] : []);
+          const idx = arr.findIndex(n => n === contact.name);
+          if (idx >= 0) arr[idx] = form.name; else arr.push(form.name);
+          data.buyers = arr;
+          data.buyer = arr[0] || form.name;
+          if (form.email) data.client_email = form.email;
+          if (form.phone) data.client_phone = form.phone;
+        } else if (fieldMap.name === "__seller_array__") {
+          const arr = tx.sellers?.length ? [...tx.sellers] : (tx.seller ? [tx.seller] : []);
+          const idx = arr.findIndex(n => n === contact.name);
+          if (idx >= 0) arr[idx] = form.name; else arr.push(form.name);
+          data.sellers = arr;
+          data.seller = arr[0] || form.name;
+          if (form.email) data.sellerEmail = form.email;
+          if (form.phone) data.sellerPhone = form.phone;
+        } else {
+          if (fieldMap.name) data[fieldMap.name] = form.name;
+          if (fieldMap.email) data[fieldMap.email] = form.email;
+          if (fieldMap.phone && form.phone) data[fieldMap.phone] = form.phone;
+          if (fieldMap.company && form.company) data[fieldMap.company] = form.company;
+        }
+
+        await base44.entities.Transaction.update(txId, data);
       }
-      return base44.functions.invoke("updateTransaction", { transaction_id: txId, data });
-    });
-    await Promise.allSettled(updates);
+      onSave();
+      onClose();
+    } catch (e) {
+      setError(e.message || "Failed to save. Please try again.");
+    }
     setSaving(false);
-    onSave();
-    onClose();
   };
 
   return (
@@ -201,6 +207,10 @@ function EditContactModal({ contact, transactions, onClose, onSave }) {
           Changes will update across {contact.transactions.length} transaction{contact.transactions.length > 1 ? "s" : ""}.
         </div>
 
+        {error && (
+          <p className="text-xs text-red-600 bg-red-50 border border-red-200 rounded-lg px-3 py-2">{error}</p>
+        )}
+
         <div className="flex gap-2 justify-end pt-1">
           <Button variant="outline" size="sm" onClick={onClose} disabled={saving}>Cancel</Button>
           <Button size="sm" onClick={handleSave} disabled={saving}
@@ -218,7 +228,8 @@ export default function Contacts() {
   const [activeTab, setActiveTab] = useState("all");
   const [editingContact, setEditingContact] = useState(null);
 
-  const { data: transactions = [], isLoading, refetch } = useQuery({
+  const queryClient = useQueryClient();
+  const { data: transactions = [], isLoading } = useQuery({
     queryKey: ["transactions"],
     queryFn: () => base44.entities.Transaction.list(),
   });
@@ -250,7 +261,7 @@ export default function Contacts() {
           contact={editingContact}
           transactions={transactions}
           onClose={() => setEditingContact(null)}
-          onSave={() => refetch()}
+          onSave={() => queryClient.invalidateQueries({ queryKey: ["transactions"] })}
         />
       )}
 
