@@ -1,6 +1,5 @@
 import React, { useState, useMemo } from "react";
 import { base44 } from "@/api/base44Client";
-// base44.functions is available via the same client
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -50,7 +49,7 @@ const ROLE_CATEGORY = {
 const ROLE_FIELD_MAP = {
   "Buyer's Agent":  { name: "buyers_agent_name", email: "buyers_agent_email", phone: "buyers_agent_phone", company: "buyer_brokerage" },
   "Seller's Agent": { name: "sellers_agent_name", email: "sellers_agent_email", phone: "sellers_agent_phone", company: "seller_brokerage" },
-  "TC":             { name: "agent", email: "agent_email", phone: null, company: null },
+  "TC":             { name: "agent", email: "agent_email", phone: null, company: "agent_company" },
   "Title Company":  { name: "title_company_contact_name", email: "title_company_email", phone: "title_company_phone", company: "closing_title_company" },
   "Lender":         { name: "lender_name", email: "lender_email", phone: "lender_phone", company: "lender_company" },
   "Inspector":      { name: "inspector_name", email: "inspector_email", phone: "inspector_phone", company: "inspector_company" },
@@ -93,7 +92,7 @@ function extractContacts(transactions) {
       add(tx.sellers_agent_name, tx.sellers_agent_email, tx.sellers_agent_phone, tx.seller_brokerage, "Seller's Agent", addr, id);
 
     if (tx.agent || tx.agent_email)
-      add(tx.agent, tx.agent_email, null, null, "TC", addr, id);
+      add(tx.agent, tx.agent_email, null, tx.agent_company || null, "TC", addr, id);
 
     if (tx.title_company_contact_name || tx.title_company_email)
       add(tx.title_company_contact_name, tx.title_company_email, tx.title_company_phone, tx.closing_title_company, "Title Company", addr, id);
@@ -159,7 +158,7 @@ function EditContactModal({ contact, transactions, onClose, onSave }) {
           if (fieldMap.company && form.company) data[fieldMap.company] = form.company;
         }
 
-        await base44.functions.invoke("updateTransaction", { transaction_id: txId, data });
+        await base44.entities.Transaction.update(txId, data);
       }
       onSave();
       onClose();
