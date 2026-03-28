@@ -17,8 +17,11 @@ Deno.serve(async (req) => {
     try {
       await base44.asServiceRole.entities.Document.delete(document_id);
     } catch (e) {
-      // Treat 404 as success — doc already gone
-      if (!e?.message?.includes('404') && !e?.message?.toLowerCase().includes('not found')) throw e;
+      const msg = String(e?.message || '').toLowerCase();
+      // Treat 404 / not found as success — doc already gone
+      if (!msg.includes('404') && !msg.includes('not found')) {
+        return Response.json({ error: e.message }, { status: 500 });
+      }
     }
     return Response.json({ success: true });
   } catch (error) {
