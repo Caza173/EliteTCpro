@@ -5,11 +5,11 @@ import { PDFDocument, rgb, StandardFonts } from 'npm:pdf-lib@1.17.1';
 // NHAR Addendum default field map (used when no custom template uploaded)
 // jsPDF units: mm, letter = 215.9 x 279.4mm
 const NHAR_DEFAULT_FIELD_MAP = {
-  effective_date:   { x: 130, y: 52,  maxWidth: 60,  fontSize: 10 },
-  seller_name:      { x: 14,  y: 60,  maxWidth: 160, fontSize: 10 },
-  buyer_name:       { x: 14,  y: 68,  maxWidth: 160, fontSize: 10 },
-  property_address: { x: 40,  y: 76,  maxWidth: 155, fontSize: 10 },
-  clauses:          { x: 16,  y: 92,  maxWidth: 183, fontSize: 10, multiline: true, maxHeight: 130 },
+  effective_date:   { x: 130, y: 46,  maxWidth: 55,  fontSize: 10 },
+  seller_name:      { x: 14,  y: 54,  maxWidth: 145, fontSize: 10 },
+  buyer_name:       { x: 14,  y: 62,  maxWidth: 145, fontSize: 10 },
+  property_address: { x: 55,  y: 70,  maxWidth: 130, fontSize: 10 },
+  clauses:          { x: 16,  y: 82,  maxWidth: 183, fontSize: 10, multiline: true, maxHeight: 130 },
 };
 
 function wrapText(doc, text, x, y, maxWidth, fontSize, lineHeight, maxHeight) {
