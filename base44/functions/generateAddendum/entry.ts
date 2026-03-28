@@ -1,15 +1,15 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.23';
 import { jsPDF } from 'npm:jspdf@4.0.0';
+import { PDFDocument, rgb, StandardFonts } from 'npm:pdf-lib@1.17.1';
 
-// NHAR Addendum default field map — calibrated to the actual PDF layout
-// PDF page size: 8.5" x 11" = 612 x 792 pts at 72dpi
-// jsPDF uses mm by default; we'll work in mm (letter: 215.9 x 279.4mm)
+// NHAR Addendum default field map (used when no custom template uploaded)
+// jsPDF units: mm, letter = 215.9 x 279.4mm
 const NHAR_DEFAULT_FIELD_MAP = {
-  effective_date: { x: 130, y: 52, maxWidth: 60, fontSize: 10 },
-  seller_name:    { x: 14,  y: 60, maxWidth: 160, fontSize: 10 },
-  buyer_name:     { x: 14,  y: 68, maxWidth: 160, fontSize: 10 },
-  property_address: { x: 40, y: 76, maxWidth: 155, fontSize: 10 },
-  clauses:        { x: 16,  y: 92,  maxWidth: 183, fontSize: 10, multiline: true, maxHeight: 130 },
+  effective_date:   { x: 130, y: 52,  maxWidth: 60,  fontSize: 10 },
+  seller_name:      { x: 14,  y: 60,  maxWidth: 160, fontSize: 10 },
+  buyer_name:       { x: 14,  y: 68,  maxWidth: 160, fontSize: 10 },
+  property_address: { x: 40,  y: 76,  maxWidth: 155, fontSize: 10 },
+  clauses:          { x: 16,  y: 92,  maxWidth: 183, fontSize: 10, multiline: true, maxHeight: 130 },
 };
 
 function wrapText(doc, text, x, y, maxWidth, fontSize, lineHeight, maxHeight) {
@@ -24,6 +24,9 @@ function wrapText(doc, text, x, y, maxWidth, fontSize, lineHeight, maxHeight) {
   return currentY;
 }
 
+// mm → pdf-lib points (1 inch = 72 pts = 25.4mm)
+function mmToPt(mm) { return (mm / 25.4) * 72; }
+
 Deno.serve(async (req) => {
   try {
     const base44 = createClientFromRequest(req);
@@ -32,14 +35,14 @@ Deno.serve(async (req) => {
 
     const { template_id, transaction_id, clause_ids, custom_text, brokerage_id } = await req.json();
 
-    // Fetch template (optional — if none uploaded, use built-in NHAR form)
+    // Fetch template (optional)
     let template = null;
     if (template_id) {
       const templates = await base44.asServiceRole.entities.PDFTemplate.filter({ id: template_id });
       template = templates[0] || null;
     }
 
-    // Fetch transaction — try by service role, fall back to user-scoped
+    // Fetch transaction
     let transactions = await base44.asServiceRole.entities.Transaction.filter({ id: transaction_id });
     if (!transactions.length) {
       transactions = await base44.entities.Transaction.filter({ id: transaction_id });
@@ -47,49 +50,116 @@ Deno.serve(async (req) => {
     const transaction = transactions[0];
     if (!transaction) return Response.json({ error: 'Transaction not found' }, { status: 404 });
 
-    // Fetch clauses if provided
+    // Fetch clauses
     let clauseTexts = [];
     if (clause_ids && clause_ids.length > 0) {
       const allClauses = await base44.asServiceRole.entities.Clause.filter({ brokerage_id });
       const selected = allClauses.filter(c => clause_ids.includes(c.id));
       clauseTexts = selected.map((c, i) => `${i + 1}. ${c.name}\n${c.text}`);
     }
-    if (custom_text) {
-      clauseTexts.push(custom_text);
-    }
+    if (custom_text) clauseTexts.push(custom_text);
     const clausesContent = clauseTexts.join('\n\n');
 
-    // Use template field_map or fall back to NHAR defaults
-    const fieldMap = (template?.field_map && Object.keys(template.field_map).length > 0)
-      ? template.field_map
-      : NHAR_DEFAULT_FIELD_MAP;
-
-    // Build data from transaction
-    const buyerName  = transaction.buyers?.join(', ') || transaction.buyer || '';
-    const sellerName = transaction.sellers?.join(', ') || transaction.seller || '';
-    const address    = transaction.address || '';
+    // Transaction data
+    const buyerName     = transaction.buyers?.join(', ') || transaction.buyer || '';
+    const sellerName    = transaction.sellers?.join(', ') || transaction.seller || '';
+    const address       = transaction.address || '';
     const effectiveDate = transaction.contract_date
       ? new Date(transaction.contract_date).toLocaleDateString('en-US', { month: '2-digit', day: '2-digit', year: 'numeric' })
       : new Date().toLocaleDateString('en-US', { month: '2-digit', day: '2-digit', year: 'numeric' });
 
-    // --- Generate PDF using jsPDF (overlay on white background) ---
-    const doc = new jsPDF({ unit: 'mm', format: 'letter', orientation: 'portrait' });
+    const fileName = `Addendum - ${address.replace(/[^a-zA-Z0-9 ]/g, '').trim()}.pdf`;
+    let pdfBytes;
 
-    // If we have the original PDF URL, we embed it as background image
-    // Otherwise draw a clean form
-    let bgLoaded = false;
+    // ── PATH A: Template PDF uploaded — overlay text using pdf-lib ──────────
     if (template?.file_url) {
-      try {
-        const resp = await fetch(template.file_url);
-        const buf = await resp.arrayBuffer();
-        const b64 = btoa(String.fromCharCode(...new Uint8Array(buf)));
-        doc.addImage(`data:application/pdf;base64,${b64}`, 'PDF', 0, 0, 215.9, 279.4);
-        bgLoaded = true;
-      } catch (_) { /* fall through to drawn form */ }
-    }
+      const fieldMap = (template.field_map && Object.keys(template.field_map).length > 0)
+        ? template.field_map
+        : NHAR_DEFAULT_FIELD_MAP;
 
-    if (!bgLoaded) {
-      // Draw minimal NHAR form outline
+      // Download the original PDF
+      const resp = await fetch(template.file_url);
+      const existingPdfBytes = await resp.arrayBuffer();
+
+      const pdfDoc = await PDFDocument.load(existingPdfBytes);
+      const helvetica = await pdfDoc.embedFont(StandardFonts.Helvetica);
+
+      // We overlay text on the first page
+      const pages = pdfDoc.getPages();
+      const firstPage = pages[0];
+      const { height: pageHeight } = firstPage.getSize();
+
+      // pdf-lib origin is bottom-left; field_map coords are top-left (mm)
+      // Convert: pdfY = pageHeight - mmToPt(y)
+      const overlayField = (fieldKey, value) => {
+        const fm = fieldMap[fieldKey];
+        if (!fm || !value) return;
+        const fontSize = fm.fontSize || 10;
+        const x = mmToPt(fm.x);
+
+        if (fm.multiline) {
+          // Simple line-wrap for clauses
+          const maxWidthPt = mmToPt(fm.maxWidth);
+          const lineHeightPt = fontSize * 1.4;
+          const maxHeightPt = fm.maxHeight ? mmToPt(fm.maxHeight) : 999;
+          const maxLines = Math.floor(maxHeightPt / lineHeightPt);
+
+          // Rough character-based wrapping
+          const avgCharWidth = fontSize * 0.5;
+          const charsPerLine = Math.floor(maxWidthPt / avgCharWidth);
+          const words = value.split(' ');
+          const lines = [];
+          let currentLine = '';
+          for (const word of words) {
+            const testLine = currentLine ? `${currentLine} ${word}` : word;
+            // Handle explicit newlines
+            const parts = testLine.split('\n');
+            if (parts.length > 1) {
+              for (let p = 0; p < parts.length - 1; p++) {
+                lines.push(parts[p]);
+                currentLine = '';
+              }
+              currentLine = parts[parts.length - 1];
+            } else if (testLine.length > charsPerLine) {
+              if (currentLine) lines.push(currentLine);
+              currentLine = word;
+            } else {
+              currentLine = testLine;
+            }
+          }
+          if (currentLine) lines.push(currentLine);
+
+          let currentY = fm.y; // in mm from top
+          for (let i = 0; i < Math.min(lines.length, maxLines); i++) {
+            const yPt = pageHeight - mmToPt(currentY);
+            firstPage.drawText(lines[i] || '', {
+              x, y: yPt, size: fontSize, font: helvetica, color: rgb(0, 0, 0),
+            });
+            currentY += (lineHeightPt / 72) * 25.4; // convert pt increment back to mm for next line
+          }
+        } else {
+          const yPt = pageHeight - mmToPt(fm.y);
+          firstPage.drawText(value, {
+            x, y: yPt, size: fontSize, font: helvetica, color: rgb(0, 0, 0),
+            maxWidth: mmToPt(fm.maxWidth),
+          });
+        }
+      };
+
+      overlayField('effective_date', effectiveDate);
+      overlayField('seller_name', sellerName);
+      overlayField('buyer_name', buyerName);
+      overlayField('property_address', address);
+      overlayField('clauses', clausesContent);
+
+      pdfBytes = await pdfDoc.save();
+
+    // ── PATH B: No template — draw built-in NHAR form with jsPDF ───────────
+    } else {
+      const fieldMap = NHAR_DEFAULT_FIELD_MAP;
+      const doc = new jsPDF({ unit: 'mm', format: 'letter', orientation: 'portrait' });
+
+      // Draw form
       doc.setFont('helvetica', 'bold');
       doc.setFontSize(14);
       doc.text('ADDENDUM', 107.95, 20, { align: 'center' });
@@ -107,50 +177,41 @@ Deno.serve(async (req) => {
       doc.rect(14, 88, 187, 135);
       doc.setFontSize(8);
       doc.text('All other aspects of the aforementioned Purchase and Sales Agreement shall remain in full force and effect.', 14, 232, { maxWidth: 187 });
+
+      // Overlay text
+      doc.setFont('helvetica', 'normal');
+      doc.setTextColor(0, 0, 0);
+      const lineHeight = 5;
+
+      const overlayField = (fieldKey, value) => {
+        const fm = fieldMap[fieldKey];
+        if (!fm || !value) return;
+        const fs = fm.fontSize || 10;
+        doc.setFontSize(fs);
+        if (fm.multiline) {
+          wrapText(doc, value, fm.x, fm.y, fm.maxWidth, fs, lineHeight, fm.maxHeight);
+        } else {
+          doc.text(value, fm.x, fm.y, { maxWidth: fm.maxWidth });
+        }
+      };
+
+      overlayField('effective_date', effectiveDate);
+      overlayField('seller_name', sellerName);
+      overlayField('buyer_name', buyerName);
+      overlayField('property_address', address);
+      overlayField('clauses', clausesContent);
+
+      const pdfB64 = doc.output('datauristring').split(',')[1];
+      const binaryStr = atob(pdfB64);
+      pdfBytes = new Uint8Array(binaryStr.length);
+      for (let i = 0; i < binaryStr.length; i++) pdfBytes[i] = binaryStr.charCodeAt(i);
     }
 
-    // --- Overlay text fields ---
-    doc.setFont('helvetica', 'normal');
-    doc.setTextColor(0, 0, 0);
-
-    const lineHeight = 5;
-
-    const overlayField = (fieldKey, value) => {
-      const fm = fieldMap[fieldKey];
-      if (!fm || !value) return;
-      const fs = fm.fontSize || 10;
-      doc.setFontSize(fs);
-      if (fm.multiline) {
-        wrapText(doc, value, fm.x, fm.y, fm.maxWidth, fs, lineHeight, fm.maxHeight);
-      } else {
-        doc.text(value, fm.x, fm.y, { maxWidth: fm.maxWidth });
-      }
-    };
-
-    overlayField('effective_date', effectiveDate);
-    overlayField('seller_name', sellerName);
-    overlayField('buyer_name', buyerName);
-    overlayField('property_address', address);
-    overlayField('clauses', clausesContent);
-
-    // Output as base64
-    const pdfB64 = doc.output('datauristring');
-    const base64Data = pdfB64.split(',')[1];
-
-    // Convert base64 to binary and upload
-    const binaryStr = atob(base64Data);
-    const bytes = new Uint8Array(binaryStr.length);
-    for (let i = 0; i < binaryStr.length; i++) bytes[i] = binaryStr.charCodeAt(i);
-    const blob = new Blob([bytes], { type: 'application/pdf' });
-
-    const fileName = `Addendum - ${address.replace(/[^a-zA-Z0-9 ]/g, '').trim()}.pdf`;
-    const formData = new FormData();
-    formData.append('file', blob, fileName);
-
-    // Upload via SDK
+    // Upload
+    const blob = new Blob([pdfBytes], { type: 'application/pdf' });
     const { file_url } = await base44.asServiceRole.integrations.Core.UploadFile({ file: blob });
 
-    // Save to Documents entity
+    // Save to Documents
     const doc_record = await base44.asServiceRole.entities.Document.create({
       transaction_id,
       brokerage_id,
@@ -159,7 +220,7 @@ Deno.serve(async (req) => {
       file_name: fileName,
       uploaded_by: user.email,
       uploaded_by_role: user.role,
-      notes: `Generated from template: ${template.name}`,
+      notes: template ? `Generated from template: ${template.name}` : 'Generated from built-in NHAR form',
     });
 
     return Response.json({ success: true, file_url, file_name: fileName, document_id: doc_record.id });
