@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Upload, FileText, Trash2, Download, Loader2, FolderOpen, ClipboardCheck, Eye, Mail, Filter, FilePlus, Layers } from "lucide-react";
+import { Upload, FileText, Trash2, Download, Loader2, FolderOpen, ClipboardCheck, Eye, Mail, Filter, FilePlus, Layers, AlertCircle } from "lucide-react";
 import DocumentViewerModal from "./DocumentViewerModal";
 import { format } from "date-fns";
 import { writeAuditLog } from "../utils/tenantUtils";
@@ -61,6 +61,8 @@ export default function TransactionDocumentsTab({ transaction, currentUser }) {
   const [uploading, setUploading] = useState(false);
   const [dragOver, setDragOver] = useState(false);
   const [confirmDeleteDoc, setConfirmDeleteDoc] = useState(null);
+  const [deleteError, setDeleteError] = useState(null);
+  const [deletingId, setDeletingId] = useState(null);
   const [viewingDoc, setViewingDoc] = useState(null);
   const [emailModal, setEmailModal] = useState({ open: false, preselectedDoc: null });
   const [typeFilter, setTypeFilter] = useState("all");
@@ -79,24 +81,31 @@ export default function TransactionDocumentsTab({ transaction, currentUser }) {
     enabled: !!transaction.id,
   });
 
-  const deleteMutation = useMutation({
-    mutationFn: async (id) => {
+  const handleDeleteDocument = async (id) => {
+    setDeleteError(null);
+    setDeletingId(id);
+    try {
+      console.log(`[UI] Deleting document id=${id}`);
       const res = await base44.functions.invoke('deleteDocument', { document_id: id });
-      if (res.data?.error) throw new Error(res.data.error);
-      return id;
-    },
-    onSuccess: (id) => {
-      // Immediately remove from cache so it doesn't flicker back
-      queryClient.setQueryData(["tx-documents", transaction.id], (old = []) =>
-        old.filter((d) => d.id !== id)
-      );
-      // Also invalidate to sync with server
-      queryClient.invalidateQueries({ queryKey: ["tx-documents", transaction.id] });
-    },
-  });
+      console.log(`[UI] Delete result:`, res.data);
+
+      if (res.data?.error) {
+        throw new Error(res.data.error);
+      }
+
+      // Only update UI after confirmed server-side deletion — refetch from DB
+      console.log(`[UI] Confirmed deleted. Refetching documents...`);
+      await queryClient.refetchQueries({ queryKey: ["tx-documents", transaction.id] });
+      console.log(`[UI] Refetch complete`);
+    } catch (err) {
+      console.log(`[UI] Delete failed: ${err.message}`);
+      setDeleteError(err.message || 'Failed to delete document. Please try again.');
+    } finally {
+      setDeletingId(null);
+    }
+  };
 
   const handleDedupeCleanup = async () => {
-    // Group by filename, keep most recent (first since sorted by -created_date), delete the rest
     const seen = new Map();
     const toDelete = [];
     for (const doc of documents) {
@@ -107,10 +116,13 @@ export default function TransactionDocumentsTab({ transaction, currentUser }) {
       }
     }
     if (toDelete.length === 0) return;
+    console.log(`[UI] Dedupe cleanup: deleting ${toDelete.length} duplicates`);
     for (const id of toDelete) {
-      await base44.functions.invoke('deleteDocument', { document_id: id });
+      const res = await base44.functions.invoke('deleteDocument', { document_id: id });
+      console.log(`[UI] Dedupe delete ${id}:`, res.data);
     }
-    queryClient.invalidateQueries({ queryKey: ["tx-documents", transaction.id] });
+    // Refetch from server only after all deletes confirmed
+    await queryClient.refetchQueries({ queryKey: ["tx-documents", transaction.id] });
   };
 
   // Auto-classify document type from filename
@@ -243,9 +255,16 @@ export default function TransactionDocumentsTab({ transaction, currentUser }) {
         message="Are you sure you want to delete this document? This action cannot be undone."
         confirmText="Delete"
         cancelText="Cancel"
-        onConfirm={() => { deleteMutation.mutate(confirmDeleteDoc); setConfirmDeleteDoc(null); }}
+        onConfirm={() => { const id = confirmDeleteDoc; setConfirmDeleteDoc(null); handleDeleteDocument(id); }}
         onCancel={() => setConfirmDeleteDoc(null)}
       />
+      {deleteError && (
+        <div className="flex items-center gap-2 p-3 bg-red-50 border border-red-200 rounded-lg text-sm text-red-700">
+          <AlertCircle className="w-4 h-4 flex-shrink-0" />
+          <span>{deleteError}</span>
+          <button className="ml-auto text-red-400 hover:text-red-600 text-xs underline" onClick={() => setDeleteError(null)}>Dismiss</button>
+        </div>
+      )}
       {/* Create Document from Template + Dedupe */}
       <div className="flex justify-end gap-2">
         {(() => {
@@ -426,9 +445,12 @@ export default function TransactionDocumentsTab({ transaction, currentUser }) {
                       <Button
                         variant="ghost" size="icon"
                         className="h-8 w-8 text-red-400 hover:text-red-600"
+                        disabled={deletingId === doc.id}
                         onClick={() => setConfirmDeleteDoc(doc.id)}
                       >
-                        <Trash2 className="w-4 h-4" />
+                        {deletingId === doc.id
+                          ? <Loader2 className="w-4 h-4 animate-spin" />
+                          : <Trash2 className="w-4 h-4" />}
                       </Button>
                     )}
                   </div>
