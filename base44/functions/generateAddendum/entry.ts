@@ -71,86 +71,99 @@ Deno.serve(async (req) => {
     const fileName = `Addendum - ${address.replace(/[^a-zA-Z0-9 ]/g, '').trim()}.pdf`;
     let pdfBytes;
 
-    // ── PATH A: Template PDF uploaded — overlay text using pdf-lib ──────────
+    // ── PATH A: Template PDF uploaded ───────────────────────────────────────
     if (template?.file_url) {
-      const fieldMap = (template.field_map && Object.keys(template.field_map).length > 0)
-        ? template.field_map
-        : NHAR_DEFAULT_FIELD_MAP;
-
-      // Download the original PDF
       const resp = await fetch(template.file_url);
       const existingPdfBytes = await resp.arrayBuffer();
-
       const pdfDoc = await PDFDocument.load(existingPdfBytes);
-      const helvetica = await pdfDoc.embedFont(StandardFonts.Helvetica);
 
-      // We overlay text on the first page
-      const pages = pdfDoc.getPages();
-      const firstPage = pages[0];
-      const { height: pageHeight } = firstPage.getSize();
-
-      // pdf-lib origin is bottom-left; field_map coords are top-left (mm)
-      // Convert: pdfY = pageHeight - mmToPt(y)
-      const overlayField = (fieldKey, value) => {
-        const fm = fieldMap[fieldKey];
-        if (!fm || !value) return;
-        const fontSize = fm.fontSize || 10;
-        const x = mmToPt(fm.x);
-
-        if (fm.multiline) {
-          // Simple line-wrap for clauses
-          const maxWidthPt = mmToPt(fm.maxWidth);
-          const lineHeightPt = fontSize * 1.4;
-          const maxHeightPt = fm.maxHeight ? mmToPt(fm.maxHeight) : 999;
-          const maxLines = Math.floor(maxHeightPt / lineHeightPt);
-
-          // Rough character-based wrapping
-          const avgCharWidth = fontSize * 0.5;
-          const charsPerLine = Math.floor(maxWidthPt / avgCharWidth);
-          const words = value.split(' ');
-          const lines = [];
-          let currentLine = '';
-          for (const word of words) {
-            const testLine = currentLine ? `${currentLine} ${word}` : word;
-            // Handle explicit newlines
-            const parts = testLine.split('\n');
-            if (parts.length > 1) {
-              for (let p = 0; p < parts.length - 1; p++) {
-                lines.push(parts[p]);
-                currentLine = '';
-              }
-              currentLine = parts[parts.length - 1];
-            } else if (testLine.length > charsPerLine) {
-              if (currentLine) lines.push(currentLine);
-              currentLine = word;
-            } else {
-              currentLine = testLine;
-            }
-          }
-          if (currentLine) lines.push(currentLine);
-
-          let currentY = fm.y; // in mm from top
-          for (let i = 0; i < Math.min(lines.length, maxLines); i++) {
-            const yPt = pageHeight - mmToPt(currentY);
-            firstPage.drawText(lines[i] || '', {
-              x, y: yPt, size: fontSize, font: helvetica, color: rgb(0, 0, 0),
-            });
-            currentY += (lineHeightPt / 72) * 25.4; // convert pt increment back to mm for next line
-          }
-        } else {
-          const yPt = pageHeight - mmToPt(fm.y);
-          firstPage.drawText(value, {
-            x, y: yPt, size: fontSize, font: helvetica, color: rgb(0, 0, 0),
-            maxWidth: mmToPt(fm.maxWidth),
-          });
-        }
+      const fieldValues = {
+        effective_date: effectiveDate,
+        seller_name: sellerName,
+        buyer_name: buyerName,
+        property_address: address,
+        clauses: clausesContent,
       };
 
-      overlayField('effective_date', effectiveDate);
-      overlayField('seller_name', sellerName);
-      overlayField('buyer_name', buyerName);
-      overlayField('property_address', address);
-      overlayField('clauses', clausesContent);
+      // Try AcroForm filling first
+      let usedAcroForm = false;
+      try {
+        const form = pdfDoc.getForm();
+        const fields = form.getFields();
+        if (fields.length > 0) {
+          for (const [key, value] of Object.entries(fieldValues)) {
+            if (!value) continue;
+            try {
+              const field = form.getTextField(key);
+              field.setText(value);
+            } catch (_) {
+              // field not found by that name — skip
+            }
+          }
+          form.flatten();
+          usedAcroForm = true;
+        }
+      } catch (_) {
+        // No form or error — fall through to coordinate overlay
+      }
+
+      // Coordinate overlay fallback
+      if (!usedAcroForm) {
+        const fieldMap = (template.field_map && Object.keys(template.field_map).length > 0)
+          ? template.field_map
+          : NHAR_DEFAULT_FIELD_MAP;
+
+        const helvetica = await pdfDoc.embedFont(StandardFonts.Helvetica);
+        const pages = pdfDoc.getPages();
+        const firstPage = pages[0];
+        const { height: pageHeight } = firstPage.getSize();
+
+        const overlayField = (fieldKey, value) => {
+          const fm = fieldMap[fieldKey];
+          if (!fm || !value) return;
+          const fontSize = fm.fontSize || 10;
+          const x = mmToPt(fm.x);
+
+          if (fm.multiline) {
+            const maxWidthPt = mmToPt(fm.maxWidth);
+            const lineHeightPt = fontSize * 1.4;
+            const maxHeightPt = fm.maxHeight ? mmToPt(fm.maxHeight) : 999;
+            const maxLines = Math.floor(maxHeightPt / lineHeightPt);
+            const avgCharWidth = fontSize * 0.5;
+            const charsPerLine = Math.floor(maxWidthPt / avgCharWidth);
+            const words = value.split(' ');
+            const lines = [];
+            let currentLine = '';
+            for (const word of words) {
+              const testLine = currentLine ? `${currentLine} ${word}` : word;
+              const parts = testLine.split('\n');
+              if (parts.length > 1) {
+                for (let p = 0; p < parts.length - 1; p++) { lines.push(parts[p]); currentLine = ''; }
+                currentLine = parts[parts.length - 1];
+              } else if (testLine.length > charsPerLine) {
+                if (currentLine) lines.push(currentLine);
+                currentLine = word;
+              } else {
+                currentLine = testLine;
+              }
+            }
+            if (currentLine) lines.push(currentLine);
+            let currentY = fm.y;
+            for (let i = 0; i < Math.min(lines.length, maxLines); i++) {
+              firstPage.drawText(lines[i] || '', { x, y: pageHeight - mmToPt(currentY), size: fontSize, font: helvetica, color: rgb(0, 0, 0) });
+              currentY += (lineHeightPt / 72) * 25.4;
+            }
+          } else {
+            firstPage.drawText(value, { x, y: pageHeight - mmToPt(fm.y), size: fontSize, font: helvetica, color: rgb(0, 0, 0), maxWidth: mmToPt(fm.maxWidth) });
+          }
+        };
+
+        overlayField('effective_date', effectiveDate);
+        overlayField('seller_name', sellerName);
+        overlayField('buyer_name', buyerName);
+        overlayField('property_address', address);
+        overlayField('clauses', clausesContent);
+      }
 
       pdfBytes = await pdfDoc.save();
 
