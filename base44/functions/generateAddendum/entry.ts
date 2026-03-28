@@ -207,8 +207,8 @@ Deno.serve(async (req) => {
       for (let i = 0; i < binaryStr.length; i++) pdfBytes[i] = binaryStr.charCodeAt(i);
     }
 
-    // Upload
-    const blob = new Blob([pdfBytes], { type: 'application/pdf' });
+    // Upload — must be a File object (named Blob) for multipart upload
+    const blob = new File([pdfBytes], fileName, { type: 'application/pdf' });
     const { file_url } = await base44.asServiceRole.integrations.Core.UploadFile({ file: blob });
 
     // Save to Documents
