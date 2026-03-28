@@ -83,8 +83,16 @@ export default function TransactionDocumentsTab({ transaction, currentUser }) {
     mutationFn: async (id) => {
       const res = await base44.functions.invoke('deleteDocument', { document_id: id });
       if (res.data?.error) throw new Error(res.data.error);
+      return id;
     },
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["tx-documents", transaction.id] }),
+    onSuccess: (id) => {
+      // Immediately remove from cache so it doesn't flicker back
+      queryClient.setQueryData(["tx-documents", transaction.id], (old = []) =>
+        old.filter((d) => d.id !== id)
+      );
+      // Also invalidate to sync with server
+      queryClient.invalidateQueries({ queryKey: ["tx-documents", transaction.id] });
+    },
   });
 
   const handleDedupeCleanup = async () => {
