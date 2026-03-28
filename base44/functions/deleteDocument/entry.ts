@@ -7,7 +7,8 @@ Deno.serve(async (req) => {
     if (!user) return Response.json({ error: 'Unauthorized' }, { status: 401 });
 
     const allowedRoles = ['admin', 'owner', 'tc_lead', 'tc'];
-    if (!allowedRoles.includes(user.role)) {
+    const isMaster = user.email === 'nhcazateam@gmail.com';
+    if (!isMaster && !allowedRoles.includes(user.role)) {
       return Response.json({ error: 'Forbidden' }, { status: 403 });
     }
 
