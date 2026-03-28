@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Upload, FileText, Trash2, Download, Loader2, FolderOpen, ClipboardCheck, Eye, Mail, Filter, FilePlus } from "lucide-react";
+import { Upload, FileText, Trash2, Download, Loader2, FolderOpen, ClipboardCheck, Eye, Mail, Filter, FilePlus, Layers } from "lucide-react";
 import DocumentViewerModal from "./DocumentViewerModal";
 import { format } from "date-fns";
 import { writeAuditLog } from "../utils/tenantUtils";
@@ -81,19 +81,29 @@ export default function TransactionDocumentsTab({ transaction, currentUser }) {
 
   const deleteMutation = useMutation({
     mutationFn: async (id) => {
-      await base44.functions.invoke('deleteDocument', { document_id: id });
+      const res = await base44.functions.invoke('deleteDocument', { document_id: id });
+      if (res.data?.error) throw new Error(res.data.error);
     },
-    onMutate: async (id) => {
-      await queryClient.cancelQueries({ queryKey: ["tx-documents", transaction.id] });
-      const prev = queryClient.getQueryData(["tx-documents", transaction.id]);
-      queryClient.setQueryData(["tx-documents", transaction.id], (old = []) => old.filter((d) => d.id !== id));
-      return { prev };
-    },
-    onError: (_err, _id, context) => {
-      if (context?.prev) queryClient.setQueryData(["tx-documents", transaction.id], context.prev);
-    },
-    onSettled: () => queryClient.invalidateQueries({ queryKey: ["tx-documents", transaction.id] }),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["tx-documents", transaction.id] }),
   });
+
+  const handleDedupeCleanup = async () => {
+    // Group by filename, keep most recent (first since sorted by -created_date), delete the rest
+    const seen = new Map();
+    const toDelete = [];
+    for (const doc of documents) {
+      if (seen.has(doc.file_name)) {
+        toDelete.push(doc.id);
+      } else {
+        seen.set(doc.file_name, doc.id);
+      }
+    }
+    if (toDelete.length === 0) return;
+    for (const id of toDelete) {
+      await base44.functions.invoke('deleteDocument', { document_id: id });
+    }
+    queryClient.invalidateQueries({ queryKey: ["tx-documents", transaction.id] });
+  };
 
   // Auto-classify document type from filename
   const classifyDocType = (fileName) => {
@@ -110,6 +120,12 @@ export default function TransactionDocumentsTab({ transaction, currentUser }) {
   };
 
   const uploadFile = async (file) => {
+    // Prevent duplicate uploads by filename
+    const isDuplicate = documents.some(d => d.file_name === file.name);
+    if (isDuplicate) {
+      alert(`"${file.name}" already exists. Delete the existing file first or rename yours.`);
+      return;
+    }
     const autoType = classifyDocType(file.name);
     const docType = autoType || selectedDocType;
     const { file_url } = await base44.integrations.Core.UploadFile({ file });
@@ -222,8 +238,26 @@ export default function TransactionDocumentsTab({ transaction, currentUser }) {
         onConfirm={() => { deleteMutation.mutate(confirmDeleteDoc); setConfirmDeleteDoc(null); }}
         onCancel={() => setConfirmDeleteDoc(null)}
       />
-      {/* Create Document from Template */}
-      <div className="flex justify-end">
+      {/* Create Document from Template + Dedupe */}
+      <div className="flex justify-end gap-2">
+        {(() => {
+          const seen = new Set();
+          const hasDupes = documents.some(d => {
+            if (seen.has(d.file_name)) return true;
+            seen.add(d.file_name);
+            return false;
+          });
+          return hasDupes ? (
+            <Button
+              onClick={handleDedupeCleanup}
+              variant="outline"
+              size="sm"
+              className="gap-2 border-amber-300 text-amber-700 hover:bg-amber-50"
+            >
+              <Layers className="w-4 h-4" /> Remove Duplicates
+            </Button>
+          ) : null;
+        })()}
         <Button
           onClick={() => setGenerateModalOpen(true)}
           className="gap-2 bg-indigo-600 hover:bg-indigo-700"
@@ -360,6 +394,7 @@ export default function TransactionDocumentsTab({ transaction, currentUser }) {
                     <p className="text-xs text-gray-400">
                       {doc.uploaded_by || "unknown"}
                       {doc.created_date ? ` · ${format(new Date(doc.created_date), "MMM d, yyyy")}` : ""}
+                      {" · "}<span className="font-mono text-[10px] opacity-50">{doc.id?.slice(-6)}</span>
                     </p>
                   </div>
                   <Badge className={`text-xs hidden sm:inline-flex ${TYPE_COLORS[doc.doc_type] || TYPE_COLORS.other}`}>
