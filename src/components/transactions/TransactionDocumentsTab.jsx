@@ -219,7 +219,7 @@ export default function TransactionDocumentsTab({ transaction, currentUser }) {
         message="Are you sure you want to delete this document? This action cannot be undone."
         confirmText="Delete"
         cancelText="Cancel"
-        onConfirm={() => deleteMutation.mutate(confirmDeleteDoc)}
+        onConfirm={() => { deleteMutation.mutate(confirmDeleteDoc); setConfirmDeleteDoc(null); }}
         onCancel={() => setConfirmDeleteDoc(null)}
       />
       {/* Create Document from Template */}

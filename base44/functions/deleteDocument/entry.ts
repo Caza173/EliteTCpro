@@ -1,4 +1,4 @@
-import { createClientFromRequest } from 'npm:@base44/sdk@0.8.20';
+import { createClientFromRequest } from 'npm:@base44/sdk@0.8.23';
 
 Deno.serve(async (req) => {
   try {
@@ -16,12 +16,9 @@ Deno.serve(async (req) => {
 
     try {
       await base44.asServiceRole.entities.Document.delete(document_id);
-    } catch (deleteErr) {
-      // 404 = already deleted or RLS filtered — treat as success
-      const msg = deleteErr?.message || '';
-      if (!msg.includes('404') && !msg.toLowerCase().includes('not found')) {
-        throw deleteErr;
-      }
+    } catch (e) {
+      // Treat 404 as success — doc already gone
+      if (!e?.message?.includes('404') && !e?.message?.toLowerCase().includes('not found')) throw e;
     }
     return Response.json({ success: true });
   } catch (error) {
