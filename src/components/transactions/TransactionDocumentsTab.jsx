@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Upload, FileText, Trash2, Download, Loader2, FolderOpen, ClipboardCheck, Eye, Mail, Filter } from "lucide-react";
+import { Upload, FileText, Trash2, Download, Loader2, FolderOpen, ClipboardCheck, Eye, Mail, Filter, FilePlus } from "lucide-react";
 import DocumentViewerModal from "./DocumentViewerModal";
 import { format } from "date-fns";
 import { writeAuditLog } from "../utils/tenantUtils";
@@ -14,6 +14,7 @@ import DocChecklistPanel from "./DocChecklistPanel";
 import ConfirmDialog from "@/components/ui/ConfirmDialog";
 import SuggestedDocuments from "./SuggestedDocuments";
 import EmailComposerModal from "../email/EmailComposerModal";
+import GenerateDocumentModal from "@/components/templates/GenerateDocumentModal";
 
 const DOC_TYPES = [
   { value: "purchase_and_sale", label: "Purchase & Sale Agreement" },
@@ -63,6 +64,7 @@ export default function TransactionDocumentsTab({ transaction, currentUser }) {
   const [viewingDoc, setViewingDoc] = useState(null);
   const [emailModal, setEmailModal] = useState({ open: false, preselectedDoc: null });
   const [typeFilter, setTypeFilter] = useState("all");
+  const [generateModalOpen, setGenerateModalOpen] = useState(false);
   const fileInputRef = useRef(null);
 
   const { data: documents = [], isLoading } = useQuery({
@@ -189,6 +191,16 @@ export default function TransactionDocumentsTab({ transaction, currentUser }) {
 
   return (
     <div className="space-y-5">
+      {generateModalOpen && (
+        <GenerateDocumentModal
+          transaction={transaction}
+          onClose={() => setGenerateModalOpen(false)}
+          onGenerated={() => {
+            queryClient.invalidateQueries({ queryKey: ["tx-documents", transaction.id] });
+            setGenerateModalOpen(false);
+          }}
+        />
+      )}
       <DocumentViewerModal
         doc={viewingDoc}
         onClose={() => setViewingDoc(null)}
@@ -210,6 +222,17 @@ export default function TransactionDocumentsTab({ transaction, currentUser }) {
         onConfirm={() => deleteMutation.mutate(confirmDeleteDoc)}
         onCancel={() => setConfirmDeleteDoc(null)}
       />
+      {/* Create Document from Template */}
+      <div className="flex justify-end">
+        <Button
+          onClick={() => setGenerateModalOpen(true)}
+          className="gap-2 bg-indigo-600 hover:bg-indigo-700"
+          size="sm"
+        >
+          <FilePlus className="w-4 h-4" /> Create Document
+        </Button>
+      </div>
+
       <Card className="shadow-sm border-gray-100">
         <CardHeader className="pb-3">
           <CardTitle className="text-sm font-semibold flex items-center gap-2">

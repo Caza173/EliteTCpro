@@ -1,0 +1,46 @@
+{
+  "name": "PDFTemplate",
+  "type": "object",
+  "properties": {
+    "brokerage_id": {
+      "type": "string"
+    },
+    "name": {
+      "type": "string"
+    },
+    "type": {
+      "type": "string",
+      "enum": [
+        "addendum",
+        "disclosure",
+        "agreement",
+        "other"
+      ],
+      "default": "addendum"
+    },
+    "file_url": {
+      "type": "string"
+    },
+    "file_name": {
+      "type": "string"
+    },
+    "field_map": {
+      "type": "object",
+      "description": "Maps field names to {x, y, maxWidth, fontSize, multiline} coordinates on the PDF",
+      "additionalProperties": true
+    },
+    "is_mapped": {
+      "type": "boolean",
+      "default": false,
+      "description": "Whether field mapping has been completed"
+    },
+    "created_by": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "name",
+    "type",
+    "file_url"
+  ]
+}
