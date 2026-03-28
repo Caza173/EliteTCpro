@@ -1,0 +1,114 @@
+{
+  "name": "InAppNotification",
+  "type": "object",
+  "properties": {
+    "brokerage_id": {
+      "type": "string"
+    },
+    "user_id": {
+      "type": "string"
+    },
+    "user_email": {
+      "type": "string"
+    },
+    "transaction_id": {
+      "type": "string"
+    },
+    "title": {
+      "type": "string"
+    },
+    "body": {
+      "type": "string"
+    },
+    "type": {
+      "type": "string",
+      "enum": [
+        "deadline",
+        "task",
+        "document",
+        "phase",
+        "system"
+      ],
+      "default": "system"
+    },
+    "read_at": {
+      "type": "string"
+    },
+    "alert_interval_hours": {
+      "type": "number"
+    },
+    "deadline_field": {
+      "type": "string"
+    },
+    "deadline_type": {
+      "type": "string",
+      "description": "Normalized deadline type: inspection, due_diligence, financing, appraisal, closing, earnest_money"
+    },
+    "severity": {
+      "type": "string",
+      "enum": [
+        "notice",
+        "warning",
+        "urgent",
+        "critical"
+      ],
+      "description": "Urgency level: notice (48h), warning (24h), urgent (12h), critical (overdue)"
+    },
+    "addendum_status": {
+      "type": "string",
+      "enum": [
+        "REQUIRED",
+        "COMPLETED",
+        "NOT_REQUIRED"
+      ],
+      "description": "Whether an addendum is required for this deadline"
+    },
+    "dismissed": {
+      "type": "boolean",
+      "default": false
+    },
+    "addendum_response": {
+      "type": "string",
+      "enum": [
+        "yes",
+        "no",
+        "pending"
+      ],
+      "default": "pending"
+    },
+    "addendum_note": {
+      "type": "string",
+      "description": "Agent's internal note about the addendum"
+    },
+    "addendum_verbiage": {
+      "type": "string",
+      "description": "The actual verbiage the agent wants in the addendum"
+    }
+  },
+  "required": [
+    "user_email",
+    "title"
+  ],
+  "rls": {
+    "create": {
+      "data.brokerage_id": "{{user.data.brokerage_id}}"
+    },
+    "read": {
+      "data.user_email": "{{user.email}}"
+    },
+    "update": {
+      "data.user_email": "{{user.email}}"
+    },
+    "delete": {
+      "data.brokerage_id": "{{user.data.brokerage_id}}",
+      "user_condition": {
+        "role": {
+          "$in": [
+            "admin",
+            "owner"
+          ]
+        }
+      }
+    }
+  }
+}
