@@ -57,7 +57,6 @@ import ClientPortal from './pages/ClientPortal';
 import Dashboard from './pages/Dashboard';
 import Deadlines from './pages/Deadlines';
 import Documents from './pages/Documents';
-import Notifications from './pages/Notifications.jsx';
 import PortalSelect from './pages/PortalSelect';
 import Settings from './pages/Settings';
 import Tasks from './pages/Tasks';
@@ -78,7 +77,6 @@ export const PAGES = {
     "Dashboard": Dashboard,
     "Deadlines": Deadlines,
     "Documents": Documents,
-    "Notifications": Notifications,
     "PortalSelect": PortalSelect,
     "Settings": Settings,
     "Tasks": Tasks,

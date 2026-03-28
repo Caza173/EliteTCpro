@@ -8,6 +8,7 @@ import DeadlineResponse from './pages/DeadlineResponse'
 import ClientLookup from './pages/ClientLookup'
 import AddendumBuilder from './pages/AddendumBuilder'
 import TutorialFAQPage from './pages/TutorialFAQPage'
+import Notifications from './pages/Notifications.jsx'
 import { QueryClientProvider } from '@tanstack/react-query'
 import { queryClientInstance } from '@/lib/query-client'
 import { pagesConfig } from './pages.config'
@@ -101,6 +102,11 @@ const AuthenticatedApp = () => {
       <Route path="/AddendumBuilder" element={
         <LayoutWrapper currentPageName="AddendumBuilder">
           <AddendumBuilder />
+        </LayoutWrapper>
+      } />
+      <Route path="/Notifications" element={
+        <LayoutWrapper currentPageName="Notifications">
+          <Notifications />
         </LayoutWrapper>
       } />
       <Route path="*" element={<PageNotFound />} />
