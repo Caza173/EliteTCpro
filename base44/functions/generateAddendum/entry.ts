@@ -32,13 +32,18 @@ Deno.serve(async (req) => {
 
     const { template_id, transaction_id, clause_ids, custom_text, brokerage_id } = await req.json();
 
-    // Fetch template
-    const templates = await base44.asServiceRole.entities.PDFTemplate.filter({ id: template_id });
-    const template = templates[0];
-    if (!template) return Response.json({ error: 'Template not found' }, { status: 404 });
+    // Fetch template (optional — if none uploaded, use built-in NHAR form)
+    let template = null;
+    if (template_id) {
+      const templates = await base44.asServiceRole.entities.PDFTemplate.filter({ id: template_id });
+      template = templates[0] || null;
+    }
 
-    // Fetch transaction
-    const transactions = await base44.asServiceRole.entities.Transaction.filter({ id: transaction_id });
+    // Fetch transaction — try by service role, fall back to user-scoped
+    let transactions = await base44.asServiceRole.entities.Transaction.filter({ id: transaction_id });
+    if (!transactions.length) {
+      transactions = await base44.entities.Transaction.filter({ id: transaction_id });
+    }
     const transaction = transactions[0];
     if (!transaction) return Response.json({ error: 'Transaction not found' }, { status: 404 });
 
@@ -55,7 +60,7 @@ Deno.serve(async (req) => {
     const clausesContent = clauseTexts.join('\n\n');
 
     // Use template field_map or fall back to NHAR defaults
-    const fieldMap = (template.field_map && Object.keys(template.field_map).length > 0)
+    const fieldMap = (template?.field_map && Object.keys(template.field_map).length > 0)
       ? template.field_map
       : NHAR_DEFAULT_FIELD_MAP;
 
@@ -73,7 +78,7 @@ Deno.serve(async (req) => {
     // If we have the original PDF URL, we embed it as background image
     // Otherwise draw a clean form
     let bgLoaded = false;
-    if (template.file_url) {
+    if (template?.file_url) {
       try {
         const resp = await fetch(template.file_url);
         const buf = await resp.arrayBuffer();

@@ -41,12 +41,12 @@ export default function GenerateDocumentModal({ transaction, onClose, onGenerate
   };
 
   const handleGenerate = async () => {
-    if (!selectedTemplate) { toast.error("Select a template first"); return; }
+    if (selectedClauseIds.length === 0 && !customText.trim()) { toast.error("Add at least one clause or custom text"); return; }
     setGenerating(true);
     setStep(3);
     try {
       const res = await base44.functions.invoke("generateAddendum", {
-        template_id: selectedTemplate.id,
+        template_id: selectedTemplate?.id || null,
         transaction_id: transaction.id,
         clause_ids: selectedClauseIds,
         custom_text: customText.trim() || null,
@@ -81,7 +81,7 @@ export default function GenerateDocumentModal({ transaction, onClose, onGenerate
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-      <div className="absolute inset-0 bg-black/50" onClick={onClose} />
+      <div className="absolute inset-0 bg-black/50" onClick={generating ? undefined : onClose} />
       <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] flex flex-col overflow-hidden">
 
         {/* Header */}
@@ -113,10 +113,21 @@ export default function GenerateDocumentModal({ transaction, onClose, onGenerate
             <div className="space-y-3">
               <p className="text-sm text-gray-600 mb-3">Select a PDF template to use for this document:</p>
               {templates.length === 0 ? (
-                <div className="text-center py-8 rounded-xl border border-dashed border-gray-200">
-                  <FileText className="w-7 h-7 text-gray-300 mx-auto mb-2" />
-                  <p className="text-sm text-gray-400">No templates available.</p>
-                  <p className="text-xs text-gray-400 mt-1">Upload templates in Settings → Templates.</p>
+                <div className="space-y-3">
+                  <button
+                    onClick={() => { setSelectedTemplate(null); setStep(2); }}
+                    className="w-full flex items-center gap-3 p-3 rounded-xl border border-blue-200 bg-blue-50/40 hover:bg-blue-50 text-left transition-all"
+                  >
+                    <div className="w-9 h-9 rounded-lg bg-blue-100 flex items-center justify-center flex-shrink-0">
+                      <FileText className="w-4 h-4 text-blue-600" />
+                    </div>
+                    <div>
+                      <p className="text-sm font-medium text-gray-900">NHAR Addendum (Built-in)</p>
+                      <p className="text-xs text-gray-400">Uses the default NHAR form layout</p>
+                    </div>
+                    <ChevronRight className="w-4 h-4 text-gray-300 ml-auto flex-shrink-0" />
+                  </button>
+                  <p className="text-xs text-gray-400 text-center">Upload custom templates in Settings → Templates</p>
                 </div>
               ) : (
                 templates.map(tmpl => (
@@ -253,8 +264,7 @@ export default function GenerateDocumentModal({ transaction, onClose, onGenerate
             <div className="flex gap-2">
               <Button variant="outline" size="sm" onClick={onClose}>Cancel</Button>
               <Button size="sm" className="bg-blue-600 hover:bg-blue-700 gap-1.5"
-                onClick={handleGenerate}
-                disabled={selectedClauseIds.length === 0 && !customText.trim()}>
+                onClick={handleGenerate}>
                 Generate Document
               </Button>
             </div>
