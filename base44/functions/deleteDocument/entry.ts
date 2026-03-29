@@ -17,52 +17,24 @@ Deno.serve(async (req) => {
 
     console.log(`[deleteDocument] document_id=${document_id} by user=${user.email}`);
 
-    // Step 1: Find the document
+    // Find the document first (for audit log)
     let doc = null;
     try {
       const results = await base44.asServiceRole.entities.Document.filter({ id: document_id });
       doc = results[0] || null;
     } catch (_) {}
 
-    // Step 2: Not found → idempotent success
     if (!doc) {
-      console.log(`[deleteDocument] Not found — idempotent success: ${document_id}`);
+      // Already gone — idempotent success
+      console.log(`[deleteDocument] Not found — already deleted: ${document_id}`);
       return Response.json({ success: true, already_deleted: true, document_id });
     }
 
-    // Step 3: Hard delete from DB
-    try {
-      await base44.asServiceRole.entities.Document.delete(document_id);
-      console.log(`[deleteDocument] Hard deleted: ${document_id}`);
-    } catch (e) {
-      const msg = String(e?.message || '').toLowerCase();
-      if (!msg.includes('404') && !msg.includes('not found')) {
-        console.log(`[deleteDocument] Delete failed: ${e.message}`);
-        return Response.json({ error: `Delete failed: ${e.message}` }, { status: 500 });
-      }
-      console.log(`[deleteDocument] Already gone (404): ${document_id}`);
-    }
+    // Hard delete the specific record by ID
+    await base44.asServiceRole.entities.Document.delete(document_id);
+    console.log(`[deleteDocument] Deleted: ${document_id} (${doc.file_name})`);
 
-    // Step 4: Soft-delete marker — create a tombstone record so re-creation is blocked
-    try {
-      await base44.asServiceRole.entities.Document.create({
-        id: document_id, // same ID as tombstone
-        transaction_id: doc.transaction_id || transaction_id,
-        brokerage_id: doc.brokerage_id,
-        file_url: doc.file_url || 'deleted',
-        file_name: doc.file_name,
-        doc_type: doc.doc_type || 'other',
-        uploaded_by: doc.uploaded_by,
-        uploaded_by_role: doc.uploaded_by_role,
-        is_deleted: true,
-        notes: `Deleted by ${user.email} on ${new Date().toISOString()}`,
-      });
-      console.log(`[deleteDocument] Tombstone created for: ${document_id}`);
-    } catch (_) {
-      // tombstone creation is best-effort
-    }
-
-    // Step 5: Audit log
+    // Audit log
     try {
       await base44.asServiceRole.entities.AuditLog.create({
         brokerage_id: doc.brokerage_id,
@@ -78,7 +50,7 @@ Deno.serve(async (req) => {
     return Response.json({ success: true, document_id });
 
   } catch (error) {
-    console.log(`[deleteDocument] Unexpected error: ${error.message}`);
+    console.error(`[deleteDocument] Error:`, error.message);
     return Response.json({ error: error.message }, { status: 500 });
   }
 });

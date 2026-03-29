@@ -93,42 +93,42 @@ export default function TransactionDocumentsTab({ transaction, currentUser }) {
         transaction_id: transaction.id,
       });
     } catch (err) {
-      // If it's not a "not found" / already gone error, show it
       const msg = (err.message || '').toLowerCase();
       if (!msg.includes('404') && !msg.includes('not found') && !msg.includes('already_deleted')) {
         setDeleteError(err.message || 'Failed to delete document. Please try again.');
         setDeletingId(null);
         return;
       }
-      // 404 = phantom record, treat as deleted and remove from cache
     } finally {
       setDeletingId(null);
     }
-    // Remove from cache immediately (handles both real and phantom records)
+    // Remove from cache immediately, then force a fresh fetch
     queryClient.setQueryData(["tx-documents", transaction.id], (old) =>
       Array.isArray(old) ? old.filter(d => d.id !== id) : old
     );
+    await queryClient.invalidateQueries({ queryKey: ["tx-documents", transaction.id] });
+    await queryClient.refetchQueries({ queryKey: ["tx-documents", transaction.id] });
   };
 
   const handleDedupeCleanup = async () => {
-    const seen = new Map();
-    const toDelete = [];
+    // Group by file_name, keep the most recent (by created_date), delete the rest
+    const grouped = {};
     for (const doc of documents) {
-      if (seen.has(doc.file_name)) {
-        toDelete.push(doc.id);
-      } else {
-        seen.set(doc.file_name, doc.id);
-      }
+      if (!grouped[doc.file_name]) grouped[doc.file_name] = [];
+      grouped[doc.file_name].push(doc);
+    }
+    const toDelete = [];
+    for (const fileName in grouped) {
+      const sorted = grouped[fileName].sort((a, b) => new Date(b.created_date) - new Date(a.created_date));
+      toDelete.push(...sorted.slice(1).map(d => d.id)); // keep index 0 (newest), delete rest
     }
     if (toDelete.length === 0) return;
-    const deleteSet = new Set(toDelete);
     for (const id of toDelete) {
       try { await base44.functions.invoke("deleteDocument", { document_id: id, transaction_id: transaction.id }); } catch (_) {}
     }
-    // Remove all deleted (including phantoms) from cache
-    queryClient.setQueryData(["tx-documents", transaction.id], (old) =>
-      Array.isArray(old) ? old.filter(d => !deleteSet.has(d.id)) : old
-    );
+    // Force fresh fetch
+    await queryClient.invalidateQueries({ queryKey: ["tx-documents", transaction.id] });
+    await queryClient.refetchQueries({ queryKey: ["tx-documents", transaction.id] });
   };
 
   // Auto-classify document type from filename
@@ -145,11 +145,13 @@ export default function TransactionDocumentsTab({ transaction, currentUser }) {
     return null; // no match — use user-selected type
   };
 
+  const [uploadError, setUploadError] = useState(null);
+
   const uploadFile = async (file) => {
-    // Prevent duplicate uploads by filename
-    const isDuplicate = documents.some(d => d.file_name === file.name && d.transaction_id === transaction.id && !d.is_deleted);
+    // Client-side duplicate check against current cache
+    const isDuplicate = documents.some(d => d.file_name === file.name);
     if (isDuplicate) {
-      alert(`"${file.name}" already exists. Delete the existing file first or rename yours.`);
+      setUploadError(`"${file.name}" already exists for this transaction. Delete the existing file first, or rename yours before uploading.`);
       return;
     }
     const autoType = classifyDocType(file.name);
@@ -164,6 +166,11 @@ export default function TransactionDocumentsTab({ transaction, currentUser }) {
       uploaded_by: currentUser?.email || "unknown",
       uploaded_by_role: currentUser?.role || "agent",
     });
+    // Backend duplicate check — response.data.duplicate means blocked
+    if (response.data?.duplicate || response.data?.error) {
+      setUploadError(response.data.error || `"${file.name}" already exists.`);
+      return;
+    }
     const doc = response.data;
     const matchingItem = checklistItems.find(
       (ci) => ci.doc_type === selectedDocType && ci.status === "missing"
@@ -203,11 +210,14 @@ export default function TransactionDocumentsTab({ transaction, currentUser }) {
   };
 
   const handleUpload = async (e) => {
+    if (uploading) return; // upload lock
     const files = Array.from(e.target.files || []);
     if (!files.length) return;
+    setUploadError(null);
     setUploading(true);
     for (const file of files) await uploadFile(file);
     await queryClient.invalidateQueries({ queryKey: ["tx-documents", transaction.id] });
+    await queryClient.refetchQueries({ queryKey: ["tx-documents", transaction.id] });
     setUploading(false);
     if (fileInputRef.current) fileInputRef.current.value = "";
   };
@@ -215,11 +225,14 @@ export default function TransactionDocumentsTab({ transaction, currentUser }) {
   const handleDrop = async (e) => {
     e.preventDefault();
     setDragOver(false);
+    if (uploading) return; // upload lock
     const files = Array.from(e.dataTransfer.files || []);
     if (!files.length) return;
+    setUploadError(null);
     setUploading(true);
     for (const file of files) await uploadFile(file);
     await queryClient.invalidateQueries({ queryKey: ["tx-documents", transaction.id] });
+    await queryClient.refetchQueries({ queryKey: ["tx-documents", transaction.id] });
     setUploading(false);
   };
 
@@ -256,6 +269,8 @@ export default function TransactionDocumentsTab({ transaction, currentUser }) {
     setSelectedIds(new Set());
     setBulkDeleting(false);
     setConfirmBulkDelete(false);
+    await queryClient.invalidateQueries({ queryKey: ["tx-documents", transaction.id] });
+    await queryClient.refetchQueries({ queryKey: ["tx-documents", transaction.id] });
   };
 
   const getFileIcon = (fileName) => {
@@ -311,6 +326,13 @@ export default function TransactionDocumentsTab({ transaction, currentUser }) {
           <AlertCircle className="w-4 h-4 flex-shrink-0" />
           <span>{deleteError}</span>
           <button className="ml-auto text-red-400 hover:text-red-600 text-xs underline" onClick={() => setDeleteError(null)}>Dismiss</button>
+        </div>
+      )}
+      {uploadError && (
+        <div className="flex items-center gap-2 p-3 bg-amber-50 border border-amber-200 rounded-lg text-sm text-amber-800">
+          <AlertCircle className="w-4 h-4 flex-shrink-0" />
+          <span>{uploadError}</span>
+          <button className="ml-auto text-amber-500 hover:text-amber-700 text-xs underline" onClick={() => setUploadError(null)}>Dismiss</button>
         </div>
       )}
       {/* Create Document from Template + Dedupe */}
@@ -501,8 +523,14 @@ export default function TransactionDocumentsTab({ transaction, currentUser }) {
                       <p className="text-sm font-medium text-gray-900 truncate hover:text-blue-600 transition-colors">{doc.file_name || "Document"}</p>
                       <p className="text-xs text-gray-400">
                         {doc.uploaded_by || "unknown"}
-                        {doc.created_date ? ` · ${format(new Date(doc.created_date), "MMM d, yyyy")}` : ""}
-                        {" · "}<span className="font-mono text-[10px] opacity-50">{doc.id?.slice(-6)}</span>
+                        {doc.created_date ? ` · ${format(new Date(doc.created_date), "MMM d, yyyy h:mm a")}` : ""}
+                        {" · "}
+                        <span
+                          className="font-mono text-[10px] opacity-50 cursor-help"
+                          title={`Document ID: ${doc.id}\nUploaded: ${doc.created_date ? new Date(doc.created_date).toLocaleString() : "unknown"}`}
+                        >
+                          #{doc.id?.slice(-6)}
+                        </span>
                       </p>
                     </div>
                     <Badge className={`text-xs hidden sm:inline-flex ${TYPE_COLORS[doc.doc_type] || TYPE_COLORS.other}`}>
