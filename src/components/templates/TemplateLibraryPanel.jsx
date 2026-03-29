@@ -153,6 +153,7 @@ export default function TemplateLibraryPanel() {
                     </div>
                     <TemplateFieldMapper
                       initialFieldMap={tmpl.field_map || {}}
+                      templateFileUrl={tmpl.file_url || null}
                       onSave={(fieldMap) => handleSaveFieldMap(tmpl.id, fieldMap)}
                       onCancel={() => setMappingTemplate(null)}
                     />
