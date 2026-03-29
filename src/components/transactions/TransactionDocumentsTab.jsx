@@ -85,8 +85,12 @@ export default function TransactionDocumentsTab({ transaction, currentUser }) {
     setDeleteError(null);
     setDeletingId(id);
     try {
-      await base44.entities.Document.delete(id);
-      queryClient.invalidateQueries({ queryKey: ["tx-documents", transaction.id] });
+      await base44.functions.invoke("deleteDocument", {
+        document_id: id,
+        transaction_id: transaction.id,
+      });
+      await queryClient.invalidateQueries({ queryKey: ["tx-documents", transaction.id] });
+      await queryClient.refetchQueries({ queryKey: ["tx-documents", transaction.id] });
     } catch (err) {
       setDeleteError(err.message || 'Failed to delete document. Please try again.');
     } finally {
@@ -127,7 +131,7 @@ export default function TransactionDocumentsTab({ transaction, currentUser }) {
 
   const uploadFile = async (file) => {
     // Prevent duplicate uploads by filename
-    const isDuplicate = documents.some(d => d.file_name === file.name);
+    const isDuplicate = documents.some(d => d.file_name === file.name && d.transaction_id === transaction.id);
     if (isDuplicate) {
       alert(`"${file.name}" already exists. Delete the existing file first or rename yours.`);
       return;
