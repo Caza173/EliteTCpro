@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Settings as SettingsIcon, Users, Bell, Palette, Loader2, UserPlus, CheckCircle, Building2, DollarSign, FileText } from "lucide-react";
+import { Settings as SettingsIcon, Users, Bell, Palette, Loader2, UserPlus, CheckCircle, Building2, DollarSign, FileText, Pencil, X } from "lucide-react";
 import { useCurrentUser, isTCOrAdmin, isOwnerOrAdmin } from "../components/auth/useCurrentUser";
 import { ROLE_COLORS } from "../components/utils/tenantUtils";
 import TemplateLibraryPanel from "../components/templates/TemplateLibraryPanel";
@@ -61,6 +61,30 @@ export default function Settings() {
     queryFn: () => base44.entities.Brokerage.filter({ id: currentUser?.brokerage_id }),
     enabled: !!currentUser?.brokerage_id,
     select: (data) => data[0],
+  });
+
+  const [editingBrokerage, setEditingBrokerage] = useState(false);
+  const [brokerageForm, setBrokerageForm] = useState({});
+  const [brokerageSaved, setBrokerageSaved] = useState(false);
+
+  useEffect(() => {
+    if (brokerage) {
+      setBrokerageForm({
+        name: brokerage.name || "",
+        timezone: brokerage.timezone || "",
+        primary_contact_email: brokerage.primary_contact_email || "",
+      });
+    }
+  }, [brokerage]);
+
+  const saveBrokerageMutation = useMutation({
+    mutationFn: (data) => base44.entities.Brokerage.update(brokerage.id, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["brokerage", currentUser?.brokerage_id] });
+      setBrokerageSaved(true);
+      setEditingBrokerage(false);
+      setTimeout(() => setBrokerageSaved(false), 2500);
+    },
   });
 
   const updateRoleMutation = useMutation({
@@ -195,21 +219,53 @@ export default function Settings() {
       {brokerage && (
         <Card className="shadow-sm border-gray-100">
           <CardHeader className="pb-3">
-            <CardTitle className="text-base font-semibold flex items-center gap-2">
-              <Building2 className="w-4 h-4" /> Brokerage
-            </CardTitle>
+            <div className="flex items-center justify-between">
+              <CardTitle className="text-base font-semibold flex items-center gap-2">
+                <Building2 className="w-4 h-4" /> Brokerage
+              </CardTitle>
+              {!editingBrokerage ? (
+                <Button variant="ghost" size="sm" className="h-7 gap-1.5 text-xs text-gray-500" onClick={() => setEditingBrokerage(true)}>
+                  <Pencil className="w-3 h-3" /> Edit
+                </Button>
+              ) : (
+                <Button variant="ghost" size="sm" className="h-7 gap-1.5 text-xs text-gray-400" onClick={() => setEditingBrokerage(false)}>
+                  <X className="w-3 h-3" /> Cancel
+                </Button>
+              )}
+            </div>
           </CardHeader>
           <CardContent>
-            <div className="grid grid-cols-2 gap-3 text-sm">
-              <div><p className="text-xs text-gray-400">Name</p><p className="font-medium">{brokerage.name}</p></div>
-              <div><p className="text-xs text-gray-400">Status</p>
-                <Badge variant="outline" className={`capitalize text-xs ${brokerage.status === "active" ? "bg-emerald-50 text-emerald-700 border-emerald-200" : brokerage.status === "trial" ? "bg-amber-50 text-amber-700 border-amber-200" : "bg-gray-50 text-gray-600"}`}>
-                  {brokerage.status}
-                </Badge>
+            {!editingBrokerage ? (
+              <div className="grid grid-cols-2 gap-3 text-sm">
+                <div><p className="text-xs text-gray-400">Name</p><p className="font-medium">{brokerage.name}</p></div>
+                <div><p className="text-xs text-gray-400">Status</p>
+                  <Badge variant="outline" className={`capitalize text-xs ${brokerage.status === "active" ? "bg-emerald-50 text-emerald-700 border-emerald-200" : brokerage.status === "trial" ? "bg-amber-50 text-amber-700 border-amber-200" : "bg-gray-50 text-gray-600"}`}>
+                    {brokerage.status}
+                  </Badge>
+                </div>
+                <div><p className="text-xs text-gray-400">Timezone</p><p className="font-medium">{brokerage.timezone || "—"}</p></div>
+                <div><p className="text-xs text-gray-400">Contact</p><p className="font-medium">{brokerage.primary_contact_email || "—"}</p></div>
               </div>
-              <div><p className="text-xs text-gray-400">Timezone</p><p className="font-medium">{brokerage.timezone}</p></div>
-              <div><p className="text-xs text-gray-400">Contact</p><p className="font-medium">{brokerage.primary_contact_email || "—"}</p></div>
-            </div>
+            ) : (
+              <div className="space-y-3">
+                <div>
+                  <Label className="text-xs text-gray-500 mb-1 block">Name</Label>
+                  <Input value={brokerageForm.name} onChange={(e) => setBrokerageForm(f => ({ ...f, name: e.target.value }))} className="h-8 text-sm" />
+                </div>
+                <div>
+                  <Label className="text-xs text-gray-500 mb-1 block">Timezone</Label>
+                  <Input value={brokerageForm.timezone} onChange={(e) => setBrokerageForm(f => ({ ...f, timezone: e.target.value }))} placeholder="e.g. America/New_York" className="h-8 text-sm" />
+                </div>
+                <div>
+                  <Label className="text-xs text-gray-500 mb-1 block">Contact Email</Label>
+                  <Input type="email" value={brokerageForm.primary_contact_email} onChange={(e) => setBrokerageForm(f => ({ ...f, primary_contact_email: e.target.value }))} className="h-8 text-sm" />
+                </div>
+                <Button size="sm" className="bg-blue-600 hover:bg-blue-700 gap-1.5" onClick={() => saveBrokerageMutation.mutate(brokerageForm)} disabled={saveBrokerageMutation.isPending}>
+                  {saveBrokerageMutation.isPending ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : brokerageSaved ? <CheckCircle className="w-3.5 h-3.5" /> : null}
+                  {brokerageSaved ? "Saved!" : "Save Changes"}
+                </Button>
+              </div>
+            )}
           </CardContent>
         </Card>
       )}
