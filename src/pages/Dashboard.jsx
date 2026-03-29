@@ -225,7 +225,6 @@ export default function Dashboard() {
           { id: "tasks", label: "Tasks" },
           { id: "deadlines", label: "Deadlines" },
           { id: "alerts", label: "Alerts" },
-          { id: "ai", label: "AI Assistant" },
           ...((currentUser?.role === "owner" || currentUser?.role === "admin") ? [{ id: "analytics", label: "Analytics" }] : []),
           { id: "finance", label: "Finance" },
           { id: "activity", label: "AI Activity" },
@@ -350,11 +349,6 @@ export default function Dashboard() {
           </div>
           <div className="p-4"><TransactionAlertsPanel transactions={transactions} /></div>
         </div>
-      )}
-
-      {/* Tab: AI Assistant */}
-      {activeTab === "ai" && !isLoading && (
-        <GlobalAIAssistant transactions={transactions} checklistItems={checklistItems} />
       )}
 
       {/* Tab: Analytics (owner/admin only) */}
