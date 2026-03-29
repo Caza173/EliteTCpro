@@ -93,16 +93,12 @@ export default function TransactionDocumentsTab({ transaction, currentUser }) {
         transaction_id: transaction.id,
       });
     } catch (err) {
-      const msg = (err.message || '').toLowerCase();
-      if (!msg.includes('404') && !msg.includes('not found') && !msg.includes('already_deleted')) {
-        setDeleteError(err.message || 'Failed to delete document. Please try again.');
-        setDeletingId(null);
-        return;
-      }
+      // Show error but still remove from local cache and refetch
+      setDeleteError('Delete may have partially failed. Refreshing list...');
     } finally {
       setDeletingId(null);
     }
-    // Remove from cache immediately, then force a fresh fetch
+    // Always remove from cache and force fresh fetch, regardless of error
     queryClient.setQueryData(["tx-documents", transaction.id], (old) =>
       Array.isArray(old) ? old.filter(d => d.id !== id) : old
     );

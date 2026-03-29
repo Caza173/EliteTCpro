@@ -31,8 +31,18 @@ Deno.serve(async (req) => {
     }
 
     // Hard delete the specific record by ID
-    await base44.asServiceRole.entities.Document.delete(document_id);
-    console.log(`[deleteDocument] Deleted: ${document_id} (${doc.file_name})`);
+    try {
+      await base44.asServiceRole.entities.Document.delete(document_id);
+      console.log(`[deleteDocument] Deleted: ${document_id} (${doc.file_name})`);
+    } catch (e) {
+      const msg = String(e?.message || '').toLowerCase();
+      if (msg.includes('not found') || msg.includes('404')) {
+        // Already gone — treat as success
+        console.log(`[deleteDocument] Already deleted (404): ${document_id}`);
+        return Response.json({ success: true, already_deleted: true, document_id });
+      }
+      throw e; // re-throw unexpected errors
+    }
 
     // Audit log
     try {
