@@ -244,39 +244,43 @@ export default function Dashboard() {
 
       {/* Tab: Overview */}
       {activeTab === "overview" && (
-        <div className="grid grid-cols-1 xl:grid-cols-2 gap-5">
-          {/* Left: Tasks, Alerts, Calendar */}
-          <div className="space-y-5">
-            {!isLoading && (
-              <div className="theme-card overflow-hidden">
-                <div className="px-4 py-3 border-b" style={{ borderColor: "var(--border)" }}>
-                  <h3 className="text-sm font-semibold" style={{ color: "var(--text-primary)" }}>Upcoming Tasks & Deadlines</h3>
-                </div>
-                <div className="p-4">
-                  <TasksDueToday transactions={transactions} notifications={notifications} />
-                </div>
-              </div>
-            )}
-            <div className="theme-card overflow-hidden">
-              <div className="px-4 py-3 border-b" style={{ borderColor: "var(--border)" }}>
-                <h3 className="text-sm font-semibold" style={{ color: "var(--text-primary)" }}>Alerts</h3>
-              </div>
-              <div className="p-4"><TransactionAlertsPanel transactions={transactions} /></div>
+        <div className="space-y-5">
+          {/* Calendar at top */}
+          <div className="theme-card overflow-hidden">
+            <div className="px-4 py-3 border-b" style={{ borderColor: "var(--border)" }}>
+              <h3 className="text-sm font-semibold" style={{ color: "var(--text-primary)" }}>Deadline Calendar</h3>
             </div>
-            <div className="theme-card overflow-hidden">
-              <div className="px-4 py-3 border-b" style={{ borderColor: "var(--border)" }}>
-                <h3 className="text-sm font-semibold" style={{ color: "var(--text-primary)" }}>Deadline Calendar</h3>
-              </div>
-              <div className="p-4">
-                {isLoading ? <Skeleton className="h-64 rounded-xl" /> : <DeadlineCalendarView transactions={transactions} />}
-              </div>
+            <div className="p-4">
+              {isLoading ? <Skeleton className="h-64 rounded-xl" /> : <DeadlineCalendarView transactions={transactions} />}
             </div>
           </div>
-          {/* Right: AI Assistant */}
-          <div>
-            {!isLoading && (
-              <GlobalAIAssistant transactions={transactions} checklistItems={checklistItems} />
-            )}
+
+          {/* Left: Tasks, Alerts */}
+          <div className="grid grid-cols-1 xl:grid-cols-2 gap-5">
+            <div className="space-y-5">
+              {!isLoading && (
+                <div className="theme-card overflow-hidden">
+                  <div className="px-4 py-3 border-b" style={{ borderColor: "var(--border)" }}>
+                    <h3 className="text-sm font-semibold" style={{ color: "var(--text-primary)" }}>Upcoming Tasks & Deadlines</h3>
+                  </div>
+                  <div className="p-4">
+                    <TasksDueToday transactions={transactions} notifications={notifications} />
+                  </div>
+                </div>
+              )}
+              <div className="theme-card overflow-hidden">
+                <div className="px-4 py-3 border-b" style={{ borderColor: "var(--border)" }}>
+                  <h3 className="text-sm font-semibold" style={{ color: "var(--text-primary)" }}>Alerts</h3>
+                </div>
+                <div className="p-4"><TransactionAlertsPanel transactions={transactions} /></div>
+              </div>
+            </div>
+            {/* Right: AI Assistant */}
+            <div>
+              {!isLoading && (
+                <GlobalAIAssistant transactions={transactions} checklistItems={checklistItems} />
+              )}
+            </div>
           </div>
         </div>
       )}
