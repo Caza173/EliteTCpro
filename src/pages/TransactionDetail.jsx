@@ -639,7 +639,11 @@ export default function TransactionDetail() {
           </CardHeader>
           <CardContent className="space-y-5">
             {/* Contact Cards */}
-            <ContactsSection transaction={transaction} />
+            <ContactsSection
+              transaction={transaction}
+              currentUser={currentUser}
+              onUpdate={(data) => updateMutation.mutate({ id: transaction.id, data })}
+            />
 
             {/* Meta info row */}
             <div className="flex flex-wrap gap-4 pt-2 border-t border-gray-100 text-xs text-gray-500">
