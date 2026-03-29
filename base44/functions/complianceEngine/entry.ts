@@ -1,4 +1,112 @@
-import { createClientFromRequest } from 'npm:@base44/sdk@0.8.20';
+import { createClientFromRequest } from 'npm:@base44/sdk@0.8.23';
+
+// ─── NHAR Document Templates ─────────────────────────────────────────────────
+// Defines required signature blocks, initials, and fields by page for each form type.
+const NHAR_TEMPLATES = {
+  "Purchase and Sales Agreement": {
+    required_fields: [
+      { field: "purchase_price", page: 1, label: "Purchase Price" },
+      { field: "earnest_money", page: 1, label: "Earnest Money Amount" },
+      { field: "closing_date", page: 1, label: "Closing Date" },
+      { field: "property_address", page: 1, label: "Property Address" },
+      { field: "buyer_name", page: 1, label: "Buyer Name" },
+      { field: "seller_name", page: 1, label: "Seller Name" },
+    ],
+    signature_blocks: [
+      { role: "buyer", page: "last", label: "Buyer Signature" },
+      { role: "seller", page: "last", label: "Seller Signature" },
+      { role: "buyer_agent", page: "last", label: "Buyer's Agent Signature" },
+      { role: "seller_agent", page: "last", label: "Seller's Agent Signature" },
+    ],
+    initials_required: true, // Footer of every interior page
+    initials_label: "Buyer & Seller initials required on each page footer",
+    companion_docs: ["Agency Disclosure", "Property Disclosure", "Lead Paint Disclosure", "Earnest Money Receipt"],
+  },
+  "Agency Disclosure": {
+    required_fields: [
+      { field: "buyer_name", page: 1, label: "Client Name" },
+      { field: "buyers_agent", page: 1, label: "Agent Name" },
+    ],
+    signature_blocks: [
+      { role: "buyer", page: 1, label: "Client Signature" },
+      { role: "buyer_agent", page: 1, label: "Agent Signature" },
+    ],
+    initials_required: false,
+    companion_docs: [],
+  },
+  "Property Disclosure": {
+    required_fields: [
+      { field: "seller_name", page: 1, label: "Seller Name" },
+      { field: "property_address", page: 1, label: "Property Address" },
+    ],
+    signature_blocks: [
+      { role: "seller", page: "last", label: "Seller Signature" },
+    ],
+    initials_required: false,
+    companion_docs: [],
+  },
+  "Lead Paint Disclosure": {
+    required_fields: [
+      { field: "buyer_name", page: 1, label: "Buyer Name" },
+      { field: "seller_name", page: 1, label: "Seller Name" },
+      { field: "property_address", page: 1, label: "Property Address" },
+    ],
+    signature_blocks: [
+      { role: "buyer", page: 1, label: "Buyer Signature" },
+      { role: "seller", page: 1, label: "Seller Signature" },
+      { role: "buyer_agent", page: 1, label: "Buyer's Agent Signature" },
+    ],
+    initials_required: false,
+    companion_docs: [],
+  },
+  "Addendum": {
+    required_fields: [
+      { field: "property_address", page: 1, label: "Property Address" },
+      { field: "effective_date", page: 1, label: "Effective Date" },
+    ],
+    signature_blocks: [
+      { role: "buyer", page: "last", label: "Buyer Signature" },
+      { role: "seller", page: "last", label: "Seller Signature" },
+    ],
+    initials_required: false,
+    companion_docs: [],
+  },
+  "Closing Disclosure": {
+    required_fields: [
+      { field: "closing_date", page: 1, label: "Closing Date" },
+      { field: "purchase_price", page: 1, label: "Sale Price" },
+      { field: "buyer_name", page: 1, label: "Borrower Name" },
+    ],
+    signature_blocks: [
+      { role: "buyer", page: "last", label: "Borrower Signature" },
+    ],
+    initials_required: false,
+    companion_docs: [],
+  },
+};
+
+function getTemplate(documentType) {
+  return NHAR_TEMPLATES[documentType] || null;
+}
+
+function buildTemplateContext(template, docType) {
+  if (!template) return "";
+  const sigList = template.signature_blocks.map(s =>
+    `  - ${s.label} (${s.role}) on page ${s.page}`
+  ).join("\n");
+  const fieldList = template.required_fields.map(f =>
+    `  - "${f.label}" on page ${f.page}`
+  ).join("\n");
+
+  return `
+NHAR TEMPLATE REQUIREMENTS FOR: ${docType}
+Required signature blocks:
+${sigList}
+Required fields:
+${fieldList}
+${template.initials_required ? "⚠ Buyer AND Seller initials are REQUIRED at the footer of every interior page." : ""}
+`;
+}
 
 Deno.serve(async (req) => {
   try {
@@ -12,7 +120,7 @@ Deno.serve(async (req) => {
       return Response.json({ error: 'transaction_id required' }, { status: 400 });
     }
 
-    // --- 1. DEADLINE MONITORING (no document required) ---
+    // ─── 1. DEADLINE / FINANCIAL / MISSING-DOC CHECKS ────────────────────────
     const today = new Date();
     const deadlineIssues = [];
 
@@ -32,62 +140,46 @@ Deno.serve(async (req) => {
         if (!dateStr) continue;
         const dt = new Date(dateStr);
         const daysLeft = Math.ceil((dt - today) / (1000 * 60 * 60 * 24));
-
         if (daysLeft < 0) {
           deadlineIssues.push({
-            issue_type: "deadline",
-            severity: "blocker",
+            issue_type: "deadline", severity: "blocker",
             message: `${label} was ${Math.abs(daysLeft)} day(s) ago (${dateStr}) and may be overdue.`,
             suggested_task: `Confirm ${label} status with all parties`,
           });
         } else if (daysLeft <= 7) {
           deadlineIssues.push({
-            issue_type: "deadline",
-            severity: "warning",
+            issue_type: "deadline", severity: "warning",
             message: `${label} is approaching in ${daysLeft} day(s) (${dateStr}).`,
             suggested_task: `Follow up on ${label}`,
           });
         }
       }
 
-      // --- 2. FINANCIAL REVIEW ---
       if (transaction_data.sale_price) {
         const salePrice = transaction_data.sale_price;
         const concession = transaction_data.seller_concession_amount || 0;
         const proFee = transaction_data.professional_fee_amount || 0;
-
-        if (concession > 0) {
-          const concPct = (concession / salePrice) * 100;
-          if (concPct > 3) {
-            deadlineIssues.push({
-              issue_type: "financial",
-              severity: "warning",
-              message: `Seller concession of $${concession.toLocaleString()} (${concPct.toFixed(1)}% of sale price) is unusually high. Verify with lender.`,
-              suggested_task: "Confirm seller concession with lender for loan compliance",
-            });
-          }
+        if (concession > 0 && (concession / salePrice) * 100 > 3) {
+          deadlineIssues.push({
+            issue_type: "financial", severity: "warning",
+            message: `Seller concession of $${concession.toLocaleString()} (${((concession / salePrice) * 100).toFixed(1)}%) is unusually high. Verify with lender.`,
+            suggested_task: "Confirm seller concession with lender",
+          });
         }
-
-        if (proFee > 0) {
-          const feePct = (proFee / salePrice) * 100;
-          if (feePct > 2) {
-            deadlineIssues.push({
-              issue_type: "financial",
-              severity: "info",
-              message: `Professional fee of $${proFee.toLocaleString()} (${feePct.toFixed(1)}% of sale price) — review for accuracy.`,
-              suggested_task: "Review Section 20 professional fee amount",
-            });
-          }
+        if (proFee > 0 && (proFee / salePrice) * 100 > 2) {
+          deadlineIssues.push({
+            issue_type: "financial", severity: "info",
+            message: `Professional fee of $${proFee.toLocaleString()} (${((proFee / salePrice) * 100).toFixed(1)}%) — review for accuracy.`,
+            suggested_task: "Review Section 20 professional fee amount",
+          });
         }
       }
 
-      // --- 3. REQUIRED DOCUMENT CHECK ---
       if (transaction_data.checklist_items) {
         for (const item of transaction_data.checklist_items) {
           if (item.required && item.status === "missing" && item.required_by_phase <= (transaction_data.phase || 3)) {
             deadlineIssues.push({
-              issue_type: "missing_document",
-              severity: "warning",
+              issue_type: "missing_document", severity: "warning",
               message: `Required document missing: ${item.label || item.doc_type}. Required by Phase ${item.required_by_phase}.`,
               suggested_task: `Upload ${item.label || item.doc_type}`,
             });
@@ -96,25 +188,14 @@ Deno.serve(async (req) => {
       }
     }
 
-    // Persist deadline/financial/doc issues to ComplianceIssue entity
-    // Clear old non-ai issues for this transaction first
-    const existingNonAI = await base44.asServiceRole.entities.ComplianceIssue.filter({
-      transaction_id,
-      source: "deadline_check",
-    });
-    for (const old of existingNonAI) {
+    // Persist deadline/financial issues — clear old ones first
+    const oldDeadline = await base44.asServiceRole.entities.ComplianceIssue.filter({ transaction_id, source: "deadline_check" });
+    const oldFinancial = await base44.asServiceRole.entities.ComplianceIssue.filter({ transaction_id, source: "financial_check" });
+    for (const old of [...oldDeadline, ...oldFinancial]) {
       await base44.asServiceRole.entities.ComplianceIssue.delete(old.id);
     }
-    const existingFinancial = await base44.asServiceRole.entities.ComplianceIssue.filter({
-      transaction_id,
-      source: "financial_check",
-    });
-    for (const old of existingFinancial) {
-      await base44.asServiceRole.entities.ComplianceIssue.delete(old.id);
-    }
-
+    const sourceMap = { deadline: "deadline_check", financial: "financial_check", missing_document: "deadline_check" };
     for (const issue of deadlineIssues) {
-      const sourceMap = { deadline: "deadline_check", financial: "financial_check", missing_document: "deadline_check" };
       await base44.asServiceRole.entities.ComplianceIssue.create({
         transaction_id,
         brokerage_id: brokerage_id || transaction_data?.brokerage_id,
@@ -127,105 +208,113 @@ Deno.serve(async (req) => {
       });
     }
 
-    // If no document provided, return deadline results only
     if (!document_url) {
-      return Response.json({
-        success: true,
-        deadline_issues_count: deadlineIssues.length,
-        message: "Deadline and financial checks complete",
-      });
+      return Response.json({ success: true, deadline_issues_count: deadlineIssues.length, message: "Deadline and financial checks complete" });
     }
 
-    // --- 4. DOCUMENT AI ANALYSIS ---
-    const prompt = `You are a real estate compliance engine for a New Hampshire Transaction Coordinator platform.
+    // ─── 2. PAGE-LEVEL AI DOCUMENT SCAN ──────────────────────────────────────
+    // First pass: classify the document type
+    const classifyPrompt = `You are a real estate compliance engine for New Hampshire (NHAR) transactions.
 
-Analyze this real estate document carefully and return a structured compliance report.
+Look at this document and classify it. Return ONLY valid JSON:
+{
+  "document_type": "Purchase and Sales Agreement | Agency Disclosure | Property Disclosure | Lead Paint Disclosure | Addendum | Inspection Report | Appraisal | Closing Disclosure | Earnest Money Receipt | Other",
+  "page_count": <integer>,
+  "has_digital_signature_verification": <boolean>,
+  "digital_signature_platform": "dotloop | docusign | hellosign | none | unknown"
+}`;
+
+    const classifyResult = await base44.integrations.Core.InvokeLLM({
+      prompt: classifyPrompt,
+      file_urls: [document_url],
+      response_json_schema: {
+        type: "object",
+        properties: {
+          document_type: { type: "string" },
+          page_count: { type: "number" },
+          has_digital_signature_verification: { type: "boolean" },
+          digital_signature_platform: { type: "string" },
+        }
+      }
+    });
+
+    const docType = classifyResult.document_type || "Other";
+    const pageCount = classifyResult.page_count || 1;
+    const hasDigitalSig = classifyResult.has_digital_signature_verification || false;
+    const template = getTemplate(docType);
+    const templateContext = buildTemplateContext(template, docType);
+    const companionDocs = template?.companion_docs || [];
+
+    // Second pass: deep page-level analysis
+    const deepPrompt = `You are a strict real estate compliance engine for New Hampshire (NHAR) real estate transactions.
 
 Transaction context:
 - Address: ${transaction_data?.address || 'Unknown'}
 - Transaction Type: ${transaction_data?.transaction_type || 'buyer'}
 - Is Cash Transaction: ${transaction_data?.is_cash_transaction ? 'Yes' : 'No'}
-- Sale Price: ${transaction_data?.sale_price ? '$' + transaction_data.sale_price.toLocaleString() : 'Unknown'}
+- Sale Price: ${transaction_data?.sale_price ? '$' + Number(transaction_data.sale_price).toLocaleString() : 'Unknown'}
+- Document Type: ${docType}
+- Total Pages: ${pageCount}
+- Digital Signature Detected: ${hasDigitalSig ? 'Yes (' + (classifyResult.digital_signature_platform || 'unknown platform') + ')' : 'No'}
 
-Perform ALL of the following:
+${templateContext}
 
-1. DOCUMENT CLASSIFICATION
-Classify the document as one of:
-"Purchase and Sales Agreement" | "Agency Disclosure" | "Property Disclosure" | "Lead Paint Disclosure" | "Inspection Report" | "Appraisal" | "Closing Disclosure" | "Addendum" | "Earnest Money Receipt" | "Other"
+INSTRUCTIONS:
+Analyze this document with PAGE-LEVEL ACCURACY. For each issue, identify the EXACT page number where it occurs.
 
-2. FIELD EXTRACTION
-Extract these fields if found:
-- purchase_price (number)
-- earnest_money (number)
-- buyer_name (string)
-- seller_name (string)
-- buyers_agent (string)
-- sellers_agent (string)
-- closing_date (YYYY-MM-DD)
-- inspection_deadline (YYYY-MM-DD)
-- financing_deadline (YYYY-MM-DD)
-- earnest_money_deadline (YYYY-MM-DD)
-- property_address (string)
-- commission_percent (number)
-
-3. SIGNATURE DETECTION
-Look for signature lines and blocks. Determine for each:
-- "present" = signature line exists AND appears filled/signed
-- "missing" = signature line exists but appears blank or unsigned
-- "not_found" = no signature line found for this party
+1. SIGNATURE DETECTION
+${hasDigitalSig
+  ? '- Document contains digital signature verification. Mark all digitally-verified signatures as "present". Check if all required parties have signed.'
+  : '- Check each signature block. "present" = filled/signed, "missing" = blank line exists but unsigned, "not_found" = no signature block exists for that party.'
+}
 Check: buyer_signature, seller_signature, buyer_agent_signature, seller_agent_signature
+For each missing signature, note which PAGE it should appear on.
 
-4. BLANK FIELD DETECTION
-List important fields that appear blank (contain "______", "[  ]", "N/A" where a value is expected, or are clearly missing data that should be present in this document type).
+2. INITIALS CHECK (if P&S Agreement)
+${template?.initials_required
+  ? `This is a P&S Agreement. Check EVERY interior page (pages 2 through ${pageCount - 1}) for buyer and seller initials in the footer.
+List each page number where initials are MISSING.`
+  : 'Initials not required for this document type.'
+}
+
+3. REQUIRED FIELD DETECTION
+Check these required fields and note the page where each is located or missing:
+${template?.required_fields.map(f => `- "${f.label}" (expected page ${f.page})`).join('\n') || 'Extract all key fields.'}
+Also check for any field containing "______", "[  ]", or obviously blank where a value is required.
+
+4. FIELD EXTRACTION
+Extract as many of these as you can find:
+purchase_price (number), earnest_money (number), buyer_name, seller_name, buyers_agent, sellers_agent, 
+closing_date (YYYY-MM-DD), inspection_deadline (YYYY-MM-DD), financing_deadline (YYYY-MM-DD), 
+earnest_money_deadline (YYYY-MM-DD), property_address, commission_percent (number), effective_date (YYYY-MM-DD)
 
 5. COMPLIANCE ISSUES
-Generate issues with severity:
-- "blocker": Makes contract potentially invalid (e.g., missing required signature, missing purchase price in P&S)
-- "warning": Missing important info (e.g., blank deadline, missing earnest money amount)
-- "info": Advisory (e.g., unusual term, recommended follow-up)
+Generate issues. For EACH issue include the page_number where it occurs.
+Severity:
+- "blocker": Missing required signature, missing required field in executed document, contract potentially invalid
+- "warning": Missing important info, blank deadline, recommended follow-up
+- "info": Unusual terms, advisory notes
 
-For EACH issue, also provide:
-- A suggested task name to resolve it
-- A professional email subject line
-- A professional email body (addressed to "Agent" generically, referencing the property address ${transaction_data?.address || '[Property Address]'})
+Also provide:
+- suggested_task (short action item)
+- suggested_email_subject (professional)
+- suggested_email_body (reference property address: ${transaction_data?.address || '[Property Address]'})
 
-6. UNUSUAL TERMS & FINANCIAL FLAGS
-Identify any:
-- Unusual seller concessions (flag if > $5,000 or if language seems non-standard)
-- Non-standard commission structures
-- Unusual contingency language
-- Any clauses that might delay or complicate closing
-Report these as "info" or "warning" issues.
+6. UNUSUAL TERMS
+Flag non-standard concessions (>$5,000), unusual contingency language, anything that may delay closing.
 
-7. MISSING COMPANION DOCUMENTS
-Based on the document type identified, list companion docs that are typically required:
-- P&S → Agency Disclosure, Property Disclosure, Lead Paint Disclosure (if pre-1978 or unknown), Earnest Money Receipt
-- Inspection Report → verify signed repair request if issues found
-- Closing Disclosure → verify all addenda are attached
+7. COMPLIANCE SCORE
+Start at 100. Deduct: -20 per blocker, -7 per warning, -3 per blank required field. Minimum: 10.
 
-8. COMPLIANCE SCORE (0-100)
-Start at 100.
-- Each blocker: -20 points
-- Each warning: -7 points
-- Each blank critical field: -5 points
-Minimum score: 10.
-
-Return ONLY valid JSON matching this exact structure:
+Return ONLY valid JSON:
 {
-  "document_type": "string",
+  "document_type": "${docType}",
+  "page_count": ${pageCount},
   "extracted_fields": {
-    "purchase_price": null,
-    "earnest_money": null,
-    "buyer_name": null,
-    "seller_name": null,
-    "buyers_agent": null,
-    "sellers_agent": null,
-    "closing_date": null,
-    "inspection_deadline": null,
-    "financing_deadline": null,
-    "earnest_money_deadline": null,
-    "property_address": null,
-    "commission_percent": null
+    "purchase_price": null, "earnest_money": null, "buyer_name": null, "seller_name": null,
+    "buyers_agent": null, "sellers_agent": null, "closing_date": null, "inspection_deadline": null,
+    "financing_deadline": null, "earnest_money_deadline": null, "property_address": null,
+    "commission_percent": null, "effective_date": null
   },
   "signatures": {
     "buyer_signature": "present|missing|not_found",
@@ -233,33 +322,38 @@ Return ONLY valid JSON matching this exact structure:
     "buyer_agent_signature": "present|missing|not_found",
     "seller_agent_signature": "present|missing|not_found"
   },
+  "missing_initials_pages": [],
   "blank_fields": [],
   "issues": [
     {
       "id": "issue_1",
       "severity": "blocker|warning|info",
-      "category": "signature|blank_field|missing_doc|contract_term|deadline|financial",
-      "message": "Clear human-readable description of the issue",
+      "category": "missing_signature|missing_initial|missing_field|blank_field|missing_doc|contract_term|deadline|financial",
+      "page_number": 1,
+      "message": "Clear human-readable description",
       "field": "field_name_if_applicable",
-      "suggested_task": "Short task name to resolve this",
-      "suggested_email_subject": "Professional email subject line",
-      "suggested_email_body": "Professional email body text"
+      "suggested_task": "Short task name",
+      "suggested_email_subject": "Professional email subject",
+      "suggested_email_body": "Professional email body"
     }
   ],
-  "missing_companion_docs": [],
+  "missing_companion_docs": ${JSON.stringify(companionDocs)},
   "compliance_score": 100,
-  "summary": "One sentence summary of document compliance status"
+  "summary": "One sentence summary"
 }`;
 
     const result = await base44.integrations.Core.InvokeLLM({
-      prompt,
+      prompt: deepPrompt,
       file_urls: [document_url],
+      model: "claude_sonnet_4_6",
       response_json_schema: {
         type: "object",
         properties: {
           document_type: { type: "string" },
+          page_count: { type: "number" },
           extracted_fields: { type: "object" },
           signatures: { type: "object" },
+          missing_initials_pages: { type: "array", items: { type: "number" } },
           blank_fields: { type: "array", items: { type: "string" } },
           issues: { type: "array", items: { type: "object" } },
           missing_companion_docs: { type: "array", items: { type: "string" } },
@@ -269,13 +363,21 @@ Return ONLY valid JSON matching this exact structure:
       }
     });
 
-    const issues = result.issues || [];
+    // Deduplicate issues by message
+    const seenMessages = new Set();
+    const issues = (result.issues || []).filter(i => {
+      const key = `${i.category}:${i.message}:${i.page_number}`;
+      if (seenMessages.has(key)) return false;
+      seenMessages.add(key);
+      return true;
+    });
+
     const blockers = issues.filter(i => i.severity === 'blocker');
     const warnings = issues.filter(i => i.severity === 'warning');
     const infoItems = issues.filter(i => i.severity === 'info');
     const status = blockers.length > 0 ? 'blockers' : warnings.length > 0 ? 'warnings' : 'compliant';
 
-    // Delete existing report for this document if re-scanning
+    // Delete existing report for this document
     if (document_id) {
       const existing = await base44.asServiceRole.entities.ComplianceReport.filter({ document_id });
       for (const r of existing) {
@@ -288,7 +390,8 @@ Return ONLY valid JSON matching this exact structure:
       brokerage_id,
       document_id: document_id || null,
       document_name: file_name || "Document",
-      document_type: result.document_type || "Other",
+      document_type: result.document_type || docType,
+      page_count: result.page_count || pageCount,
       compliance_score: Math.max(10, Math.min(100, result.compliance_score || 100)),
       status,
       blockers,
@@ -297,19 +400,17 @@ Return ONLY valid JSON matching this exact structure:
       all_issues: issues,
       extracted_fields: result.extracted_fields || {},
       signatures: result.signatures || {},
+      missing_initials_pages: result.missing_initials_pages || [],
       blank_fields: result.blank_fields || [],
       missing_docs: result.missing_companion_docs || [],
-      summary: result.summary || ''
+      summary: result.summary || '',
+      has_digital_signature: hasDigitalSig,
+      digital_signature_platform: classifyResult.digital_signature_platform || null,
     });
 
-    // Also persist AI-found issues to ComplianceIssue entity (for cross-transaction tracking)
-    // Clear old ai_scan issues for this document first
+    // Persist AI issues to ComplianceIssue entity
     if (document_id) {
-      const oldAI = await base44.asServiceRole.entities.ComplianceIssue.filter({
-        transaction_id,
-        document_id,
-        source: "ai_scan",
-      });
+      const oldAI = await base44.asServiceRole.entities.ComplianceIssue.filter({ transaction_id, document_id, source: "ai_scan" });
       for (const old of oldAI) {
         await base44.asServiceRole.entities.ComplianceIssue.delete(old.id);
       }
@@ -320,7 +421,8 @@ Return ONLY valid JSON matching this exact structure:
         transaction_id,
         document_id: document_id || null,
         brokerage_id: brokerage_id || null,
-        issue_type: issue.category === "signature" ? "signature"
+        issue_type: issue.category === "missing_signature" ? "signature"
+          : issue.category === "missing_initial" ? "signature"
           : issue.category === "missing_doc" ? "missing_document"
           : issue.category === "financial" ? "financial"
           : issue.category === "deadline" ? "deadline"
@@ -339,8 +441,11 @@ Return ONLY valid JSON matching this exact structure:
       status,
       score: report.compliance_score,
       issues_count: issues.length,
+      blockers_count: blockers.length,
+      missing_initials_pages: result.missing_initials_pages || [],
       deadline_issues_count: deadlineIssues.length,
     });
+
   } catch (error) {
     return Response.json({ error: error.message }, { status: 500 });
   }

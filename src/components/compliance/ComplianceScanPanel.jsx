@@ -8,7 +8,8 @@ import {
   ShieldCheck, ShieldAlert, ShieldX, AlertTriangle,
   Info, Plus, Mail, RefreshCw, Loader2,
   ChevronDown, ChevronUp, FileText, Scan,
-  CheckCircle2, XCircle, MinusCircle, Wand2, ExternalLink
+  CheckCircle2, XCircle, MinusCircle, Wand2, ExternalLink,
+  FileSignature, Hash, BookOpen, Fingerprint
 } from "lucide-react";
 import { format } from "date-fns";
 import EmailGeneratorModal from "./EmailGeneratorModal";
@@ -54,6 +55,16 @@ const SIG_LABELS = {
   seller_agent_signature: "Seller's Agent",
 };
 
+const CATEGORY_ICONS = {
+  missing_signature: <FileSignature className="w-3.5 h-3.5" />,
+  missing_initial: <Hash className="w-3.5 h-3.5" />,
+  missing_field: <BookOpen className="w-3.5 h-3.5" />,
+  blank_field: <BookOpen className="w-3.5 h-3.5" />,
+  signature: <FileSignature className="w-3.5 h-3.5" />,
+  deadline: <AlertTriangle className="w-3.5 h-3.5" />,
+  financial: <Info className="w-3.5 h-3.5" />,
+};
+
 function ScoreRing({ score }) {
   const color = score >= 90 ? "#10b981" : score >= 70 ? "#f59e0b" : "#ef4444";
   const label = score >= 90 ? "Compliant" : score >= 70 ? "Needs Attention" : "At Risk";
@@ -88,13 +99,21 @@ function IssueCard({ issue, onAddTask, transaction }) {
         <div className="flex items-start gap-3 flex-1 min-w-0">
           <Icon className={`w-4 h-4 mt-0.5 flex-shrink-0 ${cfg.iconCls}`} />
           <div className="flex-1 min-w-0">
-            <p className={`text-sm font-medium ${cfg.titleCls}`}>{issue.message}</p>
-            <div className="flex items-center gap-2 mt-1.5 flex-wrap">
-              <Badge className={`text-[11px] capitalize ${cfg.badgeCls}`}>{cfg.label}</Badge>
-              {issue.category && (
-                <Badge variant="outline" className="text-[11px] capitalize border-current opacity-60">{issue.category.replace(/_/g, " ")}</Badge>
-              )}
-            </div>
+          <p className={`text-sm font-medium ${cfg.titleCls}`}>{issue.message}</p>
+          <div className="flex items-center gap-2 mt-1.5 flex-wrap">
+            <Badge className={`text-[11px] capitalize ${cfg.badgeCls}`}>{cfg.label}</Badge>
+            {issue.category && (
+              <Badge variant="outline" className="text-[11px] capitalize border-current opacity-60 flex items-center gap-1">
+                {CATEGORY_ICONS[issue.category]}
+                {issue.category.replace(/_/g, " ")}
+              </Badge>
+            )}
+            {issue.page_number && (
+              <Badge variant="outline" className="text-[11px] border-gray-300 text-gray-500 font-mono">
+                p.{issue.page_number}
+              </Badge>
+            )}
+          </div>
           </div>
         </div>
         <div className="flex gap-1.5 flex-shrink-0 flex-wrap justify-end">
@@ -184,6 +203,7 @@ function ReportCard({ report, onRescan, onAddTask, scanning, transaction, linked
               </div>
               <div className="flex items-center gap-2 mt-0.5 flex-wrap">
                 <Badge variant="outline" className="text-[11px] text-gray-500">{report.document_type || "Unknown"}</Badge>
+                {report.page_count > 0 && <Badge variant="outline" className="text-[11px] text-gray-400">{report.page_count}p</Badge>}
                 {report.status === 'compliant' && <span className="text-xs text-emerald-600 font-medium flex items-center gap-0.5"><ShieldCheck className="w-3 h-3" /> Compliant</span>}
                 {report.status === 'warnings' && <span className="text-xs text-amber-500 font-medium flex items-center gap-0.5"><ShieldAlert className="w-3 h-3" /> {report.warnings?.length} Warning{report.warnings?.length !== 1 ? 's' : ''}</span>}
                 {report.status === 'blockers' && <span className="text-xs text-red-500 font-medium flex items-center gap-0.5"><ShieldX className="w-3 h-3" /> {report.blockers?.length} Blocker{report.blockers?.length !== 1 ? 's' : ''}</span>}
@@ -211,6 +231,14 @@ function ReportCard({ report, onRescan, onAddTask, scanning, transaction, linked
             <p className="text-xs text-gray-500 italic border-l-2 border-gray-200 pl-3">{report.summary}</p>
           )}
 
+          {/* Digital signature detection */}
+          {report.has_digital_signature && (
+            <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-emerald-50 border border-emerald-100 text-xs text-emerald-700">
+              <Fingerprint className="w-3.5 h-3.5 flex-shrink-0" />
+              <span>Digital signatures detected via <span className="font-semibold capitalize">{report.digital_signature_platform || "e-sign platform"}</span></span>
+            </div>
+          )}
+
           {/* Signature Status */}
           {Object.keys(sigs).length > 0 && (
             <div>
@@ -220,9 +248,27 @@ function ReportCard({ report, onRescan, onAddTask, scanning, transaction, linked
                   <div key={key} className="flex items-center gap-2 text-xs text-gray-600">
                     {SIG_ICONS[status] || SIG_ICONS.not_found}
                     <span>{SIG_LABELS[key] || key.replace(/_/g, " ")}</span>
+                    {status === "missing" && (
+                      <span className="text-red-500 font-semibold text-[10px]">MISSING</span>
+                    )}
                   </div>
                 ))}
               </div>
+            </div>
+          )}
+
+          {/* Missing initials pages */}
+          {(report.missing_initials_pages || []).length > 0 && (
+            <div>
+              <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Missing Initials</p>
+              <div className="flex flex-wrap gap-1.5">
+                {report.missing_initials_pages.map(pg => (
+                  <span key={pg} className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-red-50 border border-red-200 text-xs text-red-700 font-mono">
+                    <Hash className="w-3 h-3" /> Page {pg}
+                  </span>
+                ))}
+              </div>
+              <p className="text-[11px] text-gray-400 mt-1">Buyer & Seller initials required on these pages</p>
             </div>
           )}
 
