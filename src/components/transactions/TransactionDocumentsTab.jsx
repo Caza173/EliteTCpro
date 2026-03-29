@@ -74,7 +74,7 @@ export default function TransactionDocumentsTab({ transaction, currentUser }) {
 
   const { data: documents = [], isLoading } = useQuery({
     queryKey: ["tx-documents", transaction.id],
-    queryFn: () => base44.entities.Document.filter({ transaction_id: transaction.id }, "-created_date"),
+    queryFn: () => base44.entities.Document.filter({ transaction_id: transaction.id, is_deleted: { $ne: true } }, "-created_date"),
     enabled: !!transaction.id,
   });
 
@@ -147,7 +147,7 @@ export default function TransactionDocumentsTab({ transaction, currentUser }) {
 
   const uploadFile = async (file) => {
     // Prevent duplicate uploads by filename
-    const isDuplicate = documents.some(d => d.file_name === file.name && d.transaction_id === transaction.id);
+    const isDuplicate = documents.some(d => d.file_name === file.name && d.transaction_id === transaction.id && !d.is_deleted);
     if (isDuplicate) {
       alert(`"${file.name}" already exists. Delete the existing file first or rename yours.`);
       return;

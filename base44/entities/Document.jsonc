@@ -1,0 +1,84 @@
+{
+  "name": "Document",
+  "type": "object",
+  "properties": {
+    "brokerage_id": {
+      "type": "string"
+    },
+    "transaction_id": {
+      "type": "string"
+    },
+    "doc_type": {
+      "type": "string",
+      "enum": [
+        "purchase_and_sale",
+        "listing_agreement",
+        "addendum",
+        "buyer_agency_agreement",
+        "disclosure",
+        "inspection",
+        "appraisal",
+        "title",
+        "closing",
+        "other"
+      ],
+      "default": "other"
+    },
+    "file_url": {
+      "type": "string"
+    },
+    "file_name": {
+      "type": "string"
+    },
+    "uploaded_by": {
+      "type": "string"
+    },
+    "uploaded_by_role": {
+      "type": "string"
+    },
+    "notes": {
+      "type": "string"
+    },
+    "checklist_item_id": {
+      "type": "string",
+      "description": "Linked checklist item ID if auto-matched"
+    },
+    "is_deleted": {
+      "type": "boolean",
+      "default": false,
+      "description": "Soft delete flag \u2014 document is hidden and should not be recreated"
+    }
+  },
+  "required": [
+    "transaction_id",
+    "file_url"
+  ],
+  "rls": {
+    "update": {
+      "data.brokerage_id": "{{user.data.brokerage_id}}",
+      "user_condition": {
+        "role": {
+          "$in": [
+            "admin",
+            "owner",
+            "tc_lead",
+            "tc"
+          ]
+        }
+      }
+    },
+    "delete": {
+      "data.brokerage_id": "{{user.data.brokerage_id}}",
+      "user_condition": {
+        "role": {
+          "$in": [
+            "admin",
+            "owner",
+            "tc_lead",
+            "tc"
+          ]
+        }
+      }
+    }
+  }
+}
