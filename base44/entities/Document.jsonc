@@ -66,19 +66,6 @@
           ]
         }
       }
-    },
-    "delete": {
-      "data.brokerage_id": "{{user.data.brokerage_id}}",
-      "user_condition": {
-        "role": {
-          "$in": [
-            "admin",
-            "owner",
-            "tc_lead",
-            "tc"
-          ]
-        }
-      }
     }
   }
 }

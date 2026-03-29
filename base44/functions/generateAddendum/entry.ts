@@ -68,7 +68,8 @@ Deno.serve(async (req) => {
       ? new Date(transaction.contract_date).toLocaleDateString('en-US', { month: '2-digit', day: '2-digit', year: 'numeric' })
       : new Date().toLocaleDateString('en-US', { month: '2-digit', day: '2-digit', year: 'numeric' });
 
-    const fileName = `Addendum - ${address.replace(/[^a-zA-Z0-9 ]/g, '').trim()}.pdf`;
+    const ts = new Date().toISOString().slice(0, 16).replace('T', ' ').replace(':', '-');
+    const fileName = `Addendum - ${address.replace(/[^a-zA-Z0-9 ]/g, '').trim()} (${ts}).pdf`;
     let pdfBytes;
 
     // ── PATH A: Template PDF uploaded ───────────────────────────────────────
@@ -223,14 +224,6 @@ Deno.serve(async (req) => {
     // Upload — must be a File object (named Blob) for multipart upload
     const blob = new File([pdfBytes], fileName, { type: 'application/pdf' });
     const { file_url } = await base44.asServiceRole.integrations.Core.UploadFile({ file: blob });
-
-    // Deduplicate: delete any existing doc with the same file_name + transaction_id before saving
-    try {
-      const existing = await base44.asServiceRole.entities.Document.filter({ transaction_id, file_name: fileName });
-      for (const ex of existing) {
-        try { await base44.asServiceRole.entities.Document.delete(ex.id); } catch (_) {}
-      }
-    } catch (_) {}
 
     // Save to Documents
     const doc_record = await base44.asServiceRole.entities.Document.create({
