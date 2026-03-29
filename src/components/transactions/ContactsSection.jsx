@@ -1,6 +1,7 @@
 import React from "react";
 import ContactCard from "./ContactCard";
 import { hasFullAccess } from "../auth/useCurrentUser";
+import { base44 } from "@/api/base44Client";
 
 const GRID = {
   display: "grid",
@@ -33,7 +34,11 @@ export default function ContactsSection({ transaction, onUpdate, currentUser }) 
   const hasAttorney  = tx.attorney_name || tx.attorney_email || tx.attorney_phone;
   const hasAppraiser = tx.appraiser_name || tx.appraiser_email || tx.appraiser_phone;
 
-  const save = (data) => onUpdate && onUpdate(data);
+  // Direct entity save to avoid RLS/backend-function timing issues
+  const save = async (data) => {
+    if (onUpdate) onUpdate(data);
+    await base44.entities.Transaction.update(tx.id, data);
+  };
 
   return (
     <div className="space-y-4">
