@@ -24,6 +24,7 @@ import DeadlineCalendarView from "../components/dashboard/DeadlineCalendarView";
 import GlobalAIAssistant from "../components/ai/GlobalAIAssistant";
 import TasksDueToday from "../components/dashboard/TasksDueToday";
 import FinanceDashboardMetrics from "../components/finance/FinanceDashboardMetrics";
+import NotesTab from "../components/dashboard/NotesTab";
 
 const STATUS_STYLES = {
   active:    { bg: "bg-emerald-50", text: "text-emerald-700", dot: "bg-emerald-500" },
@@ -224,6 +225,8 @@ export default function Dashboard() {
           { id: "transactions", label: "Transactions" },
           { id: "tasks", label: "Tasks" },
           { id: "deadlines", label: "Deadlines" },
+          { id: "documents", label: "Documents" },
+          { id: "notes", label: "Notes" },
           { id: "alerts", label: "Alerts" },
           ...((currentUser?.role === "owner" || currentUser?.role === "admin") ? [{ id: "analytics", label: "Analytics" }] : []),
           { id: "finance", label: "Finance" },
@@ -368,6 +371,18 @@ export default function Dashboard() {
         <div className="theme-card p-12 text-center">
           <p className="text-sm" style={{ color: "var(--text-muted)" }}>No transaction data available yet.</p>
         </div>
+      )}
+
+      {/* Tab: Documents */}
+      {activeTab === "documents" && (
+        <div className="theme-card p-4 text-center">
+          <p className="text-sm" style={{ color: "var(--text-muted)" }}>Documents view coming soon.</p>
+        </div>
+      )}
+
+      {/* Tab: Notes */}
+      {activeTab === "notes" && (
+        <NotesTab transactionId={null} brokerageId={currentUser?.brokerage_id} currentUser={currentUser} />
       )}
 
       {/* Tab: AI Activity */}

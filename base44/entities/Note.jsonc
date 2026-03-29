@@ -1,0 +1,46 @@
+{
+  "name": "Note",
+  "type": "object",
+  "properties": {
+    "transaction_id": {
+      "type": "string",
+      "description": "Reference to Transaction"
+    },
+    "brokerage_id": {
+      "type": "string"
+    },
+    "title": {
+      "type": "string"
+    },
+    "message": {
+      "type": "string",
+      "description": "Full note content"
+    },
+    "assigned_to": {
+      "type": "string",
+      "description": "Email of assigned user"
+    },
+    "due_date": {
+      "type": "string",
+      "format": "date"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "open",
+        "in_progress",
+        "completed"
+      ],
+      "default": "open"
+    },
+    "created_by": {
+      "type": "string",
+      "description": "Email of creator"
+    }
+  },
+  "required": [
+    "transaction_id",
+    "title",
+    "message"
+  ]
+}
