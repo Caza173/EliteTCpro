@@ -378,6 +378,16 @@ export default function ComplianceScanPanel({ transaction, currentUser }) {
           address: transaction.address,
           transaction_type: transaction.transaction_type,
           is_cash_transaction: transaction.is_cash_transaction,
+          sale_price: transaction.sale_price,
+          agent_email: transaction.agent_email,
+          phase: transaction.phase,
+          inspection_deadline: transaction.inspection_deadline,
+          appraisal_deadline: transaction.appraisal_deadline,
+          financing_deadline: transaction.financing_deadline,
+          earnest_money_deadline: transaction.earnest_money_deadline,
+          due_diligence_deadline: transaction.due_diligence_deadline,
+          closing_date: transaction.closing_date,
+          ctc_target: transaction.ctc_target,
         }
       });
       queryClient.invalidateQueries({ queryKey: ["compliance-reports", transaction.id] });

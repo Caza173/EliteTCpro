@@ -6,7 +6,8 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Upload, FileText, Trash2, Download, Loader2, FolderOpen, ClipboardCheck, Eye, Mail, Filter, FilePlus, Layers, AlertCircle, CheckSquare, Square } from "lucide-react";
+import { Upload, FileText, Trash2, Download, Loader2, FolderOpen, ClipboardCheck, Eye, Mail, Filter, FilePlus, Layers, AlertCircle, CheckSquare, Square, ShieldCheck } from "lucide-react";
+import { toast } from "sonner";
 import DocumentViewerModal from "./DocumentViewerModal";
 import { format } from "date-fns";
 import { writeAuditLog } from "../utils/tenantUtils";
@@ -189,6 +190,7 @@ export default function TransactionDocumentsTab({ transaction, currentUser }) {
     });
 
     // Auto-trigger compliance scan in the background
+    toast.info("Compliance scan started in background…", { icon: "🔍", duration: 3000 });
     base44.functions.invoke('complianceEngine', {
       document_url: file_url,
       file_name: file.name,
@@ -199,9 +201,25 @@ export default function TransactionDocumentsTab({ transaction, currentUser }) {
         address: transaction.address,
         transaction_type: transaction.transaction_type,
         is_cash_transaction: transaction.is_cash_transaction,
+        sale_price: transaction.sale_price,
+        agent_email: transaction.agent_email,
+        phase: transaction.phase,
+        inspection_deadline: transaction.inspection_deadline,
+        appraisal_deadline: transaction.appraisal_deadline,
+        financing_deadline: transaction.financing_deadline,
+        earnest_money_deadline: transaction.earnest_money_deadline,
+        due_diligence_deadline: transaction.due_diligence_deadline,
+        closing_date: transaction.closing_date,
+        ctc_target: transaction.ctc_target,
       }
-    }).then(() => {
+    }).then((res) => {
       queryClient.invalidateQueries({ queryKey: ["compliance-reports", transaction.id] });
+      queryClient.invalidateQueries({ queryKey: ["transactions"] });
+      if (res?.data?.blockers_count > 0) {
+        toast.error(`Compliance scan found ${res.data.blockers_count} blocker(s) — check Compliance tab`, { duration: 6000 });
+      } else if (res?.data?.status === "compliant") {
+        toast.success("Document passed compliance check", { icon: "✅", duration: 4000 });
+      }
     }).catch(() => {});
   };
 

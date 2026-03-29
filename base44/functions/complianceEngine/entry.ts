@@ -435,6 +435,51 @@ Return ONLY valid JSON:
       });
     }
 
+    // ─── 3. AUTO-MARK TRANSACTION NON-COMPLIANT IF BLOCKERS EXIST ────────────
+    if (blockers.length > 0) {
+      await base44.asServiceRole.entities.Transaction.update(transaction_id, {
+        risk_level: "at_risk",
+        last_activity_at: new Date().toISOString(),
+      });
+    }
+
+    // ─── 4. AUTO-SEND COMPLIANCE EMAIL WITH PAGE-LEVEL ISSUE DETAILS ─────────
+    if (blockers.length > 0 && transaction_data?.agent_email) {
+      const issueLines = blockers.map((b, i) => {
+        const pageRef = b.page_number ? ` (Page ${b.page_number})` : "";
+        const category = b.category ? ` [${b.category.replace(/_/g, " ")}]` : "";
+        return `${i + 1}. ${b.message}${pageRef}${category}`;
+      }).join("\n");
+
+      const missingInitialsSection = (result.missing_initials_pages || []).length > 0
+        ? `\n\nMissing Initials on Pages: ${result.missing_initials_pages.join(", ")}\n(Buyer & Seller initials required in the footer of each interior page)`
+        : "";
+
+      const digitalSigNote = hasDigitalSig
+        ? `\n\nNote: Digital signatures were detected via ${classifyResult.digital_signature_platform || "e-sign platform"}.`
+        : "";
+
+      const emailBody = `Hello,
+
+A compliance scan has been completed for the document "${file_name || "Document"}" on the transaction at ${transaction_data?.address || "[Property Address]"}.
+
+COMPLIANCE RESULT: ${status.toUpperCase()} (Score: ${report.compliance_score}/100)
+Document Type: ${docType} · Pages: ${pageCount}${digitalSigNote}
+
+BLOCKERS REQUIRING IMMEDIATE ATTENTION:
+${issueLines}${missingInitialsSection}
+
+Please review and correct these issues as soon as possible to avoid delays in closing.
+
+This is an automated compliance alert from EliteTC.`;
+
+      await base44.asServiceRole.integrations.Core.SendEmail({
+        to: transaction_data.agent_email,
+        subject: `⚠ Compliance Blocker Detected — ${file_name || "Document"} · ${transaction_data?.address || "Transaction"}`,
+        body: emailBody,
+      });
+    }
+
     return Response.json({
       success: true,
       report_id: report.id,
