@@ -57,6 +57,7 @@ import ClientPortal from './pages/ClientPortal';
 import Dashboard from './pages/Dashboard';
 import Deadlines from './pages/Deadlines';
 import Documents from './pages/Documents';
+import Landing from './pages/Landing';
 import PortalSelect from './pages/PortalSelect';
 import Settings from './pages/Settings';
 import Tasks from './pages/Tasks';
@@ -77,6 +78,7 @@ export const PAGES = {
     "Dashboard": Dashboard,
     "Deadlines": Deadlines,
     "Documents": Documents,
+    "Landing": Landing,
     "PortalSelect": PortalSelect,
     "Settings": Settings,
     "Tasks": Tasks,
@@ -86,7 +88,7 @@ export const PAGES = {
 }
 
 export const pagesConfig = {
-    mainPage: "Dashboard",
+    mainPage: "Landing",
     Pages: PAGES,
     Layout: __Layout,
 };
