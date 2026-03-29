@@ -250,7 +250,7 @@ export default function Dashboard() {
             {!isLoading && (
               <div className="theme-card overflow-hidden">
                 <div className="px-4 py-3 border-b" style={{ borderColor: "var(--border)" }}>
-                  <h3 className="text-sm font-semibold" style={{ color: "var(--text-primary)" }}>Tasks Due Today</h3>
+                  <h3 className="text-sm font-semibold" style={{ color: "var(--text-primary)" }}>Upcoming Tasks & Deadlines</h3>
                 </div>
                 <div className="p-4">
                   <TasksDueToday transactions={transactions} notifications={notifications} />
@@ -307,7 +307,7 @@ export default function Dashboard() {
       {activeTab === "tasks" && !isLoading && (
         <div className="theme-card overflow-hidden">
           <div className="px-4 py-3 border-b" style={{ borderColor: "var(--border)" }}>
-            <h3 className="text-sm font-semibold" style={{ color: "var(--text-primary)" }}>Tasks Due Today</h3>
+            <h3 className="text-sm font-semibold" style={{ color: "var(--text-primary)" }}>Upcoming Tasks & Deadlines</h3>
           </div>
           <div className="p-4">
             <TasksDueToday transactions={transactions} notifications={notifications} />

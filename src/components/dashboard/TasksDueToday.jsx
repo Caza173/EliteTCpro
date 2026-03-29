@@ -18,21 +18,24 @@ export default function TasksDueToday({ transactions = [], notifications = [] })
   const now = new Date();
   const items = [];
 
-  // 1 — Tasks due today (existing behavior)
+  // 1 — Tasks due within 24 hours
   transactions.forEach((tx) => {
     if (tx.status === "closed" || tx.status === "cancelled") return;
     (tx.tasks || []).forEach((task) => {
       if (!task.completed && task.due_date) {
         try {
-          if (isToday(parseISO(task.due_date))) {
+          const deadline = parseISO(task.due_date);
+          const hoursUntil = differenceInHours(deadline, now);
+          const dueToday = isToday(deadline);
+          if (dueToday || (hoursUntil >= 0 && hoursUntil <= 24)) {
             items.push({
               key: `task-${task.id}`,
               type: "task",
               label: task.name,
               sub: tx.address,
               txId: tx.id,
-              badge: "Due Today",
-              badgeColor: "bg-amber-100 text-amber-700",
+              badge: dueToday ? "Due Today" : `< ${hoursUntil}h`,
+              badgeColor: dueToday ? "bg-red-100 text-red-700" : "bg-amber-100 text-amber-700",
             });
           }
         } catch {}
@@ -117,7 +120,7 @@ export default function TasksDueToday({ transactions = [], notifications = [] })
     return (
       <div className="text-center py-8">
         <CheckCircle2 className="w-9 h-9 mx-auto mb-2 text-emerald-300" />
-        <p className="text-sm text-gray-400">No tasks due today</p>
+        <p className="text-sm text-gray-400">No upcoming tasks or deadlines</p>
       </div>
     );
   }
