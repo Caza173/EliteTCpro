@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Upload, FileText, Trash2, Download, Loader2, FolderOpen, ClipboardCheck, Eye, Mail, Filter, FilePlus, Layers, AlertCircle } from "lucide-react";
+import { Upload, FileText, Trash2, Download, Loader2, FolderOpen, ClipboardCheck, Eye, Mail, Filter, FilePlus, Layers, AlertCircle, CheckSquare, Square } from "lucide-react";
 import DocumentViewerModal from "./DocumentViewerModal";
 import { format } from "date-fns";
 import { writeAuditLog } from "../utils/tenantUtils";
@@ -67,6 +67,9 @@ export default function TransactionDocumentsTab({ transaction, currentUser }) {
   const [emailModal, setEmailModal] = useState({ open: false, preselectedDoc: null });
   const [typeFilter, setTypeFilter] = useState("all");
   const [generateModalOpen, setGenerateModalOpen] = useState(false);
+  const [selectedIds, setSelectedIds] = useState(new Set());
+  const [bulkDeleting, setBulkDeleting] = useState(false);
+  const [confirmBulkDelete, setConfirmBulkDelete] = useState(false);
   const fileInputRef = useRef(null);
 
   const { data: documents = [], isLoading } = useQuery({
@@ -222,6 +225,39 @@ export default function TransactionDocumentsTab({ transaction, currentUser }) {
 
   const canDelete = currentUser?.email === "nhcazateam@gmail.com" || ["tc", "tc_lead", "admin", "owner"].includes(currentUser?.role);
 
+  const toggleSelect = (id) => {
+    setSelectedIds(prev => {
+      const next = new Set(prev);
+      next.has(id) ? next.delete(id) : next.add(id);
+      return next;
+    });
+  };
+
+  const toggleSelectAll = (filteredDocs) => {
+    if (selectedIds.size === filteredDocs.length && filteredDocs.every(d => selectedIds.has(d.id))) {
+      setSelectedIds(new Set());
+    } else {
+      setSelectedIds(new Set(filteredDocs.map(d => d.id)));
+    }
+  };
+
+  const handleBulkDelete = async () => {
+    setBulkDeleting(true);
+    const ids = [...selectedIds];
+    for (const id of ids) {
+      try {
+        await base44.functions.invoke("deleteDocument", { document_id: id, transaction_id: transaction.id });
+      } catch (_) {}
+    }
+    const deleteSet = new Set(ids);
+    queryClient.setQueryData(["tx-documents", transaction.id], (old) =>
+      Array.isArray(old) ? old.filter(d => !deleteSet.has(d.id)) : old
+    );
+    setSelectedIds(new Set());
+    setBulkDeleting(false);
+    setConfirmBulkDelete(false);
+  };
+
   const getFileIcon = (fileName) => {
     const ext = (fileName || "").split(".").pop().toLowerCase();
     const colors = { pdf: "text-red-500", docx: "text-blue-600", doc: "text-blue-600", xlsx: "text-green-600", xls: "text-green-600", png: "text-purple-500", jpg: "text-purple-500", jpeg: "text-purple-500" };
@@ -260,6 +296,15 @@ export default function TransactionDocumentsTab({ transaction, currentUser }) {
         cancelText="Cancel"
         onConfirm={() => { const id = confirmDeleteDoc; setConfirmDeleteDoc(null); handleDeleteDocument(id); }}
         onCancel={() => setConfirmDeleteDoc(null)}
+      />
+      <ConfirmDialog
+        open={confirmBulkDelete}
+        title={`Delete ${selectedIds.size} Document${selectedIds.size !== 1 ? "s" : ""}`}
+        message={`Are you sure you want to delete ${selectedIds.size} selected document${selectedIds.size !== 1 ? "s" : ""}? This cannot be undone.`}
+        confirmText={bulkDeleting ? "Deleting..." : "Delete All"}
+        cancelText="Cancel"
+        onConfirm={handleBulkDelete}
+        onCancel={() => setConfirmBulkDelete(false)}
       />
       {deleteError && (
         <div className="flex items-center gap-2 p-3 bg-red-50 border border-red-200 rounded-lg text-sm text-red-700">
@@ -410,60 +455,94 @@ export default function TransactionDocumentsTab({ transaction, currentUser }) {
               <FolderOpen className="w-9 h-9 text-gray-300 mx-auto mb-2" />
               <p className="text-sm text-gray-400">No documents uploaded yet.</p>
             </div>
-          ) : (
-            <div className="space-y-2">
-              {documents
-                .filter(d => typeFilter === "all" || d.doc_type === typeFilter)
-                .map((doc) => (
-                <div key={doc.id} className="flex items-center gap-3 p-3 rounded-lg border border-gray-100 hover:border-gray-200 bg-white transition-colors">
-                  <div className="w-9 h-9 rounded-lg bg-gray-50 flex items-center justify-center flex-shrink-0">
-                    <FileText className={`w-4 h-4 ${getFileIcon(doc.file_name)}`} />
-                  </div>
-                  <div className="flex-1 min-w-0 cursor-pointer" onClick={() => setViewingDoc(doc)}>
-                    <p className="text-sm font-medium text-gray-900 truncate hover:text-blue-600 transition-colors">{doc.file_name || "Document"}</p>
-                    <p className="text-xs text-gray-400">
-                      {doc.uploaded_by || "unknown"}
-                      {doc.created_date ? ` · ${format(new Date(doc.created_date), "MMM d, yyyy")}` : ""}
-                      {" · "}<span className="font-mono text-[10px] opacity-50">{doc.id?.slice(-6)}</span>
-                    </p>
-                  </div>
-                  <Badge className={`text-xs hidden sm:inline-flex ${TYPE_COLORS[doc.doc_type] || TYPE_COLORS.other}`}>
-                    {DOC_LABELS[doc.doc_type] || doc.doc_type}
-                  </Badge>
-                  <div className="flex items-center gap-1">
-                    <Button variant="ghost" size="icon" className="h-8 w-8 text-blue-500 hover:text-blue-700" title="Preview"
-                      onClick={() => setViewingDoc(doc)}>
-                      <Eye className="w-4 h-4" />
-                    </Button>
-                    <a href={doc.file_url} download={doc.file_name} target="_blank" rel="noopener noreferrer">
-                      <Button variant="ghost" size="icon" className="h-8 w-8 text-gray-500 hover:text-gray-700" title="Download">
-                        <Download className="w-4 h-4" />
-                      </Button>
-                    </a>
-                    <Button variant="ghost" size="icon" className="h-8 w-8 text-indigo-500 hover:text-indigo-700" title="Attach to Email"
-                      onClick={() => setEmailModal({ open: true, preselectedDoc: doc })}>
-                      <Mail className="w-4 h-4" />
-                    </Button>
-                    {canDelete && (
+          ) : (() => {
+            const filteredDocs = documents.filter(d => typeFilter === "all" || d.doc_type === typeFilter);
+            const allSelected = filteredDocs.length > 0 && filteredDocs.every(d => selectedIds.has(d.id));
+            return (
+              <div className="space-y-2">
+                {canDelete && filteredDocs.length > 0 && (
+                  <div className="flex items-center justify-between pb-1 border-b border-gray-100">
+                    <button
+                      className="flex items-center gap-1.5 text-xs text-gray-500 hover:text-gray-700"
+                      onClick={() => toggleSelectAll(filteredDocs)}
+                    >
+                      {allSelected
+                        ? <CheckSquare className="w-4 h-4 text-blue-500" />
+                        : <Square className="w-4 h-4" />}
+                      {allSelected ? "Deselect all" : "Select all"}
+                    </button>
+                    {selectedIds.size > 0 && (
                       <Button
-                        variant="ghost" size="icon"
-                        className="h-8 w-8 text-red-400 hover:text-red-600"
-                        disabled={deletingId === doc.id}
-                        onClick={() => setConfirmDeleteDoc(doc.id)}
+                        size="sm"
+                        variant="destructive"
+                        className="h-7 gap-1.5 text-xs"
+                        disabled={bulkDeleting}
+                        onClick={() => setConfirmBulkDelete(true)}
                       >
-                        {deletingId === doc.id
-                          ? <Loader2 className="w-4 h-4 animate-spin" />
-                          : <Trash2 className="w-4 h-4" />}
+                        {bulkDeleting ? <Loader2 className="w-3 h-3 animate-spin" /> : <Trash2 className="w-3 h-3" />}
+                        Delete {selectedIds.size} selected
                       </Button>
                     )}
                   </div>
-                </div>
-              ))}
-              {documents.filter(d => typeFilter !== "all" && d.doc_type === typeFilter).length === 0 && typeFilter !== "all" && (
-                <p className="text-sm text-center text-gray-400 py-4">No documents of this type.</p>
-              )}
-            </div>
-          )}
+                )}
+                {filteredDocs.map((doc) => (
+                  <div key={doc.id} className={`flex items-center gap-3 p-3 rounded-lg border transition-colors bg-white ${selectedIds.has(doc.id) ? "border-red-200 bg-red-50/30" : "border-gray-100 hover:border-gray-200"}`}>
+                    {canDelete && (
+                      <button onClick={() => toggleSelect(doc.id)} className="flex-shrink-0">
+                        {selectedIds.has(doc.id)
+                          ? <CheckSquare className="w-4 h-4 text-blue-500" />
+                          : <Square className="w-4 h-4 text-gray-300 hover:text-gray-500" />}
+                      </button>
+                    )}
+                    <div className="w-9 h-9 rounded-lg bg-gray-50 flex items-center justify-center flex-shrink-0">
+                      <FileText className={`w-4 h-4 ${getFileIcon(doc.file_name)}`} />
+                    </div>
+                    <div className="flex-1 min-w-0 cursor-pointer" onClick={() => setViewingDoc(doc)}>
+                      <p className="text-sm font-medium text-gray-900 truncate hover:text-blue-600 transition-colors">{doc.file_name || "Document"}</p>
+                      <p className="text-xs text-gray-400">
+                        {doc.uploaded_by || "unknown"}
+                        {doc.created_date ? ` · ${format(new Date(doc.created_date), "MMM d, yyyy")}` : ""}
+                        {" · "}<span className="font-mono text-[10px] opacity-50">{doc.id?.slice(-6)}</span>
+                      </p>
+                    </div>
+                    <Badge className={`text-xs hidden sm:inline-flex ${TYPE_COLORS[doc.doc_type] || TYPE_COLORS.other}`}>
+                      {DOC_LABELS[doc.doc_type] || doc.doc_type}
+                    </Badge>
+                    <div className="flex items-center gap-1">
+                      <Button variant="ghost" size="icon" className="h-8 w-8 text-blue-500 hover:text-blue-700" title="Preview"
+                        onClick={() => setViewingDoc(doc)}>
+                        <Eye className="w-4 h-4" />
+                      </Button>
+                      <a href={doc.file_url} download={doc.file_name} target="_blank" rel="noopener noreferrer">
+                        <Button variant="ghost" size="icon" className="h-8 w-8 text-gray-500 hover:text-gray-700" title="Download">
+                          <Download className="w-4 h-4" />
+                        </Button>
+                      </a>
+                      <Button variant="ghost" size="icon" className="h-8 w-8 text-indigo-500 hover:text-indigo-700" title="Attach to Email"
+                        onClick={() => setEmailModal({ open: true, preselectedDoc: doc })}>
+                        <Mail className="w-4 h-4" />
+                      </Button>
+                      {canDelete && (
+                        <Button
+                          variant="ghost" size="icon"
+                          className="h-8 w-8 text-red-400 hover:text-red-600"
+                          disabled={deletingId === doc.id}
+                          onClick={() => setConfirmDeleteDoc(doc.id)}
+                        >
+                          {deletingId === doc.id
+                            ? <Loader2 className="w-4 h-4 animate-spin" />
+                            : <Trash2 className="w-4 h-4" />}
+                        </Button>
+                      )}
+                    </div>
+                  </div>
+                ))}
+                {filteredDocs.length === 0 && typeFilter !== "all" && (
+                  <p className="text-sm text-center text-gray-400 py-4">No documents of this type.</p>
+                )}
+              </div>
+            );
+          })()}
         </CardContent>
       </Card>
     </div>
