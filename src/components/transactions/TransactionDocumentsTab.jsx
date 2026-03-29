@@ -85,20 +85,9 @@ export default function TransactionDocumentsTab({ transaction, currentUser }) {
     setDeleteError(null);
     setDeletingId(id);
     try {
-      console.log(`[UI] Deleting document id=${id}`);
-      const res = await base44.functions.invoke('deleteDocument', { document_id: id });
-      console.log(`[UI] Delete result:`, res.data);
-
-      if (res.data?.error) {
-        throw new Error(res.data.error);
-      }
-
-      // Only update UI after confirmed server-side deletion — refetch from DB
-      console.log(`[UI] Confirmed deleted. Refetching documents...`);
+      await base44.entities.Document.delete(id);
       await queryClient.refetchQueries({ queryKey: ["tx-documents", transaction.id] });
-      console.log(`[UI] Refetch complete`);
     } catch (err) {
-      console.log(`[UI] Delete failed: ${err.message}`);
       setDeleteError(err.message || 'Failed to delete document. Please try again.');
     } finally {
       setDeletingId(null);
@@ -116,12 +105,7 @@ export default function TransactionDocumentsTab({ transaction, currentUser }) {
       }
     }
     if (toDelete.length === 0) return;
-    console.log(`[UI] Dedupe cleanup: deleting ${toDelete.length} duplicates`);
-    for (const id of toDelete) {
-      const res = await base44.functions.invoke('deleteDocument', { document_id: id });
-      console.log(`[UI] Dedupe delete ${id}:`, res.data);
-    }
-    // Refetch from server only after all deletes confirmed
+    await Promise.all(toDelete.map(id => base44.entities.Document.delete(id)));
     await queryClient.refetchQueries({ queryKey: ["tx-documents", transaction.id] });
   };
 
