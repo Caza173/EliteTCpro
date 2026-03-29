@@ -224,6 +224,14 @@ Deno.serve(async (req) => {
     const blob = new File([pdfBytes], fileName, { type: 'application/pdf' });
     const { file_url } = await base44.asServiceRole.integrations.Core.UploadFile({ file: blob });
 
+    // Deduplicate: delete any existing doc with the same file_name + transaction_id before saving
+    try {
+      const existing = await base44.asServiceRole.entities.Document.filter({ transaction_id, file_name: fileName });
+      for (const ex of existing) {
+        try { await base44.asServiceRole.entities.Document.delete(ex.id); } catch (_) {}
+      }
+    } catch (_) {}
+
     // Save to Documents
     const doc_record = await base44.asServiceRole.entities.Document.create({
       transaction_id,
