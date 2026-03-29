@@ -14,8 +14,8 @@ const inputCls = "w-full text-xs border border-gray-200 rounded-md px-2 py-1 foc
 export default function ContactCard({
   name, role, email, phone, company, accent = "#2563EB",
   canEdit = false,
-  onSave, // ({ name, email, phone, company }) => void
-  fields = {}, // which fields are editable: { name, email, phone, company }
+  onSave,
+  fields = {},
 }) {
   const showName    = fields.name    !== false;
   const showEmail   = fields.email   !== false;
@@ -25,7 +25,6 @@ export default function ContactCard({
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState({ name, email, phone, company });
 
-  // Sync draft when props change (after a save updates the parent)
   useEffect(() => {
     if (!editing) setDraft({ name, email, phone, company });
   }, [name, email, phone, company, editing]);
@@ -36,25 +35,14 @@ export default function ContactCard({
     ? (editing ? draft.name : name).split(" ").map(w => w[0]).slice(0, 2).join("").toUpperCase()
     : role?.[0]?.toUpperCase() || "?";
 
-  const handleEdit = () => {
-    setDraft({ name, email, phone, company });
-    setEditing(true);
-  };
-
-  const handleCancel = () => {
-    setDraft({ name, email, phone, company });
-    setEditing(false);
-  };
-
-  const handleSave = () => {
-    if (onSave) onSave(draft);
-    setEditing(false);
-  };
+  const handleEdit = () => { setDraft({ name, email, phone, company }); setEditing(true); };
+  const handleCancel = () => { setDraft({ name, email, phone, company }); setEditing(false); };
+  const handleSave = () => { if (onSave) onSave(draft); setEditing(false); };
 
   return (
     <div
-      className="rounded-xl border bg-white flex flex-col shadow-sm hover:shadow-md transition-shadow relative"
-      style={{ borderColor: "var(--card-border)", minHeight: "130px", padding: "12px 14px" }}
+      className="rounded-xl border bg-white shadow-sm hover:shadow-md transition-shadow relative"
+      style={{ borderColor: "var(--card-border)", padding: "10px 12px" }}
     >
       {/* Edit toggle */}
       {canEdit && !editing && (
@@ -68,9 +56,9 @@ export default function ContactCard({
       )}
 
       {/* Header */}
-      <div className="flex items-center gap-2.5 mb-2">
+      <div className="flex items-center gap-2 mb-1.5">
         <div
-          className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0 text-white"
+          className="w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0 text-white"
           style={{ backgroundColor: accent }}
         >
           {initials}
@@ -85,75 +73,75 @@ export default function ContactCard({
               autoFocus
             />
           ) : (
-            <p className="text-sm font-semibold text-gray-900 truncate">{name || "—"}</p>
+            <p className="text-sm font-semibold text-gray-900 truncate leading-tight">{name || "—"}</p>
           )}
-          <p className="text-xs font-medium mt-0.5" style={{ color: accent }}>{role}</p>
+          <p className="text-xs font-medium leading-tight" style={{ color: accent }}>{role}</p>
         </div>
       </div>
 
-      {/* Company */}
-      {(editing ? showCompany : (company || showCompany)) && (
-        <div className="flex items-center gap-2 mb-1.5">
-          <Building2 className="w-3.5 h-3.5 flex-shrink-0 text-gray-300" />
-          {editing && showCompany ? (
-            <input
-              className={inputCls}
-              placeholder="Company"
-              value={draft.company || ""}
-              onChange={e => setDraft(d => ({ ...d, company: e.target.value }))}
-            />
-          ) : (
-            company ? <span className="text-xs text-gray-500 truncate">{company}</span> : null
-          )}
+      {/* Company — view: only render if has value; edit: always show if field enabled */}
+      {editing && showCompany ? (
+        <div className="flex items-center gap-2 mb-1">
+          <Building2 className="w-3 h-3 flex-shrink-0 text-gray-300" />
+          <input
+            className={inputCls}
+            placeholder="Company"
+            value={draft.company || ""}
+            onChange={e => setDraft(d => ({ ...d, company: e.target.value }))}
+          />
         </div>
-      )}
+      ) : company ? (
+        <div className="flex items-center gap-2 mb-1">
+          <Building2 className="w-3 h-3 flex-shrink-0 text-gray-300" />
+          <span className="text-xs text-gray-500 truncate">{company}</span>
+        </div>
+      ) : null}
 
-      {/* Contact rows */}
-      <div className="flex flex-col gap-1.5 mt-auto">
-        {/* Phone */}
-        {(editing ? showPhone : (phone || showPhone)) && (
-          <div className="flex items-center gap-2">
-            <Phone className="w-3.5 h-3.5 flex-shrink-0 text-gray-300" />
-            {editing && showPhone ? (
-              <input
-                type="tel"
-                className={inputCls}
-                placeholder="Add phone"
-                value={draft.phone || ""}
-                onChange={e => setDraft(d => ({ ...d, phone: e.target.value }))}
-              />
-            ) : phone ? (
-              <a href={`tel:${phone}`} className="text-xs text-gray-600 hover:text-blue-600 transition-colors truncate">
-                {formatPhone(phone)}
-              </a>
-            ) : null}
-          </div>
-        )}
+      {/* Phone — view: only render if has value; edit: always show if field enabled */}
+      {editing && showPhone ? (
+        <div className="flex items-center gap-2 mb-1">
+          <Phone className="w-3 h-3 flex-shrink-0 text-gray-300" />
+          <input
+            type="tel"
+            className={inputCls}
+            placeholder="Add phone"
+            value={draft.phone || ""}
+            onChange={e => setDraft(d => ({ ...d, phone: e.target.value }))}
+          />
+        </div>
+      ) : phone ? (
+        <div className="flex items-center gap-2 mb-1">
+          <Phone className="w-3 h-3 flex-shrink-0 text-gray-300" />
+          <a href={`tel:${phone}`} className="text-xs text-gray-600 hover:text-blue-600 transition-colors truncate">
+            {formatPhone(phone)}
+          </a>
+        </div>
+      ) : null}
 
-        {/* Email */}
-        {(editing ? showEmail : (email || showEmail)) && (
-          <div className="flex items-center gap-2">
-            <Mail className="w-3.5 h-3.5 flex-shrink-0 text-gray-300" />
-            {editing && showEmail ? (
-              <input
-                type="email"
-                className={inputCls}
-                placeholder="Add email"
-                value={draft.email || ""}
-                onChange={e => setDraft(d => ({ ...d, email: e.target.value }))}
-              />
-            ) : email ? (
-              <a href={`mailto:${email}`} className="text-xs text-gray-600 hover:text-blue-600 transition-colors truncate">
-                {email}
-              </a>
-            ) : null}
-          </div>
-        )}
-      </div>
+      {/* Email — view: only render if has value; edit: always show if field enabled */}
+      {editing && showEmail ? (
+        <div className="flex items-center gap-2 mb-1">
+          <Mail className="w-3 h-3 flex-shrink-0 text-gray-300" />
+          <input
+            type="email"
+            className={inputCls}
+            placeholder="Add email"
+            value={draft.email || ""}
+            onChange={e => setDraft(d => ({ ...d, email: e.target.value }))}
+          />
+        </div>
+      ) : email ? (
+        <div className="flex items-center gap-2 mb-1">
+          <Mail className="w-3 h-3 flex-shrink-0 text-gray-300" />
+          <a href={`mailto:${email}`} className="text-xs text-gray-600 hover:text-blue-600 transition-colors truncate">
+            {email}
+          </a>
+        </div>
+      ) : null}
 
       {/* Save / Cancel */}
       {editing && (
-        <div className="flex items-center gap-1.5 mt-2.5 pt-2 border-t border-gray-100">
+        <div className="flex items-center gap-1.5 mt-2 pt-2 border-t border-gray-100">
           <button
             onClick={handleSave}
             className="flex items-center gap-1 text-xs font-semibold text-white px-2.5 py-1 rounded-md transition-colors"

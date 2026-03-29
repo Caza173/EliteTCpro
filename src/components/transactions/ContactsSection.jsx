@@ -5,8 +5,9 @@ import { base44 } from "@/api/base44Client";
 
 const GRID = {
   display: "grid",
-  gridTemplateColumns: "repeat(auto-fill, minmax(260px, 1fr))",
-  gap: "10px",
+  gridTemplateColumns: "repeat(auto-fill, minmax(220px, 1fr))",
+  gap: "8px",
+  alignItems: "start",
 };
 
 function SectionGroup({ title, children }) {
