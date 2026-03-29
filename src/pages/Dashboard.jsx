@@ -245,8 +245,9 @@ export default function Dashboard() {
 
       {/* Tab: Overview */}
       {activeTab === "overview" && (
-        <div className="grid grid-cols-1 xl:grid-cols-3 gap-5">
-          <div className="xl:col-span-1 space-y-5">
+        <div className="grid grid-cols-1 xl:grid-cols-2 gap-5">
+          {/* Left: Tasks, Alerts, Calendar */}
+          <div className="space-y-5">
             {!isLoading && (
               <div className="theme-card overflow-hidden">
                 <div className="px-4 py-3 border-b" style={{ borderColor: "var(--border)" }}>
@@ -263,8 +264,6 @@ export default function Dashboard() {
               </div>
               <div className="p-4"><TransactionAlertsPanel transactions={transactions} /></div>
             </div>
-          </div>
-          <div className="xl:col-span-2">
             <div className="theme-card overflow-hidden">
               <div className="px-4 py-3 border-b" style={{ borderColor: "var(--border)" }}>
                 <h3 className="text-sm font-semibold" style={{ color: "var(--text-primary)" }}>Deadline Calendar</h3>
@@ -273,6 +272,12 @@ export default function Dashboard() {
                 {isLoading ? <Skeleton className="h-64 rounded-xl" /> : <DeadlineCalendarView transactions={transactions} />}
               </div>
             </div>
+          </div>
+          {/* Right: AI Assistant */}
+          <div>
+            {!isLoading && (
+              <GlobalAIAssistant transactions={transactions} checklistItems={checklistItems} />
+            )}
           </div>
         </div>
       )}
