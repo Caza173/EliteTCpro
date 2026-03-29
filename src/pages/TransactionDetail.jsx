@@ -43,6 +43,7 @@ import UnderContractEmailButton from "../components/email/UnderContractEmailButt
 import ConvertToTransactionButton from "../components/transactions/ConvertToTransactionButton";
 import ListingIntakeTab from "../components/transactions/ListingIntakeTab";
 import UnifiedDeadlinesPanel from "../components/transactions/UnifiedDeadlinesPanel";
+import ContactsSection from "../components/transactions/ContactsSection";
 
 const TX_TABS = [
   { id: "overview",      label: "Overview",      icon: LayoutDashboard, info: "Phase checklist, tasks, and compliance summary" },
@@ -636,129 +637,28 @@ export default function TransactionDetail() {
               </div>
             </div>
           </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-              <EditableInfoItem icon={User} label={transaction.buyers?.length > 1 ? "Buyers" : "Buyer"}
-                value={transaction.buyers?.length ? transaction.buyers.join(", ") : (transaction.buyer || "")}
-                onSave={v => updateMutation.mutate({ id: transaction.id, data: { buyer: v, buyers: v ? [v] : [] } })} />
-              <EditableInfoItem icon={Users} label={transaction.sellers?.length > 1 ? "Sellers" : "Seller"}
-                value={transaction.sellers?.length ? transaction.sellers.join(", ") : (transaction.seller || "")}
-                onSave={v => updateMutation.mutate({ id: transaction.id, data: { seller: v, sellers: v ? [v] : [] } })} />
-              <EditableInfoItem icon={User} label="Buyer's Agent"
-                value={transaction.buyers_agent_name || ""}
-                onSave={v => updateMutation.mutate({ id: transaction.id, data: { buyers_agent_name: v } })} />
-              <EditableInfoItem icon={Mail} label="Buyer's Agent Email"
-                value={transaction.buyers_agent_email || ""}
-                type="email"
-                onSave={v => updateMutation.mutate({ id: transaction.id, data: { buyers_agent_email: v } })} />
-              <EditableInfoItem icon={Phone} label="Buyer's Agent Phone"
-                value={transaction.buyers_agent_phone || ""}
-                type="tel"
-                onSave={v => updateMutation.mutate({ id: transaction.id, data: { buyers_agent_phone: v } })} />
-              <EditableInfoItem icon={User} label="Buyer Brokerage"
-                value={transaction.buyer_brokerage || ""}
-                onSave={v => updateMutation.mutate({ id: transaction.id, data: { buyer_brokerage: v } })} />
-              <EditableInfoItem icon={User} label="Seller's Agent"
-                value={transaction.sellers_agent_name || ""}
-                onSave={v => updateMutation.mutate({ id: transaction.id, data: { sellers_agent_name: v } })} />
-              <EditableInfoItem icon={Mail} label="Seller's Agent Email"
-                value={transaction.sellers_agent_email || ""}
-                type="email"
-                onSave={v => updateMutation.mutate({ id: transaction.id, data: { sellers_agent_email: v } })} />
-              <EditableInfoItem icon={Phone} label="Seller's Agent Phone"
-                value={transaction.sellers_agent_phone || ""}
-                type="tel"
-                onSave={v => updateMutation.mutate({ id: transaction.id, data: { sellers_agent_phone: v } })} />
-              <EditableInfoItem icon={User} label="Seller Brokerage"
-                value={transaction.seller_brokerage || ""}
-                onSave={v => updateMutation.mutate({ id: transaction.id, data: { seller_brokerage: v } })} />
-              <EditableInfoItem icon={User} label="Transaction Coordinator"
-                value={transaction.agent || ""}
-                onSave={v => updateMutation.mutate({ id: transaction.id, data: { agent: v } })} />
-              <EditableInfoItem icon={User} label="Title Contact Name"
-                value={transaction.title_company_contact_name || ""}
-                onSave={v => updateMutation.mutate({ id: transaction.id, data: { title_company_contact_name: v } })} />
-              <EditableInfoItem icon={Mail} label="Title Company Email"
-                value={transaction.title_company_email || ""}
-                type="email"
-                onSave={v => updateMutation.mutate({ id: transaction.id, data: { title_company_email: v } })} />
-              <EditableInfoItem icon={Phone} label="Title Company Phone"
-                value={transaction.title_company_phone || ""}
-                type="tel"
-                onSave={v => updateMutation.mutate({ id: transaction.id, data: { title_company_phone: v } })} />
-              <EditableInfoItem icon={User} label="Lender Name"
-                value={transaction.lender_name || ""}
-                onSave={v => updateMutation.mutate({ id: transaction.id, data: { lender_name: v } })} />
-              <EditableInfoItem icon={Mail} label="Lender Email"
-                value={transaction.lender_email || ""}
-                type="email"
-                onSave={v => updateMutation.mutate({ id: transaction.id, data: { lender_email: v } })} />
-              <EditableInfoItem icon={Phone} label="Lender Phone"
-                value={transaction.lender_phone || ""}
-                type="tel"
-                onSave={v => updateMutation.mutate({ id: transaction.id, data: { lender_phone: v } })} />
-              <EditableInfoItem icon={User} label="Lender Company"
-                value={transaction.lender_company || ""}
-                onSave={v => updateMutation.mutate({ id: transaction.id, data: { lender_company: v } })} />
-              <EditableInfoItem icon={User} label="Inspector Name"
-                value={transaction.inspector_name || ""}
-                onSave={v => updateMutation.mutate({ id: transaction.id, data: { inspector_name: v } })} />
-              <EditableInfoItem icon={Mail} label="Inspector Email"
-                value={transaction.inspector_email || ""}
-                type="email"
-                onSave={v => updateMutation.mutate({ id: transaction.id, data: { inspector_email: v } })} />
-              <EditableInfoItem icon={Phone} label="Inspector Phone"
-                value={transaction.inspector_phone || ""}
-                type="tel"
-                onSave={v => updateMutation.mutate({ id: transaction.id, data: { inspector_phone: v } })} />
-              <EditableInfoItem icon={User} label="Appraiser Name"
-                value={transaction.appraiser_name || ""}
-                onSave={v => updateMutation.mutate({ id: transaction.id, data: { appraiser_name: v } })} />
-              <EditableInfoItem icon={Mail} label="Appraiser Email"
-                value={transaction.appraiser_email || ""}
-                type="email"
-                onSave={v => updateMutation.mutate({ id: transaction.id, data: { appraiser_email: v } })} />
-              <EditableInfoItem icon={Phone} label="Appraiser Phone"
-                value={transaction.appraiser_phone || ""}
-                type="tel"
-                onSave={v => updateMutation.mutate({ id: transaction.id, data: { appraiser_phone: v } })} />
-              <EditableInfoItem icon={User} label="Attorney Name"
-                value={transaction.attorney_name || ""}
-                onSave={v => updateMutation.mutate({ id: transaction.id, data: { attorney_name: v } })} />
-              <EditableInfoItem icon={Mail} label="Attorney Email"
-                value={transaction.attorney_email || ""}
-                type="email"
-                onSave={v => updateMutation.mutate({ id: transaction.id, data: { attorney_email: v } })} />
-              <EditableInfoItem icon={Phone} label="Attorney Phone"
-                value={transaction.attorney_phone || ""}
-                type="tel"
-                onSave={v => updateMutation.mutate({ id: transaction.id, data: { attorney_phone: v } })} />
-              <ClientEmailsField
-                emails={transaction.client_emails?.length ? transaction.client_emails : (transaction.client_email ? [transaction.client_email] : [])}
-                onSave={emails => updateMutation.mutate({ id: transaction.id, data: { client_emails: emails, client_email: emails[0] || "" } })}
-              />
-              <EditableInfoItem icon={Phone} label="Client Phone"
-                value={transaction.client_phone || ""}
-                type="tel"
-                onSave={v => updateMutation.mutate({ id: transaction.id, data: { client_phone: v } })} />
-              <EditableInfoItem icon={Calendar} label="Closing / Title Company"
-                value={transaction.closing_title_company || ""}
-                onSave={v => updateMutation.mutate({ id: transaction.id, data: { closing_title_company: v } })} />
-              <EditableInfoItem icon={Calendar} label="Contract Date"
-                value={transaction.contract_date || ""}
-                type="date"
-                onSave={v => updateMutation.mutate({ id: transaction.id, data: { contract_date: v } })} />
+          <CardContent className="space-y-5">
+            {/* Contact Cards */}
+            <ContactsSection transaction={transaction} />
+
+            {/* Meta info row */}
+            <div className="flex flex-wrap gap-4 pt-2 border-t border-gray-100 text-xs text-gray-500">
+              {transaction.contract_date && (
+                <span><span className="font-medium text-gray-700">Contract Date:</span> {transaction.contract_date}</span>
+              )}
               {transaction.property_type && (
-                <InfoItem label="Property Type" value={
+                <span><span className="font-medium text-gray-700">Property Type:</span> {
                   { residential: "Residential", condo: "Condo", land: "Land", commercial: "Commercial", multi_family: "Multi-Family", other: "Other" }[transaction.property_type] || transaction.property_type
-                } />
+                }</span>
               )}
               {transaction.transaction_phase && (
-                <InfoItem label="Transaction Phase" value={
+                <span><span className="font-medium text-gray-700">Phase:</span> <span className="text-blue-600 font-semibold">{
                   { intake: "Intake", under_contract: "Under Contract", inspection: "Inspection", financing: "Financing", appraisal: "Appraisal", clear_to_close: "Clear to Close", closing: "Closing", closed: "Closed" }[transaction.transaction_phase] || transaction.transaction_phase
-                } highlight />
+                }</span></span>
               )}
-              {transaction.is_cash_transaction && <InfoItem label="Financing" value="Cash Transaction" />}
+              {transaction.is_cash_transaction && (
+                <span className="text-emerald-600 font-semibold">Cash Transaction</span>
+              )}
             </div>
           </CardContent>
         </Card>
