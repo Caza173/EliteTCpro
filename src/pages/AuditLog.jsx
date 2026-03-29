@@ -5,6 +5,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Shield, Search, X } from "lucide-react";
 import { format } from "date-fns";
 import { useCurrentUser, isOwnerOrAdmin } from "../components/auth/useCurrentUser";
@@ -86,6 +87,8 @@ export default function AuditLogPage() {
   const { data: currentUser } = useCurrentUser();
   const [search, setSearch] = useState("");
   const [selectedLog, setSelectedLog] = useState(null);
+  const [actionFilter, setActionFilter] = useState("all");
+  const [entityFilter, setEntityFilter] = useState("all");
 
   const { data: logs = [], isLoading } = useQuery({
     queryKey: ["auditLogs", currentUser?.brokerage_id],
@@ -110,12 +113,18 @@ export default function AuditLogPage() {
     );
   }
 
-  const filtered = logs.filter((l) =>
-    !search ||
-    l.action?.toLowerCase().includes(search.toLowerCase()) ||
-    l.actor_email?.toLowerCase().includes(search.toLowerCase()) ||
-    l.description?.toLowerCase().includes(search.toLowerCase())
-  );
+  const uniqueActions = [...new Set(logs.map(l => l.action).filter(Boolean))].sort();
+  const uniqueEntities = [...new Set(logs.map(l => l.entity_type).filter(Boolean))].sort();
+
+  const filtered = logs.filter((l) => {
+    const matchesSearch = !search ||
+      l.action?.toLowerCase().includes(search.toLowerCase()) ||
+      l.actor_email?.toLowerCase().includes(search.toLowerCase()) ||
+      l.description?.toLowerCase().includes(search.toLowerCase());
+    const matchesAction = actionFilter === "all" || l.action === actionFilter;
+    const matchesEntity = entityFilter === "all" || l.entity_type === entityFilter;
+    return matchesSearch && matchesAction && matchesEntity;
+  });
 
   return (
     <div className="max-w-5xl mx-auto space-y-6 w-full min-w-0">
@@ -127,9 +136,41 @@ export default function AuditLogPage() {
           </h1>
           <p className="text-sm text-gray-500 mt-0.5">All brokerage-level activity and change history.</p>
         </div>
-        <div className="relative w-full sm:w-64">
-          <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
-          <Input className="pl-9" placeholder="Search logs…" value={search} onChange={(e) => setSearch(e.target.value)} />
+        <div className="flex flex-wrap gap-2">
+          <div className="relative">
+            <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+            <Input className="pl-9 w-56" placeholder="Search logs…" value={search} onChange={(e) => setSearch(e.target.value)} />
+          </div>
+          <Select value={actionFilter} onValueChange={setActionFilter}>
+            <SelectTrigger className="w-44 h-9 text-xs">
+              <SelectValue placeholder="All Actions" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Actions</SelectItem>
+              {uniqueActions.map(a => (
+                <SelectItem key={a} value={a}>{a.replace(/_/g, " ")}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <Select value={entityFilter} onValueChange={setEntityFilter}>
+            <SelectTrigger className="w-40 h-9 text-xs">
+              <SelectValue placeholder="All Entities" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Entities</SelectItem>
+              {uniqueEntities.map(e => (
+                <SelectItem key={e} value={e}>{e}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          {(actionFilter !== "all" || entityFilter !== "all" || search) && (
+            <button
+              onClick={() => { setActionFilter("all"); setEntityFilter("all"); setSearch(""); }}
+              className="text-xs text-gray-400 hover:text-gray-600 flex items-center gap-1 px-2"
+            >
+              <X className="w-3.5 h-3.5" /> Clear
+            </button>
+          )}
         </div>
       </div>
 
