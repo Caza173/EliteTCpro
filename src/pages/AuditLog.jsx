@@ -22,7 +22,7 @@ const ACTION_COLORS = {
   deadline_edited: "bg-amber-50 text-amber-700",
 };
 
-function AuditDetailDialog({ log, onClose }) {
+function AuditDetailDialog({ log, onClose, txAddressMap }) {
   if (!log) return null;
 
   const hasData = log.before || log.after;
@@ -128,7 +128,7 @@ export default function AuditLogPage() {
 
   return (
     <div className="max-w-5xl mx-auto space-y-6 w-full min-w-0">
-      <AuditDetailDialog log={selectedLog} onClose={() => setSelectedLog(null)} />
+      <AuditDetailDialog log={selectedLog} onClose={() => setSelectedLog(null)} txAddressMap={txAddressMap} />
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <div>
           <h1 className="text-2xl font-bold text-gray-900 tracking-tight flex items-center gap-2">
