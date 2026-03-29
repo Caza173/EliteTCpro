@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Phone, Mail, Building2, Pencil, Check, X } from "lucide-react";
 
 function formatPhone(val) {
@@ -24,6 +24,11 @@ export default function ContactCard({
 
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState({ name, email, phone, company });
+
+  // Sync draft when props change (after a save updates the parent)
+  useEffect(() => {
+    if (!editing) setDraft({ name, email, phone, company });
+  }, [name, email, phone, company, editing]);
 
   if (!editing && !name && !email && !phone) return null;
 
