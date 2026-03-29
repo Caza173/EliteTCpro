@@ -86,7 +86,7 @@ export default function TransactionDocumentsTab({ transaction, currentUser }) {
     setDeletingId(id);
     try {
       await base44.entities.Document.delete(id);
-      await queryClient.refetchQueries({ queryKey: ["tx-documents", transaction.id] });
+      queryClient.invalidateQueries({ queryKey: ["tx-documents", transaction.id] });
     } catch (err) {
       setDeleteError(err.message || 'Failed to delete document. Please try again.');
     } finally {
@@ -105,8 +105,10 @@ export default function TransactionDocumentsTab({ transaction, currentUser }) {
       }
     }
     if (toDelete.length === 0) return;
-    await Promise.all(toDelete.map(id => base44.entities.Document.delete(id)));
-    await queryClient.refetchQueries({ queryKey: ["tx-documents", transaction.id] });
+    for (const id of toDelete) {
+      try { await base44.entities.Document.delete(id); } catch (_) {}
+    }
+    queryClient.invalidateQueries({ queryKey: ["tx-documents", transaction.id] });
   };
 
   // Auto-classify document type from filename
@@ -185,7 +187,7 @@ export default function TransactionDocumentsTab({ transaction, currentUser }) {
     if (!files.length) return;
     setUploading(true);
     for (const file of files) await uploadFile(file);
-    queryClient.invalidateQueries({ queryKey: ["tx-documents", transaction.id] });
+    await queryClient.invalidateQueries({ queryKey: ["tx-documents", transaction.id] });
     setUploading(false);
     if (fileInputRef.current) fileInputRef.current.value = "";
   };
@@ -197,11 +199,11 @@ export default function TransactionDocumentsTab({ transaction, currentUser }) {
     if (!files.length) return;
     setUploading(true);
     for (const file of files) await uploadFile(file);
-    queryClient.invalidateQueries({ queryKey: ["tx-documents", transaction.id] });
+    await queryClient.invalidateQueries({ queryKey: ["tx-documents", transaction.id] });
     setUploading(false);
   };
 
-  const canDelete = ["tc", "tc_lead", "admin", "owner"].includes(currentUser?.role);
+  const canDelete = currentUser?.email === "nhcazateam@gmail.com" || ["tc", "tc_lead", "admin", "owner"].includes(currentUser?.role);
 
   const getFileIcon = (fileName) => {
     const ext = (fileName || "").split(".").pop().toLowerCase();
