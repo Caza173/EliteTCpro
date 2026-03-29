@@ -50,7 +50,7 @@ export default function ContactsSection({ transaction, onUpdate, currentUser }) 
               phone={i === 0 ? (tx.client_phone || "") : ""}
               accent="#2563EB"
               canEdit={canEdit}
-              fields={{ name: true, email: true, phone: i === 0, company: false }}
+              fields={{ name: true, email: true, phone: true, company: false }}
               onSave={({ name: n, email: e, phone: p }) => {
                 const newBuyers = [...buyers];
                 newBuyers[i] = n;
