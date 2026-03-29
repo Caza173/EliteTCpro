@@ -50,7 +50,7 @@ function AuditDetailDialog({ log, onClose, txAddressMap }) {
           {log.transaction_id && <span>Transaction: <span className="font-medium text-gray-700">{txAddressMap[log.transaction_id] || log.transaction_id}</span></span>}
           {log.entity_type && <span>Entity: <span className="font-medium text-gray-700">{log.entity_type}</span></span>}
           {log.entity_id && <span>ID: <span className="font-mono text-gray-700">{log.entity_id}</span></span>}
-          <span>Time: <span className="font-medium text-gray-700">{log.created_date ? format(new Date(log.created_date), "MMM d, yyyy h:mm:ss a") : "—"}</span></span>
+          <span>Time: <span className="font-medium text-gray-700">{log.created_date ? (() => { try { return format(new Date(log.created_date), "MMM d, yyyy h:mm:ss a"); } catch { return log.created_date; } })() : "—"}</span></span>
         </div>
 
         {/* Data */}
@@ -158,8 +158,8 @@ export default function AuditLogPage() {
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">All Entities</SelectItem>
-              {uniqueEntities.map(e => (
-                <SelectItem key={e} value={e}>{e}</SelectItem>
+              {uniqueEntities.map(ent => (
+                <SelectItem key={ent} value={ent}>{ent}</SelectItem>
               ))}
             </SelectContent>
           </Select>
@@ -200,7 +200,7 @@ export default function AuditLogPage() {
                     </p>
                   </div>
                   <span className="text-xs text-gray-400 flex-shrink-0">
-                    {log.created_date ? format(new Date(log.created_date), "MMM d, h:mm a") : ""}
+                    {log.created_date ? (() => { try { return format(new Date(log.created_date), "MMM d, h:mm a"); } catch { return ""; } })() : ""}
                   </span>
                 </div>
               ))}
