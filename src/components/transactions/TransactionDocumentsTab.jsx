@@ -89,13 +89,22 @@ export default function TransactionDocumentsTab({ transaction, currentUser }) {
         document_id: id,
         transaction_id: transaction.id,
       });
-      await queryClient.invalidateQueries({ queryKey: ["tx-documents", transaction.id] });
-      await queryClient.refetchQueries({ queryKey: ["tx-documents", transaction.id] });
     } catch (err) {
-      setDeleteError(err.message || 'Failed to delete document. Please try again.');
+      // If it's not a "not found" / already gone error, show it
+      const msg = (err.message || '').toLowerCase();
+      if (!msg.includes('404') && !msg.includes('not found') && !msg.includes('already_deleted')) {
+        setDeleteError(err.message || 'Failed to delete document. Please try again.');
+        setDeletingId(null);
+        return;
+      }
+      // 404 = phantom record, treat as deleted and remove from cache
     } finally {
       setDeletingId(null);
     }
+    // Remove from cache immediately (handles both real and phantom records)
+    queryClient.setQueryData(["tx-documents", transaction.id], (old) =>
+      Array.isArray(old) ? old.filter(d => d.id !== id) : old
+    );
   };
 
   const handleDedupeCleanup = async () => {
@@ -109,10 +118,14 @@ export default function TransactionDocumentsTab({ transaction, currentUser }) {
       }
     }
     if (toDelete.length === 0) return;
+    const deleteSet = new Set(toDelete);
     for (const id of toDelete) {
-      try { await base44.entities.Document.delete(id); } catch (_) {}
+      try { await base44.functions.invoke("deleteDocument", { document_id: id, transaction_id: transaction.id }); } catch (_) {}
     }
-    queryClient.invalidateQueries({ queryKey: ["tx-documents", transaction.id] });
+    // Remove all deleted (including phantoms) from cache
+    queryClient.setQueryData(["tx-documents", transaction.id], (old) =>
+      Array.isArray(old) ? old.filter(d => !deleteSet.has(d.id)) : old
+    );
   };
 
   // Auto-classify document type from filename
