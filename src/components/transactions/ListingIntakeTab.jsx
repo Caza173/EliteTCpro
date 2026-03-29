@@ -114,19 +114,6 @@ export default function ListingIntakeTab({ transaction, onSave }) {
     seller_email: existing.seller_email || transaction.client_email || "",
     seller_phone: existing.seller_phone || transaction.client_phone || "",
     listing_agent: existing.listing_agent || transaction.sellers_agent_name || transaction.agent || "",
-    // MLS Minimum
-    zoning: existing.zoning || "",
-    county: existing.county || "",
-    bedrooms: existing.bedrooms || "",
-    bathrooms: existing.bathrooms || "",
-    sqft: existing.sqft || "",
-    year_built: existing.year_built || "",
-    lot_size: existing.lot_size || "",
-    heating: existing.heating || "",
-    water: existing.water || "",
-    sewer: existing.sewer || "",
-    parking: existing.parking || "",
-    public_remarks: existing.public_remarks || "",
     // Showing
     showing_instructions: existing.showing_instructions || transaction.showingInstructions || "",
     showing_service: existing.showing_service || "",
@@ -169,10 +156,6 @@ export default function ListingIntakeTab({ transaction, onSave }) {
     setSaved(true);
     setTimeout(() => setSaved(false), 2500);
   };
-
-  // Completion badge for MLS section
-  const mlsFields = ["bedrooms", "bathrooms", "sqft", "year_built", "public_remarks"];
-  const mlsDone = mlsFields.filter(f => form[f]).length;
 
   const showingFields = ["showing_instructions", "occupancy"];
   const showingDone = showingFields.filter(f => form[f]).length;
@@ -260,53 +243,7 @@ export default function ListingIntakeTab({ transaction, onSave }) {
         </div>
       </Section>
 
-      {/* SECTION 2 — MLS Minimum */}
-      <Section title="MLS Minimum Info" icon={BarChart2} color="purple" badge={mlsDone > 0 ? `${mlsDone}/${mlsFields.length}` : undefined}>
-        <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-          <Field label="County">
-            <TextInput value={form.county} onChange={set("county")} placeholder="Merrimack" />
-          </Field>
-          <Field label="Zoning">
-            <TextInput value={form.zoning} onChange={set("zoning")} placeholder="R-1" />
-          </Field>
-          <Field label="Year Built">
-            <TextInput value={form.year_built} onChange={set("year_built")} placeholder="1995" />
-          </Field>
-          <Field label="Bedrooms">
-            <TextInput value={form.bedrooms} onChange={set("bedrooms")} placeholder="3" type="number" />
-          </Field>
-          <Field label="Bathrooms">
-            <TextInput value={form.bathrooms} onChange={set("bathrooms")} placeholder="2.5" />
-          </Field>
-          <Field label="Sq Ft">
-            <TextInput value={form.sqft} onChange={set("sqft")} placeholder="1800" type="number" />
-          </Field>
-          <Field label="Lot Size">
-            <TextInput value={form.lot_size} onChange={set("lot_size")} placeholder="0.5 acres" />
-          </Field>
-          <Field label="Heating">
-            <TextInput value={form.heating} onChange={set("heating")} placeholder="Gas forced air" />
-          </Field>
-          <Field label="Water">
-            <TextInput value={form.water} onChange={set("water")} placeholder="Public" />
-          </Field>
-          <Field label="Sewer">
-            <TextInput value={form.sewer} onChange={set("sewer")} placeholder="Public" />
-          </Field>
-          <div className="col-span-2 sm:col-span-3">
-            <Field label="Parking">
-              <TextInput value={form.parking} onChange={set("parking")} placeholder="2-car attached garage" />
-            </Field>
-          </div>
-          <div className="col-span-2 sm:col-span-3">
-            <Field label="Public Remarks">
-              <Textarea value={form.public_remarks} onChange={set("public_remarks")} placeholder="Describe the property for MLS…" rows={4} />
-            </Field>
-          </div>
-        </div>
-      </Section>
-
-      {/* SECTION 3 — Showing */}
+      {/* SECTION 2 — Showing */}
       <Section title="Showing" icon={Eye} color="teal" badge={showingDone > 0 ? `${showingDone}/${showingFields.length}` : undefined}>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <div className="sm:col-span-2">
@@ -336,7 +273,7 @@ export default function ListingIntakeTab({ transaction, onSave }) {
         </div>
       </Section>
 
-      {/* SECTION 4 — Marketing */}
+      {/* SECTION 3 — Marketing */}
       <Section title="Marketing" icon={Megaphone} color="amber">
         <div className="space-y-3">
           <Toggle checked={form.photos_uploaded} onChange={set("photos_uploaded")} label="Photos uploaded" />
@@ -348,7 +285,7 @@ export default function ListingIntakeTab({ transaction, onSave }) {
         </div>
       </Section>
 
-      {/* SECTION 5 — Commission */}
+      {/* SECTION 4 — Commission */}
       <Section title="Commission" icon={DollarSign} color="green">
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
           <Field label="Listing Commission">
