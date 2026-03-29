@@ -23,8 +23,7 @@ Deno.serve(async (req) => {
 
     // Fetch transaction if not provided
     if (!txData) {
-      const txList = await base44.asServiceRole.entities.Transaction.filter({ id: transactionId });
-      txData = txList[0];
+      txData = await base44.asServiceRole.entities.Transaction.get(transactionId);
     }
     if (!txData) return Response.json({ error: 'Transaction not found' }, { status: 404 });
 
