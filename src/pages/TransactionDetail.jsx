@@ -14,7 +14,7 @@ import {
   MapPin, User, Users, Mail, Phone, Calendar, ArrowLeft, Trash2,
   ClipboardCheck, Send, UserPlus, LayoutDashboard, GitBranch, Clock,
   DollarSign, FolderOpen, ShieldCheck, PanelLeftClose, PanelLeftOpen,
-  Globe, X, Pencil, Mail as MailIcon, Receipt, CalendarDays, Info,
+  Globe, X, Pencil, Mail as MailIcon, Receipt, CalendarDays, Info, AlertTriangle,
 } from "lucide-react";
 import { format } from "date-fns";
 import PhaseChecklist from "../components/transactions/PhaseChecklist";
@@ -44,9 +44,11 @@ import ConvertToTransactionButton from "../components/transactions/ConvertToTran
 import ListingIntakeTab from "../components/transactions/ListingIntakeTab";
 import UnifiedDeadlinesPanel from "../components/transactions/UnifiedDeadlinesPanel";
 import ContactsSection from "../components/transactions/ContactsSection";
+import IssueDetectionPanel from "../components/issues/IssueDetectionPanel";
 
 const TX_TABS = [
   { id: "overview",      label: "Overview",      icon: LayoutDashboard, info: "Phase checklist, tasks, and compliance summary" },
+  { id: "issues",        label: "Issues",        icon: AlertTriangle,   info: "Auto-detected issues: missing docs, signatures, deadlines" },
   { id: "timeline",      label: "Timeline",      icon: GitBranch,       info: "Chronological contract events and activity history" },
   { id: "deadlines",     label: "Deadlines",     icon: Clock,           info: "All key dates — edit inline or sync to Google Calendar" },
   { id: "documents",     label: "Documents",     icon: FolderOpen,      info: "Upload, classify, and manage transaction documents" },
@@ -57,6 +59,7 @@ const TX_TABS = [
 const LISTING_TABS = [
   { id: "listing_intake", label: "Listing Intake", icon: ClipboardCheck, info: "Property details, pricing, photos, and listing checklist" },
   { id: "overview",      label: "Overview",      icon: LayoutDashboard, info: "Phase checklist, tasks, and compliance summary" },
+  { id: "issues",        label: "Issues",        icon: AlertTriangle,   info: "Auto-detected issues: missing docs, signatures, deadlines" },
   { id: "timeline",      label: "Timeline",      icon: GitBranch,       info: "Chronological contract events and activity history" },
   { id: "deadlines",     label: "Deadlines",     icon: Clock,           info: "All key dates — edit inline or sync to Google Calendar" },
   { id: "documents",     label: "Documents",     icon: FolderOpen,      info: "Upload, classify, and manage transaction documents" },
@@ -834,6 +837,18 @@ export default function TransactionDetail() {
         )}
 
 
+
+        {activeTab === "issues" && (
+          <div className="theme-card p-4">
+            <div className="mb-4">
+              <h3 className="text-sm font-semibold" style={{ color: "var(--text-primary)" }}>Issue Detection</h3>
+              <p className="text-xs mt-0.5" style={{ color: "var(--text-muted)" }}>
+                Auto-scanned for missing documents, signatures, upcoming deadlines, and workflow gaps.
+              </p>
+            </div>
+            <IssueDetectionPanel transaction={transaction} />
+          </div>
+        )}
 
         {activeTab === "documents" && (
           <TransactionDocumentsTab transaction={transaction} currentUser={currentUser} />
