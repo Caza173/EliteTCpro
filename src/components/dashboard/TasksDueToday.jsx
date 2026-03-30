@@ -1,9 +1,11 @@
-import React from "react";
+import React, { useState } from "react";
 import { Link } from "react-router-dom";
 import { createPageUrl } from "@/utils";
-import { CheckCircle2, Circle, AlertTriangle, Bell, FileInput, Clock } from "lucide-react";
-import { isToday, parseISO, differenceInHours, isAfter } from "date-fns";
+import { CheckCircle2, Circle, AlertTriangle, Bell, FileInput, X } from "lucide-react";
+import { isToday, parseISO, differenceInHours } from "date-fns";
 import { Badge } from "@/components/ui/badge";
+import { base44 } from "@/api/base44Client";
+import { useCurrentUser } from "../auth/useCurrentUser";
 
 const DEADLINE_LABELS = {
   earnest_money_deadline: "Earnest Money Deposit",
@@ -17,6 +19,38 @@ const DEADLINE_LABELS = {
 export default function TasksDueToday({ transactions = [], notifications = [] }) {
   const now = new Date();
   const items = [];
+  const [dismissed, setDismissed] = useState(new Set());
+  const [resolved, setResolved] = useState(new Set());
+  const { data: currentUser } = useCurrentUser();
+
+  const logAction = async (item, action) => {
+    const tx = transactions.find(t => t.id === item.txId);
+    try {
+      await base44.entities.AuditLog.create({
+        brokerage_id: tx?.brokerage_id,
+        transaction_id: item.txId,
+        actor_email: currentUser?.email || "unknown",
+        action: `${item.type}_${action}`,
+        entity_type: item.type === "deadline" ? "deadline" : "task",
+        entity_id: item.key,
+        description: `${action.charAt(0).toUpperCase() + action.slice(1)}: "${item.label}"`,
+      });
+    } catch (_) {}
+  };
+
+  const handleDismiss = (e, item) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setDismissed(prev => new Set([...prev, item.key]));
+    logAction(item, "dismissed");
+  };
+
+  const handleResolve = (e, item) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setResolved(prev => new Set([...prev, item.key]));
+    logAction(item, "resolved");
+  };
 
   // 1 — Tasks due within 24 hours
   transactions.forEach((tx) => {
@@ -116,7 +150,9 @@ export default function TasksDueToday({ transactions = [], notifications = [] })
     deadline: <AlertTriangle className="w-4 h-4 text-orange-400 flex-shrink-0" />,
   };
 
-  if (items.length === 0) {
+  const visibleItems = items.filter(i => !dismissed.has(i.key) && !resolved.has(i.key));
+
+  if (visibleItems.length === 0) {
     return (
       <div className="text-center py-8">
         <CheckCircle2 className="w-9 h-9 mx-auto mb-2 text-emerald-300" />
@@ -127,19 +163,40 @@ export default function TasksDueToday({ transactions = [], notifications = [] })
 
   return (
     <div className="space-y-2">
-      {items.map((item) => (
-        <Link
+      {visibleItems.map((item) => (
+        <div
           key={item.key}
-          to={item.txId ? `${createPageUrl("TransactionDetail")}?id=${item.txId}` : "#"}
-          className="flex items-center gap-3 p-3 rounded-lg border border-gray-100 bg-white hover:bg-gray-50 transition-colors"
+          className="flex items-center gap-3 p-3 rounded-lg border border-gray-100 bg-white hover:bg-gray-50 transition-colors group"
         >
-          {ICONS[item.type]}
-          <div className="flex-1 min-w-0">
-            <p className="text-sm font-medium text-gray-800 truncate">{item.label}</p>
-            {item.sub && <p className="text-xs text-gray-500 truncate">{item.sub}</p>}
-          </div>
+          <Link
+            to={item.txId ? `${createPageUrl("TransactionDetail")}?id=${item.txId}` : "#"}
+            className="flex items-center gap-3 flex-1 min-w-0"
+          >
+            {ICONS[item.type]}
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-medium text-gray-800 truncate">{item.label}</p>
+              {item.sub && <p className="text-xs text-gray-500 truncate">{item.sub}</p>}
+            </div>
+          </Link>
           <Badge className={`text-xs flex-shrink-0 ${item.badgeColor}`}>{item.badge}</Badge>
-        </Link>
+          {/* Action buttons — visible on hover */}
+          <div className="flex gap-1 flex-shrink-0 opacity-0 group-hover:opacity-100 transition-opacity ml-1">
+            <button
+              onClick={(e) => handleResolve(e, item)}
+              title="Mark resolved"
+              className="flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-semibold bg-green-100 text-green-700 hover:bg-green-200 border border-green-200 transition-colors"
+            >
+              <CheckCircle2 className="w-3 h-3" /> Resolved
+            </button>
+            <button
+              onClick={(e) => handleDismiss(e, item)}
+              title="Dismiss"
+              className="flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-semibold bg-white text-gray-500 hover:bg-gray-100 border border-gray-200 transition-colors"
+            >
+              <X className="w-3 h-3" /> Dismiss
+            </button>
+          </div>
+        </div>
       ))}
     </div>
   );
