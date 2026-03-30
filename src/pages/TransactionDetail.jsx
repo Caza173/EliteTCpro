@@ -753,9 +753,9 @@ export default function TransactionDetail() {
         </div>
       </div>
 
-      {/* Floating AI button */}
+      {/* Floating AI button — only on mobile/small screens where right panel is hidden */}
       <button
-        className="fixed bottom-6 right-6 z-40 flex items-center gap-2 px-3 py-2.5 rounded-full shadow-lg transition-all hover:scale-105"
+        className="lg:hidden fixed bottom-6 right-6 z-40 flex items-center gap-2 px-3 py-2.5 rounded-full shadow-lg transition-all hover:scale-105"
         style={{ background: "#2563eb", color: "#ffffff" }}
         onClick={() => setMobileAIOpen(true)}
         title="Ask AI Assistant"
