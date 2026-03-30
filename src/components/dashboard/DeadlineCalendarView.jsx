@@ -144,7 +144,7 @@ export default function DeadlineCalendarView({ transactions = [] }) {
                 onClick={() => setSelectedDay(isSelected ? null : day)}
                 onMouseEnter={() => dayEvents.length > 0 && setHoveredDay(day)}
                 onMouseLeave={() => setHoveredDay(null)}
-                className={`h-16 sm:h-20 p-1 flex flex-col cursor-pointer transition-colors relative z-10 ${isSelected ? "ring-2 ring-inset ring-blue-500" : ""} ${today ? "ring-2 ring-inset ring-blue-400" : ""}`}
+                className={`h-16 sm:h-20 p-1 flex flex-col cursor-pointer transition-colors relative z-10 overflow-visible ${isSelected ? "ring-2 ring-inset ring-blue-500" : ""} ${today ? "ring-2 ring-inset ring-blue-400" : ""}`}
                 style={{ background: isSelected ? "var(--accent-subtle)" : isHovered ? "var(--bg-hover)" : "var(--card-bg)" }}
               >
                 <span className={`text-xs font-semibold w-6 h-6 flex items-center justify-center rounded-full mb-0.5 flex-shrink-0 ${today ? "bg-blue-500 text-white" : ""}`}
