@@ -15,6 +15,7 @@ export default function ContactCard({
   name, role, email, phone, company, accent = "#2563EB",
   canEdit = false,
   onSave,
+  onEmailClick,
   fields = {},
 }) {
   const showName    = fields.name    !== false;
@@ -133,9 +134,18 @@ export default function ContactCard({
       ) : email ? (
         <div className="flex items-center gap-2 mb-1">
           <Mail className="w-3 h-3 flex-shrink-0 text-gray-300" />
-          <a href={`mailto:${email}`} className="text-xs text-gray-600 hover:text-blue-600 transition-colors truncate">
-            {email}
-          </a>
+          {onEmailClick ? (
+            <button
+              onClick={() => onEmailClick(email, name)}
+              className="text-xs text-gray-600 hover:text-blue-600 transition-colors truncate text-left"
+            >
+              {email}
+            </button>
+          ) : (
+            <a href={`mailto:${email}`} className="text-xs text-gray-600 hover:text-blue-600 transition-colors truncate">
+              {email}
+            </a>
+          )}
         </div>
       ) : null}
 

@@ -1,7 +1,8 @@
-import React from "react";
+import React, { useState } from "react";
 import ContactCard from "./ContactCard";
 import { hasFullAccess } from "../auth/useCurrentUser";
 import { base44 } from "@/api/base44Client";
+import QuickEmailModal from "./QuickEmailModal";
 
 const GRID = {
   display: "grid",
@@ -24,6 +25,9 @@ function SectionGroup({ title, children }) {
 export default function ContactsSection({ transaction, onUpdate, currentUser }) {
   const tx = transaction;
   const canEdit = hasFullAccess(currentUser);
+  const [emailModal, setEmailModal] = useState(null); // { to, toName }
+
+  const openEmail = (to, toName) => setEmailModal({ to, toName });
 
   const buyers = tx.buyers?.length ? tx.buyers : (tx.buyer ? [tx.buyer] : []);
   const sellers = tx.sellers?.length ? tx.sellers : (tx.seller ? [tx.seller] : []);
@@ -43,6 +47,14 @@ export default function ContactsSection({ transaction, onUpdate, currentUser }) 
 
   return (
     <div className="space-y-4">
+      {emailModal && (
+        <QuickEmailModal
+          to={emailModal.to}
+          toName={emailModal.toName}
+          transaction={tx}
+          onClose={() => setEmailModal(null)}
+        />
+      )}
 
       {/* Buyers */}
       {buyers.length > 0 && (
@@ -56,6 +68,7 @@ export default function ContactsSection({ transaction, onUpdate, currentUser }) 
               phone={i === 0 ? (tx.client_phone || "") : ""}
               accent="#2563EB"
               canEdit={canEdit}
+              onEmailClick={openEmail}
               fields={{ name: true, email: true, phone: true, company: false }}
               onSave={({ name: n, email: e, phone: p }) => {
                 const newBuyers = [...buyers];
@@ -108,6 +121,7 @@ export default function ContactsSection({ transaction, onUpdate, currentUser }) 
               company={tx.buyer_brokerage}
               accent="#7c3aed"
               canEdit={canEdit}
+              onEmailClick={openEmail}
               fields={{ name: true, email: true, phone: true, company: true }}
               onSave={({ name, email, phone, company }) => save({
                 buyers_agent_name: name,
@@ -126,6 +140,7 @@ export default function ContactsSection({ transaction, onUpdate, currentUser }) 
               company={tx.seller_brokerage}
               accent="#7c3aed"
               canEdit={canEdit}
+              onEmailClick={openEmail}
               fields={{ name: true, email: true, phone: true, company: true }}
               onSave={({ name, email, phone, company }) => save({
                 sellers_agent_name: name,
@@ -143,6 +158,7 @@ export default function ContactsSection({ transaction, onUpdate, currentUser }) 
               company={tx.agent_company}
               accent="#0891b2"
               canEdit={canEdit}
+              onEmailClick={openEmail}
               fields={{ name: true, email: true, phone: false, company: true }}
               onSave={({ name, email, company }) => save({
                 agent: name,
@@ -166,6 +182,7 @@ export default function ContactsSection({ transaction, onUpdate, currentUser }) 
               company={tx.lender_company}
               accent="#d97706"
               canEdit={canEdit}
+              onEmailClick={openEmail}
               fields={{ name: true, email: true, phone: true, company: true }}
               onSave={({ name, email, phone, company }) => save({
                 lender_name: name,
@@ -184,6 +201,7 @@ export default function ContactsSection({ transaction, onUpdate, currentUser }) 
               company={tx.closing_title_company && tx.title_company_contact_name ? tx.closing_title_company : undefined}
               accent="#db2777"
               canEdit={canEdit}
+              onEmailClick={openEmail}
               fields={{ name: true, email: true, phone: true, company: true }}
               onSave={({ name, email, phone, company }) => save({
                 title_company_contact_name: name,
@@ -202,6 +220,7 @@ export default function ContactsSection({ transaction, onUpdate, currentUser }) 
               company={tx.inspector_company}
               accent="#059669"
               canEdit={canEdit}
+              onEmailClick={openEmail}
               fields={{ name: true, email: true, phone: true, company: true }}
               onSave={({ name, email, phone, company }) => save({
                 inspector_name: name,
@@ -220,6 +239,7 @@ export default function ContactsSection({ transaction, onUpdate, currentUser }) 
               company={tx.appraiser_company}
               accent="#6366f1"
               canEdit={canEdit}
+              onEmailClick={openEmail}
               fields={{ name: true, email: true, phone: true, company: true }}
               onSave={({ name, email, phone, company }) => save({
                 appraiser_name: name,
@@ -238,6 +258,7 @@ export default function ContactsSection({ transaction, onUpdate, currentUser }) 
               company={tx.attorney_firm}
               accent="#64748b"
               canEdit={canEdit}
+              onEmailClick={openEmail}
               fields={{ name: true, email: true, phone: true, company: true }}
               onSave={({ name, email, phone, company }) => save({
                 attorney_name: name,
