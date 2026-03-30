@@ -9,7 +9,7 @@ export const PHASES_BY_TYPE = {
   // ── BUYER UNDER CONTRACT (5 phases — no intake) ───────────────────────────
   buyer_under_contract: [
     { phaseNum: 1, phaseId: "under_contract", label: "Under Contract" },
-    { phaseNum: 2, phaseId: "due_diligence",  label: "Due Diligence" },
+    { phaseNum: 2, phaseId: "due_diligence",  label: "Due Diligence / Inspections" },
     { phaseNum: 3, phaseId: "financing",      label: "Financing / Pending" },
     { phaseNum: 4, phaseId: "closing",        label: "Closing" },
     { phaseNum: 5, phaseId: "post_close",     label: "Post-Close" },
@@ -27,14 +27,14 @@ export const PHASES_BY_TYPE = {
   // ── DUAL / OTHER (mirrors buyer, no intake) ───────────────────────────────
   dual: [
     { phaseNum: 1, phaseId: "under_contract", label: "Under Contract" },
-    { phaseNum: 2, phaseId: "due_diligence",  label: "Due Diligence" },
+    { phaseNum: 2, phaseId: "due_diligence",  label: "Due Diligence / Inspections" },
     { phaseNum: 3, phaseId: "financing",      label: "Financing / Pending" },
     { phaseNum: 4, phaseId: "closing",        label: "Closing" },
     { phaseNum: 5, phaseId: "post_close",     label: "Post-Close" },
   ],
   other: [
     { phaseNum: 1, phaseId: "under_contract", label: "Under Contract" },
-    { phaseNum: 2, phaseId: "due_diligence",  label: "Due Diligence" },
+    { phaseNum: 2, phaseId: "due_diligence",  label: "Due Diligence / Inspections" },
     { phaseNum: 3, phaseId: "closing",        label: "Closing" },
     { phaseNum: 4, phaseId: "post_close",     label: "Post-Close" },
   ],
