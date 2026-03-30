@@ -17,9 +17,8 @@ import {
   Globe, X, Pencil, Mail as MailIcon, Receipt, CalendarDays, Info, AlertTriangle,
 } from "lucide-react";
 import { format } from "date-fns";
-import PhaseChecklist from "../components/transactions/PhaseChecklist";
-import PhaseTaskPanel from "../components/transactions/PhaseTaskPanel";
 import PhaseTaskPanelV2 from "../components/transactions/PhaseTaskPanelV2";
+import UnifiedPhaseBoard from "../components/transactions/UnifiedPhaseBoard";
 import TransactionTimeline from "../components/transactions/TransactionTimeline";
 import TaskList from "../components/transactions/TaskList";
 import { generateTasksForPhase, isPhaseComplete, getPhasesForType, normalizeTransactionType, isTaskIncompatible } from "../lib/taskLibrary";
@@ -693,38 +692,17 @@ export default function TransactionDetail() {
                 </div>
               </div>
             )}
-            <Card className="shadow-sm border-gray-100 lg:col-span-2">
-              <CardHeader className="pb-2">
-                <CardTitle className="text-base font-semibold">Phase Progress</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <TransactionTimeline
-                  phasesCompleted={transaction.phases_completed || []}
-                  currentPhase={transaction.phase || 1}
-                />
-              </CardContent>
-            </Card>
-            <Card className="shadow-sm border-gray-100 lg:col-span-2 relative z-10">
-              <CardHeader>
-                <CardTitle className="text-base font-semibold">Tasks</CardTitle>
-                <p className="text-sm text-gray-500">
-                  {txTasks.filter(t => t.is_completed).length} / {txTasks.length} completed
-                </p>
-              </CardHeader>
-              <CardContent className="overflow-visible">
-                <PhaseTaskPanelV2
-                  phaseNum={selectedPhase || (transaction.phase || 1)}
-                  tasks={txTasks}
-                  onToggleTask={handleToggleTxTask}
-                  onTasksChanged={refetchTxTasks}
-                  transactionId={transaction.id}
-                  brokerageId={transaction.brokerage_id}
-                  transactionType={transaction.transaction_type}
-                  transaction={transaction}
-                  onUpdateTransaction={(data) => updateMutation.mutate({ id: transaction.id, data })}
-                />
-              </CardContent>
-            </Card>
+            <div className="lg:col-span-2">
+              <UnifiedPhaseBoard
+                tasks={txTasks}
+                onToggleTask={handleToggleTxTask}
+                onTasksChanged={refetchTxTasks}
+                transactionId={transaction.id}
+                brokerageId={transaction.brokerage_id}
+                transactionType={transaction.transaction_type}
+                transaction={transaction}
+              />
+            </div>
             {/* Compliance Monitor Widget */}
             <div className="lg:col-span-2">
               <ComplianceMonitorWidget
