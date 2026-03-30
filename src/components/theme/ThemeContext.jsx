@@ -20,7 +20,15 @@ export function ThemeProvider({ children }) {
 
   useEffect(() => {
     const root = document.documentElement;
+    // Set data-theme on both html and body for maximum coverage
     root.setAttribute("data-theme", theme);
+    document.body.setAttribute("data-theme", theme);
+    // Also apply dark class for Tailwind dark mode compatibility
+    if (theme === "dark" || theme === "cyber") {
+      root.classList.add("dark");
+    } else {
+      root.classList.remove("dark");
+    }
   }, [theme]);
 
   return (
