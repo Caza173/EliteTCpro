@@ -3,7 +3,7 @@ import { base44 } from "@/api/base44Client";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   Pin, PinOff, Pencil, Trash2, ArrowRight, Mail, MoreHorizontal,
-  Plus, ChevronDown, X, Check,
+  Plus, X, Check, Send,
 } from "lucide-react";
 import { formatDistanceToNow, parseISO } from "date-fns";
 
@@ -43,6 +43,16 @@ function NoteCard({ note, canEdit, onPin, onDelete, onEdit, onConvertToTask, onS
       onEdit(note.id, { message: draft.trim(), title: draft.trim().slice(0, 80) });
     }
     setEditing(false);
+  };
+
+  // Highlight @mentions in message
+  const renderMessage = (text) => {
+    const parts = text.split(/(@\S+)/g);
+    return parts.map((part, i) =>
+      part.startsWith("@") ? (
+        <span key={i} className="font-semibold text-blue-600">{part}</span>
+      ) : part
+    );
   };
 
   return (
@@ -129,7 +139,9 @@ function NoteCard({ note, canEdit, onPin, onDelete, onEdit, onConvertToTask, onS
           </div>
         </div>
       ) : (
-        <p className="text-xs mt-1 leading-relaxed whitespace-pre-wrap" style={{ color: "var(--text-primary)" }}>{note.message}</p>
+        <p className="text-xs mt-1 leading-relaxed whitespace-pre-wrap" style={{ color: "var(--text-primary)" }}>
+          {renderMessage(note.message)}
+        </p>
       )}
 
       {/* Footer */}
@@ -138,6 +150,108 @@ function NoteCard({ note, canEdit, onPin, onDelete, onEdit, onConvertToTask, onS
         <span>·</span>
         <span>{note.created_date ? formatDistanceToNow(parseISO(note.created_date), { addSuffix: true }) : ""}</span>
       </div>
+    </div>
+  );
+}
+
+// ─── MentionTextarea ──────────────────────────────────────────────────────────
+
+function MentionTextarea({ value, onChange, onSubmit, users }) {
+  const [mentionQuery, setMentionQuery] = useState(null); // null = closed, string = query
+  const [mentionIndex, setMentionIndex] = useState(0);
+  const textareaRef = useRef(null);
+
+  const filteredUsers = useMemo(() => {
+    if (mentionQuery === null) return [];
+    const q = mentionQuery.toLowerCase();
+    return users.filter(u =>
+      (u.full_name || "").toLowerCase().includes(q) ||
+      (u.email || "").toLowerCase().includes(q)
+    ).slice(0, 6);
+  }, [mentionQuery, users]);
+
+  const handleChange = (e) => {
+    const val = e.target.value;
+    onChange(val);
+
+    // Detect @ trigger
+    const cursorPos = e.target.selectionStart;
+    const textBefore = val.slice(0, cursorPos);
+    const atMatch = textBefore.match(/@(\w*)$/);
+    if (atMatch) {
+      setMentionQuery(atMatch[1]);
+      setMentionIndex(0);
+    } else {
+      setMentionQuery(null);
+    }
+  };
+
+  const insertMention = (user) => {
+    const textarea = textareaRef.current;
+    if (!textarea) return;
+    const cursorPos = textarea.selectionStart;
+    const textBefore = value.slice(0, cursorPos);
+    const atIdx = textBefore.lastIndexOf("@");
+    const displayName = (user.full_name || user.email).replace(/\s+/g, "");
+    const newVal = value.slice(0, atIdx) + `@${displayName} ` + value.slice(cursorPos);
+    onChange(newVal);
+    setMentionQuery(null);
+    setTimeout(() => {
+      const newPos = atIdx + displayName.length + 2;
+      textarea.focus();
+      textarea.setSelectionRange(newPos, newPos);
+    }, 0);
+  };
+
+  const handleKeyDown = (e) => {
+    if (mentionQuery !== null && filteredUsers.length > 0) {
+      if (e.key === "ArrowDown") { e.preventDefault(); setMentionIndex(i => Math.min(i + 1, filteredUsers.length - 1)); return; }
+      if (e.key === "ArrowUp") { e.preventDefault(); setMentionIndex(i => Math.max(i - 1, 0)); return; }
+      if (e.key === "Enter" || e.key === "Tab") { e.preventDefault(); insertMention(filteredUsers[mentionIndex]); return; }
+      if (e.key === "Escape") { setMentionQuery(null); return; }
+    }
+    if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) {
+      e.preventDefault();
+      onSubmit();
+    }
+  };
+
+  return (
+    <div className="relative">
+      <textarea
+        ref={textareaRef}
+        className="w-full rounded-md border px-2.5 py-2 text-xs resize-none outline-none transition-colors"
+        style={{ background: "var(--input-bg)", borderColor: "var(--input-border)", color: "var(--text-primary)" }}
+        placeholder="Add a note… (@ to mention)"
+        rows={3}
+        value={value}
+        onChange={handleChange}
+        onKeyDown={handleKeyDown}
+      />
+      {/* Mention dropdown */}
+      {mentionQuery !== null && filteredUsers.length > 0 && (
+        <div
+          className="absolute bottom-full left-0 mb-1 z-50 rounded-lg border shadow-lg py-1 w-56"
+          style={{ background: "var(--card-bg)", borderColor: "var(--card-border)" }}
+        >
+          {filteredUsers.map((user, idx) => (
+            <button
+              key={user.id || user.email}
+              onMouseDown={(e) => { e.preventDefault(); insertMention(user); }}
+              className={`flex items-center gap-2 w-full px-3 py-1.5 text-xs text-left transition-colors ${idx === mentionIndex ? "bg-blue-50" : "hover:bg-gray-50"}`}
+              style={{ color: "var(--text-primary)" }}
+            >
+              <div className="w-5 h-5 rounded-full bg-blue-100 flex items-center justify-center text-[10px] font-bold text-blue-700 flex-shrink-0">
+                {(user.full_name?.[0] || user.email?.[0] || "?").toUpperCase()}
+              </div>
+              <div className="min-w-0">
+                <p className="font-medium truncate">{user.full_name || user.email}</p>
+                {user.full_name && <p className="text-[10px] truncate" style={{ color: "var(--text-muted)" }}>{user.email}</p>}
+              </div>
+            </button>
+          ))}
+        </div>
+      )}
     </div>
   );
 }
@@ -151,14 +265,12 @@ export default function NotesPanel({ transaction, currentUser }) {
   const [noteType, setNoteType] = useState("internal");
   const [visibility, setVisibility] = useState("internal");
   const [adding, setAdding] = useState(false);
-  const feedRef = useRef(null);
 
   const role = currentUser?.role;
   const isTC = ["tc", "tc_lead", "admin", "owner"].includes(role) || currentUser?.email === "nhcazateam@gmail.com";
   const isAgent = role === "agent";
   const isClient = role === "client";
 
-  // Agents default to shared visibility
   useEffect(() => {
     if (isAgent) setVisibility("agent");
   }, [isAgent]);
@@ -168,6 +280,13 @@ export default function NotesPanel({ transaction, currentUser }) {
     queryFn: () => base44.entities.Note.filter({ transaction_id: transaction.id }, "-is_pinned,-created_date"),
     enabled: !!transaction.id,
     staleTime: 15_000,
+  });
+
+  // Fetch users for @mention
+  const { data: allUsers = [] } = useQuery({
+    queryKey: ["users-for-mention"],
+    queryFn: () => base44.entities.User.list(),
+    staleTime: 60_000,
   });
 
   const createMutation = useMutation({
@@ -230,7 +349,6 @@ export default function NotesPanel({ transaction, currentUser }) {
     });
   };
 
-  // Filter notes by tab
   const visibleNotes = useMemo(() => {
     let list = notes;
     if (isClient) {
@@ -238,21 +356,20 @@ export default function NotesPanel({ transaction, currentUser }) {
     } else if (isAgent) {
       list = notes.filter(n => n.visibility === "agent" || n.visibility === "client");
     } else {
-      // TC/admin: tab controls
       if (activeTab === "internal") {
         list = notes.filter(n => n.visibility === "internal");
       } else {
         list = notes.filter(n => n.visibility === "agent" || n.visibility === "client");
       }
     }
-    // Pinned first
     return [...list.filter(n => n.is_pinned), ...list.filter(n => !n.is_pinned)];
   }, [notes, activeTab, isClient, isAgent]);
 
   const canEdit = isTC || isAgent;
+  const canSubmit = !!message.trim() && !adding;
 
   return (
-    <div className="flex flex-col h-full rounded-xl border overflow-hidden" style={{ background: "var(--card-bg)", borderColor: "var(--card-border)" }}>
+    <div className="flex flex-col h-full overflow-hidden" style={{ background: "var(--card-bg)" }}>
 
       {/* Header */}
       <div className="flex items-center justify-between px-3 py-2 border-b flex-shrink-0" style={{ borderColor: "var(--card-border)", background: "var(--bg-tertiary)" }}>
@@ -267,7 +384,7 @@ export default function NotesPanel({ transaction, currentUser }) {
             <button
               key={tab}
               onClick={() => setActiveTab(tab)}
-              className={`flex-1 py-1.5 text-[11px] font-medium capitalize transition-colors ${activeTab === tab ? "border-b-2 border-blue-500" : ""}`}
+              className="flex-1 py-1.5 text-[11px] font-medium capitalize transition-colors"
               style={{
                 color: activeTab === tab ? "var(--accent)" : "var(--text-muted)",
                 borderBottom: activeTab === tab ? "2px solid var(--accent)" : "2px solid transparent",
@@ -280,7 +397,7 @@ export default function NotesPanel({ transaction, currentUser }) {
       )}
 
       {/* Feed */}
-      <div ref={feedRef} className="flex-1 overflow-y-auto">
+      <div className="flex-1 overflow-y-auto">
         {isLoading ? (
           <p className="text-center text-xs py-6" style={{ color: "var(--text-muted)" }}>Loading…</p>
         ) : visibleNotes.length === 0 ? (
@@ -304,18 +421,15 @@ export default function NotesPanel({ transaction, currentUser }) {
       {/* Add Note input */}
       {!isClient && (
         <div className="border-t flex-shrink-0 p-2.5 space-y-2" style={{ borderColor: "var(--card-border)", background: "var(--bg-tertiary)" }}>
-          <textarea
-            className="w-full rounded-md border px-2.5 py-2 text-xs resize-none outline-none transition-colors"
-            style={{ background: "var(--input-bg)", borderColor: "var(--input-border)", color: "var(--text-primary)" }}
-            placeholder="Add a note…"
-            rows={2}
+          <MentionTextarea
             value={message}
-            onChange={e => setMessage(e.target.value)}
-            onKeyDown={e => { if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) handleAdd(); }}
+            onChange={setMessage}
+            onSubmit={handleAdd}
+            users={allUsers}
           />
           <div className="flex items-center gap-1.5">
             <select
-              className="flex-1 rounded border px-1.5 py-1 text-[11px] outline-none"
+              className="flex-1 rounded border px-1.5 py-1 text-[11px] outline-none min-w-0"
               style={{ background: "var(--input-bg)", borderColor: "var(--input-border)", color: "var(--text-primary)" }}
               value={noteType}
               onChange={e => setNoteType(e.target.value)}
@@ -327,7 +441,7 @@ export default function NotesPanel({ transaction, currentUser }) {
             </select>
             {isTC && (
               <select
-                className="flex-1 rounded border px-1.5 py-1 text-[11px] outline-none"
+                className="flex-1 rounded border px-1.5 py-1 text-[11px] outline-none min-w-0"
                 style={{ background: "var(--input-bg)", borderColor: "var(--input-border)", color: "var(--text-primary)" }}
                 value={visibility}
                 onChange={e => setVisibility(e.target.value)}
@@ -339,15 +453,29 @@ export default function NotesPanel({ transaction, currentUser }) {
             )}
             <button
               onClick={handleAdd}
-              disabled={adding || !message.trim()}
-              className="flex items-center gap-1 px-2.5 py-1 rounded text-[11px] font-semibold transition-colors disabled:opacity-50"
-              style={{ background: "var(--accent)", color: "var(--accent-text)" }}
+              disabled={!canSubmit}
+              title="Send note (⌘+Enter)"
+              style={{
+                flexShrink: 0,
+                background: canSubmit ? "var(--accent)" : "var(--bg-hover)",
+                color: canSubmit ? "var(--accent-text)" : "var(--text-muted)",
+                border: "none",
+                borderRadius: "6px",
+                padding: "6px 10px",
+                cursor: canSubmit ? "pointer" : "not-allowed",
+                display: "flex",
+                alignItems: "center",
+                gap: "4px",
+                fontSize: "11px",
+                fontWeight: 600,
+                transition: "background 0.15s",
+              }}
             >
-              <Plus className="w-3 h-3" />
-              Add
+              <Send style={{ width: 12, height: 12 }} />
+              Send
             </button>
           </div>
-          <p className="text-[10px]" style={{ color: "var(--text-muted)" }}>⌘+Enter to submit</p>
+          <p className="text-[10px]" style={{ color: "var(--text-muted)" }}>⌘+Enter to submit · @ to mention</p>
         </div>
       )}
     </div>
