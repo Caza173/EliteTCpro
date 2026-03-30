@@ -789,13 +789,6 @@ export default function TransactionDetail() {
         {activeTab === "timeline" && (
           <div className="space-y-5">
             <Card className="shadow-sm border-gray-100">
-              <CardHeader className="pb-2">
-                <CardTitle className="text-base font-semibold">Contract Timeline</CardTitle>
-                <p className="text-sm text-gray-500">Deadlines and linked tasks in chronological order</p>
-              </CardHeader>
-              <CardContent><ContractTimeline transaction={transaction} /></CardContent>
-            </Card>
-            <Card className="shadow-sm border-gray-100">
               <CardHeader className="pb-2"><CardTitle className="text-base font-semibold">Phase Progress</CardTitle></CardHeader>
               <CardContent>
                 <TransactionTimeline phasesCompleted={transaction.phases_completed || []} currentPhase={transaction.phase || 1} />
