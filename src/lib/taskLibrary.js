@@ -6,40 +6,37 @@
 // ─── PHASE DEFINITIONS ────────────────────────────────────────────────────────
 
 export const PHASES_BY_TYPE = {
-  // ── BUYER (6 phases) ──────────────────────────────────────────────────────
+  // ── BUYER UNDER CONTRACT (5 phases — no intake) ───────────────────────────
   buyer_under_contract: [
-    { phaseNum: 1, phaseId: "intake",      label: "Intake / Contract Setup" },
-    { phaseNum: 2, phaseId: "under_contract", label: "Under Contract" },
-    { phaseNum: 3, phaseId: "due_diligence", label: "Due Diligence" },
-    { phaseNum: 4, phaseId: "financing",   label: "Financing / Pending" },
-    { phaseNum: 5, phaseId: "closing",     label: "Closing" },
-    { phaseNum: 6, phaseId: "post_close",  label: "Post-Close" },
+    { phaseNum: 1, phaseId: "under_contract", label: "Under Contract" },
+    { phaseNum: 2, phaseId: "due_diligence",  label: "Due Diligence" },
+    { phaseNum: 3, phaseId: "financing",      label: "Financing / Pending" },
+    { phaseNum: 4, phaseId: "closing",        label: "Closing" },
+    { phaseNum: 5, phaseId: "post_close",     label: "Post-Close" },
   ],
 
   // ── LISTING (5 phases) ────────────────────────────────────────────────────
   listing: [
-    { phaseNum: 1, phaseId: "pre_listing",    label: "Pre-Listing" },
+    { phaseNum: 1, phaseId: "listing_intake", label: "Listing Intake / Setup" },
     { phaseNum: 2, phaseId: "active_listing", label: "Active Listing" },
     { phaseNum: 3, phaseId: "under_contract", label: "Under Contract" },
     { phaseNum: 4, phaseId: "closing",        label: "Closing" },
     { phaseNum: 5, phaseId: "post_close",     label: "Post-Close" },
   ],
 
-  // ── DUAL / OTHER ──────────────────────────────────────────────────────────
+  // ── DUAL / OTHER (mirrors buyer, no intake) ───────────────────────────────
   dual: [
-    { phaseNum: 1, phaseId: "intake",         label: "Intake / Contract Setup" },
-    { phaseNum: 2, phaseId: "under_contract", label: "Under Contract" },
-    { phaseNum: 3, phaseId: "due_diligence",  label: "Due Diligence" },
-    { phaseNum: 4, phaseId: "financing",      label: "Financing / Pending" },
-    { phaseNum: 5, phaseId: "closing",        label: "Closing" },
-    { phaseNum: 6, phaseId: "post_close",     label: "Post-Close" },
-  ],
-  other: [
-    { phaseNum: 1, phaseId: "intake",         label: "Intake / Contract Setup" },
-    { phaseNum: 2, phaseId: "under_contract", label: "Under Contract" },
-    { phaseNum: 3, phaseId: "due_diligence",  label: "Due Diligence" },
+    { phaseNum: 1, phaseId: "under_contract", label: "Under Contract" },
+    { phaseNum: 2, phaseId: "due_diligence",  label: "Due Diligence" },
+    { phaseNum: 3, phaseId: "financing",      label: "Financing / Pending" },
     { phaseNum: 4, phaseId: "closing",        label: "Closing" },
     { phaseNum: 5, phaseId: "post_close",     label: "Post-Close" },
+  ],
+  other: [
+    { phaseNum: 1, phaseId: "under_contract", label: "Under Contract" },
+    { phaseNum: 2, phaseId: "due_diligence",  label: "Due Diligence" },
+    { phaseNum: 3, phaseId: "closing",        label: "Closing" },
+    { phaseNum: 4, phaseId: "post_close",     label: "Post-Close" },
   ],
 };
 
@@ -63,26 +60,26 @@ export function getPhasesForType(transactionType) {
 const TASKS_BY_TYPE = {
 
   // ════════════════════════════════════════════════════
-  // BUYER TRANSACTION — 6 phases
+  // BUYER TRANSACTION — 5 phases (no intake phase)
   // ════════════════════════════════════════════════════
   buyer_under_contract: {
-    intake: [
-      { id: "upload_psa",           name: "Executed P&S uploaded",                        required: true  },
-      { id: "buyer_agency",         name: "Buyer agency agreement uploaded",               required: true  },
-      { id: "preapproval",          name: "Pre-approval / proof of funds uploaded",        required: true  },
-      { id: "earnest_money_terms",  name: "Earnest money terms confirmed",                required: true  },
-      { id: "add_contacts",         name: "Contacts added (lender, title, agent)",        required: true  },
-      { id: "enter_dates",          name: "All critical dates entered into system",        required: true  },
-      { id: "calendar_sync",        name: "Deadlines synced to calendar",                 required: false },
-      { id: "timeline_email",       name: "Timeline email sent to all parties",           required: true  },
-    ],
     under_contract: [
-      { id: "deposit_received",     name: "Earnest money deposit received + verified",    required: true  },
-      { id: "inspection_scheduled", name: "Inspection(s) scheduled",                      required: true  },
-      { id: "add_inspector",        name: "Inspector / vendors added to file",            required: true  },
-      { id: "calendar_deadlines",   name: "Calendar deadlines synced",                   required: false },
-      { id: "initial_email_lender", name: "Initial email sent to lender/title",          required: true  },
-      { id: "seller_disclosure",    name: "Seller disclosure received",                  required: true  },
+      { id: "create_transaction_file", name: "Create transaction file (SkySlope/Dotloop)", required: true  },
+      { id: "enter_property_system",   name: "Enter property into system",                 required: true  },
+      { id: "verify_initials_sigs",    name: "Verify initials & signatures",               required: true  },
+      { id: "upload_psa",              name: "Executed P&S uploaded",                      required: true  },
+      { id: "buyer_agency",            name: "Buyer agency agreement uploaded",             required: true  },
+      { id: "preapproval",             name: "Pre-approval / proof of funds uploaded",      required: true  },
+      { id: "earnest_money_terms",     name: "Earnest money terms confirmed",               required: true  },
+      { id: "add_contacts",            name: "Contacts added (lender, title, agent)",       required: true  },
+      { id: "enter_dates",             name: "All critical dates entered into system",       required: true  },
+      { id: "calendar_sync",           name: "Deadlines synced to calendar",                required: false },
+      { id: "timeline_email",          name: "Timeline email sent to all parties",          required: true  },
+      { id: "deposit_received",        name: "Earnest money deposit received + verified",   required: true  },
+      { id: "inspection_scheduled",    name: "Inspection(s) scheduled",                     required: true  },
+      { id: "add_inspector",           name: "Inspector / vendors added to file",           required: true  },
+      { id: "initial_email_lender",    name: "Initial email sent to lender/title",          required: true  },
+      { id: "seller_disclosure",       name: "Seller disclosure received",                  required: true  },
     ],
     due_diligence: [
       { id: "inspections_completed",name: "Inspections completed",                        required: true  },
@@ -118,7 +115,7 @@ const TASKS_BY_TYPE = {
   // LISTING TRANSACTION — 5 phases
   // ════════════════════════════════════════════════════
   listing: {
-    pre_listing: [
+    listing_intake: [
       { id: "cma_completed",        name: "CMA completed",                               required: true  },
       { id: "listing_agreement",    name: "Listing agreement signed",                    required: true  },
       { id: "seller_disclosures",   name: "Seller disclosures collected",                required: true  },
@@ -160,7 +157,6 @@ const TASKS_BY_TYPE = {
 // Dual mirrors buyer; other uses a simplified buyer subset
 TASKS_BY_TYPE.dual = TASKS_BY_TYPE.buyer_under_contract;
 TASKS_BY_TYPE.other = {
-  intake:         TASKS_BY_TYPE.buyer_under_contract.intake,
   under_contract: TASKS_BY_TYPE.buyer_under_contract.under_contract,
   due_diligence:  TASKS_BY_TYPE.buyer_under_contract.due_diligence,
   closing:        TASKS_BY_TYPE.buyer_under_contract.closing,

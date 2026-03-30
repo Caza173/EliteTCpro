@@ -14,24 +14,8 @@ import PurchaseAgreementUpload from "../components/forms/PurchaseAgreementUpload
 import ParsedDeadlinesPreview from "../components/forms/ParsedDeadlinesPreview";
 import { getStartingPhase, generateTasksForPhase } from "../lib/taskLibrary";
 
-// dealType: "listing" | "listing_uc" | "buyer_uc"
+// dealType: "buyer_uc" | "listing" | "both"
 const DEAL_TYPES = [
-  {
-    id: "listing",
-    label: "Listing (Pre-Listing)",
-    desc: "You represent the seller — MLS, photos, showings. No buyer or PSA yet.",
-    icon: Home,
-    color: "#d97706",
-    bg: "#fef3c7",
-  },
-  {
-    id: "listing_uc",
-    label: "Listing Under Contract",
-    desc: "You represent the seller — an offer has been accepted. PSA + buyer info required.",
-    icon: FileSignature,
-    color: "#7c3aed",
-    bg: "#f5f3ff",
-  },
   {
     id: "buyer_uc",
     label: "Buyer Under Contract",
@@ -39,6 +23,22 @@ const DEAL_TYPES = [
     icon: UserCheck,
     color: "#2563eb",
     bg: "#eff6ff",
+  },
+  {
+    id: "listing",
+    label: "Listing Input",
+    desc: "You represent the seller — MLS input, photos, showings. No buyer or PSA yet.",
+    icon: Home,
+    color: "#d97706",
+    bg: "#fef3c7",
+  },
+  {
+    id: "both",
+    label: "Both (Dual)",
+    desc: "You represent both buyer and seller on the same transaction.",
+    icon: FileSignature,
+    color: "#7c3aed",
+    bg: "#f5f3ff",
   },
 ];
 
@@ -124,7 +124,7 @@ export default function AgentIntake() {
   const selectDealType = (type) => {
     setDealType(type);
     if (type === "listing") setForm({ ...initialListing });
-    else if (type === "listing_uc") setForm({ ...initialListingUC });
+    else if (type === "both") setForm({ ...initialListingUC });
     else setForm({ ...initialBuyerUC });
     setBuyers([""]);
     setSellers([""]);
@@ -170,25 +170,24 @@ export default function AgentIntake() {
   const handleSubmit = (e) => {
     e.preventDefault();
     const isListing = dealType === "listing";
-    const isListingUC = dealType === "listing_uc";
+    const isBoth = dealType === "both";
     const isBuyerUC = dealType === "buyer_uc";
     const sellerList = sellers.filter(Boolean);
     const buyerList = buyers.filter(Boolean);
 
     let txType, txPhase, phase, tasks;
     if (isListing) {
-      txType = "seller"; txPhase = "intake"; phase = 1;
+      txType = "seller"; txPhase = "listing_intake"; phase = 1;
       tasks = [];
-    } else if (isListingUC) {
-      txType = "seller"; txPhase = "under_contract"; phase = 3;
-      tasks = generateTasksForPhase(3, null, "seller");
+    } else if (isBoth) {
+      txType = "dual"; txPhase = "under_contract"; phase = 1;
+      tasks = generateTasksForPhase(1, null, "dual");
     } else {
-      txType = "buyer"; txPhase = "under_contract"; phase = 3;
+      txType = "buyer"; txPhase = "under_contract"; phase = 1;
       tasks = generateSmartTasks(parsedData, form.is_cash_transaction, form);
-      // Merge buyer-side phase 3 tasks
-      const phase3Tasks = generateTasksForPhase(3, null, "buyer");
+      const phase1Tasks = generateTasksForPhase(1, null, "buyer");
       const existingIds = new Set(tasks.map(t => t.id));
-      tasks = [...tasks, ...phase3Tasks.filter(t => !existingIds.has(t.id))];
+      tasks = [...tasks, ...phase1Tasks.filter(t => !existingIds.has(t.id))];
     }
 
     const cleanClientEmails = clientEmails.filter(Boolean);
@@ -226,13 +225,13 @@ export default function AgentIntake() {
           <CheckCircle className="w-8 h-8 text-emerald-500" />
         </div>
         <h2 className="text-2xl font-bold text-gray-900 mb-2">
-          {dealType === "listing" ? "Listing Created!" : dealType === "listing_uc" ? "Listing Under Contract Created!" : "Buyer Transaction Submitted!"}
+          {dealType === "listing" ? "Listing Created!" : dealType === "both" ? "Dual Transaction Created!" : "Buyer Transaction Submitted!"}
         </h2>
         <p className="text-gray-500 mb-6">
           {dealType === "listing"
             ? "Your listing has been created. You can manage it from the Transactions page."
-            : dealType === "listing_uc"
-            ? "Your seller-side transaction is now under contract and ready to manage."
+            : dealType === "both"
+            ? "Your dual-sided transaction is now active and ready to manage."
             : "Your buyer transaction has been submitted. All parties will be notified."}
         </p>
         <Button onClick={() => { setSubmitted(false); setDealType(null); }} className="bg-blue-600 hover:bg-blue-700">
@@ -289,9 +288,9 @@ export default function AgentIntake() {
   }
 
   const isListing = dealType === "listing";
-  const isListingUC = dealType === "listing_uc";
+  const isBoth = dealType === "both";
   const isBuyerUC = dealType === "buyer_uc";
-  const isUnderContract = isListingUC || isBuyerUC;
+  const isUnderContract = isBoth || isBuyerUC;
 
   const dealConfig = DEAL_TYPES.find(d => d.id === dealType);
 
@@ -304,7 +303,7 @@ export default function AgentIntake() {
           <h1 className="text-2xl font-bold text-gray-900 tracking-tight">{dealConfig?.label}</h1>
           <p className="text-sm text-gray-500 mt-0.5">
             {isListing ? "Create a listing file — buyer fields not required yet." :
-             isListingUC ? "Seller-side under contract — buyer info + PSA required." :
+             isBoth ? "Dual transaction — both buyer and seller represented." :
              "Buyer-side — PSA, lender, inspections, appraisal tracked."}
           </p>
         </div>
@@ -333,14 +332,14 @@ export default function AgentIntake() {
           </div>
           <CardDescription>
             {isListing ? "Optional — auto-fills seller, list price, commission" :
-             isListingUC ? "Optional — upload P&S to auto-fill buyer, seller, and dates" :
+             isBoth ? "Optional — upload P&S to auto-fill buyer, seller, and dates" :
              "Optional — auto-fills buyer, seller, and all deadline dates"}
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-3">
           {isListing ? (
             <AgencyDocUpload docType="listing" onParsed={handleListingParsed} />
-          ) : isListingUC ? (
+          ) : isBoth ? (
             <>
               <PurchaseAgreementUpload onParsed={handleParsed} />
               {parsedData && <ParsedDeadlinesPreview parsed={parsedData} isCash={form.is_cash_transaction} />}
@@ -583,7 +582,7 @@ export default function AgentIntake() {
             <div className="flex justify-end pt-2">
               <Button type="submit" disabled={createMutation.isPending} className="bg-blue-600 hover:bg-blue-700 px-8">
                 {createMutation.isPending ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Send className="w-4 h-4 mr-2" />}
-                {isListing ? "Create Listing" : isListingUC ? "Create Listing Under Contract" : "Submit Buyer Transaction"}
+                {isListing ? "Create Listing" : isBoth ? "Create Dual Transaction" : "Submit Buyer Transaction"}
               </Button>
             </div>
           </form>
