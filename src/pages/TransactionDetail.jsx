@@ -102,6 +102,48 @@ export default function TransactionDetail() {
   const [alertDialog, setAlertDialog] = useState({ open: false, title: "", message: "" });
   const [contactsExpanded, setContactsExpanded] = useState(false);
 
+  // Resizable notes panel
+  const NOTES_MIN = 320;
+  const NOTES_MAX = 600;
+  const NOTES_DEFAULT = 420;
+  const [notesWidth, setNotesWidth] = useState(() => {
+    const saved = localStorage.getItem("notesPanelWidth");
+    return saved ? Math.min(NOTES_MAX, Math.max(NOTES_MIN, parseInt(saved))) : NOTES_DEFAULT;
+  });
+  const [notesCollapsed, setNotesCollapsed] = useState(false);
+  const isResizingNotes = useRef(false);
+  const resizeStartX = useRef(0);
+  const resizeStartWidth = useRef(0);
+
+  const onNotesResizeMouseDown = (e) => {
+    isResizingNotes.current = true;
+    resizeStartX.current = e.clientX;
+    resizeStartWidth.current = notesWidth;
+    e.preventDefault();
+  };
+
+  useEffect(() => {
+    const onMouseMove = (e) => {
+      if (!isResizingNotes.current) return;
+      // dragging left increases notes width (handle is on left edge of notes panel)
+      const delta = resizeStartX.current - e.clientX;
+      const newWidth = Math.min(NOTES_MAX, Math.max(NOTES_MIN, resizeStartWidth.current + delta));
+      setNotesWidth(newWidth);
+    };
+    const onMouseUp = () => {
+      if (isResizingNotes.current) {
+        isResizingNotes.current = false;
+        setNotesWidth(w => { localStorage.setItem("notesPanelWidth", String(w)); return w; });
+      }
+    };
+    document.addEventListener("mousemove", onMouseMove);
+    document.addEventListener("mouseup", onMouseUp);
+    return () => {
+      document.removeEventListener("mousemove", onMouseMove);
+      document.removeEventListener("mouseup", onMouseUp);
+    };
+  }, []);
+
   const { data: transactions = [], isLoading } = useQuery({
     queryKey: ["transactions"],
     queryFn: () => base44.entities.Transaction.list(),
@@ -735,22 +777,79 @@ export default function TransactionDetail() {
           )}
         </div>
 
-        {/* RIGHT COLUMN — 30% */}
-        <div className="hidden lg:flex flex-col border-l flex-shrink-0" style={{ width: "30%", minWidth: "300px", maxWidth: "420px", borderColor: "var(--card-border)", background: "var(--bg-secondary)" }}>
+        {/* RESIZE HANDLE + RIGHT COLUMN */}
+        <div className="hidden lg:flex flex-shrink-0" style={{ width: notesCollapsed ? "0px" : `${notesWidth}px`, transition: notesCollapsed ? "width 0.2s ease" : "none" }}>
 
-          {/* Compliance Monitor */}
-          <div className="flex-shrink-0 border-b p-3" style={{ borderColor: "var(--card-border)" }}>
-            <ComplianceMonitorWidget
-              transaction={transaction}
-              onNavigateToCompliance={() => setActiveTab("compliance")}
-            />
-          </div>
+          {/* Drag-to-resize handle */}
+          {!notesCollapsed && (
+            <div
+              className="w-1.5 flex-shrink-0 cursor-col-resize group relative"
+              style={{ background: "var(--card-border)" }}
+              onMouseDown={onNotesResizeMouseDown}
+            >
+              <div className="absolute inset-0 group-hover:bg-blue-400 transition-colors opacity-0 group-hover:opacity-100" />
+            </div>
+          )}
 
-          {/* Notes — fills remaining height */}
-          <div className="flex-1 min-h-0 flex flex-col overflow-hidden">
-            <NotesPanel transaction={transaction} currentUser={currentUser} />
-          </div>
+          {/* Right panel */}
+          {!notesCollapsed && (
+            <div className="flex flex-col flex-1 min-w-0 overflow-hidden" style={{ background: "var(--bg-secondary)", borderLeft: "1px solid var(--card-border)" }}>
+
+              {/* Panel header with focus toggle buttons */}
+              <div className="flex items-center justify-between px-3 py-2 border-b flex-shrink-0" style={{ borderColor: "var(--card-border)", background: "var(--bg-tertiary)" }}>
+                <span className="text-[11px] font-semibold uppercase tracking-wider" style={{ color: "var(--text-muted)" }}>Notes & Compliance</span>
+                <div className="flex items-center gap-1">
+                  <button
+                    onClick={() => { const w = NOTES_MIN; setNotesWidth(w); localStorage.setItem("notesPanelWidth", String(w)); }}
+                    className="text-[10px] px-2 py-0.5 rounded border transition-colors"
+                    style={{ borderColor: "var(--card-border)", color: "var(--text-muted)" }}
+                    title="Focus Tasks"
+                  >Focus Tasks</button>
+                  <button
+                    onClick={() => { const w = NOTES_MAX; setNotesWidth(w); localStorage.setItem("notesPanelWidth", String(w)); }}
+                    className="text-[10px] px-2 py-0.5 rounded border transition-colors"
+                    style={{ borderColor: "var(--card-border)", color: "var(--text-muted)" }}
+                    title="Focus Notes"
+                  >Focus Notes</button>
+                  <button
+                    onClick={() => setNotesCollapsed(true)}
+                    className="p-1 rounded hover:bg-gray-200 ml-1"
+                    style={{ color: "var(--text-muted)" }}
+                    title="Collapse panel"
+                  >
+                    <X className="w-3 h-3" />
+                  </button>
+                </div>
+              </div>
+
+              {/* Compliance Monitor */}
+              <div className="flex-shrink-0 border-b p-3" style={{ borderColor: "var(--card-border)" }}>
+                <ComplianceMonitorWidget
+                  transaction={transaction}
+                  onNavigateToCompliance={() => setActiveTab("compliance")}
+                />
+              </div>
+
+              {/* Notes — fills remaining height */}
+              <div className="flex-1 min-h-0 flex flex-col overflow-hidden">
+                <NotesPanel transaction={transaction} currentUser={currentUser} />
+              </div>
+            </div>
+          )}
         </div>
+
+        {/* Re-open collapsed panel button */}
+        {notesCollapsed && (
+          <button
+            onClick={() => setNotesCollapsed(false)}
+            className="hidden lg:flex flex-col items-center justify-center w-8 flex-shrink-0 border-l hover:bg-blue-50 transition-colors gap-1"
+            style={{ borderColor: "var(--card-border)", background: "var(--bg-secondary)", color: "var(--text-muted)" }}
+            title="Expand Notes panel"
+          >
+            <PanelLeftOpen className="w-3.5 h-3.5" />
+            <span className="text-[10px] font-medium" style={{ writingMode: "vertical-rl", transform: "rotate(180deg)" }}>Notes</span>
+          </button>
+        )}
       </div>
 
       {/* Floating AI button — bottom left so it never overlaps the right Notes panel */}
