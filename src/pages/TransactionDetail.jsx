@@ -15,6 +15,7 @@ import {
   ClipboardCheck, Send, UserPlus, LayoutDashboard, GitBranch, Clock,
   DollarSign, FolderOpen, ShieldCheck, PanelLeftClose, PanelLeftOpen,
   Globe, X, Pencil, Mail as MailIcon, Receipt, CalendarDays, Info, AlertTriangle,
+  ChevronDown, ChevronUp, Bot, Zap,
 } from "lucide-react";
 import { format } from "date-fns";
 import PhaseTaskPanelV2 from "../components/transactions/PhaseTaskPanelV2";
@@ -92,8 +93,6 @@ export default function TransactionDetail() {
   const urlTab = urlParams.get("tab");
   const [activeTab, setActiveTab] = useState(urlTab || "overview");
   const [selectedPhase, setSelectedPhase] = useState(1);
-  const [aiCollapsed, setAiCollapsed] = useState(false);
-  const [aiWidth, setAiWidth] = useState(380);
   const [mobileAIOpen, setMobileAIOpen] = useState(false);
   const [sendingTimeline, setSendingTimeline] = useState(false);
   const [syncingCalendar, setSyncingCalendar] = useState(false);
@@ -101,31 +100,7 @@ export default function TransactionDetail() {
   const [invitingClient, setInvitingClient] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [alertDialog, setAlertDialog] = useState({ open: false, title: "", message: "" });
-
-  const isDragging = useRef(false);
-  const startX = useRef(0);
-  const startWidth = useRef(0);
-
-  const onResizeMouseDown = (e) => {
-    isDragging.current = true;
-    startX.current = e.clientX;
-    startWidth.current = aiWidth;
-    e.preventDefault();
-  };
-
-  useEffect(() => {
-    const onMouseMove = (e) => {
-      if (!isDragging.current) return;
-      setAiWidth(Math.max(320, Math.min(560, startWidth.current + (e.clientX - startX.current))));
-    };
-    const onMouseUp = () => { isDragging.current = false; };
-    document.addEventListener("mousemove", onMouseMove);
-    document.addEventListener("mouseup", onMouseUp);
-    return () => {
-      document.removeEventListener("mousemove", onMouseMove);
-      document.removeEventListener("mouseup", onMouseUp);
-    };
-  }, []);
+  const [contactsExpanded, setContactsExpanded] = useState(false);
 
   const { data: transactions = [], isLoading } = useQuery({
     queryKey: ["transactions"],
@@ -441,8 +416,32 @@ export default function TransactionDetail() {
     );
   }
 
+  // Compute attention items
+  const now = new Date();
+  const attentionItems = [];
+  const deadlineFields = [
+    { key: "inspection_deadline", label: "Inspection" },
+    { key: "due_diligence_deadline", label: "Due Diligence" },
+    { key: "financing_deadline", label: "Financing" },
+    { key: "appraisal_deadline", label: "Appraisal" },
+    { key: "closing_date", label: "Closing" },
+    { key: "earnest_money_deadline", label: "Earnest Money" },
+  ];
+  deadlineFields.forEach(({ key, label }) => {
+    const d = transaction[key];
+    if (!d) return;
+    const date = new Date(d);
+    const diffHrs = (date - now) / 36e5;
+    if (diffHrs < 0) attentionItems.push({ type: "deadline", label: `${label} OVERDUE`, tab: "deadlines", urgent: true });
+    else if (diffHrs < 48) attentionItems.push({ type: "deadline", label: `${label} in ${Math.round(diffHrs)}h`, tab: "deadlines", urgent: diffHrs < 24 });
+  });
+  const overdueTasks = txTasks.filter(t => !t.is_completed && t.due_date && new Date(t.due_date) < now);
+  if (overdueTasks.length > 0) attentionItems.push({ type: "task", label: `${overdueTasks.length} overdue task${overdueTasks.length > 1 ? "s" : ""}`, tab: "overview", urgent: true });
+
+  const tabs = transaction.transaction_type === "seller" ? LISTING_TABS : TX_TABS;
+
   return (
-    <div className="flex -mx-4 -mb-4 lg:-mx-8 lg:-mb-8 overflow-hidden" style={{ height: "calc(100vh - 57px)" }}>
+    <div className="flex flex-col -mx-4 -mb-4 lg:-mx-5 lg:-mb-5 overflow-hidden" style={{ height: "calc(100vh - 57px)" }}>
 
       <EmailComposerModal
         open={emailModalOpen}
@@ -472,7 +471,7 @@ export default function TransactionDetail() {
 
       {/* Mobile AI Drawer */}
       {mobileAIOpen && (
-        <div className="lg:hidden fixed inset-0 z-50">
+        <div className="fixed inset-0 z-50">
           <div className="absolute inset-0 bg-black/50" onClick={() => setMobileAIOpen(false)} />
           <div className="absolute bottom-0 left-0 right-0 rounded-t-2xl overflow-hidden flex flex-col"
             style={{ height: "72vh", background: "var(--card-bg)" }}>
@@ -489,68 +488,46 @@ export default function TransactionDetail() {
         </div>
       )}
 
-      {/* Left AI Panel (Desktop) */}
-      {!aiCollapsed && (
-        <aside className="hidden lg:flex flex-col border-r flex-shrink-0 overflow-hidden"
-          style={{ width: aiWidth, borderColor: "var(--card-border)", background: "var(--bg-secondary)" }}>
-          <div className="flex items-center justify-between px-4 py-2.5 border-b flex-shrink-0"
-            style={{ borderColor: "var(--card-border)", background: "var(--bg-tertiary)" }}>
-            <span className="text-xs font-semibold uppercase tracking-wider" style={{ color: "var(--text-muted)" }}>AI Assistant</span>
-            <button onClick={() => setAiCollapsed(true)} className="p-1.5 rounded-lg transition-colors hover:bg-gray-200" title="Collapse AI panel">
-              <PanelLeftClose className="w-4 h-4" style={{ color: "var(--text-muted)" }} />
-            </button>
-          </div>
-          <div className="flex-1 overflow-hidden">
-            <TCAIAssistant transaction={transaction} currentUser={currentUser} />
-          </div>
-        </aside>
-      )}
-
-      {/* Resize Handle */}
-      {!aiCollapsed && (
-        <div className="hidden lg:block w-1.5 flex-shrink-0 cursor-col-resize hover:bg-blue-400 transition-colors"
-          style={{ background: "var(--card-border)" }}
-          onMouseDown={onResizeMouseDown} />
-      )}
-
-      {/* Right: Transaction Content */}
-      <div className="flex-1 min-w-0 overflow-y-auto p-4 lg:p-8 space-y-6">
-
-        {aiCollapsed && (
-          <button onClick={() => setAiCollapsed(false)}
-            className="hidden lg:inline-flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-lg border transition-colors hover:bg-blue-50"
-            style={{ borderColor: "var(--accent)", color: "var(--accent)" }}>
-            <PanelLeftOpen className="w-3.5 h-3.5" /> Show AI Assistant
-          </button>
-        )}
-
-        {/* Back + Actions */}
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+      {/* ── TOP HEADER BAR ── */}
+      <div className="flex-shrink-0 px-5 pt-4 pb-3 border-b" style={{ borderColor: "var(--card-border)", background: "var(--bg-secondary)" }}>
+        {/* Row 1: Back + address + badges + actions */}
+        <div className="flex flex-wrap items-center gap-3 mb-3">
           <Link to={createPageUrl("Transactions")}>
-            <Button variant="ghost" className="text-gray-600 hover:text-gray-900 -ml-2">
+            <Button variant="ghost" size="sm" className="text-gray-500 hover:text-gray-800 -ml-2 h-8">
               <ArrowLeft className="w-4 h-4 mr-1" /> Back
             </Button>
           </Link>
-          <div className="flex flex-wrap items-center gap-2">
-            <Select
-              value={transaction.property_type || "residential"}
-              onValueChange={(v) => updateMutation.mutate({ id: transaction.id, data: { property_type: v } })}
-            >
-              <SelectTrigger className="w-36"><SelectValue /></SelectTrigger>
-              <SelectContent>
-                <SelectItem value="residential">Residential</SelectItem>
-                <SelectItem value="condo">Condo</SelectItem>
-                <SelectItem value="land">Land</SelectItem>
-                <SelectItem value="commercial">Commercial</SelectItem>
-                <SelectItem value="multi_family">Multi-Family</SelectItem>
-                <SelectItem value="other">Other</SelectItem>
-              </SelectContent>
-            </Select>
-            <Select
-              value={transaction.transaction_phase || "intake"}
-              onValueChange={(v) => updateMutation.mutate({ id: transaction.id, data: { transaction_phase: v, last_activity_at: new Date().toISOString() } })}
-            >
-              <SelectTrigger className="w-40"><SelectValue /></SelectTrigger>
+          <div className="flex items-center gap-2 flex-1 min-w-0">
+            <div className="w-8 h-8 rounded-lg bg-blue-50 flex items-center justify-center flex-shrink-0">
+              <MapPin className="w-4 h-4 text-blue-500" />
+            </div>
+            <EditableAddress
+              value={transaction.address}
+              onSave={v => updateMutation.mutate({ id: transaction.id, data: { address: v } })}
+            />
+            <Badge variant="outline" className={`text-xs capitalize flex-shrink-0 ${statusStyles[transaction.status] || statusStyles.active}`}>
+              {transaction.status || "active"}
+            </Badge>
+            <Badge variant="outline" className={`text-xs font-semibold capitalize flex-shrink-0 ${
+              (transaction.transaction_type === "seller" || transaction.transaction_type === "listing")
+                ? "bg-emerald-50 text-emerald-700 border-emerald-300"
+                : "bg-blue-50 text-blue-700 border-blue-300"
+            }`}>
+              {(transaction.transaction_type === "seller" || transaction.transaction_type === "listing") ? "🟢 Listing" : "🔵 Buyer"}
+            </Badge>
+            <HealthScoreBadge
+              healthScore={transaction.health_score ?? computeHealthScore(transaction, checklistItems).health_score}
+              riskLevel={transaction.risk_level ?? computeHealthScore(transaction, checklistItems).risk_level}
+            />
+            <SkySlopeSyncBadge
+              transaction={transaction}
+              onSynced={() => queryClient.invalidateQueries({ queryKey: ["transactions"] })}
+            />
+          </div>
+          <div className="flex flex-wrap items-center gap-1.5 flex-shrink-0">
+            <Select value={transaction.transaction_phase || "intake"}
+              onValueChange={(v) => updateMutation.mutate({ id: transaction.id, data: { transaction_phase: v, last_activity_at: new Date().toISOString() } })}>
+              <SelectTrigger className="h-8 w-38 text-xs"><SelectValue /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="intake">Intake</SelectItem>
                 <SelectItem value="under_contract">Under Contract</SelectItem>
@@ -562,159 +539,111 @@ export default function TransactionDetail() {
                 <SelectItem value="closed">Closed</SelectItem>
               </SelectContent>
             </Select>
-            <Button variant="outline" size="sm" className="text-blue-600 hover:text-blue-700 hover:bg-blue-50 border-blue-200"
-              onClick={() => setEmailModalOpen(true)}>
-              <MailIcon className="w-4 h-4 mr-1" /> Send Email
+            <Button variant="outline" size="sm" className="h-8 text-blue-600 hover:bg-blue-50 border-blue-200" onClick={() => setEmailModalOpen(true)}>
+              <MailIcon className="w-3.5 h-3.5 mr-1" /> Email
             </Button>
-            <UnderContractEmailButton
-              transaction={transaction}
-              currentUser={currentUser}
-              documents={documents}
-            />
-            <Button variant="outline" size="sm" className="text-indigo-600 hover:text-indigo-700 hover:bg-indigo-50 border-indigo-200"
-              onClick={handleInviteClient} disabled={invitingClient}>
-              <UserPlus className="w-4 h-4 mr-1" />
-              {invitingClient ? "Sending..." : "Invite Client"}
+            <UnderContractEmailButton transaction={transaction} currentUser={currentUser} documents={documents} />
+            <Button variant="outline" size="sm" className="h-8 text-indigo-600 hover:bg-indigo-50 border-indigo-200" onClick={handleInviteClient} disabled={invitingClient}>
+              <UserPlus className="w-3.5 h-3.5 mr-1" />{invitingClient ? "Sending…" : "Invite"}
             </Button>
-            {/* Convert listing → transaction */}
             {(transaction.transaction_type === "seller" || transaction.phase <= 2) && (
-              <ConvertToTransactionButton
-                transaction={transaction}
-                onConverted={() => queryClient.invalidateQueries({ queryKey: ["transactions"] })}
-              />
+              <ConvertToTransactionButton transaction={transaction} onConverted={() => queryClient.invalidateQueries({ queryKey: ["transactions"] })} />
             )}
-            <Button variant="outline" size="sm" className="text-red-600 hover:text-red-700 hover:bg-red-50 border-red-200"
-              onClick={() => setConfirmDelete(true)}>
-              <Trash2 className="w-4 h-4 mr-1" /> Delete
+            <Button variant="outline" size="sm" className="h-8 text-red-600 hover:bg-red-50 border-red-200" onClick={() => setConfirmDelete(true)}>
+              <Trash2 className="w-3.5 h-3.5" />
             </Button>
-            <QuickFeedbackButton
-              defaultType="bug"
-              label="Report Issue"
-              variant="badge"
-              className="border-gray-200 text-gray-500 hover:border-gray-300"
-              context={{
-                transaction_id: transaction?.id,
-                transaction_address: transaction?.address,
-                route_name: "Transaction Page",
-              }}
-            />
+            <QuickFeedbackButton defaultType="bug" label="Report" variant="badge"
+              className="border-gray-200 text-gray-500 hover:border-gray-300 h-8"
+              context={{ transaction_id: transaction?.id, transaction_address: transaction?.address, route_name: "Transaction Page" }} />
           </div>
         </div>
 
-        {/* Summary Card + Notes — side by side */}
-        <div className="flex gap-4 items-start">
-        <div className="flex-1 min-w-0">
-        <Card className="shadow-sm border-gray-100">
-          <CardHeader className="pb-3">
-            <div className="flex items-start justify-between">
-              <div className="flex items-center gap-3">
-                <div className="w-11 h-11 rounded-xl bg-blue-50 flex items-center justify-center flex-shrink-0">
-                  <MapPin className="w-5 h-5 text-blue-500" />
-                </div>
-                <div>
-                  <EditableAddress
-                    value={transaction.address}
-                    onSave={v => updateMutation.mutate({ id: transaction.id, data: { address: v } })}
-                  />
-                  <div className="flex items-center gap-2 mt-1 flex-wrap">
-                    <Badge variant="outline" className={`text-xs capitalize ${statusStyles[transaction.status] || statusStyles.active}`}>
-                      {transaction.status || "active"}
-                    </Badge>
-                    <Badge
-                      variant="outline"
-                      className={`text-xs font-semibold capitalize px-2.5 py-1 ${
-                        (transaction.transaction_type === "seller" || transaction.transaction_type === "listing")
-                          ? "bg-emerald-50 text-emerald-700 border-emerald-300"
-                          : "bg-blue-50 text-blue-700 border-blue-300"
-                      }`}
-                    >
-                      {(transaction.transaction_type === "seller" || transaction.transaction_type === "listing")
-                        ? "🟢 Listing Transaction"
-                        : "🔵 Buyer Transaction"}
-                    </Badge>
-                    <HealthScoreBadge
-                      healthScore={transaction.health_score ?? computeHealthScore(transaction, checklistItems).health_score}
-                      riskLevel={transaction.risk_level ?? computeHealthScore(transaction, checklistItems).risk_level}
-                    />
-                    <SkySlopeSyncBadge
-                      transaction={transaction}
-                      onSynced={() => queryClient.invalidateQueries({ queryKey: ["transactions"] })}
-                    />
-                  </div>
-                </div>
+        {/* Row 2: Meta strip + attention items */}
+        <div className="flex flex-wrap items-center gap-4">
+          <div className="flex flex-wrap items-center gap-3 text-xs" style={{ color: "var(--text-muted)" }}>
+            {transaction.contract_date && <span><span className="font-medium" style={{ color: "var(--text-secondary)" }}>Contract:</span> {transaction.contract_date}</span>}
+            {transaction.closing_date && <span><span className="font-medium" style={{ color: "var(--text-secondary)" }}>Closing:</span> {transaction.closing_date}</span>}
+            {transaction.sale_price && <span><span className="font-medium" style={{ color: "var(--text-secondary)" }}>Price:</span> ${transaction.sale_price?.toLocaleString()}</span>}
+            {transaction.is_cash_transaction && <span className="text-emerald-600 font-semibold">Cash</span>}
+          </div>
+          {attentionItems.length > 0 && (
+            <div className="flex items-center gap-1.5 flex-wrap ml-auto">
+              <Zap className="w-3.5 h-3.5 text-amber-500 flex-shrink-0" />
+              {attentionItems.map((item, i) => (
+                <button key={i} onClick={() => setActiveTab(item.tab)}
+                  className={`text-[11px] font-semibold px-2 py-0.5 rounded-full border transition-colors ${
+                    item.urgent ? "bg-red-50 border-red-300 text-red-600" : "bg-amber-50 border-amber-300 text-amber-700"
+                  }`}>
+                  {item.label}
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* ── MAIN 2-COLUMN BODY ── */}
+      <div className="flex flex-1 min-h-0 overflow-hidden">
+
+        {/* LEFT COLUMN — 70% */}
+        <div className="flex-1 min-w-0 overflow-y-auto p-4 lg:p-5 space-y-4">
+
+          {/* Contacts — collapsible */}
+          <div className="rounded-xl border" style={{ background: "var(--card-bg)", borderColor: "var(--card-border)" }}>
+            <button
+              className="w-full flex items-center justify-between px-4 py-2.5 text-left"
+              onClick={() => setContactsExpanded(e => !e)}
+            >
+              <div className="flex items-center gap-2">
+                <Users className="w-4 h-4" style={{ color: "var(--text-muted)" }} />
+                <span className="text-sm font-semibold" style={{ color: "var(--text-primary)" }}>Parties</span>
+                <span className="text-xs" style={{ color: "var(--text-muted)" }}>
+                  {[transaction.agent, transaction.buyers_agent_name, transaction.sellers_agent_name, transaction.lender_name].filter(Boolean).join(" · ") || "Buyers, Sellers, Agents, Vendors"}
+                </span>
               </div>
-            </div>
-          </CardHeader>
-          <CardContent className="space-y-5">
-            {/* Contact Cards */}
-            <ContactsSection
-              transaction={transaction}
-              currentUser={currentUser}
-              onUpdate={(data) => updateMutation.mutate({ id: transaction.id, data })}
-            />
-
-            {/* Meta info row */}
-            <div className="flex flex-wrap gap-4 pt-2 border-t border-gray-100 text-xs text-gray-500">
-              {transaction.contract_date && (
-                <span><span className="font-medium text-gray-700">Contract Date:</span> {transaction.contract_date}</span>
-              )}
-              {transaction.property_type && (
-                <span><span className="font-medium text-gray-700">Property Type:</span> {
-                  { residential: "Residential", condo: "Condo", land: "Land", commercial: "Commercial", multi_family: "Multi-Family", other: "Other" }[transaction.property_type] || transaction.property_type
-                }</span>
-              )}
-              {transaction.transaction_phase && (
-                <span><span className="font-medium text-gray-700">Phase:</span> <span className="text-blue-600 font-semibold">{
-                  { intake: "Intake", under_contract: "Under Contract", inspection: "Inspection", financing: "Financing", appraisal: "Appraisal", clear_to_close: "Clear to Close", closing: "Closing", closed: "Closed" }[transaction.transaction_phase] || transaction.transaction_phase
-                }</span></span>
-              )}
-              {transaction.is_cash_transaction && (
-                <span className="text-emerald-600 font-semibold">Cash Transaction</span>
-              )}
-            </div>
-          </CardContent>
-        </Card>
-
-        </div>{/* end flex-1 summary wrapper */}
-        {/* Notes Panel */}
-        <div className="hidden xl:flex flex-col flex-shrink-0" style={{ width: "320px", height: "420px" }}>
-          <NotesPanel transaction={transaction} currentUser={currentUser} />
-        </div>
-        </div>{/* end summary+notes row */}
-
-        {/* Tab Navigation */}
-        <div className="flex gap-1 bg-gray-100 p-1 rounded-xl overflow-x-auto scrollbar-none -mx-1 px-1">
-          {(transaction.transaction_type === "seller" ? LISTING_TABS : TX_TABS).map(({ id: tabId, label, icon: Icon, info }) => (
-            <button key={tabId} onClick={() => setActiveTab(tabId)}
-              className={`group flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium whitespace-nowrap transition-all ${
-                activeTab === tabId ? "bg-white shadow-sm text-gray-900" : "text-gray-500 hover:text-gray-700"
-              }`}>
-              <Icon className="w-3.5 h-3.5" />
-              {label}
-              <span className="relative inline-flex items-center" title={info}>
-                <Info className="w-3 h-3 opacity-40 group-hover:opacity-70 transition-opacity" />
-              </span>
+              {contactsExpanded
+                ? <ChevronUp className="w-4 h-4 flex-shrink-0" style={{ color: "var(--text-muted)" }} />
+                : <ChevronDown className="w-4 h-4 flex-shrink-0" style={{ color: "var(--text-muted)" }} />}
             </button>
-          ))}
-        </div>
-
-        {/* Tab: Overview */}
-        {activeTab === "overview" && (
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            {/* Incompatible task repair notice */}
-            {txTasks.some(t => isTaskIncompatible(t.title, transaction.transaction_type)) && (
-              <div className="lg:col-span-2 flex items-start gap-3 px-4 py-3 rounded-xl bg-amber-50 border border-amber-200 text-amber-800 text-sm">
-                <span className="text-lg">⚠️</span>
-                <div>
-                  <p className="font-semibold">Wrong-type tasks detected</p>
-                  <p className="text-xs text-amber-700 mt-0.5">
-                    This {transaction.transaction_type} transaction has tasks from the wrong workflow template.
-                    Reload the page to auto-repair — incompatible tasks will be archived and correct tasks seeded.
-                  </p>
-                </div>
+            {contactsExpanded && (
+              <div className="px-4 pb-4 border-t" style={{ borderColor: "var(--card-border)" }}>
+                <ContactsSection
+                  transaction={transaction}
+                  currentUser={currentUser}
+                  onUpdate={(data) => updateMutation.mutate({ id: transaction.id, data })}
+                />
               </div>
             )}
-            <div className="lg:col-span-2">
+          </div>
+
+          {/* Tab Navigation */}
+          <div className="flex gap-1 p-1 rounded-xl overflow-x-auto scrollbar-none" style={{ background: "var(--bg-tertiary)" }}>
+            {tabs.map(({ id: tabId, label, icon: TabIcon, info }) => (
+              <button key={tabId} onClick={() => setActiveTab(tabId)}
+                className={`group flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-medium whitespace-nowrap transition-all ${
+                  activeTab === tabId ? "shadow-sm" : ""
+                }`}
+                style={activeTab === tabId
+                  ? { background: "var(--card-bg)", color: "var(--text-primary)" }
+                  : { color: "var(--text-muted)" }}>
+                <TabIcon className="w-3.5 h-3.5" />
+                {label}
+              </button>
+            ))}
+          </div>
+
+          {/* ── Tab: Overview ── */}
+          {activeTab === "overview" && (
+            <div className="space-y-4">
+              {txTasks.some(t => isTaskIncompatible(t.title, transaction.transaction_type)) && (
+                <div className="flex items-start gap-3 px-4 py-3 rounded-xl bg-amber-50 border border-amber-200 text-amber-800 text-sm">
+                  <span className="text-lg">⚠️</span>
+                  <div>
+                    <p className="font-semibold">Wrong-type tasks detected</p>
+                    <p className="text-xs text-amber-700 mt-0.5">Reload to auto-repair incompatible tasks.</p>
+                  </div>
+                </div>
+              )}
               <UnifiedPhaseBoard
                 tasks={txTasks}
                 onToggleTask={handleToggleTxTask}
@@ -724,122 +653,115 @@ export default function TransactionDetail() {
                 transactionType={transaction.transaction_type}
                 transaction={transaction}
               />
+              {checklistItems.length > 0 && (
+                <Card className="shadow-sm border-gray-100">
+                  <CardHeader className="pb-2">
+                    <div className="flex items-center justify-between">
+                      <CardTitle className="text-sm font-semibold flex items-center gap-2">
+                        <ClipboardCheck className="w-4 h-4 text-blue-500" /> Document Checklist
+                      </CardTitle>
+                      <span className="text-xs text-gray-400">
+                        {checklistItems.filter((i) => i.status === "approved").length}/{checklistItems.length} approved
+                      </span>
+                    </div>
+                  </CardHeader>
+                  <CardContent>
+                    <DocChecklistPanel items={checklistItems} currentUser={currentUser}
+                      transactionId={transaction.id} brokerageId={transaction.brokerage_id} />
+                  </CardContent>
+                </Card>
+              )}
             </div>
-            {/* Compliance Monitor Widget */}
-            <div className="lg:col-span-2">
-              <ComplianceMonitorWidget
-                transaction={transaction}
-                onNavigateToCompliance={() => setActiveTab("compliance")}
-              />
-            </div>
+          )}
 
-            {checklistItems.length > 0 && (
-              <Card className="shadow-sm border-gray-100 lg:col-span-2">
-                <CardHeader>
-                  <div className="flex items-center justify-between">
-                    <CardTitle className="text-base font-semibold flex items-center gap-2">
-                      <ClipboardCheck className="w-4 h-4 text-blue-500" /> Document Checklist
-                    </CardTitle>
-                    <span className="text-xs text-gray-400">
-                      {checklistItems.filter((i) => i.status === "approved").length}/{checklistItems.length} approved
-                    </span>
-                  </div>
-                </CardHeader>
+          {/* ── Tab: Issues ── */}
+          {activeTab === "issues" && (
+            <div className="theme-card p-4">
+              <div className="mb-4">
+                <h3 className="text-sm font-semibold" style={{ color: "var(--text-primary)" }}>Issue Detection</h3>
+                <p className="text-xs mt-0.5" style={{ color: "var(--text-muted)" }}>Auto-scanned for missing documents, signatures, upcoming deadlines, and workflow gaps.</p>
+              </div>
+              <IssueDetectionPanel transaction={transaction} />
+            </div>
+          )}
+
+          {/* ── Tab: Timeline ── */}
+          {activeTab === "timeline" && (
+            <div className="space-y-4">
+              <Card className="shadow-sm border-gray-100">
+                <CardHeader className="pb-2"><CardTitle className="text-sm font-semibold">Phase Progress</CardTitle></CardHeader>
                 <CardContent>
-                  <DocChecklistPanel items={checklistItems} currentUser={currentUser}
-                    transactionId={transaction.id} brokerageId={transaction.brokerage_id} />
+                  <TransactionTimeline phasesCompleted={transaction.phases_completed || []} currentPhase={transaction.phase || 1} />
                 </CardContent>
               </Card>
-            )}
-          </div>
-        )}
+              <Card className="shadow-sm border-gray-100">
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-sm font-semibold">Activity History</CardTitle>
+                </CardHeader>
+                <CardContent><TransactionActivityFeed transactionId={transaction.id} /></CardContent>
+              </Card>
+            </div>
+          )}
 
-        {/* Tab: Timeline */}
-        {activeTab === "timeline" && (
-          <div className="space-y-5">
-            <Card className="shadow-sm border-gray-100">
-              <CardHeader className="pb-2"><CardTitle className="text-base font-semibold">Phase Progress</CardTitle></CardHeader>
-              <CardContent>
-                <TransactionTimeline phasesCompleted={transaction.phases_completed || []} currentPhase={transaction.phase || 1} />
-              </CardContent>
-            </Card>
+          {/* ── Tab: Deadlines ── */}
+          {activeTab === "deadlines" && (
             <Card className="shadow-sm border-gray-100">
               <CardHeader className="pb-2">
-                <CardTitle className="text-base font-semibold">Activity History</CardTitle>
-                <p className="text-sm text-gray-500">All recorded events for this transaction</p>
-              </CardHeader>
-              <CardContent><TransactionActivityFeed transactionId={transaction.id} /></CardContent>
-            </Card>
-          </div>
-        )}
-
-        {/* Tab: Deadlines */}
-        {activeTab === "deadlines" && (
-          <Card className="shadow-sm border-gray-100">
-            <CardHeader className="pb-2">
-              <div className="flex items-center justify-between">
-                <div>
-                  <CardTitle className="text-base font-semibold">Deadlines</CardTitle>
-                  <p className="text-sm text-gray-500">All deadlines — from contingencies and system fields. Edit any date inline.</p>
+                <div className="flex items-center justify-between">
+                  <CardTitle className="text-sm font-semibold">Deadlines</CardTitle>
+                  <Button size="sm" variant="outline" className="text-blue-600 hover:bg-blue-50 border-blue-200"
+                    onClick={handleSendTimeline} disabled={sendingTimeline}>
+                    <Send className="w-3.5 h-3.5 mr-1.5" />{sendingTimeline ? "Sending…" : "Send Timeline"}
+                  </Button>
                 </div>
-                <Button size="sm" variant="outline" className="text-blue-600 hover:text-blue-700 hover:bg-blue-50 border-blue-200"
-                  onClick={handleSendTimeline} disabled={sendingTimeline}>
-                  <Send className="w-3.5 h-3.5 mr-1.5" />
-                  {sendingTimeline ? "Sending..." : "Send Timeline"}
-                </Button>
-              </div>
-            </CardHeader>
-            <CardContent>
-              <UnifiedDeadlinesPanel
-                transaction={transaction}
-                onSave={(changes) => updateMutation.mutate({ id: transaction.id, data: { ...changes, last_activity_at: new Date().toISOString() } })}
-              />
-            </CardContent>
-          </Card>
-        )}
+              </CardHeader>
+              <CardContent>
+                <UnifiedDeadlinesPanel
+                  transaction={transaction}
+                  onSave={(changes) => updateMutation.mutate({ id: transaction.id, data: { ...changes, last_activity_at: new Date().toISOString() } })}
+                />
+              </CardContent>
+            </Card>
+          )}
 
+          {activeTab === "documents" && <TransactionDocumentsTab transaction={transaction} currentUser={currentUser} />}
+          {activeTab === "compliance" && <ComplianceScanPanel transaction={transaction} currentUser={currentUser} />}
+          {activeTab === "financial_tools" && <TransactionFinancialTools transaction={transaction} currentUser={currentUser} />}
+          {activeTab === "listing_intake" && (
+            <ListingIntakeTab
+              transaction={transaction}
+              onSave={(changes) => updateMutation.mutate({ id: transaction.id, data: { ...changes, last_activity_at: new Date().toISOString() } })}
+            />
+          )}
+        </div>
 
+        {/* RIGHT COLUMN — 30% */}
+        <div className="hidden lg:flex flex-col border-l flex-shrink-0" style={{ width: "30%", minWidth: "300px", maxWidth: "420px", borderColor: "var(--card-border)", background: "var(--bg-secondary)" }}>
 
-        {activeTab === "issues" && (
-          <div className="theme-card p-4">
-            <div className="mb-4">
-              <h3 className="text-sm font-semibold" style={{ color: "var(--text-primary)" }}>Issue Detection</h3>
-              <p className="text-xs mt-0.5" style={{ color: "var(--text-muted)" }}>
-                Auto-scanned for missing documents, signatures, upcoming deadlines, and workflow gaps.
-              </p>
-            </div>
-            <IssueDetectionPanel transaction={transaction} />
+          {/* Compliance Monitor */}
+          <div className="flex-shrink-0 border-b p-3" style={{ borderColor: "var(--card-border)" }}>
+            <ComplianceMonitorWidget
+              transaction={transaction}
+              onNavigateToCompliance={() => setActiveTab("compliance")}
+            />
           </div>
-        )}
 
-        {activeTab === "documents" && (
-          <TransactionDocumentsTab transaction={transaction} currentUser={currentUser} />
-        )}
-
-        {activeTab === "compliance" && (
-          <ComplianceScanPanel transaction={transaction} currentUser={currentUser} />
-        )}
-
-        {activeTab === "financial_tools" && (
-          <TransactionFinancialTools transaction={transaction} currentUser={currentUser} />
-        )}
-
-        {activeTab === "listing_intake" && (
-          <ListingIntakeTab
-            transaction={transaction}
-            onSave={(changes) => updateMutation.mutate({ id: transaction.id, data: { ...changes, last_activity_at: new Date().toISOString() } })}
-          />
-        )}
+          {/* Notes — fills remaining height */}
+          <div className="flex-1 min-h-0 flex flex-col overflow-hidden">
+            <NotesPanel transaction={transaction} currentUser={currentUser} />
+          </div>
+        </div>
       </div>
 
-      {/* Mobile floating Ask AI button */}
+      {/* Floating AI button */}
       <button
-        className="lg:hidden fixed bottom-6 right-6 z-40 flex items-center gap-2 px-4 py-3 rounded-full shadow-lg transition-all hover:scale-105 hover:shadow-blue-500/30"
+        className="fixed bottom-6 right-6 z-40 flex items-center gap-2 px-3 py-2.5 rounded-full shadow-lg transition-all hover:scale-105"
         style={{ background: "#2563eb", color: "#ffffff" }}
         onClick={() => setMobileAIOpen(true)}
+        title="Ask AI Assistant"
       >
-        <Globe className="w-4 h-4" />
-        <span className="text-sm font-semibold">Ask AI</span>
+        <Bot className="w-4 h-4" />
+        <span className="text-xs font-semibold hidden sm:inline">Ask AI</span>
       </button>
     </div>
   );
