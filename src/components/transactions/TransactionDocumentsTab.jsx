@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Upload, FileText, Trash2, Download, Loader2, FolderOpen, ClipboardCheck, Eye, Mail, Filter, FilePlus, Layers, AlertCircle, CheckSquare, Square, ShieldCheck } from "lucide-react";
+import { Upload, FileText, Trash2, Download, Loader2, FolderOpen, ClipboardCheck, Eye, Mail, Filter, FilePlus, Layers, AlertCircle, CheckSquare, Square, ShieldCheck, PenLine } from "lucide-react";
 import { toast } from "sonner";
 import DocumentViewerModal from "./DocumentViewerModal";
 import { format } from "date-fns";
@@ -16,6 +16,8 @@ import ConfirmDialog from "@/components/ui/ConfirmDialog";
 import SuggestedDocuments from "./SuggestedDocuments";
 import EmailComposerModal from "../email/EmailComposerModal";
 import GenerateDocumentModal from "@/components/templates/GenerateDocumentModal";
+import RequestSignatureModal from "@/components/signature/RequestSignatureModal";
+import SignatureRequestsPanel from "@/components/signature/SignatureRequestsPanel";
 
 const DOC_TYPES = [
   { value: "purchase_and_sale", label: "Purchase & Sale Agreement" },
@@ -68,6 +70,7 @@ export default function TransactionDocumentsTab({ transaction, currentUser }) {
   const [emailModal, setEmailModal] = useState({ open: false, preselectedDoc: null });
   const [typeFilter, setTypeFilter] = useState("all");
   const [generateModalOpen, setGenerateModalOpen] = useState(false);
+  const [sigModalOpen, setSigModalOpen] = useState(false);
   const [selectedIds, setSelectedIds] = useState(new Set());
   const [bulkDeleting, setBulkDeleting] = useState(false);
   const [confirmBulkDelete, setConfirmBulkDelete] = useState(false);
@@ -295,6 +298,14 @@ export default function TransactionDocumentsTab({ transaction, currentUser }) {
 
   return (
     <div className="space-y-5">
+      {sigModalOpen && (
+        <RequestSignatureModal
+          transaction={transaction}
+          documents={documents}
+          onClose={() => setSigModalOpen(false)}
+          onCreated={() => setSigModalOpen(false)}
+        />
+      )}
       {generateModalOpen && (
         <GenerateDocumentModal
           transaction={transaction}
@@ -350,7 +361,15 @@ export default function TransactionDocumentsTab({ transaction, currentUser }) {
         </div>
       )}
       {/* Create Document from Template + Dedupe */}
-      <div className="flex justify-end gap-2">
+      <div className="flex justify-end gap-2 flex-wrap">
+        <Button
+          onClick={() => setSigModalOpen(true)}
+          variant="outline"
+          size="sm"
+          className="gap-2 border-blue-300 text-blue-700 hover:bg-blue-50"
+        >
+          <PenLine className="w-4 h-4" /> Request Signature
+        </Button>
         {(() => {
           const seen = new Set();
           const hasDupes = documents.some(d => {
@@ -446,6 +465,8 @@ export default function TransactionDocumentsTab({ transaction, currentUser }) {
           </CardContent>
         </Card>
       )}
+
+      <SignatureRequestsPanel transactionId={transaction.id} />
 
       {transaction.property_type && (
         <SuggestedDocuments

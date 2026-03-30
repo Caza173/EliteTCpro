@@ -1,0 +1,73 @@
+{
+  "name": "SignatureRequest",
+  "type": "object",
+  "properties": {
+    "brokerage_id": {
+      "type": "string"
+    },
+    "transaction_id": {
+      "type": "string"
+    },
+    "document_id": {
+      "type": "string"
+    },
+    "document_name": {
+      "type": "string"
+    },
+    "document_url": {
+      "type": "string"
+    },
+    "provider": {
+      "type": "string",
+      "enum": [
+        "internal",
+        "dotloop",
+        "docusign"
+      ],
+      "default": "internal"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "draft",
+        "sent",
+        "viewed",
+        "partially_signed",
+        "completed",
+        "cancelled"
+      ],
+      "default": "draft"
+    },
+    "signers": {
+      "type": "array",
+      "description": "Array of signer objects: { name, email, role, status, token, signed_at, viewed_at, ip_address }",
+      "items": {
+        "type": "object"
+      }
+    },
+    "signature_fields": {
+      "type": "array",
+      "description": "Array of field objects: { id, type (signature|initials|date), signer_email, page, x, y }",
+      "items": {
+        "type": "object"
+      }
+    },
+    "signed_document_url": {
+      "type": "string"
+    },
+    "sent_at": {
+      "type": "string"
+    },
+    "completed_at": {
+      "type": "string"
+    },
+    "created_by": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "transaction_id",
+    "document_id",
+    "document_name"
+  ]
+}

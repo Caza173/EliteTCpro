@@ -1,0 +1,49 @@
+{
+  "name": "SignatureAuditEvent",
+  "type": "object",
+  "properties": {
+    "signature_request_id": {
+      "type": "string"
+    },
+    "transaction_id": {
+      "type": "string"
+    },
+    "brokerage_id": {
+      "type": "string"
+    },
+    "signer_name": {
+      "type": "string"
+    },
+    "signer_email": {
+      "type": "string"
+    },
+    "event_type": {
+      "type": "string",
+      "enum": [
+        "created",
+        "sent",
+        "viewed",
+        "signed",
+        "declined",
+        "completed",
+        "cancelled"
+      ]
+    },
+    "timestamp": {
+      "type": "string"
+    },
+    "ip_address": {
+      "type": "string"
+    },
+    "document_version": {
+      "type": "string"
+    },
+    "notes": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "signature_request_id",
+    "event_type"
+  ]
+}
