@@ -389,87 +389,43 @@ export default function PhaseTaskPanelV2({
         />
       </div>
 
-      {/* All phases as droppable zones inside one DragDropContext */}
+      {/* Only show tasks for the selected phase */}
       <DragDropContext onDragEnd={handleDragEnd}>
-        <div className="space-y-2">
-          {allPhases.map(phase => {
-            const isActive = phase.phaseNum === phaseNum;
-            const isExpanded = expandedPhases.has(phase.phaseNum);
-            const phTasks = getPhaseTasksSorted(phase.phaseNum);
-            const phCompleted = phTasks.filter(t => t.is_completed).length;
-
-            return (
-              <div
-                key={phase.phaseNum}
-                className={`rounded-lg border transition-all ${
-                  isActive ? "border-blue-200 bg-blue-50/30" : "border-gray-100"
-                }`}
-              >
-                {/* Collapsible header for non-active phases */}
-                {!isActive && (
-                  <button
-                    className="w-full flex items-center gap-2 px-3 py-2 text-left"
-                    onClick={() => setExpandedPhases(prev => {
-                      const next = new Set(prev);
-                      if (next.has(phase.phaseNum)) next.delete(phase.phaseNum);
-                      else next.add(phase.phaseNum);
-                      return next;
-                    })}
-                  >
-                    <span className="text-xs font-medium text-gray-500 flex-1">{phase.label}</span>
-                    <span className="text-[10px] text-gray-400">{phCompleted}/{phTasks.length}</span>
-                    <ChevronDown className={`w-3 h-3 text-gray-400 transition-transform ${isExpanded ? "rotate-180" : ""}`} />
-                  </button>
-                )}
-
-                {/* Droppable — always mounted for cross-phase DnD */}
-                <Droppable droppableId={`phase-${phase.phaseNum}`}>
-                  {(provided, snapshot) => (
-                    <div
-                      ref={provided.innerRef}
-                      {...provided.droppableProps}
-                      className={`transition-colors rounded-b-lg ${
-                        snapshot.isDraggingOver ? "bg-blue-50 ring-1 ring-blue-300 ring-inset" : ""
-                      } ${isExpanded || isActive ? "p-2 space-y-1.5 min-h-[36px]" : "min-h-[8px]"}`}
-                    >
-                      {(isExpanded || isActive) && (
-                        <>
-                          {phTasks.length === 0 && (
-                            <p className="text-xs text-gray-400 py-1 px-1">
-                              {snapshot.isDraggingOver
-                                ? "Drop here →"
-                                : isActive
-                                ? "No tasks yet. Click + Add Task below."
-                                : "Drop tasks here"}
-                            </p>
-                          )}
-                          {phTasks.map((task, index) => (
-                            <TaskRow
-                              key={task.id}
-                              task={task}
-                              index={index}
-                              allPhases={allPhases}
-                              editingId={editingId}
-                              editDraft={editDraft}
-                              onSetEditing={handleSetEditing}
-                              onSaveEdit={saveEdit}
-                              onEditDraftChange={setEditDraft}
-                              onToggleTask={onToggleTask}
-                              onDelete={handleDelete}
-                              onMoveTo={handleMoveTo}
-                              inputRef={inputRef}
-                            />
-                          ))}
-                        </>
-                      )}
-                      {provided.placeholder}
-                    </div>
-                  )}
-                </Droppable>
-              </div>
-            );
-          })}
-        </div>
+        <Droppable droppableId={`phase-${phaseNum}`}>
+          {(provided, snapshot) => (
+            <div
+              ref={provided.innerRef}
+              {...provided.droppableProps}
+              className={`rounded-lg border border-blue-200 bg-blue-50/30 p-2 space-y-1.5 min-h-[36px] transition-colors ${
+                snapshot.isDraggingOver ? "bg-blue-50 ring-1 ring-blue-300 ring-inset" : ""
+              }`}
+            >
+              {phaseTasks.length === 0 && (
+                <p className="text-xs text-gray-400 py-1 px-1">
+                  {snapshot.isDraggingOver ? "Drop here →" : "No tasks yet. Click + Add Task below."}
+                </p>
+              )}
+              {phaseTasks.map((task, index) => (
+                <TaskRow
+                  key={task.id}
+                  task={task}
+                  index={index}
+                  allPhases={allPhases}
+                  editingId={editingId}
+                  editDraft={editDraft}
+                  onSetEditing={handleSetEditing}
+                  onSaveEdit={saveEdit}
+                  onEditDraftChange={setEditDraft}
+                  onToggleTask={onToggleTask}
+                  onDelete={handleDelete}
+                  onMoveTo={handleMoveTo}
+                  inputRef={inputRef}
+                />
+              ))}
+              {provided.placeholder}
+            </div>
+          )}
+        </Droppable>
       </DragDropContext>
 
       {/* Add task */}
