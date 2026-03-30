@@ -110,8 +110,22 @@ function computeAlerts(transactions) {
 
 export default function TransactionAlertsPanel({ transactions = [] }) {
   const [filter, setFilter] = useState("all");
-  const [dismissed, setDismissed] = useState(new Set()); // alert ids
-  const [resolved, setResolved] = useState(new Set());   // alert ids
+  const [dismissed, setDismissed] = useState(() => {
+    try {
+      const stored = localStorage.getItem("alertsDismissed");
+      return new Set(stored ? JSON.parse(stored) : []);
+    } catch {
+      return new Set();
+    }
+  });
+  const [resolved, setResolved] = useState(() => {
+    try {
+      const stored = localStorage.getItem("alertsResolved");
+      return new Set(stored ? JSON.parse(stored) : []);
+    } catch {
+      return new Set();
+    }
+  });
   const { data: currentUser } = useCurrentUser();
 
   const allAlerts = useMemo(() => computeAlerts(transactions), [transactions]);
@@ -138,14 +152,22 @@ export default function TransactionAlertsPanel({ transactions = [] }) {
   const handleDismiss = (e, alert) => {
     e.preventDefault();
     e.stopPropagation();
-    setDismissed(prev => new Set([...prev, alert.id]));
+    setDismissed(prev => {
+      const updated = new Set([...prev, alert.id]);
+      localStorage.setItem("alertsDismissed", JSON.stringify([...updated]));
+      return updated;
+    });
     logAction(alert, "dismissed");
   };
 
   const handleResolved = (e, alert) => {
     e.preventDefault();
     e.stopPropagation();
-    setResolved(prev => new Set([...prev, alert.id]));
+    setResolved(prev => {
+      const updated = new Set([...prev, alert.id]);
+      localStorage.setItem("alertsResolved", JSON.stringify([...updated]));
+      return updated;
+    });
     logAction(alert, "resolved");
   };
 
