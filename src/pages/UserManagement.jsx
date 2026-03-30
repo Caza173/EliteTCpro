@@ -346,7 +346,7 @@ export default function UserManagement() {
                       <td className="px-4 py-3 text-gray-500 text-xs hidden md:table-cell">
                         {u.created_date ? new Date(u.created_date).toLocaleDateString() : "—"}
                       </td>
-                      <td className="px-4 py-3 hidden xl:table-cell">
+                      <td className="px-4 py-3 hidden lg:table-cell">
                        {u.role === "agent" ? (
                          <AgentCodePanel agentUser={u} transactions={transactions} inline />
                        ) : (
