@@ -22,14 +22,18 @@ const VIEWS = ["month", "week", "day"];
 
 // ── Hover Popup ───────────────────────────────────────────────────────────────
 function DayHoverPopup({ day, dayEvents, position, onClose }) {
-  if (!dayEvents.length) return null;
-  const isLeft = position === "left";
-  return (
-    <div
-      className={`absolute z-50 w-64 rounded-xl border shadow-xl py-2 ${isLeft ? "right-full mr-2" : "left-full ml-2"} top-0`}
-      style={{ background: "var(--card-bg)", borderColor: "var(--card-border)" }}
-      onMouseEnter={e => e.stopPropagation()}
-    >
+if (!dayEvents.length) return null;
+const isLeft = position === "left";
+return (
+  <div
+    className={`fixed z-50 w-64 rounded-xl border shadow-xl py-2`}
+    style={{ 
+      background: "var(--card-bg)", 
+      borderColor: "var(--card-border)",
+      position: "fixed"
+    }}
+    onMouseEnter={e => e.stopPropagation()}
+  >
       <div className="px-3 pb-1.5 mb-1 border-b" style={{ borderColor: "var(--card-border)" }}>
         <p className="text-xs font-bold" style={{ color: "var(--text-primary)" }}>
           {format(day, "EEEE, MMMM d")}
@@ -124,8 +128,8 @@ export default function DeadlineCalendarView({ transactions = [] }) {
             <div key={d} className="text-center text-[11px] font-semibold py-1" style={{ color: "var(--text-muted)" }}>{d}</div>
           ))}
         </div>
-        <div className="relative overflow-visible">
-          <div className="grid grid-cols-7 gap-px rounded-xl overflow-hidden border" style={{ background: "var(--border)", borderColor: "var(--border)" }}>
+        <div className="relative">
+          <div className="grid grid-cols-7 gap-px rounded-xl border" style={{ background: "var(--border)", borderColor: "var(--border)" }}>
           {Array.from({ length: startDay }).map((_, i) => (
             <div key={`e-${i}`} className="h-16 sm:h-20" style={{ background: "var(--bg-tertiary)" }} />
           ))}
