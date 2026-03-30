@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useRef } from "react";
+import React, { useState, useMemo, useRef, useEffect } from "react";
 import { createPortal } from "react-dom";
 import {
   format, startOfMonth, endOfMonth, eachDayOfInterval, isToday,
@@ -26,15 +26,28 @@ function DayHoverPopup({ day, dayEvents, dayRef, onClose }) {
   if (!dayEvents.length) return null;
 
   const [position, setPosition] = useState({ top: 0, left: 0 });
+  const portalRef = useRef(null);
 
-  // Calculate position on mount/update
-  React.useEffect(() => {
+  // Initialize portal container and calculate position
+  useEffect(() => {
+    if (!portalRef.current) {
+      portalRef.current = document.createElement('div');
+      document.body.appendChild(portalRef.current);
+    }
+
     if (!dayRef?.current) return;
     const rect = dayRef.current.getBoundingClientRect();
     setPosition({
       top: rect.top + window.scrollY,
       left: rect.right + window.scrollX + 8,
     });
+
+    return () => {
+      if (portalRef.current?.parentNode) {
+        portalRef.current.parentNode.removeChild(portalRef.current);
+        portalRef.current = null;
+      }
+    };
   }, [dayRef, dayEvents]);
 
   return createPortal(
@@ -71,13 +84,14 @@ function DayHoverPopup({ day, dayEvents, dayRef, onClose }) {
               <p className="text-[10px]" style={{ color: "var(--text-muted)" }}>{ev.label}</p>
             </div>
           </Link>
-        ))}
-      </div>
-    </div>
-  );
-}
+          ))}
+          </div>
+          </div>,
+          portalRef.current
+          );
+          }
 
-export default function DeadlineCalendarView({ transactions = [] }) {
+          export default function DeadlineCalendarView({ transactions = [] }) {
   const [view, setView] = useState("month");
   const [cursor, setCursor] = useState(new Date()); // reference date
   const [selectedDay, setSelectedDay] = useState(null);
