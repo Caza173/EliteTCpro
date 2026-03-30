@@ -1,4 +1,5 @@
 import React, { useState, useMemo, useRef } from "react";
+import { createPortal } from "react-dom";
 import {
   format, startOfMonth, endOfMonth, eachDayOfInterval, isToday,
   parseISO, isSameDay, startOfWeek, endOfWeek, addWeeks, subWeeks,
@@ -21,18 +22,32 @@ const DAY_NAMES = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 const VIEWS = ["month", "week", "day"];
 
 // ── Hover Popup ───────────────────────────────────────────────────────────────
-function DayHoverPopup({ day, dayEvents, position, onClose }) {
-if (!dayEvents.length) return null;
-const isLeft = position === "left";
-return (
-  <div
-    className={`absolute z-50 w-64 rounded-xl border shadow-xl py-2 ${isLeft ? "right-full mr-2" : "left-full ml-2"} top-0`}
-    style={{ 
-      background: "var(--card-bg)", 
-      borderColor: "var(--card-border)"
-    }}
-    onMouseEnter={e => e.stopPropagation()}
-  >
+function DayHoverPopup({ day, dayEvents, dayRef, onClose }) {
+  if (!dayEvents.length) return null;
+
+  const [position, setPosition] = useState({ top: 0, left: 0 });
+
+  // Calculate position on mount/update
+  React.useEffect(() => {
+    if (!dayRef?.current) return;
+    const rect = dayRef.current.getBoundingClientRect();
+    setPosition({
+      top: rect.top + window.scrollY,
+      left: rect.right + window.scrollX + 8,
+    });
+  }, [dayRef, dayEvents]);
+
+  return createPortal(
+    <div
+      className="fixed z-[9999] w-64 rounded-xl border shadow-xl py-2"
+      style={{
+        background: "var(--card-bg)",
+        borderColor: "var(--card-border)",
+        top: `${position.top}px`,
+        left: `${position.left}px`,
+      }}
+      onMouseEnter={e => e.stopPropagation()}
+    >
       <div className="px-3 pb-1.5 mb-1 border-b" style={{ borderColor: "var(--card-border)" }}>
         <p className="text-xs font-bold" style={{ color: "var(--text-primary)" }}>
           {format(day, "EEEE, MMMM d")}
@@ -144,6 +159,7 @@ export default function DeadlineCalendarView({ transactions = [] }) {
             return (
               <div
                 key={key}
+                data-day-key={key}
                 onClick={() => setSelectedDay(isSelected ? null : day)}
                 onMouseEnter={() => dayEvents.length > 0 && setHoveredDay(day)}
                 onMouseLeave={() => setHoveredDay(null)}
@@ -172,7 +188,7 @@ export default function DeadlineCalendarView({ transactions = [] }) {
                   <DayHoverPopup
                     day={day}
                     dayEvents={dayEvents}
-                    position={popupSide}
+                    dayRef={{ current: document.querySelector(`[data-day-key="${key}"]`) }}
                     onClose={() => setHoveredDay(null)}
                   />
                 )}
