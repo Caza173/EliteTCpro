@@ -601,7 +601,9 @@ export default function TransactionDetail() {
           </div>
         </div>
 
-        {/* Summary Card */}
+        {/* Summary Card + Notes — side by side */}
+        <div className="flex gap-4 items-start">
+        <div className="flex-1 min-w-0">
         <Card className="shadow-sm border-gray-100">
           <CardHeader className="pb-3">
             <div className="flex items-start justify-between">
@@ -673,10 +675,12 @@ export default function TransactionDetail() {
           </CardContent>
         </Card>
 
-        {/* Notes Panel — full width below summary */}
-        <div style={{ height: "340px" }}>
+        </div>{/* end flex-1 summary wrapper */}
+        {/* Notes Panel */}
+        <div className="hidden xl:flex flex-col flex-shrink-0" style={{ width: "320px", height: "420px" }}>
           <NotesPanel transaction={transaction} currentUser={currentUser} />
         </div>
+        </div>{/* end summary+notes row */}
 
         {/* Tab Navigation */}
         <div className="flex gap-1 bg-gray-100 p-1 rounded-xl overflow-x-auto scrollbar-none -mx-1 px-1">
