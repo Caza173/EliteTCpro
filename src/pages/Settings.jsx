@@ -7,10 +7,12 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Settings as SettingsIcon, Users, Bell, Palette, Loader2, UserPlus, CheckCircle, Building2, DollarSign, FileText, Pencil, X } from "lucide-react";
+import { Settings as SettingsIcon, Users, Bell, Palette, Loader2, UserPlus, CheckCircle, Building2, DollarSign, FileText, Pencil, X, Bug, Lightbulb, Puzzle, MessageSquarePlus } from "lucide-react";
 import { useCurrentUser, isTCOrAdmin, isOwnerOrAdmin } from "../components/auth/useCurrentUser";
 import { ROLE_COLORS } from "../components/utils/tenantUtils";
 import TemplateLibraryPanel from "../components/templates/TemplateLibraryPanel";
+import FeedbackModal from "../components/feedback/FeedbackModal";
+import MyFeedbackSection from "../components/feedback/MyFeedbackSection";
 
 export default function Settings() {
   const { data: currentUser } = useCurrentUser();
@@ -63,6 +65,7 @@ export default function Settings() {
     select: (data) => data[0],
   });
 
+  const [feedbackModal, setFeedbackModal] = useState({ open: false, type: "bug" });
   const [editingBrokerage, setEditingBrokerage] = useState(false);
   const [brokerageForm, setBrokerageForm] = useState({});
   const [brokerageSaved, setBrokerageSaved] = useState(false);
@@ -327,6 +330,48 @@ export default function Settings() {
           </CardContent>
         </Card>
       )}
+
+      {/* Feedback & Requests */}
+      <Card className="shadow-sm border-gray-100">
+        <CardHeader className="pb-3">
+          <CardTitle className="text-base font-semibold flex items-center gap-2">
+            <MessageSquarePlus className="w-4 h-4 text-blue-500" /> Feedback & Requests
+          </CardTitle>
+          <p className="text-xs text-gray-400 mt-0.5">Help us improve EliteTC — report a bug, suggest a feature, or request an integration.</p>
+        </CardHeader>
+        <CardContent className="space-y-5">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            {[
+              { type: "bug", icon: Bug, label: "Report a Bug", desc: "Something broken or not working right", color: "text-red-500", bg: "hover:border-red-300 hover:bg-red-50/50" },
+              { type: "feature", icon: Lightbulb, label: "Suggest a Feature", desc: "An idea to improve the platform", color: "text-amber-500", bg: "hover:border-amber-300 hover:bg-amber-50/50" },
+              { type: "integration", icon: Puzzle, label: "Request Integration", desc: "Connect EliteTC to a tool you use", color: "text-purple-500", bg: "hover:border-purple-300 hover:bg-purple-50/50" },
+            ].map(({ type, icon: Icon, label, desc, color, bg }) => (
+              <button
+                key={type}
+                onClick={() => setFeedbackModal({ open: true, type })}
+                className={`text-left p-4 rounded-xl border transition-all ${bg}`}
+                style={{ background: "var(--bg-tertiary)", borderColor: "var(--card-border)" }}
+              >
+                <Icon className={`w-5 h-5 mb-2 ${color}`} />
+                <p className="text-sm font-semibold" style={{ color: "var(--text-primary)" }}>{label}</p>
+                <p className="text-xs mt-0.5" style={{ color: "var(--text-muted)" }}>{desc}</p>
+              </button>
+            ))}
+          </div>
+
+          {/* My submitted feedback */}
+          <div className="pt-3 border-t" style={{ borderColor: "var(--card-border)" }}>
+            <p className="text-sm font-semibold mb-3" style={{ color: "var(--text-primary)" }}>My Submitted Feedback</p>
+            <MyFeedbackSection userEmail={currentUser?.email} />
+          </div>
+        </CardContent>
+      </Card>
+
+      <FeedbackModal
+        open={feedbackModal.open}
+        onClose={() => setFeedbackModal({ open: false, type: "bug" })}
+        defaultType={feedbackModal.type}
+      />
 
       {/* Placeholders */}
       <Card className="shadow-sm border-gray-100 opacity-70">

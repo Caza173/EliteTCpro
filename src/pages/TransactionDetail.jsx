@@ -44,6 +44,7 @@ import ListingIntakeTab from "../components/transactions/ListingIntakeTab";
 import UnifiedDeadlinesPanel from "../components/transactions/UnifiedDeadlinesPanel";
 import ContactsSection from "../components/transactions/ContactsSection";
 import IssueDetectionPanel from "../components/issues/IssueDetectionPanel";
+import QuickFeedbackButton from "../components/feedback/QuickFeedbackButton";
 
 const TX_TABS = [
   { id: "overview",      label: "Overview",      icon: LayoutDashboard, info: "Phase checklist, tasks, and compliance summary" },
@@ -585,6 +586,17 @@ export default function TransactionDetail() {
               onClick={() => setConfirmDelete(true)}>
               <Trash2 className="w-4 h-4 mr-1" /> Delete
             </Button>
+            <QuickFeedbackButton
+              defaultType="bug"
+              label="Report Issue"
+              variant="badge"
+              className="border-gray-200 text-gray-500 hover:border-gray-300"
+              context={{
+                transaction_id: transaction?.id,
+                transaction_address: transaction?.address,
+                route_name: "Transaction Page",
+              }}
+            />
           </div>
         </div>
 
