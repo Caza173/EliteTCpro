@@ -306,6 +306,11 @@
       "type": "string",
       "format": "date"
     },
+    "agreement_expiration_deadline": {
+      "type": "string",
+      "format": "date",
+      "description": "Buyer Agency Agreement expiration date extracted from Section 3"
+    },
     "tasks": {
       "type": "array",
       "items": {
