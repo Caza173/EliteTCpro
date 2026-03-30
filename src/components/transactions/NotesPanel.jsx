@@ -327,26 +327,42 @@ export default function NotesPanel({ transaction, currentUser }) {
   const handleDelete = (id) => deleteMutation.mutate(id);
 
   const handleConvertToTask = async (note) => {
-    await base44.entities.TransactionTask.create({
-      transaction_id: transaction.id,
-      brokerage_id: transaction.brokerage_id,
-      title: note.message.slice(0, 120),
-      phase: 1,
-      is_completed: false,
-      is_required: false,
-      is_custom: true,
-      created_by: currentUser?.email,
-    });
+    try {
+      await base44.entities.TransactionTask.create({
+        transaction_id: transaction.id,
+        brokerage_id: transaction.brokerage_id,
+        title: note.message.slice(0, 120),
+        phase: 1,
+        is_completed: false,
+        is_required: false,
+        is_custom: true,
+        created_by: currentUser?.email,
+      });
+      queryClient.invalidateQueries({ queryKey: ["txTasks", transaction.id] });
+      alert("Note converted to task");
+    } catch (err) {
+      alert("Failed to convert note to task");
+      console.error(err);
+    }
   };
 
-  const handleSendEmail = (note) => {
-    const to = transaction.agent_email || transaction.client_email || "";
-    if (!to) return;
-    base44.integrations.Core.SendEmail({
-      to,
-      subject: `Note — ${transaction.address}`,
-      body: `<p>${note.message}</p>`,
-    });
+  const handleSendEmail = async (note) => {
+    try {
+      const to = transaction.agent_email || transaction.client_email || "";
+      if (!to) {
+        alert("No recipient email found for this transaction");
+        return;
+      }
+      await base44.integrations.Core.SendEmail({
+        to,
+        subject: `Note — ${transaction.address}`,
+        body: `<p>${note.message}</p>`,
+      });
+      alert("Email sent successfully");
+    } catch (err) {
+      alert("Failed to send email");
+      console.error(err);
+    }
   };
 
   const visibleNotes = useMemo(() => {
