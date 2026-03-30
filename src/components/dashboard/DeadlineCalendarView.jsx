@@ -124,7 +124,8 @@ export default function DeadlineCalendarView({ transactions = [] }) {
             <div key={d} className="text-center text-[11px] font-semibold py-1" style={{ color: "var(--text-muted)" }}>{d}</div>
           ))}
         </div>
-        <div className="grid grid-cols-7 gap-px rounded-xl overflow-hidden border" style={{ background: "var(--border)", borderColor: "var(--border)" }}>
+        <div className="relative overflow-visible">
+          <div className="grid grid-cols-7 gap-px rounded-xl overflow-hidden border" style={{ background: "var(--border)", borderColor: "var(--border)" }}>
           {Array.from({ length: startDay }).map((_, i) => (
             <div key={`e-${i}`} className="h-16 sm:h-20" style={{ background: "var(--bg-tertiary)" }} />
           ))}
@@ -143,7 +144,7 @@ export default function DeadlineCalendarView({ transactions = [] }) {
                 onClick={() => setSelectedDay(isSelected ? null : day)}
                 onMouseEnter={() => dayEvents.length > 0 && setHoveredDay(day)}
                 onMouseLeave={() => setHoveredDay(null)}
-                className={`h-16 sm:h-20 p-1 flex flex-col cursor-pointer transition-colors relative ${isSelected ? "ring-2 ring-inset ring-blue-500" : ""} ${today ? "ring-2 ring-inset ring-blue-400" : ""}`}
+                className={`h-16 sm:h-20 p-1 flex flex-col cursor-pointer transition-colors relative z-10 ${isSelected ? "ring-2 ring-inset ring-blue-500" : ""} ${today ? "ring-2 ring-inset ring-blue-400" : ""}`}
                 style={{ background: isSelected ? "var(--accent-subtle)" : isHovered ? "var(--bg-hover)" : "var(--card-bg)" }}
               >
                 <span className={`text-xs font-semibold w-6 h-6 flex items-center justify-center rounded-full mb-0.5 flex-shrink-0 ${today ? "bg-blue-500 text-white" : ""}`}
@@ -175,6 +176,7 @@ export default function DeadlineCalendarView({ transactions = [] }) {
               </div>
             );
           })}
+        </div>
         </div>
       </>
     );
