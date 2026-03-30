@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useRef } from "react";
 import {
   format, startOfMonth, endOfMonth, eachDayOfInterval, isToday,
   parseISO, isSameDay, startOfWeek, endOfWeek, addWeeks, subWeeks,
@@ -20,10 +20,50 @@ const DEADLINE_TYPES = [
 const DAY_NAMES = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 const VIEWS = ["month", "week", "day"];
 
+// ── Hover Popup ───────────────────────────────────────────────────────────────
+function DayHoverPopup({ day, dayEvents, position, onClose }) {
+  if (!dayEvents.length) return null;
+  const isLeft = position === "left";
+  return (
+    <div
+      className={`absolute z-50 w-64 rounded-xl border shadow-xl py-2 ${isLeft ? "right-full mr-2" : "left-full ml-2"} top-0`}
+      style={{ background: "var(--card-bg)", borderColor: "var(--card-border)" }}
+      onMouseEnter={e => e.stopPropagation()}
+    >
+      <div className="px-3 pb-1.5 mb-1 border-b" style={{ borderColor: "var(--card-border)" }}>
+        <p className="text-xs font-bold" style={{ color: "var(--text-primary)" }}>
+          {format(day, "EEEE, MMMM d")}
+        </p>
+        <p className="text-[10px]" style={{ color: "var(--text-muted)" }}>{dayEvents.length} deadline{dayEvents.length > 1 ? "s" : ""}</p>
+      </div>
+      <div className="space-y-0.5 px-2 max-h-52 overflow-y-auto">
+        {dayEvents.map((ev, i) => (
+          <Link
+            key={i}
+            to={`${createPageUrl("TransactionDetail")}?id=${ev.txId}`}
+            className="flex items-center gap-2 px-2 py-1.5 rounded-lg hover:opacity-80 transition-opacity"
+            style={{ background: "var(--bg-tertiary)" }}
+            onClick={onClose}
+          >
+            <span className={`w-2 h-2 rounded-full flex-shrink-0 ${ev.dot}`} />
+            <div className="flex-1 min-w-0">
+              <p className="text-[11px] font-semibold truncate" style={{ color: "var(--text-primary)" }}>
+                {ev.address?.split(",")[0]}
+              </p>
+              <p className="text-[10px]" style={{ color: "var(--text-muted)" }}>{ev.label}</p>
+            </div>
+          </Link>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 export default function DeadlineCalendarView({ transactions = [] }) {
   const [view, setView] = useState("month");
   const [cursor, setCursor] = useState(new Date()); // reference date
   const [selectedDay, setSelectedDay] = useState(null);
+  const [hoveredDay, setHoveredDay] = useState(null);
 
   const dedupedTx = useMemo(() => {
     const seen = new Set();
@@ -88,17 +128,23 @@ export default function DeadlineCalendarView({ transactions = [] }) {
           {Array.from({ length: startDay }).map((_, i) => (
             <div key={`e-${i}`} className="h-16 sm:h-20" style={{ background: "var(--bg-tertiary)" }} />
           ))}
-          {days.map(day => {
+          {days.map((day, idx) => {
             const key = format(day, "yyyy-MM-dd");
             const dayEvents = events[key] || [];
             const today = isToday(day);
             const isSelected = selectedDay && isSameDay(day, selectedDay);
+            const isHovered = hoveredDay && isSameDay(day, hoveredDay);
+            // Determine popup position: last 2 cols open left
+            const colInRow = (day.getDay()); // 0=Sun … 6=Sat
+            const popupSide = colInRow >= 5 ? "left" : "right";
             return (
               <div
                 key={key}
                 onClick={() => setSelectedDay(isSelected ? null : day)}
-                className={`h-16 sm:h-20 p-1 flex flex-col cursor-pointer transition-colors ${isSelected ? "ring-2 ring-inset ring-blue-500" : "hover:opacity-80"} ${today ? "ring-2 ring-inset ring-blue-400" : ""}`}
-                style={{ background: isSelected ? "var(--accent-subtle)" : "var(--card-bg)" }}
+                onMouseEnter={() => dayEvents.length > 0 && setHoveredDay(day)}
+                onMouseLeave={() => setHoveredDay(null)}
+                className={`h-16 sm:h-20 p-1 flex flex-col cursor-pointer transition-colors relative ${isSelected ? "ring-2 ring-inset ring-blue-500" : ""} ${today ? "ring-2 ring-inset ring-blue-400" : ""}`}
+                style={{ background: isSelected ? "var(--accent-subtle)" : isHovered ? "var(--bg-hover)" : "var(--card-bg)" }}
               >
                 <span className={`text-xs font-semibold w-6 h-6 flex items-center justify-center rounded-full mb-0.5 flex-shrink-0 ${today ? "bg-blue-500 text-white" : ""}`}
                   style={{ color: today ? "white" : "var(--text-primary)" }}>
@@ -117,6 +163,15 @@ export default function DeadlineCalendarView({ transactions = [] }) {
                     <span className="text-[9px]" style={{ color: "var(--accent)" }}>+{dayEvents.length - 2} more</span>
                   )}
                 </div>
+                {/* Hover popup */}
+                {isHovered && (
+                  <DayHoverPopup
+                    day={day}
+                    dayEvents={dayEvents}
+                    position={popupSide}
+                    onClose={() => setHoveredDay(null)}
+                  />
+                )}
               </div>
             );
           })}
