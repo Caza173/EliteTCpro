@@ -277,7 +277,7 @@ export default function NotesPanel({ transaction, currentUser }) {
 
   const { data: notes = [], isLoading } = useQuery({
     queryKey: ["notes", transaction.id],
-    queryFn: () => base44.entities.Note.filter({ transaction_id: transaction.id }, "-is_pinned,-created_date"),
+    queryFn: () => base44.entities.Note.filter({ transaction_id: transaction.id }, "-created_date"),
     enabled: !!transaction.id,
     staleTime: 15_000,
   });
