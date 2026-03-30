@@ -26,6 +26,7 @@ const INTERVAL_COLORS = {
 export default function AIActivityLogPanel() {
   const [copiedId, setCopiedId] = useState(null);
   const [expanded, setExpanded] = useState(false);
+  const [expandedEmail, setExpandedEmail] = useState(null);
 
   const { data: logs = [] } = useQuery({
     queryKey: ["aiActivityLog"],
@@ -88,6 +89,33 @@ export default function AIActivityLogPanel() {
               </Badge>
             </div>
           </div>
+
+          {(log.subject || log.message) && (
+            <div className="mt-2">
+              <button
+                onClick={() => setExpandedEmail(expandedEmail === log.id ? null : log.id)}
+                className="flex items-center gap-1 text-[11px] font-medium text-blue-500 hover:text-blue-700 transition-colors"
+              >
+                <Mail className="w-3 h-3" />
+                {expandedEmail === log.id ? "Hide Email" : "View Email"}
+                {expandedEmail === log.id ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
+              </button>
+              {expandedEmail === log.id && (
+                <div className="mt-2 rounded-lg border overflow-hidden" style={{ borderColor: "var(--card-border)" }}>
+                  {log.subject && (
+                    <div className="px-3 py-2 border-b text-[11px] font-semibold" style={{ backgroundColor: "var(--bg-tertiary)", borderColor: "var(--card-border)", color: "var(--text-secondary)" }}>
+                      Subject: {log.subject}
+                    </div>
+                  )}
+                  {log.message && (
+                    <div className="px-3 py-2 text-xs leading-relaxed whitespace-pre-wrap max-h-64 overflow-y-auto" style={{ backgroundColor: "var(--card-bg)", color: "var(--text-primary)" }}>
+                      {log.message.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim()}
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          )}
 
           {log.addendum_draft && (
             <div className="mt-2 p-2 rounded border" style={{ backgroundColor: "var(--bg-tertiary)", borderColor: "var(--card-border)" }}>
