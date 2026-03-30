@@ -105,9 +105,11 @@ const TASKS_BY_TYPE = {
     post_close: [
       { id: "hud_alta_uploaded",    name: "HUD/ALTA uploaded",                           required: true  },
       { id: "commission_tracked",   name: "Commission tracked",                          required: true  },
-      { id: "client_followup",      name: "Client follow-up",                            required: true  },
-      { id: "review_request",       name: "Review request sent",                         required: false },
-      { id: "post_close_campaign",  name: "Post-close campaign started",                 required: false },
+      { id: "followup_14day",       name: "14 Day Follow-up Scheduled",                  required: true  },
+      { id: "followup_30day",       name: "30 Day Follow-up Scheduled",                  required: true  },
+      { id: "followup_90day",       name: "90 Day Follow-up",                            required: false },
+      { id: "followup_6month",      name: "6 Month Follow-up",                           required: false },
+      { id: "followup_1year",       name: "1 Year Anniversary Follow-up",                required: false },
     ],
   },
 
@@ -148,8 +150,11 @@ const TASKS_BY_TYPE = {
     post_close: [
       { id: "commission_recorded",  name: "Commission recorded",                         required: true  },
       { id: "file_closed_skyslope", name: "File closed in SkySlope",                    required: true  },
-      { id: "client_followup",      name: "Client follow-up",                            required: true  },
-      { id: "marketing_closeout",   name: "Marketing closeout",                          required: false },
+      { id: "followup_14day",       name: "14 Day Follow-up Scheduled",                  required: true  },
+      { id: "followup_30day",       name: "30 Day Follow-up Scheduled",                  required: true  },
+      { id: "followup_90day",       name: "90 Day Follow-up",                            required: false },
+      { id: "followup_6month",      name: "6 Month Follow-up",                           required: false },
+      { id: "followup_1year",       name: "1 Year Anniversary Follow-up",                required: false },
     ],
   },
 };
