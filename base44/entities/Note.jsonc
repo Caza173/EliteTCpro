@@ -16,6 +16,35 @@
       "type": "string",
       "description": "Full note content"
     },
+    "note_type": {
+      "type": "string",
+      "enum": [
+        "internal",
+        "agent_action",
+        "client_action",
+        "update"
+      ],
+      "default": "internal"
+    },
+    "visibility": {
+      "type": "string",
+      "enum": [
+        "internal",
+        "agent",
+        "client"
+      ],
+      "default": "internal"
+    },
+    "is_pinned": {
+      "type": "boolean",
+      "default": false
+    },
+    "linked_task_id": {
+      "type": "string"
+    },
+    "linked_deadline": {
+      "type": "string"
+    },
     "assigned_to": {
       "type": "string",
       "description": "Email of assigned user"
@@ -36,6 +65,9 @@
     "created_by": {
       "type": "string",
       "description": "Email of creator"
+    },
+    "created_by_name": {
+      "type": "string"
     }
   },
   "required": [

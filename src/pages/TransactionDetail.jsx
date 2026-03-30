@@ -45,6 +45,7 @@ import UnifiedDeadlinesPanel from "../components/transactions/UnifiedDeadlinesPa
 import ContactsSection from "../components/transactions/ContactsSection";
 import IssueDetectionPanel from "../components/issues/IssueDetectionPanel";
 import QuickFeedbackButton from "../components/feedback/QuickFeedbackButton";
+import NotesPanel from "../components/transactions/NotesPanel";
 
 const TX_TABS = [
   { id: "overview",      label: "Overview",      icon: LayoutDashboard, info: "Phase checklist, tasks, and compliance summary" },
@@ -600,7 +601,9 @@ export default function TransactionDetail() {
           </div>
         </div>
 
-        {/* Summary Card */}
+        {/* Summary Card + Notes — side by side */}
+        <div className="flex gap-4 items-start">
+        <div className="flex-1 min-w-0">
         <Card className="shadow-sm border-gray-100">
           <CardHeader className="pb-3">
             <div className="flex items-start justify-between">
@@ -672,6 +675,13 @@ export default function TransactionDetail() {
           </CardContent>
         </Card>
 
+        </div>{/* end flex-1 summary wrapper */}
+        {/* Notes Panel */}
+        <div className="hidden xl:flex flex-col flex-shrink-0" style={{ width: "320px", height: "420px" }}>
+          <NotesPanel transaction={transaction} currentUser={currentUser} />
+        </div>
+        </div>{/* end summary+notes row */}
+
         {/* Tab Navigation */}
         <div className="flex gap-1 bg-gray-100 p-1 rounded-xl overflow-x-auto scrollbar-none -mx-1 px-1">
           {(transaction.transaction_type === "seller" ? LISTING_TABS : TX_TABS).map(({ id: tabId, label, icon: Icon, info }) => (
@@ -715,6 +725,13 @@ export default function TransactionDetail() {
                 transaction={transaction}
               />
             </div>
+            {/* Notes Panel — visible on smaller screens where the sidebar notes are hidden */}
+            <div className="lg:col-span-2 xl:hidden">
+              <div style={{ height: "380px" }}>
+                <NotesPanel transaction={transaction} currentUser={currentUser} />
+              </div>
+            </div>
+
             {/* Compliance Monitor Widget */}
             <div className="lg:col-span-2">
               <ComplianceMonitorWidget
