@@ -693,67 +693,36 @@ export default function TransactionDetail() {
                 </div>
               </div>
             )}
-            <Card className="shadow-sm border-gray-100">
-              <CardHeader>
-                <CardTitle className="text-base font-semibold">Transaction Phases</CardTitle>
-                <p className="text-sm text-gray-500">Click a phase to view its tasks.</p>
+            <Card className="shadow-sm border-gray-100 lg:col-span-2">
+              <CardHeader className="pb-2">
+                <CardTitle className="text-base font-semibold">Phase Progress</CardTitle>
               </CardHeader>
               <CardContent>
-                <PhaseChecklist
+                <TransactionTimeline
                   phasesCompleted={transaction.phases_completed || []}
                   currentPhase={transaction.phase || 1}
-                  onTogglePhase={handleTogglePhase}
-                  tasks={transaction.tasks || []}
-                  txTasks={txTasks}
-                  transactionType={transaction.transaction_type}
-                  selectedPhase={selectedPhase}
-                  transactionType={transaction.transaction_type}
-                  onSelectPhase={async (num) => {
-                    const next = selectedPhase === num ? null : num;
-                    setSelectedPhase(next);
-                    if (next !== null) {
-                      seedPhaseTasksIfNeeded(next);
-                    }
-                  }}
                 />
               </CardContent>
             </Card>
-            <Card className="shadow-sm border-gray-100 relative z-10">
+            <Card className="shadow-sm border-gray-100 lg:col-span-2 relative z-10">
               <CardHeader>
                 <CardTitle className="text-base font-semibold">Tasks</CardTitle>
                 <p className="text-sm text-gray-500">
                   {txTasks.filter(t => t.is_completed).length} / {txTasks.length} completed
-                  {txTasks.length === 0 && (transaction.tasks || []).length > 0 && ` · ${(transaction.tasks || []).filter(t => t.completed).length} / ${(transaction.tasks || []).length} (legacy)`}
                 </p>
               </CardHeader>
               <CardContent className="overflow-visible">
-                {selectedPhase ? (
-                  <PhaseTaskPanelV2
-                    phaseNum={selectedPhase}
-                    tasks={txTasks}
-                    onToggleTask={handleToggleTxTask}
-                    onTasksChanged={refetchTxTasks}
-                    transactionId={transaction.id}
-                    brokerageId={transaction.brokerage_id}
-                    transactionType={transaction.transaction_type}
-                    transaction={transaction}
-                    onUpdateTransaction={(data) => updateMutation.mutate({ id: transaction.id, data })}
-                  />
-                ) : (
-                  <TaskList
-                    tasks={transaction.tasks || []}
-                    onToggleTask={async (taskId) => {
-                      const updatedTasks = (transaction.tasks || []).map((task) =>
-                        task.id === taskId ? { ...task, completed: !task.completed } : task
-                      );
-                      queryClient.setQueryData(["transactions"], (old = []) =>
-                        old.map((t) => t.id === transaction.id ? { ...t, tasks: updatedTasks } : t)
-                      );
-                      await base44.functions.invoke("toggleTask", { transaction_id: transaction.id, tasks: updatedTasks });
-                      queryClient.invalidateQueries({ queryKey: ["transactions"] });
-                    }}
-                  />
-                )}
+                <PhaseTaskPanelV2
+                  phaseNum={selectedPhase || (transaction.phase || 1)}
+                  tasks={txTasks}
+                  onToggleTask={handleToggleTxTask}
+                  onTasksChanged={refetchTxTasks}
+                  transactionId={transaction.id}
+                  brokerageId={transaction.brokerage_id}
+                  transactionType={transaction.transaction_type}
+                  transaction={transaction}
+                  onUpdateTransaction={(data) => updateMutation.mutate({ id: transaction.id, data })}
+                />
               </CardContent>
             </Card>
             {/* Compliance Monitor Widget */}
