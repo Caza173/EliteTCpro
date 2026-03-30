@@ -2,7 +2,8 @@ import React, { useState } from "react";
 import { Link } from "react-router-dom";
 import { createPageUrl } from "@/utils";
 import { CheckCircle2, Circle, AlertTriangle, Bell, FileInput, X } from "lucide-react";
-import { isToday, parseISO, differenceInHours } from "date-fns";
+import { differenceInHours, parseISO, isToday } from "date-fns";
+import { getDaysUntil, normalizeDeadline } from "@/utils/dateUtils";
 import { Badge } from "@/components/ui/badge";
 import { base44 } from "@/api/base44Client";
 import { useCurrentUser } from "../auth/useCurrentUser";
@@ -17,7 +18,6 @@ const DEADLINE_LABELS = {
 };
 
 export default function TasksDueToday({ transactions = [], notifications = [] }) {
-  const now = new Date();
   const items = [];
   const [dismissed, setDismissed] = useState(new Set());
   const [resolved, setResolved] = useState(new Set());
@@ -52,27 +52,23 @@ export default function TasksDueToday({ transactions = [], notifications = [] })
     logAction(item, "resolved");
   };
 
-  // 1 — Tasks due within 24 hours
+  // 1 — Tasks due within 24 hours (use calendar days for consistency)
   transactions.forEach((tx) => {
     if (tx.status === "closed" || tx.status === "cancelled") return;
     (tx.tasks || []).forEach((task) => {
       if (!task.completed && task.due_date) {
-        try {
-          const deadline = parseISO(task.due_date);
-          const hoursUntil = differenceInHours(deadline, now);
-          const dueToday = isToday(deadline);
-          if (dueToday || (hoursUntil >= 0 && hoursUntil <= 24)) {
-            items.push({
-              key: `task-${task.id}`,
-              type: "task",
-              label: task.name,
-              sub: tx.address,
-              txId: tx.id,
-              badge: dueToday ? "Due Today" : `< ${hoursUntil}h`,
-              badgeColor: dueToday ? "bg-red-100 text-red-700" : "bg-amber-100 text-amber-700",
-            });
-          }
-        } catch {}
+        const days = getDaysUntil(task.due_date);
+        if (days !== null && days >= 0 && days <= 1) {
+          items.push({
+            key: `task-${task.id}`,
+            type: "task",
+            label: task.name,
+            sub: tx.address,
+            txId: tx.id,
+            badge: days === 0 ? "Due Today" : "Due Tomorrow",
+            badgeColor: days === 0 ? "bg-red-100 text-red-700" : "bg-amber-100 text-amber-700",
+          });
+        }
       }
     });
   });
@@ -111,35 +107,30 @@ export default function TasksDueToday({ transactions = [], notifications = [] })
     }
   });
 
-  // 4 — Deadlines within 72 hours that haven't been actioned
+  // 4 — Deadlines within 3 days that haven't been actioned
   transactions.forEach((tx) => {
     if (tx.status === "closed" || tx.status === "cancelled") return;
     Object.keys(DEADLINE_LABELS).forEach((field) => {
       const dateStr = tx[field];
       if (!dateStr) return;
-      try {
-        const deadline = parseISO(dateStr);
-        const hoursUntil = differenceInHours(deadline, now);
-        const dueToday = isToday(deadline);
-        if (dueToday || (hoursUntil > 0 && hoursUntil <= 72)) {
-          const linkedTaskDone = (tx.tasks || []).some(
-            (t) => t.linked_deadline === field && t.completed
-          );
-          if (!linkedTaskDone) {
-            const badge = dueToday ? "Due Today" : hoursUntil <= 24 ? "< 24h" : "< 72h";
-            const badgeColor = dueToday ? "bg-red-100 text-red-700" : hoursUntil <= 24 ? "bg-red-100 text-red-700" : "bg-orange-100 text-orange-700";
-            items.push({
-              key: `deadline-${tx.id}-${field}`,
-              type: "deadline",
-              label: `${DEADLINE_LABELS[field]}: ${tx.address}`,
-              sub: dueToday ? "Due Today" : `Due in ${hoursUntil}h`,
-              txId: tx.id,
-              badge,
-              badgeColor,
-            });
-          }
-        }
-      } catch {}
+      const days = getDaysUntil(dateStr);
+      if (days === null || days < 0 || days > 3) return;
+      const linkedTaskDone = (tx.tasks || []).some(
+        (t) => t.linked_deadline === field && t.completed
+      );
+      if (!linkedTaskDone) {
+        const badge = days === 0 ? "Due Today" : days === 1 ? "Due Tomorrow" : `${days}d`;
+        const badgeColor = days === 0 ? "bg-red-100 text-red-700" : days === 1 ? "bg-red-100 text-red-700" : "bg-orange-100 text-orange-700";
+        items.push({
+          key: `deadline-${tx.id}-${field}`,
+          type: "deadline",
+          label: `${DEADLINE_LABELS[field]}: ${tx.address}`,
+          sub: days === 0 ? "Due Today" : days === 1 ? "Due Tomorrow" : `Due in ${days}d`,
+          txId: tx.id,
+          badge,
+          badgeColor,
+        });
+      }
     });
   });
 

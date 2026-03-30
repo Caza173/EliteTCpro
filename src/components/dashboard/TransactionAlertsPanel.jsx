@@ -2,12 +2,12 @@ import React, { useState, useMemo } from "react";
 import { Link } from "react-router-dom";
 import { createPageUrl } from "@/utils";
 import {
-  AlertTriangle, AlertCircle, Info, Clock, FileX, ShieldAlert, ListX, Zap, X, CheckCircle2,
+  AlertTriangle, AlertCircle, Clock, ListX, Zap, X, CheckCircle2,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
-import { differenceInDays, parseISO, isValid } from "date-fns";
 import { base44 } from "@/api/base44Client";
 import { useCurrentUser } from "../auth/useCurrentUser";
+import { getDaysUntil } from "@/utils/dateUtils";
 
 const DEADLINE_FIELDS = [
   { field: "earnest_money_deadline", label: "Earnest Money Deposit" },
@@ -34,7 +34,6 @@ const PRIORITY_BADGE = {
 
 function computeAlerts(transactions) {
   const alerts = [];
-  const today = new Date();
 
   for (const tx of transactions) {
     if (tx.status === "closed" || tx.status === "cancelled") continue;
@@ -42,10 +41,8 @@ function computeAlerts(transactions) {
     // 1. Deadline alerts
     for (const { field, label } of DEADLINE_FIELDS) {
       if (!tx[field]) continue;
-      let deadlineDate;
-      try { deadlineDate = parseISO(tx[field]); } catch { continue; }
-      if (!isValid(deadlineDate)) continue;
-      const daysLeft = differenceInDays(deadlineDate, today);
+      const daysLeft = getDaysUntil(tx[field]);
+      if (daysLeft === null) continue;
 
       if (daysLeft < 0 && field !== "closing_date") {
         alerts.push({
@@ -58,11 +55,14 @@ function computeAlerts(transactions) {
         });
       } else if (daysLeft >= 0 && daysLeft <= 7) {
         const priority = daysLeft <= 2 ? "critical" : daysLeft <= 4 ? "warning" : "info";
+        const msg = daysLeft === 0 ? `${label} is TODAY`
+          : daysLeft === 1 ? `${label} is Due Tomorrow`
+          : `${label} in ${daysLeft} day${daysLeft !== 1 ? "s" : ""}`;
         alerts.push({
           id: `${tx.id}-approaching-${field}`,
           priority,
           type: "deadline_approaching",
-          message: daysLeft === 0 ? `${label} is TODAY` : `${label} in ${daysLeft} day${daysLeft !== 1 ? "s" : ""}`,
+          message: msg,
           address: tx.address,
           txId: tx.id,
         });
@@ -70,7 +70,11 @@ function computeAlerts(transactions) {
     }
 
     // 2. Overdue tasks
-    const overdue = (tx.tasks || []).filter(t => !t.completed && t.due_date && new Date(t.due_date) < today);
+    const overdue = (tx.tasks || []).filter(t => {
+      if (t.completed || !t.due_date) return false;
+      const d = getDaysUntil(t.due_date);
+      return d !== null && d < 0;
+    });
     if (overdue.length > 0) {
       alerts.push({
         id: `${tx.id}-tasks-overdue`,
@@ -84,12 +88,9 @@ function computeAlerts(transactions) {
 
     // 3. Closing risk (closing within 7 days + incomplete tasks)
     if (tx.closing_date) {
-      let closingDate;
-      try { closingDate = parseISO(tx.closing_date); } catch { continue; }
-      if (!isValid(closingDate)) continue;
-      const daysToClose = differenceInDays(closingDate, today);
+      const daysToClose = getDaysUntil(tx.closing_date);
       const incomplete = (tx.tasks || []).filter(t => !t.completed);
-      if (daysToClose >= 0 && daysToClose <= 7 && incomplete.length > 0) {
+      if (daysToClose !== null && daysToClose >= 0 && daysToClose <= 7 && incomplete.length > 0) {
         alerts.push({
           id: `${tx.id}-closing-risk`,
           priority: "critical",

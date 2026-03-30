@@ -1,6 +1,6 @@
 import React, { useState, useMemo } from "react";
-import { differenceInCalendarDays, format, isPast, isToday, parseISO } from "date-fns";
-import { AlertTriangle, Clock, ChevronDown, ChevronRight, ExternalLink, CalendarDays } from "lucide-react";
+import { ChevronDown, ChevronRight, ExternalLink, CalendarDays } from "lucide-react";
+import { getDaysUntil, categorizeDeadline } from "@/utils/dateUtils";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Link, useNavigate } from "react-router-dom";
@@ -15,14 +15,6 @@ const DEADLINE_FIELDS = [
   { key: "closing_date", label: "Closing" },
 ];
 
-function categorizeDays(days, date) {
-  if (isPast(date) && !isToday(date)) return "overdue";
-  if (days === 0) return "today";
-  if (days <= 3) return "soon";
-  if (days <= 14) return "upcoming";
-  return null;
-}
-
 function buildDeadlineGroups(transactions) {
   const groups = {}; // txId -> { tx, deadlines: [{label, date, days, category}] }
 
@@ -31,12 +23,14 @@ function buildDeadlineGroups(transactions) {
     DEADLINE_FIELDS.forEach((f) => {
       if (f.cashExcluded && tx.is_cash_transaction) return;
       if (!tx[f.key]) return;
-      const date = parseISO(tx[f.key]);
-      const days = differenceInCalendarDays(date, new Date());
-      const category = categorizeDays(days, date);
-      if (!category) return;
+      const days = getDaysUntil(tx[f.key]);
+      if (days === null) return;
+      const category = categorizeDeadline(tx[f.key]);
+      // map "tomorrow" to "soon" bucket for display
+      const displayCategory = category === "tomorrow" ? "soon" : category;
+      if (!displayCategory) return;
       if (!groups[tx.id]) groups[tx.id] = { tx, deadlines: [] };
-      groups[tx.id].deadlines.push({ label: f.label, date: tx[f.key], days, category });
+      groups[tx.id].deadlines.push({ label: f.label, date: tx[f.key], days, category: displayCategory });
     });
   });
 
