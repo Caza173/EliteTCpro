@@ -528,15 +528,6 @@ export default function TransactionDetail() {
             </Button>
           </Link>
           <div className="flex flex-wrap items-center gap-2">
-            <Select value={transaction.status || "active"} onValueChange={handleStatusChange}>
-              <SelectTrigger className="w-32"><SelectValue /></SelectTrigger>
-              <SelectContent>
-                <SelectItem value="active">Active</SelectItem>
-                <SelectItem value="pending">Pending</SelectItem>
-                <SelectItem value="closed">Closed</SelectItem>
-                <SelectItem value="cancelled">Cancelled</SelectItem>
-              </SelectContent>
-            </Select>
             <Select
               value={transaction.property_type || "residential"}
               onValueChange={(v) => updateMutation.mutate({ id: transaction.id, data: { property_type: v } })}
