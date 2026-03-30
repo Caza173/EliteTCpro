@@ -22,42 +22,15 @@ const DAY_NAMES = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 const VIEWS = ["month", "week", "day"];
 
 // ── Hover Popup ───────────────────────────────────────────────────────────────
-function DayHoverPopup({ day, dayEvents, dayRef, onClose }) {
+function DayHoverPopup({ day, dayEvents, onClose }) {
   if (!dayEvents.length) return null;
 
-  const [position, setPosition] = useState({ top: 0, left: 0 });
-  const portalRef = useRef(null);
-
-  // Initialize portal container and calculate position
-  useEffect(() => {
-    if (!portalRef.current) {
-      portalRef.current = document.createElement('div');
-      document.body.appendChild(portalRef.current);
-    }
-
-    if (!dayRef?.current) return;
-    const rect = dayRef.current.getBoundingClientRect();
-    setPosition({
-      top: rect.top + window.scrollY,
-      left: rect.right + window.scrollX + 8,
-    });
-
-    return () => {
-      if (portalRef.current?.parentNode) {
-        portalRef.current.parentNode.removeChild(portalRef.current);
-        portalRef.current = null;
-      }
-    };
-  }, [dayRef, dayEvents]);
-
-  return createPortal(
+  return (
     <div
-      className="fixed z-[9999] w-64 rounded-xl border shadow-xl py-2"
+      className="absolute top-full left-0 mt-2 z-[9999] w-64 rounded-xl border shadow-xl py-2 pointer-events-auto"
       style={{
         background: "var(--card-bg)",
         borderColor: "var(--card-border)",
-        top: `${position.top}px`,
-        left: `${position.left}px`,
       }}
       onMouseEnter={e => e.stopPropagation()}
     >
@@ -84,12 +57,11 @@ function DayHoverPopup({ day, dayEvents, dayRef, onClose }) {
               <p className="text-[10px]" style={{ color: "var(--text-muted)" }}>{ev.label}</p>
             </div>
           </Link>
-          ))}
-          </div>
-          </div>,
-          portalRef.current
-          );
-          }
+        ))}
+      </div>
+    </div>
+  );
+}
 
           export default function DeadlineCalendarView({ transactions = [] }) {
   const [view, setView] = useState("month");
@@ -202,7 +174,6 @@ function DayHoverPopup({ day, dayEvents, dayRef, onClose }) {
                   <DayHoverPopup
                     day={day}
                     dayEvents={dayEvents}
-                    dayRef={{ current: document.querySelector(`[data-day-key="${key}"]`) }}
                     onClose={() => setHoveredDay(null)}
                   />
                 )}
