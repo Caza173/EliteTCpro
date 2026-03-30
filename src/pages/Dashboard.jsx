@@ -9,7 +9,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import {
   ArrowRight, AlertTriangle, CheckCircle2, FileWarning,
   CalendarDays, TrendingUp, DollarSign, Activity, Clock,
-  ChevronRight, MapPin, List,
+  ChevronRight, MapPin, List, MessageSquare, X,
 } from "lucide-react";
 import { format, differenceInDays, parseISO } from "date-fns";
 
@@ -99,6 +99,7 @@ function TransactionRow({ tx }) {
 export default function Dashboard() {
   const [deadlineView, setDeadlineView] = useState("list");
   const [activeTab, setActiveTab] = useState("overview");
+  const [aiOpen, setAiOpen] = useState(false);
   const { data: currentUser } = useCurrentUser();
 
   const { data: rawTransactions = [], isLoading } = useQuery({
@@ -244,6 +245,46 @@ export default function Dashboard() {
           </button>
         ))}
       </div>
+
+      {/* Floating AI Button (mobile/tablet only) */}
+      {activeTab === "overview" && (
+        <div className="xl:hidden fixed bottom-6 right-6 z-40">
+          <button
+            onClick={() => setAiOpen(true)}
+            className="bg-blue-600 hover:bg-blue-700 text-white rounded-full p-4 shadow-lg flex items-center justify-center hover:shadow-xl transition-all"
+            title="Open AI Assistant"
+          >
+            <MessageSquare className="w-5 h-5" />
+          </button>
+        </div>
+      )}
+
+      {/* AI Drawer (mobile/tablet) */}
+      {aiOpen && (
+        <div className="fixed inset-0 z-50 flex xl:hidden">
+          <div
+            className="absolute inset-0 bg-black/40 backdrop-blur-sm"
+            onClick={() => setAiOpen(false)}
+          />
+          <div className="ml-auto w-full sm:w-[420px] h-full bg-white shadow-xl z-50 overflow-y-auto flex flex-col">
+            <div className="flex items-center justify-between px-4 py-3 border-b flex-shrink-0" style={{ borderColor: "var(--border)" }}>
+              <h2 className="text-sm font-semibold" style={{ color: "var(--text-primary)" }}>AI Assistant</h2>
+              <button
+                onClick={() => setAiOpen(false)}
+                className="p-1 rounded-lg hover:bg-gray-100 transition-colors"
+                style={{ color: "var(--text-muted)" }}
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+            <div className="flex-1 overflow-y-auto">
+              {!isLoading && (
+                <GlobalAIAssistant transactions={transactions} checklistItems={checklistItems} />
+              )}
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Tab: Overview */}
       {activeTab === "overview" && (
