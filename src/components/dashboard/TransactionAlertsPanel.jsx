@@ -2,10 +2,12 @@ import React, { useState, useMemo } from "react";
 import { Link } from "react-router-dom";
 import { createPageUrl } from "@/utils";
 import {
-  AlertTriangle, AlertCircle, Info, Clock, FileX, ShieldAlert, ListX, Zap,
+  AlertTriangle, AlertCircle, Info, Clock, FileX, ShieldAlert, ListX, Zap, X, CheckCircle2,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { differenceInDays, parseISO, isValid } from "date-fns";
+import { base44 } from "@/api/base44Client";
+import { useCurrentUser } from "../auth/useCurrentUser";
 
 const DEADLINE_FIELDS = [
   { field: "earnest_money_deadline", label: "Earnest Money Deposit" },
@@ -107,27 +109,64 @@ function computeAlerts(transactions) {
 
 export default function TransactionAlertsPanel({ transactions = [] }) {
   const [filter, setFilter] = useState("all");
+  const [dismissed, setDismissed] = useState(new Set()); // alert ids
+  const [resolved, setResolved] = useState(new Set());   // alert ids
+  const { data: currentUser } = useCurrentUser();
 
-  const alerts = useMemo(() => computeAlerts(transactions), [transactions]);
+  const allAlerts = useMemo(() => computeAlerts(transactions), [transactions]);
+  const alerts = useMemo(
+    () => allAlerts.filter(a => !dismissed.has(a.id) && !resolved.has(a.id)),
+    [allAlerts, dismissed, resolved]
+  );
+
+  const logAction = async (alert, action) => {
+    const tx = transactions.find(t => t.id === alert.txId);
+    try {
+      await base44.entities.AuditLog.create({
+        brokerage_id: tx?.brokerage_id,
+        transaction_id: alert.txId,
+        actor_email: currentUser?.email || "unknown",
+        action: `alert_${action}`,
+        entity_type: "transaction",
+        entity_id: alert.txId,
+        description: `Alert ${action}: "${alert.message}" (${alert.priority} · ${alert.type})`,
+      });
+    } catch (_) {}
+  };
+
+  const handleDismiss = (e, alert) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setDismissed(prev => new Set([...prev, alert.id]));
+    logAction(alert, "dismissed");
+  };
+
+  const handleResolved = (e, alert) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setResolved(prev => new Set([...prev, alert.id]));
+    logAction(alert, "resolved");
+  };
 
   const filtered = filter === "all" ? alerts : alerts.filter(a => a.priority === filter);
   const critCount = alerts.filter(a => a.priority === "critical").length;
   const warnCount = alerts.filter(a => a.priority === "warning").length;
   const infoCount = alerts.filter(a => a.priority === "info").length;
+  const totalCount = alerts.length;
 
   return (
     <div className="space-y-3">
       <div className="flex items-center gap-2">
         <AlertCircle className="w-4 h-4 text-red-500" />
         <span className="font-semibold text-sm" style={{ color: "var(--text-primary)" }}>Transaction Alerts</span>
-        {alerts.length > 0 && (
-          <Badge className="text-xs bg-red-100 text-red-700 border-red-200 border">{alerts.length}</Badge>
+        {totalCount > 0 && (
+          <Badge className="text-xs bg-red-100 text-red-700 border-red-200 border">{totalCount}</Badge>
         )}
       </div>
 
       <div className="flex gap-1.5 flex-wrap">
         {[
-          { key: "all",      label: "All",      count: alerts.length },
+          { key: "all",      label: "All",      count: totalCount },
           { key: "critical", label: "Critical", count: critCount },
           { key: "warning",  label: "Warning",  count: warnCount },
           { key: "info",     label: "Info",     count: infoCount },
@@ -177,6 +216,23 @@ export default function TransactionAlertsPanel({ transactions = [] }) {
                   </div>
                   <p className="text-xs font-medium leading-snug" style={{ color: "var(--text-primary)" }}>{alert.message}</p>
                   <p className="text-[11px] text-blue-600 mt-0.5 truncate">{alert.address}</p>
+                </div>
+                {/* Action buttons */}
+                <div className="flex flex-col gap-1 flex-shrink-0 ml-1" onClick={e => e.preventDefault()}>
+                  <button
+                    onClick={(e) => handleResolved(e, alert)}
+                    title="Mark resolved"
+                    className="flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-semibold bg-green-100 text-green-700 hover:bg-green-200 border border-green-200 transition-colors"
+                  >
+                    <CheckCircle2 className="w-3 h-3" /> Resolved
+                  </button>
+                  <button
+                    onClick={(e) => handleDismiss(e, alert)}
+                    title="Dismiss alert"
+                    className="flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-semibold bg-white text-gray-500 hover:bg-gray-100 border border-gray-200 transition-colors"
+                  >
+                    <X className="w-3 h-3" /> Dismiss
+                  </button>
                 </div>
               </Link>
             );
