@@ -1,107 +1,260 @@
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import {
-  Bug, Lightbulb, Puzzle, AlertTriangle, CheckCircle, Clock, Search,
-  ChevronDown, ChevronUp, X, Layers, ExternalLink, Loader2,
+  Bug, Lightbulb, Puzzle, Search, X, ExternalLink, Loader2,
+  ChevronDown, ChevronRight, Layers, ArrowUpDown, Filter,
+  AlertOctagon, CheckCircle2, Clock, Zap, TrendingUp, RotateCcw,
 } from "lucide-react";
-import { formatDistanceToNow, parseISO, format } from "date-fns";
+import { formatDistanceToNow, parseISO, format, subDays } from "date-fns";
 import { Link } from "react-router-dom";
 import { createPageUrl } from "@/utils";
 import { useCurrentUser, isOwnerOrAdmin } from "../components/auth/useCurrentUser";
 
+// ─── Constants ────────────────────────────────────────────────────────────────
+
 const TYPE_META = {
-  bug:         { label: "Bug", icon: Bug, color: "text-red-500", bg: "bg-red-50 border-red-200" },
-  feature:     { label: "Feature", icon: Lightbulb, color: "text-amber-500", bg: "bg-amber-50 border-amber-200" },
-  integration: { label: "Integration", icon: Puzzle, color: "text-purple-500", bg: "bg-purple-50 border-purple-200" },
+  bug:         { label: "Bug",         icon: Bug,       dot: "bg-red-500",    text: "text-red-500"    },
+  feature:     { label: "Feature",     icon: Lightbulb, dot: "bg-amber-500",  text: "text-amber-500"  },
+  integration: { label: "Integration", icon: Puzzle,    dot: "bg-purple-500", text: "text-purple-500" },
 };
 
-const STATUS_COLORS = {
-  new: "bg-blue-100 text-blue-700",
-  triaged: "bg-cyan-100 text-cyan-700",
-  under_review: "bg-indigo-100 text-indigo-700",
-  planned: "bg-amber-100 text-amber-700",
-  in_progress: "bg-purple-100 text-purple-700",
-  waiting_on_info: "bg-yellow-100 text-yellow-700",
-  resolved: "bg-emerald-100 text-emerald-700",
-  closed: "bg-gray-100 text-gray-600",
-  declined: "bg-red-100 text-red-700",
+const STATUS_META = {
+  new:             { label: "New",             color: "bg-blue-100 text-blue-700"       },
+  triaged:         { label: "Triaged",         color: "bg-cyan-100 text-cyan-700"       },
+  under_review:    { label: "Under Review",    color: "bg-indigo-100 text-indigo-700"   },
+  planned:         { label: "Planned",         color: "bg-amber-100 text-amber-700"     },
+  in_progress:     { label: "In Progress",     color: "bg-violet-100 text-violet-700"   },
+  waiting_on_info: { label: "Waiting on Info", color: "bg-yellow-100 text-yellow-700"   },
+  resolved:        { label: "Resolved",        color: "bg-emerald-100 text-emerald-700" },
+  closed:          { label: "Closed",          color: "bg-gray-100 text-gray-500"       },
+  declined:        { label: "Declined",        color: "bg-red-100 text-red-700"         },
 };
 
-const STATUSES = ["new","triaged","under_review","planned","in_progress","waiting_on_info","resolved","closed","declined"];
+const STATUSES = Object.keys(STATUS_META);
 
-const PRIORITY_COLOR = (score) => {
-  if (!score) return "text-gray-400";
-  if (score >= 90) return "text-red-600 font-bold";
-  if (score >= 70) return "text-orange-500 font-semibold";
-  if (score >= 40) return "text-amber-500";
-  return "text-gray-400";
+const QUICK_FILTERS = [
+  { key: "all",         label: "All" },
+  { key: "bug",         label: "Bugs" },
+  { key: "feature",     label: "Features" },
+  { key: "integration", label: "Integrations" },
+  { key: "urgent",      label: "Urgent" },
+  { key: "duplicate",   label: "Duplicates" },
+  { key: "planned",     label: "Planned" },
+  { key: "resolved",    label: "Resolved" },
+];
+
+const SEVERITY_META = {
+  critical: { color: "text-red-600",   label: "Critical" },
+  high:     { color: "text-orange-500",label: "High"     },
+  medium:   { color: "text-amber-500", label: "Medium"   },
+  low:      { color: "text-gray-400",  label: "Low"      },
 };
 
-function StatCard({ label, value, color = "text-gray-900", sub }) {
-  return (
-    <div className="rounded-xl border p-4 flex flex-col gap-1" style={{ background: "var(--card-bg)", borderColor: "var(--card-border)" }}>
-      <p className="text-xs font-medium uppercase tracking-wider" style={{ color: "var(--text-muted)" }}>{label}</p>
-      <p className={`text-2xl font-bold ${color}`}>{value}</p>
-      {sub && <p className="text-[11px]" style={{ color: "var(--text-muted)" }}>{sub}</p>}
-    </div>
-  );
+function priorityBarColor(score) {
+  if (!score) return "bg-gray-200";
+  if (score >= 90) return "bg-red-500";
+  if (score >= 70) return "bg-orange-400";
+  if (score >= 40) return "bg-amber-400";
+  return "bg-gray-300";
 }
 
-function FeedbackRow({ item, onSelect, selected }) {
-  const meta = TYPE_META[item.type] || TYPE_META.bug;
-  const Icon = meta.icon;
+function priorityTextColor(score) {
+  if (!score) return "var(--text-muted)";
+  if (score >= 90) return "#ef4444";
+  if (score >= 70) return "#f97316";
+  if (score >= 40) return "#f59e0b";
+  return "var(--text-muted)";
+}
+
+// ─── Sub-components ────────────────────────────────────────────────────────────
+
+function KpiCard({ label, value, icon: Icon, accent = false, urgent = false }) {
   return (
     <div
-      onClick={() => onSelect(item)}
-      className={`px-4 py-3 border-b cursor-pointer transition-colors hover:opacity-90 ${selected ? "ring-1 ring-inset ring-blue-300" : ""}`}
-      style={{ borderColor: "var(--card-border)", background: selected ? "var(--accent-subtle)" : "var(--card-bg)" }}
+      className="flex items-center gap-3 px-4 py-3 rounded-lg border flex-1 min-w-0"
+      style={{
+        background: "var(--card-bg)",
+        borderColor: urgent ? "rgba(239,68,68,0.25)" : "var(--card-border)",
+      }}
     >
-      <div className="flex items-start gap-3">
-        <Icon className={`w-4 h-4 mt-0.5 flex-shrink-0 ${meta.color}`} />
-        <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-2 flex-wrap">
-            <span className="text-sm font-semibold truncate" style={{ color: "var(--text-primary)" }}>{item.title}</span>
-            {item.is_urgent && <Badge className="bg-red-100 text-red-700 text-[10px] px-1.5 py-0">Urgent</Badge>}
-            {item.is_transaction_risk && <Badge className="bg-orange-100 text-orange-700 text-[10px] px-1.5 py-0">TX Risk</Badge>}
-            {item.is_roadmap_candidate && <Badge className="bg-emerald-100 text-emerald-700 text-[10px] px-1.5 py-0">Roadmap</Badge>}
-          </div>
-          {item.ai_summary && (
-            <p className="text-xs mt-0.5 line-clamp-1" style={{ color: "var(--text-muted)" }}>{item.ai_summary}</p>
-          )}
-          <div className="flex items-center gap-3 mt-1 flex-wrap">
-            <span className="text-[11px]" style={{ color: "var(--text-muted)" }}>{item.user_email}</span>
-            {item.module && <span className="text-[11px]" style={{ color: "var(--text-muted)" }}>{item.module}</span>}
-            <span className="text-[11px]" style={{ color: "var(--text-muted)" }}>
-              {item.created_date ? formatDistanceToNow(parseISO(item.created_date), { addSuffix: true }) : ""}
-            </span>
-          </div>
-        </div>
-        <div className="flex items-center gap-2 flex-shrink-0">
-          {item.ai_priority_score != null && (
-            <span className={`text-xs ${PRIORITY_COLOR(item.ai_priority_score)}`}>{item.ai_priority_score}</span>
-          )}
-          <Badge className={`text-[10px] px-1.5 py-0 ${STATUS_COLORS[item.status] || "bg-gray-100"}`}>
-            {item.status?.replace(/_/g, " ")}
-          </Badge>
-        </div>
+      <Icon className={`w-4 h-4 flex-shrink-0 ${urgent ? "text-red-500" : "text-gray-400"}`} />
+      <div className="min-w-0">
+        <p className="text-[11px] font-medium uppercase tracking-wide truncate" style={{ color: "var(--text-muted)" }}>{label}</p>
+        <p className={`text-xl font-bold leading-tight ${urgent ? "text-red-500" : ""}`} style={!urgent ? { color: "var(--text-primary)" } : {}}>
+          {value}
+        </p>
       </div>
     </div>
   );
 }
 
-function DetailPanel({ item, onClose, onUpdate }) {
+function PriorityBar({ score }) {
+  if (score == null) return <span style={{ color: "var(--text-muted)" }} className="text-xs">—</span>;
+  return (
+    <div className="flex items-center gap-1.5 min-w-[60px]">
+      <div className="w-10 h-1.5 rounded-full bg-gray-200 overflow-hidden flex-shrink-0">
+        <div className={`h-full rounded-full ${priorityBarColor(score)}`} style={{ width: `${score}%` }} />
+      </div>
+      <span className="text-xs font-semibold tabular-nums" style={{ color: priorityTextColor(score) }}>{score}</span>
+    </div>
+  );
+}
+
+function FeedbackRow({ item, selected, onSelect }) {
+  const meta = TYPE_META[item.type] || TYPE_META.bug;
+  const Icon = meta.icon;
+  const statusMeta = STATUS_META[item.status] || STATUS_META.new;
+  const isHighPriority = item.ai_priority_score >= 90;
+  const isMedPriority = item.ai_priority_score >= 70 && item.ai_priority_score < 90;
+
+  return (
+    <div
+      onClick={() => onSelect(item)}
+      className="grid cursor-pointer transition-colors"
+      style={{
+        gridTemplateColumns: "24px 1fr 28px",
+        padding: "7px 14px",
+        gap: "0 10px",
+        borderBottom: "1px solid var(--card-border)",
+        background: selected
+          ? "var(--accent-subtle)"
+          : isHighPriority
+          ? "rgba(239,68,68,0.03)"
+          : "transparent",
+        borderLeft: selected ? "2px solid var(--accent)" : isHighPriority ? "2px solid rgba(239,68,68,0.4)" : "2px solid transparent",
+      }}
+      onMouseEnter={e => { if (!selected) e.currentTarget.style.background = "var(--bg-hover)"; }}
+      onMouseLeave={e => { if (!selected) e.currentTarget.style.background = isHighPriority ? "rgba(239,68,68,0.03)" : "transparent"; }}
+    >
+      {/* Icon col */}
+      <Icon className={`w-3.5 h-3.5 mt-0.5 flex-shrink-0 ${meta.text}`} />
+
+      {/* Main content */}
+      <div className="min-w-0">
+        <div className="flex items-center gap-2 flex-wrap">
+          <span className="text-xs font-semibold truncate max-w-[200px]" style={{ color: "var(--text-primary)" }}>{item.title}</span>
+          {item.severity && (
+            <span className={`text-[10px] font-medium ${SEVERITY_META[item.severity]?.color || ""}`}>
+              {item.severity}
+            </span>
+          )}
+          {item.is_urgent && (
+            <span className="text-[10px] font-semibold text-red-600 bg-red-50 px-1 rounded">URGENT</span>
+          )}
+        </div>
+
+        {item.ai_summary && (
+          <p className="text-[11px] truncate mt-0.5" style={{ color: "var(--text-muted)" }}>{item.ai_summary}</p>
+        )}
+
+        <div className="flex items-center gap-2 mt-1 flex-wrap">
+          <PriorityBar score={item.ai_priority_score} />
+          <span className={`inline-flex items-center rounded px-1.5 py-0.5 text-[10px] font-medium ${statusMeta.color}`}>
+            {statusMeta.label}
+          </span>
+          {item.module && (
+            <span className="text-[10px] px-1.5 py-0.5 rounded border" style={{ color: "var(--text-muted)", borderColor: "var(--card-border)", background: "var(--bg-tertiary)" }}>
+              {item.module}
+            </span>
+          )}
+          <span className="text-[10px]" style={{ color: "var(--text-muted)" }}>
+            {item.created_date ? formatDistanceToNow(parseISO(item.created_date), { addSuffix: true }) : ""}
+          </span>
+        </div>
+      </div>
+
+      {/* Chevron */}
+      <ChevronRight className="w-3.5 h-3.5 self-center flex-shrink-0" style={{ color: selected ? "var(--accent)" : "var(--text-muted)", opacity: selected ? 1 : 0.4 }} />
+    </div>
+  );
+}
+
+// ─── Cluster View ─────────────────────────────────────────────────────────────
+
+function buildClusters(items) {
+  const map = {};
+  items.forEach(item => {
+    const cluster = item.ai_category || item.type || "other";
+    if (!map[cluster]) map[cluster] = [];
+    map[cluster].push(item);
+  });
+  return Object.entries(map).sort((a, b) => b[1].length - a[1].length);
+}
+
+function ClusterGroup({ clusterKey, items, onSelect, selectedId }) {
+  const [open, setOpen] = useState(items.length <= 3);
+  const topItem = items[0];
+  return (
+    <div className="border-b" style={{ borderColor: "var(--card-border)" }}>
+      <button
+        onClick={() => setOpen(o => !o)}
+        className="w-full flex items-center gap-3 px-4 py-2.5 hover:bg-opacity-50 transition-colors"
+        style={{ background: "var(--bg-tertiary)" }}
+      >
+        <span className="flex items-center gap-1.5 text-xs font-semibold capitalize flex-1 text-left" style={{ color: "var(--text-primary)" }}>
+          {clusterKey.replace(/_/g, " ")}
+          <span className="ml-1 px-1.5 py-0.5 rounded-full text-[10px] bg-gray-200 text-gray-600 font-bold">{items.length}</span>
+        </span>
+        {topItem?.ai_summary && (
+          <span className="text-[11px] truncate max-w-[200px] hidden sm:block" style={{ color: "var(--text-muted)" }}>{topItem.ai_summary}</span>
+        )}
+        {open ? <ChevronDown className="w-3.5 h-3.5 flex-shrink-0" style={{ color: "var(--text-muted)" }} /> : <ChevronRight className="w-3.5 h-3.5 flex-shrink-0" style={{ color: "var(--text-muted)" }} />}
+      </button>
+      {open && items.map(item => (
+        <FeedbackRow key={item.id} item={item} selected={selectedId === item.id} onSelect={onSelect} />
+      ))}
+    </div>
+  );
+}
+
+// ─── Detail Panel ─────────────────────────────────────────────────────────────
+
+function Section({ title, children }) {
+  return (
+    <div className="space-y-1.5">
+      <p className="text-[10px] font-bold uppercase tracking-wider" style={{ color: "var(--text-muted)" }}>{title}</p>
+      {children}
+    </div>
+  );
+}
+
+function DetailRow({ label, value }) {
+  if (!value) return null;
+  return (
+    <div className="flex gap-2 text-xs leading-snug">
+      <span className="w-24 flex-shrink-0 font-medium" style={{ color: "var(--text-muted)" }}>{label}</span>
+      <span style={{ color: "var(--text-primary)" }}>{value}</span>
+    </div>
+  );
+}
+
+function DetailPanel({ item, onClose, onUpdate, allItems }) {
   const [status, setStatus] = useState(item.status);
   const [adminNotes, setAdminNotes] = useState(item.admin_notes || "");
   const [publicNote, setPublicNote] = useState(item.public_status_note || "");
+  const [assignedTo, setAssignedTo] = useState(item.assigned_to || "");
   const [saving, setSaving] = useState(false);
+
+  // Reset when item changes
+  React.useEffect(() => {
+    setStatus(item.status);
+    setAdminNotes(item.admin_notes || "");
+    setPublicNote(item.public_status_note || "");
+    setAssignedTo(item.assigned_to || "");
+  }, [item.id]);
+
   const meta = TYPE_META[item.type] || TYPE_META.bug;
   const Icon = meta.icon;
+  const statusMeta = STATUS_META[item.status] || STATUS_META.new;
+
+  const similarItems = useMemo(() => {
+    if (!item.ai_similar_item_ids?.length) return [];
+    return allItems.filter(i => item.ai_similar_item_ids.includes(i.id));
+  }, [item.ai_similar_item_ids, allItems]);
 
   const handleSave = async () => {
     setSaving(true);
@@ -109,168 +262,266 @@ function DetailPanel({ item, onClose, onUpdate }) {
       status,
       admin_notes: adminNotes,
       public_status_note: publicNote,
-      resolved_at: (status === "resolved" || status === "closed") && !item.resolved_at ? new Date().toISOString() : item.resolved_at,
+      assigned_to: assignedTo,
+      resolved_at: (status === "resolved" || status === "closed") && !item.resolved_at
+        ? new Date().toISOString()
+        : item.resolved_at,
+    });
+    setSaving(false);
+  };
+
+  const quickStatus = async (s) => {
+    setStatus(s);
+    setSaving(true);
+    await onUpdate(item.id, {
+      status: s,
+      resolved_at: (s === "resolved" || s === "closed") && !item.resolved_at ? new Date().toISOString() : item.resolved_at,
     });
     setSaving(false);
   };
 
   return (
     <div className="h-full flex flex-col">
-      <div className="flex items-center justify-between px-5 py-3 border-b flex-shrink-0" style={{ borderColor: "var(--card-border)" }}>
-        <div className="flex items-center gap-2">
-          <Icon className={`w-4 h-4 ${meta.color}`} />
-          <span className="text-sm font-semibold" style={{ color: "var(--text-primary)" }}>{item.title}</span>
+      {/* Header */}
+      <div className="px-4 py-3 border-b flex-shrink-0 space-y-1" style={{ borderColor: "var(--card-border)", background: "var(--bg-tertiary)" }}>
+        <div className="flex items-start justify-between gap-2">
+          <div className="flex items-start gap-2 min-w-0">
+            <Icon className={`w-4 h-4 mt-0.5 flex-shrink-0 ${meta.text}`} />
+            <p className="text-xs font-semibold leading-snug" style={{ color: "var(--text-primary)" }}>{item.title}</p>
+          </div>
+          <button onClick={onClose} className="p-1 rounded hover:bg-gray-200 flex-shrink-0" style={{ color: "var(--text-muted)" }}>
+            <X className="w-3.5 h-3.5" />
+          </button>
         </div>
-        <button onClick={onClose} className="p-1 rounded hover:bg-gray-100"><X className="w-4 h-4 text-gray-400" /></button>
+        <div className="flex items-center gap-1.5 flex-wrap pl-6">
+          <span className={`text-[10px] font-medium px-1.5 py-0.5 rounded ${statusMeta.color}`}>{statusMeta.label}</span>
+          {item.severity && (
+            <span className={`text-[10px] font-medium ${SEVERITY_META[item.severity]?.color || ""}`}>{item.severity}</span>
+          )}
+          {item.ai_priority_score != null && (
+            <span className="text-[10px] font-semibold" style={{ color: priorityTextColor(item.ai_priority_score) }}>
+              P{item.ai_priority_score}
+            </span>
+          )}
+          {item.is_urgent && <span className="text-[10px] font-bold text-red-600 bg-red-50 px-1 rounded">URGENT</span>}
+          {item.is_transaction_risk && <span className="text-[10px] font-semibold text-orange-600 bg-orange-50 px-1 rounded">TX RISK</span>}
+          {item.is_roadmap_candidate && <span className="text-[10px] font-semibold text-emerald-600 bg-emerald-50 px-1 rounded">ROADMAP</span>}
+        </div>
       </div>
 
-      <div className="flex-1 overflow-y-auto p-5 space-y-5 text-sm" style={{ color: "var(--text-primary)" }}>
-        {/* Flags */}
-        <div className="flex flex-wrap gap-2">
-          {item.is_urgent && <Badge className="bg-red-100 text-red-700">Urgent</Badge>}
-          {item.is_transaction_risk && <Badge className="bg-orange-100 text-orange-700">TX Risk</Badge>}
-          {item.is_roadmap_candidate && <Badge className="bg-emerald-100 text-emerald-700">Roadmap Candidate</Badge>}
-          {item.is_integration_candidate && <Badge className="bg-purple-100 text-purple-700">Integration Candidate</Badge>}
+      {/* Scrollable body */}
+      <div className="flex-1 overflow-y-auto">
+        {/* Quick action bar */}
+        <div className="flex items-center gap-1.5 px-4 py-2 border-b flex-wrap" style={{ borderColor: "var(--card-border)", background: "var(--card-bg)" }}>
+          {["planned", "in_progress", "resolved", "declined"].map(s => (
+            <button
+              key={s}
+              onClick={() => quickStatus(s)}
+              disabled={saving}
+              className={`text-[10px] font-semibold px-2 py-1 rounded border transition-colors ${
+                status === s
+                  ? "border-blue-400 text-blue-700 bg-blue-50"
+                  : "border-gray-200 text-gray-500 hover:border-gray-400"
+              }`}
+              style={{ borderColor: status === s ? undefined : "var(--card-border)" }}
+            >
+              {s.replace(/_/g, " ")}
+            </button>
+          ))}
+          {saving && <Loader2 className="w-3.5 h-3.5 animate-spin ml-auto" style={{ color: "var(--text-muted)" }} />}
         </div>
 
-        {/* AI Triage */}
-        {item.ai_summary && (
-          <div className="rounded-lg p-3 space-y-2" style={{ background: "var(--bg-tertiary)", border: "1px solid var(--card-border)" }}>
-            <p className="text-[10px] font-bold uppercase tracking-wider" style={{ color: "var(--text-muted)" }}>AI Triage</p>
-            <p className="text-xs leading-relaxed">{item.ai_summary}</p>
-            <div className="flex flex-wrap gap-3 text-xs pt-1">
-              {item.ai_priority_score != null && <span><span style={{ color: "var(--text-muted)" }}>Priority:</span> <span className={PRIORITY_COLOR(item.ai_priority_score)}>{item.ai_priority_score}/100</span></span>}
-              {item.ai_impact_score != null && <span><span style={{ color: "var(--text-muted)" }}>Impact:</span> <strong>{item.ai_impact_score}/100</strong></span>}
-              {item.ai_urgency_reason && <span><span style={{ color: "var(--text-muted)" }}>Reason:</span> {item.ai_urgency_reason}</span>}
+        <div className="px-4 py-3 space-y-4 text-sm">
+
+          {/* AI Analysis */}
+          {item.ai_summary && (
+            <Section title="AI Analysis">
+              <div className="rounded-md p-3 space-y-2 text-xs" style={{ background: "var(--bg-tertiary)", border: "1px solid var(--card-border)" }}>
+                <p className="leading-relaxed" style={{ color: "var(--text-primary)" }}>{item.ai_summary}</p>
+                {item.ai_urgency_reason && (
+                  <p className="italic" style={{ color: "var(--text-secondary)" }}>{item.ai_urgency_reason}</p>
+                )}
+                <div className="flex gap-4 pt-1 flex-wrap">
+                  {item.ai_priority_score != null && (
+                    <div>
+                      <span style={{ color: "var(--text-muted)" }}>Priority </span>
+                      <span className="font-bold" style={{ color: priorityTextColor(item.ai_priority_score) }}>{item.ai_priority_score}/100</span>
+                    </div>
+                  )}
+                  {item.ai_impact_score != null && (
+                    <div>
+                      <span style={{ color: "var(--text-muted)" }}>Impact </span>
+                      <span className="font-bold" style={{ color: "var(--text-primary)" }}>{item.ai_impact_score}/100</span>
+                    </div>
+                  )}
+                </div>
+                {item.ai_tags?.length > 0 && (
+                  <div className="flex flex-wrap gap-1 pt-0.5">
+                    {item.ai_tags.map(tag => (
+                      <span key={tag} className="px-1.5 py-0.5 rounded text-[10px] border" style={{ borderColor: "var(--card-border)", color: "var(--text-muted)", background: "var(--card-bg)" }}>{tag}</span>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </Section>
+          )}
+
+          {/* Original Submission */}
+          <Section title="Submission">
+            <div className="space-y-0.5">
+              <DetailRow label="Type" value={meta.label} />
+              <DetailRow label="Module" value={item.module} />
+              {item.severity && <DetailRow label="Severity" value={item.severity} />}
+              {item.reproducibility && <DetailRow label="Reproducible" value={item.reproducibility} />}
+              {item.target_role && <DetailRow label="Target Role" value={item.target_role} />}
+              {item.request_frequency && <DetailRow label="Frequency" value={item.request_frequency} />}
+              {item.requested_platform && <DetailRow label="Platform" value={item.requested_platform} />}
+              {item.integration_category && <DetailRow label="Int. Category" value={item.integration_category} />}
             </div>
-            {item.ai_tags?.length > 0 && (
-              <div className="flex flex-wrap gap-1 pt-1">
-                {item.ai_tags.map(tag => (
-                  <span key={tag} className="px-1.5 py-0.5 rounded text-[10px] border" style={{ background: "var(--card-bg)", borderColor: "var(--card-border)", color: "var(--text-muted)" }}>{tag}</span>
+          </Section>
+
+          {item.description && (
+            <Section title="Description">
+              <p className="text-xs leading-relaxed whitespace-pre-wrap" style={{ color: "var(--text-primary)" }}>{item.description}</p>
+            </Section>
+          )}
+
+          {item.expected_behavior && (
+            <Section title="Expected Behavior">
+              <p className="text-xs leading-relaxed whitespace-pre-wrap" style={{ color: "var(--text-primary)" }}>{item.expected_behavior}</p>
+            </Section>
+          )}
+
+          {(item.value_tags?.length > 0 || item.requested_sync_items?.length > 0) && (
+            <Section title="Tags">
+              <div className="flex flex-wrap gap-1">
+                {item.value_tags?.map(t => (
+                  <span key={t} className="text-[10px] px-1.5 py-0.5 rounded border" style={{ borderColor: "var(--card-border)", color: "var(--text-secondary)", background: "var(--bg-tertiary)" }}>{t}</span>
+                ))}
+                {item.requested_sync_items?.map(t => (
+                  <span key={t} className="text-[10px] px-1.5 py-0.5 rounded border" style={{ borderColor: "var(--card-border)", color: "var(--text-secondary)", background: "var(--bg-tertiary)" }}>{t}</span>
                 ))}
               </div>
+            </Section>
+          )}
+
+          {/* Context */}
+          <Section title="Context">
+            <div className="space-y-0.5">
+              <DetailRow label="Submitted by" value={item.user_name ? `${item.user_name} (${item.user_email})` : item.user_email} />
+              {item.created_date && (
+                <DetailRow label="Submitted" value={format(parseISO(item.created_date), "MMM d, yyyy h:mm a")} />
+              )}
+              {item.route_name && <DetailRow label="Page" value={item.route_name} />}
+              {item.browser_info && <DetailRow label="Browser" value={item.browser_info} />}
+            </div>
+            {item.transaction_id && (
+              <Link
+                to={`${createPageUrl("TransactionDetail")}?id=${item.transaction_id}`}
+                className="flex items-center gap-1 text-xs mt-1 hover:underline"
+                style={{ color: "var(--accent)" }}
+              >
+                <ExternalLink className="w-3 h-3" />
+                {item.transaction_address || "View Transaction"}
+              </Link>
             )}
-          </div>
-        )}
+          </Section>
 
-        {/* Submission details */}
-        <div className="space-y-2">
-          <p className="text-[10px] font-bold uppercase tracking-wider" style={{ color: "var(--text-muted)" }}>Submission</p>
-          <Row label="Type" value={item.type} />
-          <Row label="Module" value={item.module} />
-          {item.severity && <Row label="Severity" value={item.severity} />}
-          {item.reproducibility && <Row label="Reproducible" value={item.reproducibility} />}
-          {item.target_role && <Row label="Target Role" value={item.target_role} />}
-          {item.request_frequency && <Row label="Frequency" value={item.request_frequency} />}
-          {item.requested_platform && <Row label="Platform" value={item.requested_platform} />}
-          {item.integration_category && <Row label="Category" value={item.integration_category} />}
-          <Row label="Submitted by" value={`${item.user_name || ""} (${item.user_email || ""})`} />
-          {item.created_date && <Row label="Submitted" value={format(parseISO(item.created_date), "MMM d, yyyy h:mm a")} />}
-        </div>
+          {/* Similar items */}
+          {similarItems.length > 0 && (
+            <Section title={`Duplicates / Similar (${similarItems.length})`}>
+              <div className="space-y-1">
+                {similarItems.map(si => {
+                  const sm = TYPE_META[si.type] || TYPE_META.bug;
+                  const SIcon = sm.icon;
+                  return (
+                    <div key={si.id} className="flex items-center gap-2 text-xs py-1 px-2 rounded border cursor-pointer hover:bg-opacity-80 transition-colors"
+                      style={{ borderColor: "var(--card-border)", background: "var(--bg-tertiary)", color: "var(--text-primary)" }}>
+                      <SIcon className={`w-3 h-3 flex-shrink-0 ${sm.text}`} />
+                      <span className="truncate flex-1">{si.title}</span>
+                      <span className={`text-[10px] px-1 rounded ${STATUS_META[si.status]?.color || ""}`}>{si.status?.replace(/_/g, " ")}</span>
+                    </div>
+                  );
+                })}
+              </div>
+            </Section>
+          )}
 
-        <div className="space-y-1">
-          <p className="text-[10px] font-bold uppercase tracking-wider" style={{ color: "var(--text-muted)" }}>Description</p>
-          <p className="text-xs leading-relaxed whitespace-pre-wrap">{item.description}</p>
-        </div>
-
-        {item.expected_behavior && (
-          <div className="space-y-1">
-            <p className="text-[10px] font-bold uppercase tracking-wider" style={{ color: "var(--text-muted)" }}>Expected Behavior</p>
-            <p className="text-xs leading-relaxed whitespace-pre-wrap">{item.expected_behavior}</p>
-          </div>
-        )}
-
-        {item.value_tags?.length > 0 && (
-          <div className="space-y-1">
-            <p className="text-[10px] font-bold uppercase tracking-wider" style={{ color: "var(--text-muted)" }}>Value Tags</p>
-            <div className="flex flex-wrap gap-1">{item.value_tags.map(t => <Badge key={t} variant="outline" className="text-[10px]">{t}</Badge>)}</div>
-          </div>
-        )}
-
-        {item.requested_sync_items?.length > 0 && (
-          <div className="space-y-1">
-            <p className="text-[10px] font-bold uppercase tracking-wider" style={{ color: "var(--text-muted)" }}>Sync Items</p>
-            <div className="flex flex-wrap gap-1">{item.requested_sync_items.map(t => <Badge key={t} variant="outline" className="text-[10px]">{t}</Badge>)}</div>
-          </div>
-        )}
-
-        {item.transaction_id && (
-          <div className="space-y-1">
-            <p className="text-[10px] font-bold uppercase tracking-wider" style={{ color: "var(--text-muted)" }}>Linked Transaction</p>
-            <Link
-              to={`${createPageUrl("TransactionDetail")}?id=${item.transaction_id}`}
-              className="text-xs text-blue-500 hover:underline flex items-center gap-1"
-            >
-              {item.transaction_address || item.transaction_id} <ExternalLink className="w-3 h-3" />
-            </Link>
-          </div>
-        )}
-
-        {item.ai_similar_item_ids?.length > 0 && (
-          <div className="space-y-1">
-            <p className="text-[10px] font-bold uppercase tracking-wider" style={{ color: "var(--text-muted)" }}>Similar Items</p>
-            <p className="text-xs" style={{ color: "var(--text-muted)" }}>{item.ai_similar_item_ids.length} linked report(s)</p>
-          </div>
-        )}
-
-        {/* Admin actions */}
-        <div className="space-y-3 pt-2 border-t" style={{ borderColor: "var(--card-border)" }}>
-          <p className="text-[10px] font-bold uppercase tracking-wider" style={{ color: "var(--text-muted)" }}>Admin Actions</p>
-          <div>
-            <label className="text-xs mb-1 block" style={{ color: "var(--text-secondary)" }}>Status</label>
-            <select
-              className="w-full rounded-lg border px-3 py-2 text-sm"
-              style={{ background: "var(--input-bg)", borderColor: "var(--input-border)", color: "var(--text-primary)" }}
-              value={status} onChange={e => setStatus(e.target.value)}
-            >
-              {STATUSES.map(s => <option key={s} value={s}>{s.replace(/_/g, " ")}</option>)}
-            </select>
-          </div>
-          <div>
-            <label className="text-xs mb-1 block" style={{ color: "var(--text-secondary)" }}>Public note (shown to submitter)</label>
-            <textarea
-              className="w-full rounded-lg border px-3 py-2 text-sm resize-none"
-              style={{ background: "var(--input-bg)", borderColor: "var(--input-border)", color: "var(--text-primary)" }}
-              rows={2} value={publicNote} onChange={e => setPublicNote(e.target.value)}
-              placeholder="e.g. We're working on this — expected in next release."
-            />
-          </div>
-          <div>
-            <label className="text-xs mb-1 block" style={{ color: "var(--text-secondary)" }}>Internal admin notes</label>
-            <textarea
-              className="w-full rounded-lg border px-3 py-2 text-sm resize-none"
-              style={{ background: "var(--input-bg)", borderColor: "var(--input-border)", color: "var(--text-primary)" }}
-              rows={3} value={adminNotes} onChange={e => setAdminNotes(e.target.value)}
-              placeholder="Internal notes — not shown to submitter."
-            />
-          </div>
-          <Button size="sm" className="w-full bg-blue-600 hover:bg-blue-700" onClick={handleSave} disabled={saving}>
-            {saving ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : null}
-            Save Changes
-          </Button>
+          {/* Admin Actions */}
+          <Section title="Admin Actions">
+            <div className="space-y-2">
+              <div>
+                <label className="text-[10px] uppercase font-semibold block mb-1" style={{ color: "var(--text-muted)" }}>Status</label>
+                <select
+                  className="w-full rounded-md border px-2.5 py-1.5 text-xs"
+                  style={{ background: "var(--input-bg)", borderColor: "var(--input-border)", color: "var(--text-primary)" }}
+                  value={status}
+                  onChange={e => setStatus(e.target.value)}
+                >
+                  {STATUSES.map(s => <option key={s} value={s}>{STATUS_META[s]?.label || s}</option>)}
+                </select>
+              </div>
+              <div>
+                <label className="text-[10px] uppercase font-semibold block mb-1" style={{ color: "var(--text-muted)" }}>Assign to</label>
+                <input
+                  className="w-full rounded-md border px-2.5 py-1.5 text-xs"
+                  style={{ background: "var(--input-bg)", borderColor: "var(--input-border)", color: "var(--text-primary)" }}
+                  placeholder="email or name"
+                  value={assignedTo}
+                  onChange={e => setAssignedTo(e.target.value)}
+                />
+              </div>
+              <div>
+                <label className="text-[10px] uppercase font-semibold block mb-1" style={{ color: "var(--text-muted)" }}>Public note</label>
+                <textarea
+                  className="w-full rounded-md border px-2.5 py-1.5 text-xs resize-none"
+                  style={{ background: "var(--input-bg)", borderColor: "var(--input-border)", color: "var(--text-primary)" }}
+                  rows={2}
+                  value={publicNote}
+                  onChange={e => setPublicNote(e.target.value)}
+                  placeholder="Shown to submitter…"
+                />
+              </div>
+              <div>
+                <label className="text-[10px] uppercase font-semibold block mb-1" style={{ color: "var(--text-muted)" }}>Internal notes</label>
+                <textarea
+                  className="w-full rounded-md border px-2.5 py-1.5 text-xs resize-none"
+                  style={{ background: "var(--input-bg)", borderColor: "var(--input-border)", color: "var(--text-primary)" }}
+                  rows={3}
+                  value={adminNotes}
+                  onChange={e => setAdminNotes(e.target.value)}
+                  placeholder="Admin-only. Not shown to submitter."
+                />
+              </div>
+              <button
+                onClick={handleSave}
+                disabled={saving}
+                className="w-full flex items-center justify-center gap-1.5 rounded-md py-1.5 text-xs font-semibold transition-colors"
+                style={{ background: "var(--accent)", color: "var(--accent-text)" }}
+              >
+                {saving ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : null}
+                Save Changes
+              </button>
+            </div>
+          </Section>
         </div>
       </div>
     </div>
   );
 }
 
-function Row({ label, value }) {
-  if (!value) return null;
-  return (
-    <div className="flex gap-2 text-xs">
-      <span className="w-28 flex-shrink-0 font-medium" style={{ color: "var(--text-muted)" }}>{label}</span>
-      <span style={{ color: "var(--text-primary)" }}>{value}</span>
-    </div>
-  );
-}
+// ─── Main Page ─────────────────────────────────────────────────────────────────
 
 export default function FeedbackCenter() {
   const { data: currentUser } = useCurrentUser();
   const queryClient = useQueryClient();
+
   const [selectedItem, setSelectedItem] = useState(null);
   const [search, setSearch] = useState("");
-  const [typeFilter, setTypeFilter] = useState("all");
+  const [quickFilter, setQuickFilter] = useState("all");
   const [statusFilter, setStatusFilter] = useState("all");
+  const [sortBy, setSortBy] = useState("date");
+  const [groupByCluster, setGroupByCluster] = useState(false);
 
   const { data: items = [], isLoading } = useQuery({
     queryKey: ["feedbackItems"],
@@ -289,101 +540,225 @@ export default function FeedbackCenter() {
     setSelectedItem(prev => prev?.id === id ? { ...prev, ...data } : prev);
   };
 
-  const filtered = useMemo(() => items.filter(item => {
-    if (typeFilter !== "all" && item.type !== typeFilter) return false;
-    if (statusFilter !== "all" && item.status !== statusFilter) return false;
-    if (search) {
-      const q = search.toLowerCase();
-      return item.title?.toLowerCase().includes(q) ||
-        item.ai_summary?.toLowerCase().includes(q) ||
-        item.user_email?.toLowerCase().includes(q) ||
-        item.module?.toLowerCase().includes(q);
+  // KPIs
+  const newCount = useMemo(() => items.filter(i => i.status === "new").length, [items]);
+  const urgentCount = useMemo(() => items.filter(i => (i.ai_priority_score ?? 0) >= 90 || i.is_urgent).length, [items]);
+  const bugCount = useMemo(() => items.filter(i => i.type === "bug").length, [items]);
+  const featureCount = useMemo(() => items.filter(i => i.type === "feature").length, [items]);
+  const integrationCount = useMemo(() => items.filter(i => i.type === "integration").length, [items]);
+  const thirtyDaysAgo = subDays(new Date(), 30);
+  const resolvedCount = useMemo(() => items.filter(i =>
+    (i.status === "resolved" || i.status === "closed") &&
+    i.resolved_at && parseISO(i.resolved_at) > thirtyDaysAgo
+  ).length, [items]);
+
+  const filtered = useMemo(() => {
+    let list = [...items];
+
+    // Quick filter
+    if (quickFilter === "bug" || quickFilter === "feature" || quickFilter === "integration") {
+      list = list.filter(i => i.type === quickFilter);
+    } else if (quickFilter === "urgent") {
+      list = list.filter(i => (i.ai_priority_score ?? 0) >= 90 || i.is_urgent);
+    } else if (quickFilter === "duplicate") {
+      list = list.filter(i => i.ai_similar_item_ids?.length > 0);
+    } else if (quickFilter === "planned") {
+      list = list.filter(i => i.status === "planned" || i.status === "in_progress");
+    } else if (quickFilter === "resolved") {
+      list = list.filter(i => i.status === "resolved" || i.status === "closed");
     }
-    return true;
-  }), [items, typeFilter, statusFilter, search]);
+
+    // Status filter
+    if (statusFilter !== "all") {
+      list = list.filter(i => i.status === statusFilter);
+    }
+
+    // Search
+    if (search.trim()) {
+      const q = search.toLowerCase();
+      list = list.filter(i =>
+        i.title?.toLowerCase().includes(q) ||
+        i.ai_summary?.toLowerCase().includes(q) ||
+        i.user_email?.toLowerCase().includes(q) ||
+        i.module?.toLowerCase().includes(q) ||
+        i.description?.toLowerCase().includes(q)
+      );
+    }
+
+    // Sort
+    if (sortBy === "priority") {
+      list.sort((a, b) => (b.ai_priority_score ?? 0) - (a.ai_priority_score ?? 0));
+    } else if (sortBy === "severity") {
+      const order = { critical: 0, high: 1, medium: 2, low: 3 };
+      list.sort((a, b) => (order[a.severity] ?? 4) - (order[b.severity] ?? 4));
+    }
+    // default: date (already sorted by API)
+
+    return list;
+  }, [items, quickFilter, statusFilter, search, sortBy]);
 
   if (!isOwnerOrAdmin(currentUser)) {
     return (
       <div className="flex items-center justify-center h-64">
-        <p className="text-sm text-gray-500">Admin access required.</p>
+        <p className="text-sm" style={{ color: "var(--text-muted)" }}>Admin access required.</p>
       </div>
     );
   }
 
-  const bugs = items.filter(i => i.type === "bug");
-  const urgent = items.filter(i => i.is_urgent);
-  const features = items.filter(i => i.type === "feature");
-  const integrations = items.filter(i => i.type === "integration");
-  const newCount = items.filter(i => i.status === "new").length;
+  const clusters = useMemo(() => groupByCluster ? buildClusters(filtered) : [], [filtered, groupByCluster]);
 
   return (
-    <div className="flex flex-col gap-5">
-      <div>
-        <h1 className="text-xl font-bold tracking-tight" style={{ color: "var(--text-primary)" }}>Feedback Center</h1>
-        <p className="text-sm mt-0.5" style={{ color: "var(--text-muted)" }}>AI-triaged bugs, feature requests, and integration requests.</p>
-      </div>
+    <div className="flex flex-col gap-4 h-full" style={{ height: "calc(100vh - 57px)", overflow: "hidden" }}>
 
-      {/* Stats */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
-        <StatCard label="New" value={newCount} color="text-blue-600" />
-        <StatCard label="Urgent" value={urgent.length} color="text-red-600" />
-        <StatCard label="Bugs" value={bugs.length} />
-        <StatCard label="Features" value={features.length} />
-        <StatCard label="Integrations" value={integrations.length} />
-        <StatCard label="Resolved" value={items.filter(i => i.status === "resolved" || i.status === "closed").length} color="text-emerald-600" />
-      </div>
-
-      {/* Filters */}
-      <div className="flex flex-wrap gap-3 items-center">
-        <div className="relative flex-1 min-w-[200px] max-w-sm">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-          <Input placeholder="Search feedback…" value={search} onChange={e => setSearch(e.target.value)} className="pl-9 h-8 text-sm" />
+      {/* ── Top bar ── */}
+      <div className="flex items-start justify-between gap-4 flex-shrink-0 pt-1">
+        <div>
+          <h1 className="text-base font-bold tracking-tight" style={{ color: "var(--text-primary)" }}>Feedback Center</h1>
+          <p className="text-xs mt-0.5" style={{ color: "var(--text-muted)" }}>System issues, feature requests, and integrations</p>
         </div>
-        <Select value={typeFilter} onValueChange={setTypeFilter}>
-          <SelectTrigger className="w-36 h-8 text-xs"><SelectValue placeholder="All Types" /></SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">All Types</SelectItem>
-            <SelectItem value="bug">Bugs</SelectItem>
-            <SelectItem value="feature">Features</SelectItem>
-            <SelectItem value="integration">Integrations</SelectItem>
-          </SelectContent>
-        </Select>
-        <Select value={statusFilter} onValueChange={setStatusFilter}>
-          <SelectTrigger className="w-40 h-8 text-xs"><SelectValue placeholder="All Statuses" /></SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">All Statuses</SelectItem>
-            {STATUSES.map(s => <SelectItem key={s} value={s}>{s.replace(/_/g, " ")}</SelectItem>)}
-          </SelectContent>
-        </Select>
+        <div className="flex items-center gap-2 flex-wrap justify-end">
+          <div className="relative">
+            <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5" style={{ color: "var(--text-muted)" }} />
+            <input
+              className="rounded-md border pl-8 pr-3 py-1.5 text-xs w-48 outline-none transition-colors"
+              style={{ background: "var(--input-bg)", borderColor: "var(--input-border)", color: "var(--text-primary)" }}
+              placeholder="Search feedback…"
+              value={search}
+              onChange={e => setSearch(e.target.value)}
+            />
+          </div>
+          <select
+            className="rounded-md border px-2.5 py-1.5 text-xs outline-none"
+            style={{ background: "var(--input-bg)", borderColor: "var(--input-border)", color: "var(--text-primary)" }}
+            value={statusFilter}
+            onChange={e => setStatusFilter(e.target.value)}
+          >
+            <option value="all">All Statuses</option>
+            {STATUSES.map(s => <option key={s} value={s}>{STATUS_META[s]?.label || s}</option>)}
+          </select>
+          <select
+            className="rounded-md border px-2.5 py-1.5 text-xs outline-none"
+            style={{ background: "var(--input-bg)", borderColor: "var(--input-border)", color: "var(--text-primary)" }}
+            value={sortBy}
+            onChange={e => setSortBy(e.target.value)}
+          >
+            <option value="date">Sort: Date</option>
+            <option value="priority">Sort: Priority</option>
+            <option value="severity">Sort: Severity</option>
+          </select>
+          <button
+            onClick={() => setGroupByCluster(g => !g)}
+            className={`flex items-center gap-1.5 rounded-md border px-2.5 py-1.5 text-xs font-medium transition-colors ${groupByCluster ? "bg-blue-50 border-blue-300 text-blue-700" : ""}`}
+            style={!groupByCluster ? { background: "var(--input-bg)", borderColor: "var(--input-border)", color: "var(--text-secondary)" } : {}}
+          >
+            <Layers className="w-3.5 h-3.5" />
+            Clusters
+          </button>
+        </div>
       </div>
 
-      {/* Main split view */}
-      <div className="flex gap-4 min-h-[500px]" style={{ height: "calc(100vh - 340px)" }}>
-        {/* List */}
-        <div className={`rounded-xl border overflow-hidden flex flex-col ${selectedItem ? "hidden lg:flex lg:flex-1" : "flex-1"}`}
-          style={{ background: "var(--card-bg)", borderColor: "var(--card-border)" }}>
-          <div className="px-4 py-2.5 border-b flex items-center justify-between flex-shrink-0" style={{ borderColor: "var(--card-border)", background: "var(--bg-tertiary)" }}>
-            <span className="text-xs font-semibold" style={{ color: "var(--text-muted)" }}>{filtered.length} items</span>
+      {/* ── KPI strip ── */}
+      <div className="flex gap-2 flex-shrink-0 overflow-x-auto pb-0.5">
+        <KpiCard label="New" value={newCount} icon={Clock} />
+        <KpiCard label="Urgent" value={urgentCount} icon={Zap} urgent={urgentCount > 0} />
+        <KpiCard label="Bugs" value={bugCount} icon={Bug} />
+        <KpiCard label="Features" value={featureCount} icon={Lightbulb} />
+        <KpiCard label="Integrations" value={integrationCount} icon={Puzzle} />
+        <KpiCard label="Resolved (30d)" value={resolvedCount} icon={CheckCircle2} />
+      </div>
+
+      {/* ── Quick filters ── */}
+      <div className="flex items-center gap-1 flex-shrink-0 flex-wrap">
+        {QUICK_FILTERS.map(f => (
+          <button
+            key={f.key}
+            onClick={() => setQuickFilter(f.key)}
+            className={`px-2.5 py-1 rounded-md text-xs font-medium border transition-colors ${
+              quickFilter === f.key
+                ? "bg-blue-600 border-blue-600 text-white"
+                : "border-transparent hover:border-gray-300"
+            }`}
+            style={quickFilter !== f.key ? { color: "var(--text-secondary)", background: "transparent" } : {}}
+          >
+            {f.label}
+          </button>
+        ))}
+        <span className="ml-auto text-xs" style={{ color: "var(--text-muted)" }}>{filtered.length} items</span>
+      </div>
+
+      {/* ── Main split ── */}
+      <div className="flex gap-3 flex-1 min-h-0">
+
+        {/* Left: list */}
+        <div
+          className={`flex flex-col rounded-xl border overflow-hidden flex-shrink-0 ${selectedItem ? "hidden lg:flex" : "flex-1 w-full"}`}
+          style={{
+            background: "var(--card-bg)",
+            borderColor: "var(--card-border)",
+            width: selectedItem ? "calc(70% - 6px)" : "100%",
+          }}
+        >
+          {/* Column headers */}
+          <div
+            className="grid text-[10px] uppercase tracking-wider font-semibold px-4 py-2 border-b flex-shrink-0"
+            style={{
+              gridTemplateColumns: "24px 1fr 28px",
+              gap: "0 10px",
+              borderColor: "var(--card-border)",
+              background: "var(--bg-tertiary)",
+              color: "var(--text-muted)",
+            }}
+          >
+            <span />
+            <span>Title · Summary · Priority · Status</span>
+            <span />
           </div>
+
           <div className="flex-1 overflow-y-auto">
             {isLoading ? (
-              <p className="p-6 text-sm text-center" style={{ color: "var(--text-muted)" }}>Loading…</p>
+              <div className="flex items-center justify-center h-24">
+                <Loader2 className="w-5 h-5 animate-spin" style={{ color: "var(--text-muted)" }} />
+              </div>
             ) : filtered.length === 0 ? (
-              <p className="p-6 text-sm text-center" style={{ color: "var(--text-muted)" }}>No items match your filters.</p>
+              <p className="text-center text-xs py-8" style={{ color: "var(--text-muted)" }}>No items match your filters.</p>
+            ) : groupByCluster ? (
+              clusters.map(([key, clusterItems]) => (
+                <ClusterGroup
+                  key={key}
+                  clusterKey={key}
+                  items={clusterItems}
+                  onSelect={setSelectedItem}
+                  selectedId={selectedItem?.id}
+                />
+              ))
             ) : (
               filtered.map(item => (
-                <FeedbackRow key={item.id} item={item} onSelect={setSelectedItem} selected={selectedItem?.id === item.id} />
+                <FeedbackRow
+                  key={item.id}
+                  item={item}
+                  selected={selectedItem?.id === item.id}
+                  onSelect={setSelectedItem}
+                />
               ))
             )}
           </div>
         </div>
 
-        {/* Detail panel */}
+        {/* Right: detail */}
         {selectedItem && (
-          <div className="w-full lg:w-96 flex-shrink-0 rounded-xl border overflow-hidden flex flex-col"
-            style={{ background: "var(--card-bg)", borderColor: "var(--card-border)" }}>
+          <div
+            className="flex flex-col rounded-xl border overflow-hidden flex-1 lg:flex-none"
+            style={{
+              background: "var(--card-bg)",
+              borderColor: "var(--card-border)",
+              width: "30%",
+              minWidth: "280px",
+            }}
+          >
             <DetailPanel
+              key={selectedItem.id}
               item={selectedItem}
+              allItems={items}
               onClose={() => setSelectedItem(null)}
               onUpdate={handleUpdate}
             />
