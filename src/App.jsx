@@ -11,6 +11,7 @@ import TutorialFAQPage from './pages/TutorialFAQPage'
 import Notifications from './pages/Notifications.jsx'
 import FeedbackCenter from './pages/FeedbackCenter.jsx'
 import SignDocument from './pages/SignDocument.jsx'
+import SystemDiagnostics from './pages/SystemDiagnostics.jsx'
 import { QueryClientProvider } from '@tanstack/react-query'
 import { queryClientInstance } from '@/lib/query-client'
 import { pagesConfig } from './pages.config'
@@ -117,6 +118,11 @@ const AuthenticatedApp = () => {
         </LayoutWrapper>
       } />
       <Route path="/SignDocument" element={<SignDocument />} />
+      <Route path="/settings/system-diagnostics" element={
+        <LayoutWrapper currentPageName="SystemDiagnostics">
+          <SystemDiagnostics />
+        </LayoutWrapper>
+      } />
       <Route path="*" element={<PageNotFound />} />
     </Routes>
   );

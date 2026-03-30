@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { Link } from "react-router-dom";
 import { base44 } from "@/api/base44Client";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -7,7 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Settings as SettingsIcon, Users, Bell, Palette, Loader2, UserPlus, CheckCircle, Building2, DollarSign, FileText, Pencil, X, Bug, Lightbulb, Puzzle, MessageSquarePlus } from "lucide-react";
+import { Settings as SettingsIcon, Users, Bell, Palette, Loader2, UserPlus, CheckCircle, Building2, DollarSign, FileText, Pencil, X, Bug, Lightbulb, Puzzle, MessageSquarePlus, Activity } from "lucide-react";
 import { useCurrentUser, isTCOrAdmin, isOwnerOrAdmin } from "../components/auth/useCurrentUser";
 import { ROLE_COLORS } from "../components/utils/tenantUtils";
 import TemplateLibraryPanel from "../components/templates/TemplateLibraryPanel";
@@ -372,6 +373,21 @@ export default function Settings() {
         onClose={() => setFeedbackModal({ open: false, type: "bug" })}
         defaultType={feedbackModal.type}
       />
+
+      {/* System Diagnostics */}
+      <Link to="/settings/system-diagnostics">
+        <Card className="shadow-sm border-gray-100 hover:border-blue-300 hover:bg-blue-50/30 transition-all cursor-pointer">
+          <CardHeader className="flex flex-row items-center gap-4 py-4">
+            <div className="w-9 h-9 rounded-lg bg-blue-50 flex items-center justify-center">
+              <Activity className="w-4 h-4 text-blue-500" />
+            </div>
+            <div>
+              <p className="font-semibold text-sm text-gray-900">System Diagnostics</p>
+              <p className="text-xs text-gray-400">Check PWA status, connectivity, and caching info.</p>
+            </div>
+          </CardHeader>
+        </Card>
+      </Link>
 
       {/* Placeholders */}
       <Card className="shadow-sm border-gray-100 opacity-70">
