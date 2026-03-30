@@ -475,7 +475,7 @@ export default function NotesPanel({ transaction, currentUser }) {
               Send
             </button>
           </div>
-          <p className="text-[10px]" style={{ color: "var(--text-muted)" }}>⌘+Enter to submit · @ to mention</p>
+          <p className="text-[10px]" style={{ color: "var(--text-muted)" }}>⌘/Ctrl+Enter to submit · @ to mention</p>
         </div>
       )}
     </div>
