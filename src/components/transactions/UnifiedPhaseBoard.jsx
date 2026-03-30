@@ -12,11 +12,15 @@ import TaskLibraryModal from "@/components/tasks/TaskLibraryModal";
 
 // ── Determine phase status ──────────────────────────────────────────────────
 function getPhaseStatus(phaseNum, tasks, phasesCompleted = []) {
-  if (phasesCompleted.includes(phaseNum)) return "complete";
   const phaseTasks = tasks.filter(t => t.phase === phaseNum);
-  if (phaseTasks.length === 0) return "not_started";
   const requiredTasks = phaseTasks.filter(t => t.is_required);
-  if (requiredTasks.length > 0 && requiredTasks.every(t => t.is_completed)) return "complete";
+  const allRequiredDone = requiredTasks.length > 0 && requiredTasks.every(t => t.is_completed);
+
+  // Only treat as complete if required tasks are actually all done
+  if (allRequiredDone) return "complete";
+  // phasesCompleted flag can also mark complete (e.g. manually advanced), but only if tasks back it up or there are no tasks
+  if (phasesCompleted.includes(phaseNum) && phaseTasks.length === 0) return "complete";
+
   if (phaseTasks.some(t => t.is_completed)) return "active";
   return "not_started";
 }
