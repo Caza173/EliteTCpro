@@ -852,15 +852,31 @@ export default function TransactionDetail() {
         )}
       </div>
 
-      {/* Floating AI button — bottom left so it never overlaps the right Notes panel */}
+      {/* Floating AI button — portal-style fixed positioning, bottom-left to avoid Notes panel */}
       <button
-        className="fixed bottom-6 left-6 z-40 flex items-center gap-2 px-3 py-2.5 rounded-full shadow-lg transition-all hover:scale-105"
-        style={{ background: "#2563eb", color: "#ffffff" }}
         onClick={() => setMobileAIOpen(true)}
         title="Ask AI Assistant"
+        style={{
+          position: "fixed",
+          bottom: "24px",
+          left: "80px",
+          zIndex: 9999,
+          background: "#2563eb",
+          color: "#ffffff",
+          border: "none",
+          borderRadius: "9999px",
+          padding: "10px 16px",
+          display: "flex",
+          alignItems: "center",
+          gap: "8px",
+          boxShadow: "0 4px 14px rgba(37,99,235,0.4)",
+          cursor: "pointer",
+          fontWeight: 600,
+          fontSize: "12px",
+        }}
       >
-        <Bot className="w-4 h-4" />
-        <span className="text-xs font-semibold hidden sm:inline">Ask AI</span>
+        <Bot style={{ width: 16, height: 16 }} />
+        Ask AI
       </button>
     </div>
   );
