@@ -22,44 +22,76 @@ const DAY_NAMES = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 const VIEWS = ["month", "week", "day"];
 
 // ── Hover Popup ───────────────────────────────────────────────────────────────
-function DayHoverPopup({ day, dayEvents, onClose }) {
-  if (!dayEvents.length) return null;
+function DayHoverPopup({ day, dayEvents, dayRect, onClose }) {
+  if (!dayEvents.length || !dayRect) return null;
 
-  return (
+  return createPortal(
     <div
-      className="absolute top-full left-0 mt-2 z-[9999] w-64 rounded-xl border shadow-xl py-2 pointer-events-auto"
       style={{
+        position: "fixed",
+        top: dayRect.bottom + window.scrollY + 8,
+        left: dayRect.left + window.scrollX,
+        zIndex: 9999,
         background: "var(--card-bg)",
         borderColor: "var(--card-border)",
+        width: "256px",
+        borderRadius: "12px",
+        border: "1px solid var(--card-border)",
+        boxShadow: "0 20px 25px -5px rgb(0 0 0 / 0.1)",
+        padding: "8px 0",
+        pointerEvents: "auto",
       }}
       onMouseEnter={e => e.stopPropagation()}
     >
-      <div className="px-3 pb-1.5 mb-1 border-b" style={{ borderColor: "var(--card-border)" }}>
-        <p className="text-xs font-bold" style={{ color: "var(--text-primary)" }}>
+      <div style={{ padding: "8px 12px 6px", marginBottom: "4px", borderBottom: "1px solid var(--card-border)" }}>
+        <p style={{ fontSize: "12px", fontWeight: "bold", color: "var(--text-primary)" }}>
           {format(day, "EEEE, MMMM d")}
         </p>
-        <p className="text-[10px]" style={{ color: "var(--text-muted)" }}>{dayEvents.length} deadline{dayEvents.length > 1 ? "s" : ""}</p>
+        <p style={{ fontSize: "10px", color: "var(--text-muted)", marginTop: "2px" }}>
+          {dayEvents.length} deadline{dayEvents.length > 1 ? "s" : ""}
+        </p>
       </div>
-      <div className="space-y-0.5 px-2 max-h-52 overflow-y-auto">
+      <div style={{ padding: "0 8px", maxHeight: "208px", overflowY: "auto" }}>
         {dayEvents.map((ev, i) => (
           <Link
             key={i}
             to={`${createPageUrl("TransactionDetail")}?id=${ev.txId}`}
-            className="flex items-center gap-2 px-2 py-1.5 rounded-lg hover:opacity-80 transition-opacity"
-            style={{ background: "var(--bg-tertiary)" }}
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: "8px",
+              padding: "6px 8px",
+              borderRadius: "6px",
+              background: "var(--bg-tertiary)",
+              marginBottom: "4px",
+              textDecoration: "none",
+              cursor: "pointer",
+            }}
             onClick={onClose}
+            onMouseEnter={e => e.currentTarget.style.opacity = "0.8"}
+            onMouseLeave={e => e.currentTarget.style.opacity = "1"}
           >
-            <span className={`w-2 h-2 rounded-full flex-shrink-0 ${ev.dot}`} />
-            <div className="flex-1 min-w-0">
-              <p className="text-[11px] font-semibold truncate" style={{ color: "var(--text-primary)" }}>
+            <span
+              style={{
+                width: "8px",
+                height: "8px",
+                borderRadius: "50%",
+                flexShrink: 0,
+                background: ev.dot.split("bg-")[1]?.split("-")[0] || "blue",
+              }}
+              className={ev.dot}
+            />
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <p style={{ fontSize: "11px", fontWeight: "600", color: "var(--text-primary)", margin: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                 {ev.address?.split(",")[0]}
               </p>
-              <p className="text-[10px]" style={{ color: "var(--text-muted)" }}>{ev.label}</p>
+              <p style={{ fontSize: "10px", color: "var(--text-muted)", margin: 0 }}>{ev.label}</p>
             </div>
           </Link>
         ))}
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }
 
@@ -139,13 +171,19 @@ function DayHoverPopup({ day, dayEvents, onClose }) {
             const today = isToday(day);
             const isSelected = selectedDay && isSameDay(day, selectedDay);
             const isHovered = hoveredDay && isSameDay(day, hoveredDay);
-            // Determine popup position: last 2 cols open left
-            const colInRow = (day.getDay()); // 0=Sun … 6=Sat
-            const popupSide = colInRow >= 5 ? "left" : "right";
+            const dayRef = useRef(null);
+            const [dayRect, setDayRect] = useState(null);
+
+            useEffect(() => {
+              if (isHovered && dayRef.current) {
+                setDayRect(dayRef.current.getBoundingClientRect());
+              }
+            }, [isHovered]);
+
             return (
               <div
                 key={key}
-                data-day-key={key}
+                ref={dayRef}
                 onClick={() => setSelectedDay(isSelected ? null : day)}
                 onMouseEnter={() => dayEvents.length > 0 && setHoveredDay(day)}
                 onMouseLeave={() => setHoveredDay(null)}
@@ -169,11 +207,12 @@ function DayHoverPopup({ day, dayEvents, onClose }) {
                     <span className="text-[9px]" style={{ color: "var(--accent)" }}>+{dayEvents.length - 2} more</span>
                   )}
                 </div>
-                {/* Hover popup */}
+                {/* Portal popup */}
                 {isHovered && (
                   <DayHoverPopup
                     day={day}
                     dayEvents={dayEvents}
+                    dayRect={dayRect}
                     onClose={() => setHoveredDay(null)}
                   />
                 )}
