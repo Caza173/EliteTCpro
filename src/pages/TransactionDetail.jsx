@@ -532,14 +532,14 @@ export default function TransactionDetail() {
 
       {/* ── TOP HEADER BAR ── */}
       <div className="flex-shrink-0 px-5 pt-4 pb-3 border-b" style={{ borderColor: "var(--card-border)", background: "var(--bg-secondary)" }}>
-        {/* Row 1: Back + address + badges + actions */}
-        <div className="flex flex-wrap items-center gap-3 mb-3">
+        {/* Row 1: Back + address + badges */}
+        <div className="flex flex-wrap items-center gap-3 mb-2">
           <Link to={createPageUrl("Transactions")}>
             <Button variant="ghost" size="sm" className="text-gray-500 hover:text-gray-800 -ml-2 h-8">
               <ArrowLeft className="w-4 h-4 mr-1" /> Back
             </Button>
           </Link>
-          <div className="flex items-center gap-2 flex-1 min-w-0">
+          <div className="flex items-center gap-2 flex-wrap min-w-0">
             <div className="w-8 h-8 rounded-lg bg-blue-50 flex items-center justify-center flex-shrink-0">
               <MapPin className="w-4 h-4 text-blue-500" />
             </div>
@@ -566,7 +566,10 @@ export default function TransactionDetail() {
               onSynced={() => queryClient.invalidateQueries({ queryKey: ["transactions"] })}
             />
           </div>
-          <div className="flex flex-wrap items-center gap-1.5 flex-shrink-0">
+        </div>
+
+        {/* Row 2: Actions */}
+        <div className="flex flex-wrap items-center gap-1.5 mb-2">
             <Select value={transaction.transaction_phase || "intake"}
               onValueChange={(v) => updateMutation.mutate({ id: transaction.id, data: { transaction_phase: v, last_activity_at: new Date().toISOString() } })}>
               <SelectTrigger className="h-8 w-38 text-xs"><SelectValue /></SelectTrigger>
@@ -598,9 +601,8 @@ export default function TransactionDetail() {
               className="border-gray-200 text-gray-500 hover:border-gray-300 h-8"
               context={{ transaction_id: transaction?.id, transaction_address: transaction?.address, route_name: "Transaction Page" }} />
           </div>
-        </div>
 
-        {/* Row 2: Meta strip + attention items */}
+        {/* Row 3: Meta strip + attention items */}
         <div className="flex flex-wrap items-center gap-4">
           <div className="flex flex-wrap items-center gap-3 text-xs" style={{ color: "var(--text-muted)" }}>
             {transaction.contract_date && <span><span className="font-medium" style={{ color: "var(--text-secondary)" }}>Contract:</span> {transaction.contract_date}</span>}
