@@ -32,7 +32,13 @@ export default function UserMenuDropdown() {
 
   if (!currentUser) return null;
 
-  const { profile } = currentUser;
+  const profile = {
+    first_name: currentUser.first_name,
+    last_name: currentUser.last_name,
+    full_name: currentUser.full_name,
+    email: currentUser.email,
+    profile_photo_url: currentUser.profile_photo_url,
+  };
   const initials = [profile.first_name?.[0], profile.last_name?.[0]].filter(Boolean).join('').toUpperCase()
     || profile.email?.[0]?.toUpperCase()
     || '?';
