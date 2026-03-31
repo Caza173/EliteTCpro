@@ -1,4 +1,5 @@
 import { Toaster } from "@/components/ui/toaster"
+import Landing from './pages/Landing'
 import UserManagement from './pages/UserManagement'
 import Contacts from './pages/Contacts'
 import DotloopIntegration from './pages/DotloopIntegration'
@@ -54,11 +55,8 @@ const AuthenticatedApp = () => {
   // Render the main app
   return (
     <Routes>
-      <Route path="/" element={
-        <LayoutWrapper currentPageName={mainPageKey}>
-          <MainPage />
-        </LayoutWrapper>
-      } />
+      <Route path="/" element={<Landing />} />
+      <Route path="/Landing" element={<Landing />} />
       {Object.entries(Pages).map(([path, Page]) => (
         <Route
           key={path}
