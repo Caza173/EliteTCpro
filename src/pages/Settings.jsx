@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Settings as SettingsIcon, Users, Bell, Palette, Loader2, UserPlus, CheckCircle, Building2, DollarSign, FileText, Pencil, X, Bug, Lightbulb, Puzzle, MessageSquarePlus, Activity, Mail, UserCircle } from "lucide-react";
+import { Settings as SettingsIcon, Users, Bell, Palette, Loader2, UserPlus, CheckCircle, Building2, DollarSign, FileText, Pencil, X, Bug, Lightbulb, Puzzle, MessageSquarePlus, Activity, Mail, UserCircle, Trash2 } from "lucide-react";
 import { useCurrentUser, isTCOrAdmin, isOwnerOrAdmin } from "../components/auth/useCurrentUser";
 import { ROLE_COLORS } from "../components/utils/tenantUtils";
 import TemplateLibraryPanel from "../components/templates/TemplateLibraryPanel";
@@ -118,6 +118,11 @@ export default function Settings() {
 
   const updateRoleMutation = useMutation({
     mutationFn: ({ id, role }) => base44.entities.User.update(id, { role }),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["users"] }),
+  });
+
+  const deleteUserMutation = useMutation({
+    mutationFn: (id) => base44.functions.invoke("deleteUser", { user_id: id }),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["users"] }),
   });
 
@@ -254,6 +259,15 @@ export default function Settings() {
                           <SelectItem value="admin">Admin</SelectItem>
                         </SelectContent>
                       </Select>
+                      {currentUser?.email === "nhcazateam@gmail.com" && u.id !== currentUser?.id && (
+                        <button
+                          onClick={() => { if (window.confirm(`Delete ${u.full_name || u.email}?`)) deleteUserMutation.mutate(u.id); }}
+                          className="p-1.5 rounded-lg text-red-400 hover:text-red-600 hover:bg-red-50 transition-colors"
+                          title="Delete user"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      )}
                     </div>
                   ))}
                 </div>
