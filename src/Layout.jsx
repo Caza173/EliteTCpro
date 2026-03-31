@@ -124,6 +124,11 @@ export default function Layout({ children, currentPageName }) {
       navigate(createPageUrl("Dashboard"), { replace: true });
       return;
     }
+    // Enforce profile setup for logged-in users who haven't completed it
+    if (currentUser !== null && currentUser.profile_completed === false && currentPageName !== "SetupProfile") {
+      navigate("/SetupProfile", { replace: true });
+      return;
+    }
   }, [currentUser, currentPageName, navigate]);
 
   useEffect(() => {
@@ -147,7 +152,7 @@ export default function Layout({ children, currentPageName }) {
     : role === "agent"    ? AGENT_NAV
     : TC_NAV;
 
-  if (currentPageName === "Landing" || currentPageName === "PortalSelect") {
+  if (currentPageName === "Landing" || currentPageName === "PortalSelect" || currentPageName === "SetupProfile") {
     return <ThemeProvider>{children}</ThemeProvider>;
   }
 

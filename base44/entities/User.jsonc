@@ -115,6 +115,10 @@
     },
     "custom_signature_html": {
       "type": "string"
+    },
+    "profile_completed": {
+      "type": "boolean",
+      "default": false
     }
   },
   "required": []

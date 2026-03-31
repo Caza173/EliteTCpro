@@ -1,5 +1,6 @@
 import { Toaster } from "@/components/ui/toaster"
 import Landing from './pages/Landing'
+import SetupProfile from './pages/SetupProfile'
 import UserManagement from './pages/UserManagement'
 import Contacts from './pages/Contacts'
 import DotloopIntegration from './pages/DotloopIntegration'
@@ -57,6 +58,7 @@ const AuthenticatedApp = () => {
     <Routes>
       <Route path="/" element={<Landing />} />
       <Route path="/Landing" element={<Landing />} />
+      <Route path="/SetupProfile" element={<SetupProfile />} />
       {Object.entries(Pages).map(([path, Page]) => (
         <Route
           key={path}
