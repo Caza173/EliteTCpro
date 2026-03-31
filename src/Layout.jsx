@@ -3,7 +3,7 @@ import "./globals.css";
 import { Link, useNavigate } from "react-router-dom";
 import { createPageUrl } from "@/utils";
 import { base44 } from "@/api/base44Client";
-import { useQuery } from "@tanstack/react-query";
+// useQuery removed — user now comes from CurrentUserContext
 import {
   LayoutDashboard,
   FileText,
@@ -35,6 +35,8 @@ import { ThemeProvider } from "./components/theme/ThemeContext";
 import ThemeToggle from "./components/theme/ThemeToggle";
 import InstallPrompt from "./components/pwa/InstallPrompt";
 import OfflineBanner from "./components/pwa/OfflineBanner";
+import UserMenuDropdown from "./components/user/UserMenuDropdown";
+import { useCurrentUser as useCurrentUserCtx } from "./lib/CurrentUserContext.jsx";
 
 const TC_NAV = [
   { label: "Dashboard",      page: "Dashboard",      icon: LayoutDashboard },
@@ -103,14 +105,7 @@ export default function Layout({ children, currentPageName }) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
 
-  const { data: currentUser = null } = useQuery({
-    queryKey: ["currentUser"],
-    queryFn: async () => {
-      try { return await base44.auth.me(); }
-      catch { return null; }
-    },
-    retry: false,
-  });
+  const { currentUser = null } = useCurrentUserCtx();
 
   const navigate = useNavigate();
 
@@ -276,15 +271,23 @@ export default function Layout({ children, currentPageName }) {
           <div className="px-2 py-3 border-t space-y-1" style={{ borderColor: "var(--sidebar-border)" }}>
             {currentUser && !sidebarCollapsed && (
               <div className="flex items-center gap-2 px-2 py-1.5 rounded-lg mb-1">
-                <div
-                  className="w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0"
-                  style={{ backgroundColor: "rgba(37,99,235,0.2)", color: "var(--sidebar-accent)" }}
-                >
-                  {currentUser.full_name?.[0] || currentUser.email?.[0] || "?"}
-                </div>
+                {currentUser.profile?.profile_photo_url ? (
+                  <img
+                    src={currentUser.profile.profile_photo_url}
+                    alt=""
+                    className="w-6 h-6 rounded-full object-cover flex-shrink-0"
+                  />
+                ) : (
+                  <div
+                    className="w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0"
+                    style={{ backgroundColor: "rgba(37,99,235,0.2)", color: "var(--sidebar-accent)" }}
+                  >
+                    {currentUser.profile?.first_name?.[0] || currentUser.email?.[0] || "?"}
+                  </div>
+                )}
                 <div className="flex-1 min-w-0">
                   <p className="text-xs font-medium truncate text-white">
-                    {currentUser.full_name || currentUser.email}
+                    {currentUser.profile?.full_name || currentUser.email}
                   </p>
                   <p className="text-[10px] capitalize" style={{ color: "var(--sidebar-text)" }}>
                     {currentUser.role}
@@ -336,6 +339,7 @@ export default function Layout({ children, currentPageName }) {
             <div className="ml-auto flex items-center gap-1.5">
               <ThemeToggle />
               <NotificationBell />
+              <UserMenuDropdown />
             </div>
           </header>
 

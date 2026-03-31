@@ -1,12 +1,14 @@
-import { useQuery } from "@tanstack/react-query";
-import { base44 } from "@/api/base44Client";
+/**
+ * Legacy shim — delegates to the global CurrentUserContext.
+ * All existing callers (useCurrentUser().data) continue to work
+ * because we return { data: currentUser, isLoading }.
+ */
+import { useCurrentUser as _useCurrentUser } from '@/lib/CurrentUserContext.jsx';
 
 export function useCurrentUser() {
-  return useQuery({
-    queryKey: ["currentUser"],
-    queryFn: () => base44.auth.me(),
-    retry: false,
-  });
+  const { currentUser, isLoading } = _useCurrentUser();
+  // Shim: return same shape as react-query { data, isLoading }
+  return { data: currentUser, isLoading };
 }
 
 const MASTER_EMAIL = "nhcazateam@gmail.com";

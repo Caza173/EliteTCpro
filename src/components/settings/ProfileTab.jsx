@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import { base44 } from "@/api/base44Client";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useCurrentUser as useCurrentUserCtx } from "@/lib/CurrentUserContext.jsx";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -73,6 +74,7 @@ function SystemSignaturePreview({ form }) {
 
 export default function ProfileTab({ currentUser }) {
   const queryClient = useQueryClient();
+  const { refreshUser } = useCurrentUserCtx();
   const [saved, setSaved] = useState(false);
 
   const [form, setForm] = useState({
@@ -127,6 +129,7 @@ export default function ProfileTab({ currentUser }) {
   const mutation = useMutation({
     mutationFn: (data) => base44.auth.updateMe(data),
     onSuccess: () => {
+      refreshUser();
       queryClient.invalidateQueries({ queryKey: ["currentUser"] });
       setSaved(true);
       setTimeout(() => setSaved(false), 2500);

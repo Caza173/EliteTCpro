@@ -1,6 +1,7 @@
 import React, { useState, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { base44 } from "@/api/base44Client";
+import { useCurrentUser } from "@/lib/CurrentUserContext.jsx";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -89,6 +90,7 @@ function AvatarUpload({ photoUrl, onUpload, uploading }) {
 
 export default function SetupProfile() {
   const navigate = useNavigate();
+  const { refreshUser } = useCurrentUser();
   const [step, setStep] = useState(1);
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
@@ -153,6 +155,7 @@ export default function SetupProfile() {
       sig_phone: form.phone.trim(),
       profile_completed: true,
     });
+    await refreshUser();
     setSaving(false);
     navigate("/Dashboard", { replace: true });
   };
