@@ -130,6 +130,12 @@ Deno.serve(async (req) => {
       fromName,
     } = body;
 
+    // Use user's saved signature fields as fallback defaults
+    const sigName    = senderName   || user.data?.sig_name    || "Corey Caza";
+    const sigRole    = senderRole   || user.data?.sig_role    || "EliteTC Operations";
+    const sigCompany = companyName  || user.data?.sig_company || "Realty One Group Next Level";
+    const sigPhone   = phoneNumber  || user.data?.sig_phone   || "(603) 520-5431";
+
     if (!to) return Response.json({ error: "Recipient required" }, { status: 400 });
     if (!subject) return Response.json({ error: "Subject required" }, { status: 400 });
 
@@ -148,10 +154,10 @@ Deno.serve(async (req) => {
       criticalDates,
       links,
       nextSteps,
-      senderName,
-      senderRole,
-      companyName,
-      phoneNumber,
+      senderName: sigName,
+      senderRole: sigRole,
+      companyName: sigCompany,
+      phoneNumber: sigPhone,
       customBody: emailBody,
     });
 
@@ -188,7 +194,7 @@ Deno.serve(async (req) => {
 
     const buildMimeMessage = (recipient) => {
       const encodedSubject = `=?UTF-8?B?${btoa(unescape(encodeURIComponent(subject)))}?=`;
-      const fromLabel = fromName || senderName || "EliteTC";
+      const fromLabel = fromName || sigName || "EliteTC";
 
       if (attachments.length === 0) {
         // Simple HTML-only message (no attachments)

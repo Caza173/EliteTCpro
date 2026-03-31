@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Settings as SettingsIcon, Users, Bell, Palette, Loader2, UserPlus, CheckCircle, Building2, DollarSign, FileText, Pencil, X, Bug, Lightbulb, Puzzle, MessageSquarePlus, Activity } from "lucide-react";
+import { Settings as SettingsIcon, Users, Bell, Palette, Loader2, UserPlus, CheckCircle, Building2, DollarSign, FileText, Pencil, X, Bug, Lightbulb, Puzzle, MessageSquarePlus, Activity, Mail } from "lucide-react";
 import { useCurrentUser, isTCOrAdmin, isOwnerOrAdmin } from "../components/auth/useCurrentUser";
 import { ROLE_COLORS } from "../components/utils/tenantUtils";
 import TemplateLibraryPanel from "../components/templates/TemplateLibraryPanel";
@@ -32,6 +32,15 @@ export default function Settings() {
   const [financeDefaults, setFinanceDefaults] = useState({});
   const [financeSaved, setFinanceSaved] = useState(false);
 
+  // Email Signature
+  const [signatureForm, setSignatureForm] = useState({
+    sig_name: "Corey Caza",
+    sig_role: "EliteTC Operations",
+    sig_company: "Realty One Group Next Level",
+    sig_phone: "(603) 520-5431",
+  });
+  const [signatureSaved, setSignatureSaved] = useState(false);
+
   useEffect(() => {
     if (currentUser) {
       setFinanceForm({
@@ -40,6 +49,12 @@ export default function Settings() {
         franchise_fee_percent: currentUser.franchise_fee_percent ?? 0,
         transaction_fee: currentUser.transaction_fee ?? 0,
         eo_fee: currentUser.eo_fee ?? 0,
+      });
+      setSignatureForm({
+        sig_name: currentUser.sig_name || "Corey Caza",
+        sig_role: currentUser.sig_role || "EliteTC Operations",
+        sig_company: currentUser.sig_company || "Realty One Group Next Level",
+        sig_phone: currentUser.sig_phone || "(603) 520-5431",
       });
     }
   }, [currentUser]);
@@ -50,6 +65,15 @@ export default function Settings() {
       queryClient.invalidateQueries({ queryKey: ["currentUser"] });
       setFinanceSaved(true);
       setTimeout(() => setFinanceSaved(false), 2500);
+    },
+  });
+
+  const saveSignatureMutation = useMutation({
+    mutationFn: (data) => base44.auth.updateMe(data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["currentUser"] });
+      setSignatureSaved(true);
+      setTimeout(() => setSignatureSaved(false), 2500);
     },
   });
 
@@ -314,6 +338,54 @@ export default function Settings() {
               {financeSaved ? "Saved!" : "Save Finance Defaults"}
             </Button>
           </div>
+        </CardContent>
+      </Card>
+
+      {/* Email Signature */}
+      <Card className="shadow-sm border-gray-100">
+        <CardHeader className="pb-3">
+          <CardTitle className="text-base font-semibold flex items-center gap-2">
+            <Mail className="w-4 h-4 text-blue-500" /> Email Signature
+          </CardTitle>
+          <p className="text-xs text-gray-400 mt-0.5">Appears at the bottom of every outgoing email sent from EliteTC.</p>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            {[
+              { label: "Name", field: "sig_name" },
+              { label: "Role / Title", field: "sig_role" },
+              { label: "Company", field: "sig_company" },
+              { label: "Phone", field: "sig_phone" },
+            ].map(({ label, field }) => (
+              <div key={field}>
+                <Label className="text-xs text-gray-500 mb-1 block">{label}</Label>
+                <Input
+                  value={signatureForm[field]}
+                  onChange={(e) => setSignatureForm((prev) => ({ ...prev, [field]: e.target.value }))}
+                  className="h-8 text-sm"
+                />
+              </div>
+            ))}
+          </div>
+
+          {/* Live Preview */}
+          <div className="mt-3 p-3 rounded-lg border bg-gray-50 text-sm text-gray-700 leading-relaxed">
+            <p className="text-xs text-gray-400 mb-2 font-semibold uppercase tracking-wide">Preview</p>
+            <p className="font-semibold">{signatureForm.sig_name || "—"}</p>
+            <p>{signatureForm.sig_role || ""}</p>
+            <p>{signatureForm.sig_company || ""}</p>
+            <p>{signatureForm.sig_phone || ""}</p>
+          </div>
+
+          <Button
+            size="sm"
+            className="bg-blue-600 hover:bg-blue-700"
+            onClick={() => saveSignatureMutation.mutate(signatureForm)}
+            disabled={saveSignatureMutation.isPending}
+          >
+            {signatureSaved ? <CheckCircle className="w-4 h-4 mr-1.5" /> : <Mail className="w-4 h-4 mr-1.5" />}
+            {signatureSaved ? "Saved!" : "Save Signature"}
+          </Button>
         </CardContent>
       </Card>
 
