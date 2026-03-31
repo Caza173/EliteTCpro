@@ -32,7 +32,7 @@ export default function DotloopIntegration() {
 
   // Build webhook URL — points to the function endpoint
   const appId = window.location.hostname.split(".")[0];
-  const webhookUrl = `https://api.base44.com/api/apps/${BASE44_APP_ID || appId}/functions/dotloopWebhook?secret=YOUR_SECRET`;
+  const webhookUrl = `https://api.base44.com/api/apps/${appId}/functions/dotloopWebhook?secret=YOUR_SECRET`;
 
   const copyUrl = () => {
     navigator.clipboard.writeText(webhookUrl);
