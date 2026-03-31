@@ -13,9 +13,9 @@ function buildEmailHTML({
   links = [],
   nextSteps,
   senderName = "Corey Caza",
-  senderRole = "Operations",
-  companyName = "Caza Team",
-  phoneNumber = "603-XXX-XXXX",
+  senderRole = "EliteTC Operations, Caza Team",
+  companyName = "",
+  phoneNumber = "(603) 520-5431",
   customBody,
 }) {
   // If a plain custom body is passed with no template data, wrap it nicely
