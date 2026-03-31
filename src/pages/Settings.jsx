@@ -146,7 +146,7 @@ export default function Settings() {
     { id: "team",       label: "Team",         icon: Users,        adminOnly: true },
     { id: "brokerage",  label: "Brokerage",    icon: Building2 },
     { id: "finance",    label: "Finance",      icon: DollarSign },
-    { id: "email",      label: "Email",        icon: Mail },
+
     { id: "templates",  label: "Templates",    icon: FileText,     adminOnly: true },
     { id: "feedback",   label: "Feedback",     icon: MessageSquarePlus },
     { id: "system",     label: "System",       icon: Activity },
