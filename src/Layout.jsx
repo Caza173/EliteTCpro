@@ -28,6 +28,7 @@ import {
   BookUser,
   HelpCircle,
   MessageSquarePlus,
+  Plug,
 } from "lucide-react";
 import NotificationBell from "./components/dashboard/NotificationBell";
 import { ThemeProvider } from "./components/theme/ThemeContext";
@@ -44,6 +45,7 @@ const TC_NAV = [
   { label: "Commission",     page: "CommissionStatements", icon: Receipt },
   { label: "Fuel Prorations",page: "FuelProrations",   icon: Droplets },
   { label: "Addendum Builder",page: "AddendumBuilder", icon: ClipboardList },
+  { label: "Integrations",   page: "DotloopIntegration", icon: Plug },
   { label: "Help & Training", page: "help",             icon: HelpCircle, path: "/help" },
   { label: "Settings",       page: "Settings",         icon: Settings },
 ];
@@ -60,6 +62,7 @@ const OWNER_NAV = [
   { label: "Billing",          page: "Billing",          icon: CreditCard },
   { label: "Audit Log",      page: "AuditLog",       icon: Shield },
   { label: "Feedback Center",page: "FeedbackCenter", icon: MessageSquarePlus },
+  { label: "Integrations",   page: "DotloopIntegration", icon: Plug },
   { label: "Help & Training", page: "help",            icon: HelpCircle, path: "/help" },
   { label: "Settings",       page: "Settings",       icon: Settings },
 ];
