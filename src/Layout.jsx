@@ -116,11 +116,11 @@ export default function Layout({ children, currentPageName }) {
 
   useEffect(() => {
     if (currentUser === undefined) return;
-    if (currentUser === null && currentPageName !== "PortalSelect") {
-      navigate(createPageUrl("PortalSelect"), { replace: true });
+    if (currentUser === null && currentPageName !== "Landing") {
+      navigate("/", { replace: true });
       return;
     }
-    if (currentUser !== null && currentPageName === "PortalSelect") {
+    if (currentUser !== null && currentPageName === "Landing") {
       navigate(createPageUrl("Dashboard"), { replace: true });
       return;
     }
@@ -147,7 +147,7 @@ export default function Layout({ children, currentPageName }) {
     : role === "agent"    ? AGENT_NAV
     : TC_NAV;
 
-  if (currentPageName === "PortalSelect") {
+  if (currentPageName === "Landing" || currentPageName === "PortalSelect") {
     return <ThemeProvider>{children}</ThemeProvider>;
   }
 
