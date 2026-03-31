@@ -8,12 +8,13 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Settings as SettingsIcon, Users, Bell, Palette, Loader2, UserPlus, CheckCircle, Building2, DollarSign, FileText, Pencil, X, Bug, Lightbulb, Puzzle, MessageSquarePlus, Activity, Mail } from "lucide-react";
+import { Settings as SettingsIcon, Users, Bell, Palette, Loader2, UserPlus, CheckCircle, Building2, DollarSign, FileText, Pencil, X, Bug, Lightbulb, Puzzle, MessageSquarePlus, Activity, Mail, UserCircle } from "lucide-react";
 import { useCurrentUser, isTCOrAdmin, isOwnerOrAdmin } from "../components/auth/useCurrentUser";
 import { ROLE_COLORS } from "../components/utils/tenantUtils";
 import TemplateLibraryPanel from "../components/templates/TemplateLibraryPanel";
 import FeedbackModal from "../components/feedback/FeedbackModal";
 import MyFeedbackSection from "../components/feedback/MyFeedbackSection";
+import ProfileTab from "../components/settings/ProfileTab";
 
 export default function Settings() {
   const { data: currentUser } = useCurrentUser();
@@ -136,6 +137,7 @@ export default function Settings() {
 
   const TABS = [
     { id: "account",    label: "Account",      icon: SettingsIcon },
+    { id: "profile",    label: "Profile",      icon: UserCircle },
     { id: "team",       label: "Team",         icon: Users,        adminOnly: true },
     { id: "brokerage",  label: "Brokerage",    icon: Building2 },
     { id: "finance",    label: "Finance",      icon: DollarSign },
@@ -193,6 +195,9 @@ export default function Settings() {
           </CardContent>
         </Card>
       )}
+
+      {/* ── Profile ── */}
+      {activeTab === "profile" && <ProfileTab currentUser={currentUser} />}
 
       {/* ── Team ── */}
       {activeTab === "team" && isTCOrAdmin(currentUser) && (

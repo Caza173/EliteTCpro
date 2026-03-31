@@ -17,7 +17,15 @@ function buildEmailHTML({
   companyName = "",
   phoneNumber = "(603) 520-5431",
   customBody,
+  signatureOverrideHtml,
 }) {
+  const sigBlock = signatureOverrideHtml || `<p style="margin:0;color:#475569;font-size:13px;line-height:1.8;">
+    <strong>${senderName}</strong><br/>
+    ${senderRole}<br/>
+    ${companyName}<br/>
+    ${phoneNumber}
+  </p>`;
+
   // If a plain custom body is passed with no template data, wrap it nicely
   if (customBody && !propertyAddress) {
     return `
@@ -25,12 +33,7 @@ function buildEmailHTML({
   ${recipientName ? `<p style="margin:0 0 16px;">Hi ${recipientName},</p>` : ""}
   <div style="margin:0 0 24px;">${customBody.replace(/\n/g, "<br/>")}</div>
   <hr style="border:none;border-top:1px solid #e2e8f0;margin:24px 0;"/>
-  <p style="margin:0;color:#475569;font-size:13px;">
-    ${senderName}<br/>
-    ${senderRole}<br/>
-    ${companyName}<br/>
-    ${phoneNumber}
-  </p>
+  ${sigBlock}
 </div>`;
   }
 
@@ -82,12 +85,7 @@ function buildEmailHTML({
   ${nextStepsSection}
   ${divider}
   <p style="margin:0 0 20px;color:#64748b;font-size:13px;">If anything looks off or you need changes, reply directly to this email.</p>
-  <p style="margin:0;color:#475569;font-size:13px;line-height:1.8;">
-    <strong>${senderName}</strong><br/>
-    ${senderRole}<br/>
-    ${companyName}<br/>
-    ${phoneNumber}
-  </p>
+  ${sigBlock}
 </div>`;
 }
 
@@ -131,16 +129,37 @@ Deno.serve(async (req) => {
     } = body;
 
     // Use user's saved signature fields as fallback defaults
-    const sigName    = senderName   || user.data?.sig_name    || "Corey Caza";
+    const sigName    = senderName   || user.data?.sig_name    || user.full_name  || "Corey Caza";
     const sigRole    = senderRole   || user.data?.sig_role    || "EliteTC Operations";
-    const sigCompany = companyName  || user.data?.sig_company || "Realty One Group Next Level";
-    const sigPhone   = phoneNumber  || user.data?.sig_phone   || "(603) 520-5431";
+    const sigCompany = companyName  || user.data?.sig_company || user.data?.company_name || "Realty One Group Next Level";
+    const sigPhone   = phoneNumber  || user.data?.sig_phone   || user.data?.phone || "(603) 520-5431";
+    const sigWebsite = user.data?.website || "";
+    const sigPhotoUrl = user.data?.profile_photo_url || "";
+    const sigLogoUrl  = user.data?.company_logo_url || "";
+    const useCustomSig = user.data?.signature_type === "custom" && user.data?.custom_signature_html;
 
     if (!to) return Response.json({ error: "Recipient required" }, { status: 400 });
     if (!subject) return Response.json({ error: "Subject required" }, { status: 400 });
 
     const recipients = Array.isArray(to) ? to.filter(Boolean) : [to];
     if (!recipients.length) return Response.json({ error: "No valid recipients" }, { status: 400 });
+
+    // Build system signature block
+    const systemSigHtml = useCustomSig
+      ? user.data.custom_signature_html
+      : `<table cellpadding="0" cellspacing="0" border="0" style="font-family:Arial,sans-serif;font-size:13px;color:#475569;line-height:1.6;margin-top:8px;">
+          <tr>
+            ${sigPhotoUrl ? `<td style="padding-right:12px;vertical-align:top;"><img src="${sigPhotoUrl}" width="40" height="40" style="border-radius:50%;object-fit:cover;" /></td>` : ""}
+            <td style="vertical-align:top;">
+              <strong style="color:#0f172a;font-size:14px;">${sigName}</strong><br/>
+              ${sigRole ? `<span>${sigRole}</span><br/>` : ""}
+              ${sigCompany ? `<span>${sigCompany}</span><br/>` : ""}
+              ${sigPhone ? `<span>${sigPhone}</span><br/>` : ""}
+              ${sigWebsite ? `<a href="${sigWebsite}" style="color:#2563eb;">${sigWebsite}</a><br/>` : ""}
+            </td>
+            ${sigLogoUrl ? `<td style="padding-left:16px;vertical-align:middle;"><img src="${sigLogoUrl}" height="36" style="object-fit:contain;" /></td>` : ""}
+          </tr>
+        </table>`;
 
     // Build final HTML — use pre-built htmlBody if provided, otherwise render template
     const finalHtml = htmlBody || buildEmailHTML({
@@ -159,6 +178,7 @@ Deno.serve(async (req) => {
       companyName: sigCompany,
       phoneNumber: sigPhone,
       customBody: emailBody,
+      signatureOverrideHtml: systemSigHtml,
     });
 
     if (!finalHtml) return Response.json({ error: "Body required" }, { status: 400 });

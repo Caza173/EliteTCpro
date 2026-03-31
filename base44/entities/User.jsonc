@@ -1,0 +1,121 @@
+{
+  "name": "User",
+  "type": "object",
+  "properties": {
+    "brokerage_id": {
+      "type": "string"
+    },
+    "role": {
+      "type": "string",
+      "enum": [
+        "admin",
+        "owner",
+        "tc_lead",
+        "tc",
+        "agent",
+        "client"
+      ],
+      "default": "agent",
+      "description": "owner/admin = full access, tc_lead = senior TC, tc = standard transactions, agent = own deals, client = read-only portal"
+    },
+    "phone": {
+      "type": "string"
+    },
+    "team_id": {
+      "type": "string"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "active",
+        "invited",
+        "disabled"
+      ],
+      "default": "active"
+    },
+    "broker_split_percent": {
+      "type": "number",
+      "default": 20
+    },
+    "broker_cap": {
+      "type": "number",
+      "default": 0
+    },
+    "franchise_fee_percent": {
+      "type": "number",
+      "default": 0
+    },
+    "transaction_fee": {
+      "type": "number",
+      "default": 0
+    },
+    "eo_fee": {
+      "type": "number",
+      "default": 0
+    },
+    "weekly_transaction_updates": {
+      "type": "boolean",
+      "default": true
+    },
+    "first_name": {
+      "type": "string"
+    },
+    "last_name": {
+      "type": "string"
+    },
+    "company_name": {
+      "type": "string"
+    },
+    "website": {
+      "type": "string"
+    },
+    "alternate_email": {
+      "type": "string"
+    },
+    "address_line1": {
+      "type": "string"
+    },
+    "address_line2": {
+      "type": "string"
+    },
+    "city": {
+      "type": "string"
+    },
+    "state": {
+      "type": "string"
+    },
+    "zip": {
+      "type": "string"
+    },
+    "profile_photo_url": {
+      "type": "string"
+    },
+    "company_logo_url": {
+      "type": "string"
+    },
+    "sig_name": {
+      "type": "string"
+    },
+    "sig_role": {
+      "type": "string"
+    },
+    "sig_company": {
+      "type": "string"
+    },
+    "sig_phone": {
+      "type": "string"
+    },
+    "signature_type": {
+      "type": "string",
+      "enum": [
+        "system",
+        "custom"
+      ],
+      "default": "system"
+    },
+    "custom_signature_html": {
+      "type": "string"
+    }
+  },
+  "required": []
+}
