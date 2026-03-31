@@ -159,18 +159,91 @@ Deno.serve(async (req) => {
 
     const { accessToken } = await base44.asServiceRole.connectors.getConnection("gmail");
 
-    const results = await Promise.allSettled(recipients.map(async (recipient) => {
+    // Fetch and base64-encode attachments if any
+    const attachmentDocIds = body.attachment_document_ids || [];
+    const attachments = [];
+    if (attachmentDocIds.length > 0) {
+      const docs = await base44.asServiceRole.entities.Document.filter({ transaction_id: transaction_id || "" });
+      for (const doc of docs) {
+        if (!attachmentDocIds.includes(doc.id) || !doc.file_url) continue;
+        try {
+          const fileRes = await fetch(doc.file_url);
+          if (!fileRes.ok) continue;
+          const arrayBuf = await fileRes.arrayBuffer();
+          const uint8 = new Uint8Array(arrayBuf);
+          // Convert to base64
+          let binary = "";
+          for (let i = 0; i < uint8.length; i++) binary += String.fromCharCode(uint8[i]);
+          const b64 = btoa(binary);
+          const fileName = doc.file_name || `document_${doc.id}.pdf`;
+          const mimeType = fileName.toLowerCase().endsWith(".pdf") ? "application/pdf" : "application/octet-stream";
+          attachments.push({ b64, fileName, mimeType });
+        } catch (e) {
+          console.warn(`Failed to fetch attachment ${doc.id}:`, e.message);
+        }
+      }
+    }
+
+    const boundary = `----=_Part_${Date.now()}`;
+
+    const buildMimeMessage = (recipient) => {
       const encodedSubject = `=?UTF-8?B?${btoa(unescape(encodeURIComponent(subject)))}?=`;
-      const mimeMessage = [
-        `From: ${fromName || senderName || "EliteTC"} <me>`,
+      const fromLabel = fromName || senderName || "EliteTC";
+
+      if (attachments.length === 0) {
+        // Simple HTML-only message (no attachments)
+        return [
+          `From: ${fromLabel} <me>`,
+          `To: ${recipient}`,
+          `Subject: ${encodedSubject}`,
+          `MIME-Version: 1.0`,
+          `Content-Type: text/html; charset=utf-8`,
+          ``,
+          finalHtml,
+        ].join("\r\n");
+      }
+
+      // Multipart/mixed with HTML body + attachments
+      const parts = [];
+
+      // Headers
+      parts.push(
+        `From: ${fromLabel} <me>`,
         `To: ${recipient}`,
         `Subject: ${encodedSubject}`,
         `MIME-Version: 1.0`,
+        `Content-Type: multipart/mixed; boundary="${boundary}"`,
+        ``,
+        `--${boundary}`,
         `Content-Type: text/html; charset=utf-8`,
+        `Content-Transfer-Encoding: quoted-printable`,
         ``,
         finalHtml,
-      ].join("\r\n");
+      );
 
+      // Attachment parts
+      for (const att of attachments) {
+        const safeName = `=?UTF-8?B?${btoa(unescape(encodeURIComponent(att.fileName)))}?=`;
+        parts.push(
+          ``,
+          `--${boundary}`,
+          `Content-Type: ${att.mimeType}; name="${safeName}"`,
+          `Content-Transfer-Encoding: base64`,
+          `Content-Disposition: attachment; filename="${safeName}"`,
+          ``,
+          // Split base64 into 76-char lines (RFC 2045)
+          att.b64.match(/.{1,76}/g).join("\r\n"),
+        );
+      }
+
+      parts.push(``, `--${boundary}--`);
+      return parts.join("\r\n");
+    };
+
+    const results = await Promise.allSettled(recipients.map(async (recipient) => {
+      const mimeMessage = buildMimeMessage(recipient);
+
+      // base64url encode
       const encoded = btoa(unescape(encodeURIComponent(mimeMessage)))
         .replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
 

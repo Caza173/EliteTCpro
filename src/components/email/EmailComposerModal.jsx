@@ -125,29 +125,11 @@ export default function EmailComposerModal({
     if (!hasContent) { toast.error("Body is required"); return; }
 
     setSending(true);
-    const attachedDocs = documents.filter(d => selectedDocIds.includes(d.id));
-
-    // If HTML body — append attachment links as an HTML block
-    let finalHtmlBody = htmlBody || null;
-    let finalBody = body;
-
-    if (attachedDocs.length > 0) {
-      const links = attachedDocs.map(d => `• ${d.file_name}: ${d.file_url}`).join("\n");
-      if (finalHtmlBody) {
-        const linksHtml = attachedDocs.map(d =>
-          `<li><a href="${d.file_url}" style="color:#2563eb;">${d.file_name}</a></li>`
-        ).join("");
-        finalHtmlBody += `<hr style="border:none;border-top:1px solid #e2e8f0;margin:20px 0;"/><p style="font-size:11px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:#64748b;margin:0 0 8px;">Attachments</p><ul style="margin:0;padding:0 0 0 16px;">${linksHtml}</ul>`;
-      } else {
-        finalBody += `\n\nAttached Documents:\n${links}`;
-      }
-    }
-
     try {
       const res = await base44.functions.invoke("sendGmailEmail", {
         to: validTo,
         subject,
-        ...(finalHtmlBody ? { htmlBody: finalHtmlBody } : { body: finalBody }),
+        ...(htmlBody ? { htmlBody } : { body }),
         transaction_id: transaction?.id,
         brokerage_id: transaction?.brokerage_id,
         attachment_document_ids: selectedDocIds,
@@ -296,7 +278,7 @@ export default function EmailComposerModal({
                   </label>
                 ))}
               </div>
-              <p className="text-xs text-gray-400 mt-1">Document links will be appended to the email body.</p>
+              <p className="text-xs text-gray-400 mt-1">Selected files will be attached as downloadable PDFs in the email.</p>
             </div>
           )}
         </div>
