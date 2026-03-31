@@ -483,7 +483,7 @@ export default function TransactionDetail() {
   const tabs = transaction.transaction_type === "seller" ? LISTING_TABS : TX_TABS;
 
   return (
-    <div className="flex flex-col -mx-4 -mb-4 lg:-mx-5 lg:-mb-5 overflow-hidden" style={{ height: "calc(100vh - 57px)" }}>
+    <div className="flex flex-col -mx-4 -mb-4 lg:-mx-5 lg:-mb-5">
 
       <EmailComposerModal
         open={emailModalOpen}
@@ -627,10 +627,10 @@ export default function TransactionDetail() {
       </div>
 
       {/* ── MAIN 2-COLUMN BODY ── */}
-      <div className="flex flex-1 min-h-0 overflow-hidden">
+      <div className="flex flex-col lg:flex-row lg:min-h-0 lg:overflow-hidden lg:flex-1">
 
-        {/* LEFT COLUMN — 70% */}
-        <div className="flex-1 min-w-0 overflow-y-auto p-4 lg:p-5 space-y-4">
+        {/* LEFT COLUMN — full on mobile, 70% on desktop */}
+        <div className="flex-1 min-w-0 p-4 lg:p-5 space-y-4 lg:overflow-y-auto">
 
           {/* Contacts — collapsible */}
           <div className="rounded-xl border" style={{ background: "var(--card-bg)", borderColor: "var(--card-border)" }}>
@@ -779,7 +779,7 @@ export default function TransactionDetail() {
           )}
         </div>
 
-        {/* RESIZE HANDLE + RIGHT COLUMN */}
+        {/* RESIZE HANDLE + RIGHT COLUMN — desktop only */}
         <div className="hidden lg:flex flex-shrink-0" style={{ width: notesCollapsed ? "0px" : `${notesWidth}px`, transition: notesCollapsed ? "width 0.2s ease" : "none" }}>
 
           {/* Drag-to-resize handle */}
@@ -795,7 +795,7 @@ export default function TransactionDetail() {
 
           {/* Right panel */}
           {!notesCollapsed && (
-            <div className="flex flex-col flex-1 min-w-0 overflow-hidden" style={{ background: "var(--bg-secondary)", borderLeft: "1px solid var(--card-border)" }}>
+            <div className="flex flex-col flex-1 min-w-0 lg:overflow-hidden" style={{ background: "var(--bg-secondary)", borderLeft: "1px solid var(--card-border)" }}>
 
               {/* Panel header with focus toggle buttons */}
               <div className="flex items-center justify-between px-3 py-2 border-b flex-shrink-0" style={{ borderColor: "var(--card-border)", background: "var(--bg-tertiary)" }}>
@@ -833,7 +833,7 @@ export default function TransactionDetail() {
               </div>
 
               {/* Notes — fills remaining height */}
-              <div className="flex-1 min-h-0 flex flex-col overflow-hidden">
+              <div className="flex-1 min-h-0 flex flex-col lg:overflow-hidden">
                 <NotesPanel transaction={transaction} currentUser={currentUser} />
               </div>
             </div>
