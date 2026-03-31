@@ -108,43 +108,60 @@ export default function EmailGeneratorModal({ issue, transaction, onClose }) {
 
   const generateEmail = async () => {
     setLoading(true);
-    const prompt = `
-You are a professional real estate transaction coordinator at a brokerage.
-Generate a professional, concise email about a compliance issue found in a transaction document.
 
-Recipients already determined (do NOT suggest recipients):
-- To: ${emailTo || "(none set)"}
-- CC: ${emailCc || "(none)"}
+    // Determine tone level based on severity
+    const severity = (issue.severity || "warning").toLowerCase();
+    let toneLevel, toneInstructions;
+    if (severity === "info") {
+      toneLevel = "NEUTRAL";
+      toneInstructions = `Tone: Informational. Assumes the issue may already be in progress. No pressure.
+Opening: Flag the item casually.
+CTA: "Please let me know the status or if this has already been handled."`;
+    } else if (severity === "warning") {
+      toneLevel = "FIRM";
+      toneInstructions = `Tone: Direct, adds light urgency without pressure.
+Opening: "Following up on the transaction for [address]."
+CTA: "Please confirm status or next steps to keep everything on track for closing."`;
+    } else {
+      toneLevel = "ESCALATION";
+      toneInstructions = `Tone: Clear and firm, still professional and controlled. No emotional or threatening language.
+Opening: "I wanted to follow up on the transaction for [address]."
+CTA: "Please provide an update as soon as possible on status and next steps."
+Note: Mention that this may impact the closing timeline.`;
+    }
+
+    const prompt = `You are a professional real estate transaction coordinator drafting a transaction follow-up email.
+
+TONE: ${toneLevel}
+${toneInstructions}
+
+STRICT RULES — follow exactly:
+- Under 120 words
+- No exclamation points
+- No emojis
+- No words like: "critical", "urgent", "immediate attention", "high severity", "failure", "violation"
+- No legal jargon or compliance-heavy language
+- Plain, calm, solution-focused language only
+- Always assume positive intent — do not accuse
+- Sign off as "Team EliteTC"
 
 Transaction details:
 - Property Address: ${ctx.property_address}
 - Buyer(s): ${ctx.buyer_name}
 - Seller(s): ${ctx.seller_name}
-- Buyer's Agent: ${ctx.buyer_agent_name} (${ctx.buyer_agent_brokerage})
-- Seller's Agent: ${ctx.seller_agent_name} (${ctx.seller_agent_brokerage})
-- Title Company: ${ctx.title_company_name}
 - Closing Date: ${ctx.closing_date}
 - Inspection Deadline: ${ctx.inspection_deadline}
+- Financing Deadline: ${ctx.financing_deadline}
 
-Compliance Issue Detected:
+Issue:
 "${issue.message}"
 Category: ${issue.category || "general"}
-Severity: ${issue.severity || "warning"}
 
-Return JSON with these exact keys:
+Return JSON with:
 {
-  "subject": "email subject line",
-  "body": "full email body text (no HTML, plain text, use line breaks)"
-}
-
-The email should:
-- Address the specific issue directly
-- Be professional but friendly
-- Reference the property address
-- Request action clearly
-- Sign off as "Team EliteTC"
-- Be concise (under 200 words)
-`;
+  "subject": "concise subject line (no alarming words)",
+  "body": "plain text email body with line breaks"
+}`;
 
     try {
       const result = await base44.integrations.Core.InvokeLLM({
@@ -159,7 +176,7 @@ The email should:
         },
       });
 
-      setSubject(result.subject || `Action Required: ${issue.message} – ${ctx.property_address}`);
+      setSubject(result.subject || `Following Up: ${issue.message} – ${ctx.property_address}`);
       setBody(result.body || "");
       // Never overwrite resolved recipients from LLM output
       setGenerated(true);
