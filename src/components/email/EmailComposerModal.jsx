@@ -1,8 +1,38 @@
 import React, { useState, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
 import { Button } from "@/components/ui/button";
-import { X, Send, Loader2, Plus, Trash2, Paperclip, FileText } from "lucide-react";
+import { X, Send, Loader2, Plus, Trash2, Paperclip, FileText, Check } from "lucide-react";
 import { toast } from "sonner";
+
+/** Build all known parties from a transaction object */
+function buildParties(transaction) {
+  if (!transaction) return [];
+  const parties = [];
+  const add = (label, email) => { if (email && email.trim()) parties.push({ label, email: email.trim() }); };
+
+  // Clients
+  if (transaction.client_emails?.length) {
+    transaction.client_emails.forEach((e, i) => add(i === 0 ? "Client" : `Client ${i + 1}`, e));
+  } else if (transaction.client_email) {
+    add("Client", transaction.client_email);
+  }
+
+  // Agents
+  add("TC / Agent", transaction.agent_email);
+  add("Buyer's Agent", transaction.buyers_agent_email);
+  add("Seller's Agent", transaction.sellers_agent_email);
+
+  // Vendors
+  add("Lender", transaction.lender_email);
+  add("Title Company", transaction.title_company_email);
+  add("Inspector", transaction.inspector_email);
+  add("Attorney", transaction.attorney_email);
+  add("Appraiser", transaction.appraiser_email);
+
+  // Deduplicate by email
+  const seen = new Set();
+  return parties.filter(p => { if (seen.has(p.email)) return false; seen.add(p.email); return true; });
+}
 
 const DOC_LABELS = {
   purchase_and_sale: "Purchase & Sale",
@@ -38,16 +68,19 @@ export default function EmailComposerModal({
   preselectedDocId,
   htmlBody: defaultHtmlBody,   // pre-built HTML (renders as preview, editable via plain text override)
 }) {
-  const initRecipients = () => {
-    if (defaultRecipients?.length) return defaultRecipients;
-    const r = [];
-    if (transaction?.client_emails?.length) transaction.client_emails.forEach(e => r.push(e));
-    else if (transaction?.client_email) r.push(transaction.client_email);
-    if (transaction?.agent_email) r.push(transaction.agent_email);
-    return r.length ? r : [""];
+  const parties = buildParties(transaction);
+
+  const initSelectedEmails = () => {
+    if (defaultRecipients?.length) return new Set(defaultRecipients);
+    const r = new Set();
+    if (transaction?.client_emails?.length) transaction.client_emails.forEach(e => r.add(e));
+    else if (transaction?.client_email) r.add(transaction.client_email);
+    if (transaction?.agent_email) r.add(transaction.agent_email);
+    return r;
   };
 
-  const [recipients, setRecipients] = useState(initRecipients);
+  const [selectedPartyEmails, setSelectedPartyEmails] = useState(initSelectedEmails);
+  const [customRecipients, setCustomRecipients] = useState([""]);
   const [subject, setSubject] = useState(
     defaultSubject || (transaction ? `Action Required – ${transaction.address}` : "")
   );
@@ -67,16 +100,25 @@ export default function EmailComposerModal({
 
   if (!open) return null;
 
-  const addRecipient = () => setRecipients(r => [...r, ""]);
-  const removeRecipient = (i) => setRecipients(r => r.filter((_, idx) => idx !== i));
-  const updateRecipient = (i, v) => setRecipients(r => r.map((x, idx) => idx === i ? v : x));
+  const toggleParty = (email) => setSelectedPartyEmails(prev => {
+    const next = new Set(prev);
+    if (next.has(email)) next.delete(email); else next.add(email);
+    return next;
+  });
+
+  const addCustomRecipient = () => setCustomRecipients(r => [...r, ""]);
+  const removeCustomRecipient = (i) => setCustomRecipients(r => r.filter((_, idx) => idx !== i));
+  const updateCustomRecipient = (i, v) => setCustomRecipients(r => r.map((x, idx) => idx === i ? v : x));
 
   const toggleDoc = (id) => {
     setSelectedDocIds(prev => prev.includes(id) ? prev.filter(d => d !== id) : [...prev, id]);
   };
 
   const handleSend = async () => {
-    const validTo = recipients.filter(r => r.trim());
+    const validTo = [
+      ...selectedPartyEmails,
+      ...customRecipients.filter(r => r.trim()),
+    ];
     if (!validTo.length) { toast.error("Add at least one recipient"); return; }
     if (!subject.trim()) { toast.error("Subject is required"); return; }
     const hasContent = htmlBody || body.trim();
@@ -139,24 +181,51 @@ export default function EmailComposerModal({
           {/* Recipients */}
           <div>
             <label className="text-xs font-semibold text-gray-500 uppercase tracking-wide block mb-1">To</label>
-            {recipients.map((r, i) => (
+
+            {/* Party quick-select chips */}
+            {parties.length > 0 && (
+              <div className="flex flex-wrap gap-1.5 mb-3">
+                {parties.map(p => {
+                  const selected = selectedPartyEmails.has(p.email);
+                  return (
+                    <button
+                      key={p.email}
+                      type="button"
+                      onClick={() => toggleParty(p.email)}
+                      className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium border transition-colors ${
+                        selected
+                          ? "bg-blue-600 border-blue-600 text-white"
+                          : "bg-gray-50 border-gray-200 text-gray-700 hover:border-blue-400"
+                      }`}
+                    >
+                      {selected && <Check className="w-3 h-3" />}
+                      <span className="font-semibold">{p.label}</span>
+                      <span className={selected ? "text-blue-200" : "text-gray-400"}>{p.email}</span>
+                    </button>
+                  );
+                })}
+              </div>
+            )}
+
+            {/* Custom / additional recipients */}
+            {customRecipients.map((r, i) => (
               <div key={i} className="flex items-center gap-2 mb-2">
                 <input
                   type="email"
                   className="flex-1 border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-300"
-                  placeholder="recipient@example.com"
+                  placeholder="other@example.com"
                   value={r}
-                  onChange={e => updateRecipient(i, e.target.value)}
+                  onChange={e => updateCustomRecipient(i, e.target.value)}
                 />
-                {recipients.length > 1 && (
-                  <button onClick={() => removeRecipient(i)} className="text-gray-400 hover:text-red-500">
+                {customRecipients.length > 1 && (
+                  <button onClick={() => removeCustomRecipient(i)} className="text-gray-400 hover:text-red-500">
                     <Trash2 className="w-4 h-4" />
                   </button>
                 )}
               </div>
             ))}
-            <button onClick={addRecipient} className="text-xs text-blue-600 hover:underline flex items-center gap-1">
-              <Plus className="w-3 h-3" /> Add recipient
+            <button onClick={addCustomRecipient} className="text-xs text-blue-600 hover:underline flex items-center gap-1">
+              <Plus className="w-3 h-3" /> Add other recipient
             </button>
           </div>
 
