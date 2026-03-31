@@ -31,9 +31,9 @@ import {
   Plug,
 } from "lucide-react";
 import NotificationBell from "./components/dashboard/NotificationBell";
+import { InstallButtonHeader, InstallButtonFloat } from "./components/pwa/InstallButton.jsx";
 import { ThemeProvider } from "./components/theme/ThemeContext";
 import ThemeToggle from "./components/theme/ThemeToggle";
-import InstallPrompt from "./components/pwa/InstallPrompt";
 import OfflineBanner from "./components/pwa/OfflineBanner";
 import UserMenuDropdown from "./components/user/UserMenuDropdown";
 import { useCurrentUser as useCurrentUserCtx } from "./lib/CurrentUserContext.jsx";
@@ -156,7 +156,6 @@ export default function Layout({ children, currentPageName }) {
   return (
     <ThemeProvider>
       <OfflineBanner />
-      <InstallPrompt />
 
       <div
         className="h-screen flex overflow-hidden w-full"
@@ -337,6 +336,7 @@ export default function Layout({ children, currentPageName }) {
             </h2>
 
             <div className="ml-auto flex items-center gap-1.5">
+              <InstallButtonHeader />
               <ThemeToggle />
               <NotificationBell />
               <UserMenuDropdown />
@@ -350,6 +350,7 @@ export default function Layout({ children, currentPageName }) {
           >
             {children}
           </main>
+          <InstallButtonFloat />
         </div>
       </div>
     </ThemeProvider>

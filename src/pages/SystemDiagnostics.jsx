@@ -1,28 +1,21 @@
 import { useEffect, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { CheckCircle2, XCircle, Wifi, HardDrive, Download } from "lucide-react";
+import { usePWA } from "@/lib/PWAContext.jsx";
 
 export default function SystemDiagnostics() {
   const [pwa, setPwa] = useState({});
   const [connection, setConnection] = useState({});
   const [cacheList, setCacheList] = useState([]);
-  const [installAvailable, setInstallAvailable] = useState(false);
+  const { deferredPrompt, isInstalled } = usePWA();
 
   useEffect(() => {
-    const handleBeforeInstallPrompt = (e) => {
-      setInstallAvailable(true);
-    };
-
     runDiagnostics();
-
     window.addEventListener("online", updateConnection);
     window.addEventListener("offline", updateConnection);
-    window.addEventListener("beforeinstallprompt", handleBeforeInstallPrompt);
-
     return () => {
       window.removeEventListener("online", updateConnection);
       window.removeEventListener("offline", updateConnection);
-      window.removeEventListener("beforeinstallprompt", handleBeforeInstallPrompt);
     };
   }, []);
 
@@ -173,14 +166,18 @@ export default function SystemDiagnostics() {
         <Card className="theme-card">
           <CardHeader className="flex flex-row items-center justify-between pb-2">
             <CardTitle className="text-sm font-medium" style={{ color: "var(--text-primary)" }}>Install</CardTitle>
-            <div className={getStatusColor(installAvailable ? "Yes" : "No")}>
+            <div className={getStatusColor(isInstalled ? "Yes" : "No")}>
               <Download className="w-5 h-5" />
             </div>
           </CardHeader>
           <CardContent className="space-y-2">
             <div className="flex items-center justify-between text-sm" style={{ color: "var(--text-secondary)" }}>
               <span>Install Prompt Available:</span>
-              <span className={`font-semibold ${getStatusColor(installAvailable ? "Yes" : "No")}`}>{installAvailable ? "Yes" : "No"}</span>
+              <span className={`font-semibold ${getStatusColor(!!deferredPrompt ? "Yes" : "No")}`}>{!!deferredPrompt ? "Yes" : "No"}</span>
+            </div>
+            <div className="flex items-center justify-between text-sm" style={{ color: "var(--text-secondary)" }}>
+              <span>Installed:</span>
+              <span className={`font-semibold ${getStatusColor(isInstalled ? "Yes" : "No")}`}>{isInstalled ? "Yes" : "No"}</span>
             </div>
           </CardContent>
         </Card>

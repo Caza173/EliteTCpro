@@ -21,6 +21,7 @@ import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
 import PageNotFound from './lib/PageNotFound';
 import { AuthProvider, useAuth } from '@/lib/AuthContext';
 import { CurrentUserProvider } from '@/lib/CurrentUserContext.jsx';
+import { PWAProvider } from '@/lib/PWAContext.jsx';
 import UserNotRegisteredError from '@/components/UserNotRegisteredError';
 
 const { Pages, Layout, mainPage } = pagesConfig;
@@ -136,10 +137,12 @@ function App() {
     <AuthProvider>
       <QueryClientProvider client={queryClientInstance}>
         <CurrentUserProvider>
-          <Router>
-            <AuthenticatedApp />
-          </Router>
-          <Toaster />
+          <PWAProvider>
+            <Router>
+              <AuthenticatedApp />
+            </Router>
+            <Toaster />
+          </PWAProvider>
         </CurrentUserProvider>
       </QueryClientProvider>
     </AuthProvider>
