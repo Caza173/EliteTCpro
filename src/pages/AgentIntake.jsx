@@ -83,6 +83,18 @@ const initialBuyerUC = {
   due_diligence_deadline: "", financing_deadline: "",
 };
 
+const initialBuyerAgency = {
+  agent: "", agent_email: "",
+  buyers_agent_name: "", buyer_brokerage: "",
+  commission: "", retainer_fee: "",
+  designated_agency: false, dual_agency_consent: false,
+  contract_date: "", // agreement start date
+  agreement_expiration_deadline: "", // expiration date
+  transaction_type: "buyer",
+  transaction_phase: "intake",
+  client_phone: "",
+};
+
 export default function AgentIntake() {
   const [dealType, setDealType] = useState(null); // "listing" | "listing_uc" | "buyer_uc"
   const [form, setForm] = useState({});
@@ -123,6 +135,7 @@ export default function AgentIntake() {
 
   const selectDealType = (type) => {
     setDealType(type);
+    setDocType("ps"); // reset doc type on deal type change
     if (type === "listing") setForm({ ...initialListing });
     else if (type === "both") setForm({ ...initialListingUC });
     else setForm({ ...initialBuyerUC });
@@ -130,6 +143,21 @@ export default function AgentIntake() {
     setSellers([""]);
     setClientEmails([""]);
     setParsedData(null);
+  };
+
+  // Switch form schema when toggling docType for buyer_uc
+  const handleDocTypeChange = (newDocType) => {
+    setDocType(newDocType);
+    setParsedData(null);
+    if (newDocType === "buyer_agency") {
+      // Preserve TC fields, reset everything else to agency schema
+      setForm({ ...initialBuyerAgency, agent: form.agent || "", agent_email: form.agent_email || "" });
+      setBuyers([""]);
+    } else {
+      // Switch back to buyer UC schema
+      setForm({ ...initialBuyerUC, agent: form.agent || "", agent_email: form.agent_email || "" });
+      setBuyers([""]);
+    }
   };
 
   const handleParsed = (parsed) => {
@@ -154,6 +182,21 @@ export default function AgentIntake() {
     setForm((p) => ({ ...p, ...u }));
   };
 
+  // Buyer Agency Agreement parser — only agency-specific fields
+  const handleBuyerAgencyParsed = (data) => {
+    const u = {};
+    if (data.buyer_names)              { u.buyer = data.buyer_names; setBuyers([data.buyer_names]); }
+    if (data.firm_name)                u.buyer_brokerage = data.firm_name;
+    if (data.designated_agent)         u.buyers_agent_name = data.designated_agent;
+    if (data.agreement_start_date)     u.contract_date = data.agreement_start_date;
+    if (data.agreement_expiration_date || data.expiration_date) {
+      u.agreement_expiration_deadline = data.agreement_expiration_date || data.expiration_date;
+    }
+    if (data.compensation)             u.commission = data.compensation;
+    Object.keys(u).forEach(k => { if (!u[k]) delete u[k]; });
+    setForm(p => ({ ...p, ...u }));
+  };
+
   const handleListingParsed = (data) => {
     const u = {};
     if (data.seller_names)            { u.seller = data.seller_names; setSellers([data.seller_names]); }
@@ -172,8 +215,31 @@ export default function AgentIntake() {
     const isListing = dealType === "listing";
     const isBoth = dealType === "both";
     const isBuyerUC = dealType === "buyer_uc";
+    const isBuyerAgency = isBuyerUC && docType === "buyer_agency";
     const sellerList = sellers.filter(Boolean);
     const buyerList = buyers.filter(Boolean);
+    const cleanClientEmails = clientEmails.filter(Boolean);
+
+    if (isBuyerAgency) {
+      // Buyer Representation Agreement — pre-transaction record, no property/deadlines
+      createMutation.mutate({
+        ...form,
+        buyer: buyerList.join(" & "),
+        buyers: buyerList,
+        seller: "",
+        sellers: [],
+        client_email: cleanClientEmails[0] || "",
+        client_emails: cleanClientEmails,
+        address: "Pre-Transaction — Buyer Representation",
+        transaction_type: "buyer",
+        transaction_phase: "intake",
+        status: "active",
+        phase: 1,
+        phases_completed: [],
+        tasks: [],
+      });
+      return;
+    }
 
     let txType, txPhase, phase, tasks;
     if (isListing) {
@@ -190,7 +256,6 @@ export default function AgentIntake() {
       tasks = [...tasks, ...phase1Tasks.filter(t => !existingIds.has(t.id))];
     }
 
-    const cleanClientEmails = clientEmails.filter(Boolean);
     createMutation.mutate({
       ...form,
       buyer: isListing ? "" : buyerList.join(" & "),
@@ -290,7 +355,8 @@ export default function AgentIntake() {
   const isListing = dealType === "listing";
   const isBoth = dealType === "both";
   const isBuyerUC = dealType === "buyer_uc";
-  const isUnderContract = isBoth || isBuyerUC;
+  const isBuyerAgency = isBuyerUC && docType === "buyer_agency";
+  const isUnderContract = (isBoth || isBuyerUC) && !isBuyerAgency;
 
   const dealConfig = DEAL_TYPES.find(d => d.id === dealType);
 
@@ -300,10 +366,13 @@ export default function AgentIntake() {
       <div className="flex items-center gap-3">
         <button onClick={() => setDealType(null)} className="text-sm text-blue-600 hover:underline">← Back</button>
         <div>
-          <h1 className="text-2xl font-bold text-gray-900 tracking-tight">{dealConfig?.label}</h1>
+          <h1 className="text-2xl font-bold text-gray-900 tracking-tight">
+            {isBuyerUC && docType === "buyer_agency" ? "Buyer Representation Agreement" : dealConfig?.label}
+          </h1>
           <p className="text-sm text-gray-500 mt-0.5">
             {isListing ? "Create a listing file — buyer fields not required yet." :
              isBoth ? "Dual transaction — both buyer and seller represented." :
+             isBuyerUC && docType === "buyer_agency" ? "Pre-transaction representation agreement — no property required yet." :
              "Buyer-side — PSA, lender, inspections, appraisal tracked."}
           </p>
         </div>
@@ -319,11 +388,11 @@ export default function AgentIntake() {
             </div>
             {isBuyerUC && (
               <div className="flex gap-0.5 p-0.5 rounded-lg bg-white border border-gray-200">
-                <button type="button" onClick={() => setDocType("ps")}
+                <button type="button" onClick={() => handleDocTypeChange("ps")}
                   className={`px-3 py-1 rounded-md text-xs font-medium transition-colors ${docType === "ps" ? "bg-blue-600 text-white shadow-sm" : "text-gray-500 hover:text-gray-700"}`}>
                   Purchase &amp; Sale
                 </button>
-                <button type="button" onClick={() => setDocType("buyer_agency")}
+                <button type="button" onClick={() => handleDocTypeChange("buyer_agency")}
                   className={`px-3 py-1 rounded-md text-xs font-medium transition-colors ${docType === "buyer_agency" ? "bg-blue-600 text-white shadow-sm" : "text-gray-500 hover:text-gray-700"}`}>
                   Buyer Agency
                 </button>
@@ -350,14 +419,7 @@ export default function AgentIntake() {
               {parsedData && <ParsedDeadlinesPreview parsed={parsedData} isCash={form.is_cash_transaction} />}
             </>
           ) : (
-            <AgencyDocUpload docType="buyer_agency" onParsed={(data) => {
-              const u = {};
-              if (data.buyer_names) { u.buyer = data.buyer_names; setBuyers([data.buyer_names]); }
-              if (data.firm_name) u.buyer_brokerage = data.firm_name;
-              if (data.designated_agent) u.buyers_agent_name = data.designated_agent;
-              if (data.agreement_start_date) u.contract_date = data.agreement_start_date;
-              setForm(p => ({ ...p, ...u }));
-            }} />
+            <AgencyDocUpload docType="buyer_agency" onParsed={handleBuyerAgencyParsed} />
           )}
         </CardContent>
       </Card>
@@ -366,30 +428,11 @@ export default function AgentIntake() {
         <CardContent className="pt-6">
           <form onSubmit={handleSubmit} className="space-y-6">
 
-            {/* Property */}
-            <Section label="Property">
-              <F label="Property Address *" id="address">
-                <Input id="address" value={form.address || ""} onChange={(e) => set("address", e.target.value)} placeholder="123 Main St, City, State" required className="mt-1.5" />
-              </F>
-              <div className="grid grid-cols-2 gap-4">
-                <F label="MLS Number" id="mls_number">
-                  <Input id="mls_number" value={form.mls_number || ""} onChange={(e) => set("mls_number", e.target.value)} placeholder="MLS#" className="mt-1.5" />
-                </F>
-                <F label={isListing ? "List Price" : "Sale Price"} id="sale_price">
-                  <Input id="sale_price" type="number" value={form.sale_price || ""} onChange={(e) => set("sale_price", e.target.value)} placeholder="e.g. 600000" className="mt-1.5" />
-                </F>
-                <F label="Commission" id="commission">
-                  <Input id="commission" value={form.commission || ""} onChange={(e) => set("commission", e.target.value)} placeholder="5% or $15,000" className="mt-1.5" />
-                </F>
-              </div>
-            </Section>
-
-            <Separator />
-
-            {/* Buyer side — buyer UC only (not listing UC) */}
-            {isBuyerUC && (
+            {/* ── BUYER AGENCY FORM (completely separate schema) ── */}
+            {isBuyerAgency ? (
               <>
-                <Section label="Buyer Side">
+                {/* Buyer(s) */}
+                <Section label="Buyer Information">
                   <div className="space-y-2">
                     <Label className="text-sm font-medium text-gray-700">Buyer Name(s) *</Label>
                     {buyers.map((b, i) => (
@@ -408,7 +451,7 @@ export default function AgentIntake() {
                     </Button>
                   </div>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-2">
-                    <F label="Buyer's Agent Name" id="buyers_agent_name">
+                    <F label="Buyer Agent Name" id="buyers_agent_name">
                       <Input id="buyers_agent_name" value={form.buyers_agent_name || ""} onChange={(e) => set("buyers_agent_name", e.target.value)} placeholder="Agent full name" className="mt-1.5" />
                     </F>
                     <F label="Buyer Brokerage" id="buyer_brokerage">
@@ -416,175 +459,322 @@ export default function AgentIntake() {
                     </F>
                   </div>
                 </Section>
+
                 <Separator />
-              </>
-            )}
 
-            {/* Seller side */}
-            <Section label="Seller Side">
-              <div className="space-y-2">
-                <Label className="text-sm font-medium text-gray-700">Seller Name(s) *</Label>
-                {sellers.map((s, i) => (
-                  <div key={i} className="flex gap-2 items-center">
-                    <Input value={s} onChange={(e) => { const n = [...sellers]; n[i] = e.target.value; setSellers(n); }}
-                      placeholder={i === 0 ? "Robert Doe" : "Additional seller"} required={i === 0} className="flex-1" />
-                    {sellers.length > 1 && (
-                      <Button type="button" variant="ghost" size="icon" className="h-9 w-9 text-gray-400 hover:text-red-500" onClick={() => setSellers(sellers.filter((_, idx) => idx !== i))}>
-                        <X className="w-4 h-4" />
-                      </Button>
-                    )}
-                  </div>
-                ))}
-                <Button type="button" variant="outline" size="sm" className="text-xs h-8 mt-1" onClick={() => setSellers([...sellers, ""])}>
-                  <Plus className="w-3 h-3 mr-1" /> Add Seller
-                </Button>
-              </div>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-2">
-                <F label="Seller's Agent Name" id="sellers_agent_name">
-                  <Input id="sellers_agent_name" value={form.sellers_agent_name || ""} onChange={(e) => set("sellers_agent_name", e.target.value)} placeholder="Agent full name" className="mt-1.5" />
-                </F>
-                <F label="Seller Brokerage" id="seller_brokerage">
-                  <Input id="seller_brokerage" value={form.seller_brokerage || ""} onChange={(e) => set("seller_brokerage", e.target.value)} placeholder="Brokerage name" className="mt-1.5" />
-                </F>
-              </div>
-            </Section>
-
-            <Separator />
-
-            {/* Coordinator & Title */}
-            <Section label="Coordinator &amp; Title">
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <F label="Transaction Coordinator *" id="agent">
-                  <Input id="agent" value={form.agent || ""} onChange={(e) => set("agent", e.target.value)} placeholder="TC Name" required className="mt-1.5" />
-                </F>
-                <F label="TC Email *" id="agent_email">
-                  <Input id="agent_email" type="email" value={form.agent_email || ""} onChange={(e) => set("agent_email", e.target.value)} placeholder="tc@office.com" required className="mt-1.5" />
-                </F>
-                {isUnderContract && (
-                  <F label="Closing / Title Company" id="closing_title_company">
-                    <Input id="closing_title_company" value={form.closing_title_company || ""} onChange={(e) => set("closing_title_company", e.target.value)} placeholder="NH Title & Escrow" className="mt-1.5" />
-                  </F>
-                )}
-              </div>
-            </Section>
-
-            <Separator />
-
-            {/* Client Contact */}
-            <Section label="Client Contact">
-              <div className="space-y-2">
-                <Label className="text-sm font-medium text-gray-700">Client Email(s) <span className="text-gray-400 font-normal">(each gets a portal invite)</span></Label>
-                {clientEmails.map((email, i) => (
-                  <div key={i} className="flex gap-2 items-center">
-                    <Input
-                      type="email"
-                      value={email}
-                      onChange={(e) => {
-                        const next = [...clientEmails];
-                        next[i] = e.target.value;
-                        setClientEmails(next);
-                      }}
-                      placeholder={i === 0 ? "client@email.com" : "Additional client email"}
-                      className="flex-1"
-                    />
-                    {clientEmails.length > 1 && (
-                      <Button type="button" variant="ghost" size="icon" className="h-9 w-9 text-gray-400 hover:text-red-500"
-                        onClick={() => setClientEmails(clientEmails.filter((_, idx) => idx !== i))}>
-                        <X className="w-4 h-4" />
-                      </Button>
-                    )}
-                  </div>
-                ))}
-                <Button type="button" variant="outline" size="sm" className="text-xs h-8 mt-1"
-                  onClick={() => setClientEmails([...clientEmails, ""])}>
-                  <Plus className="w-3 h-3 mr-1" /> Add Another Email
-                </Button>
-              </div>
-              <F label="Client Phone" id="client_phone">
-                <Input id="client_phone" type="tel" value={form.client_phone || ""} onChange={(e) => set("client_phone", e.target.value)} placeholder="(555) 123-4567" className="mt-1.5" />
-              </F>
-            </Section>
-
-            <Separator />
-
-            {/* Listing Dates */}
-            {isListing && (
-              <Section label="Listing Dates">
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <F label="Listing Start Date" id="contract_date">
-                    <Input id="contract_date" type="date" value={form.contract_date || ""} onChange={(e) => set("contract_date", e.target.value)} className="mt-1.5" />
-                  </F>
-                  <F label="Listing Expiration Date" id="closing_date">
-                    <Input id="closing_date" type="date" value={form.closing_date || ""} onChange={(e) => set("closing_date", e.target.value)} className="mt-1.5" />
-                  </F>
-                </div>
-              </Section>
-            )}
-
-            {/* Lender — buyer UC only */}
-            {isBuyerUC && (
-              <>
-                <Separator />
-                <Section label="Lender">
-                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                    <F label="Lender Name" id="lender_name">
-                      <Input id="lender_name" value={form.lender_name || ""} onChange={(e) => set("lender_name", e.target.value)} placeholder="Jane Smith" className="mt-1.5" />
+                {/* Agreement Dates */}
+                <Section label="Agreement Dates">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <F label="Agreement Start Date *" id="contract_date">
+                      <Input id="contract_date" type="date" value={form.contract_date || ""} onChange={(e) => set("contract_date", e.target.value)} required className="mt-1.5" />
                     </F>
-                    <F label="Lender Email" id="lender_email">
-                      <Input id="lender_email" type="email" value={form.lender_email || ""} onChange={(e) => set("lender_email", e.target.value)} placeholder="lender@bank.com" className="mt-1.5" />
-                    </F>
-                    <F label="Lender Phone" id="lender_phone">
-                      <Input id="lender_phone" type="tel" value={form.lender_phone || ""} onChange={(e) => set("lender_phone", e.target.value)} placeholder="(555) 123-4567" className="mt-1.5" />
+                    <F label="Agreement Expiration Date *" id="agreement_expiration_deadline">
+                      <Input id="agreement_expiration_deadline" type="date" value={form.agreement_expiration_deadline || ""} onChange={(e) => set("agreement_expiration_deadline", e.target.value)} required className="mt-1.5" />
                     </F>
                   </div>
                 </Section>
-              </>
-            )}
 
-            {/* Purchase Deadlines */}
-            {isUnderContract && (
-              <>
                 <Separator />
-                <div className="flex items-center justify-between rounded-xl border border-gray-100 bg-gray-50 px-4 py-3">
-                  <div>
-                    <p className="text-sm font-medium text-gray-800">Cash Transaction</p>
-                    <p className="text-xs text-gray-400">No financing required</p>
-                  </div>
-                  <Switch checked={form.is_cash_transaction || false} onCheckedChange={(v) => set("is_cash_transaction", v)} />
-                </div>
-                <Section label="Key Dates &amp; Deadlines">
+
+                {/* Compensation */}
+                <Section label="Compensation">
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <F label="Contract / Effective Date" id="contract_date">
-                      <Input id="contract_date" type="date" value={form.contract_date || ""} onChange={(e) => set("contract_date", e.target.value)} className="mt-1.5" />
+                    <F label="Compensation (%, $, or both)" id="commission">
+                      <Input id="commission" value={form.commission || ""} onChange={(e) => set("commission", e.target.value)} placeholder="e.g. 2.5% or $5,000" className="mt-1.5" />
                     </F>
-                    <F label="Closing / Transfer of Title Date" id="closing_date">
-                      <Input id="closing_date" type="date" value={form.closing_date || ""} onChange={(e) => set("closing_date", e.target.value)} className="mt-1.5" />
+                    <F label="Retainer Fee (if applicable)" id="retainer_fee">
+                      <Input id="retainer_fee" value={form.retainer_fee || ""} onChange={(e) => set("retainer_fee", e.target.value)} placeholder="e.g. $500" className="mt-1.5" />
                     </F>
-                    <F label="Earnest Money Deadline" id="earnest_money_deadline">
-                      <Input id="earnest_money_deadline" type="date" value={form.earnest_money_deadline || ""} onChange={(e) => set("earnest_money_deadline", e.target.value)} className="mt-1.5" />
+                  </div>
+                </Section>
+
+                <Separator />
+
+                {/* Agency Toggles */}
+                <Section label="Agency Settings">
+                  <div className="space-y-3">
+                    <div className="flex items-center justify-between rounded-xl border border-gray-100 bg-gray-50 px-4 py-3">
+                      <div>
+                        <p className="text-sm font-medium text-gray-800">Designated Agency</p>
+                        <p className="text-xs text-gray-400">Agent designated exclusively to represent the buyer</p>
+                      </div>
+                      <Switch checked={form.designated_agency || false} onCheckedChange={(v) => set("designated_agency", v)} />
+                    </div>
+                    <div className="flex items-center justify-between rounded-xl border border-gray-100 bg-gray-50 px-4 py-3">
+                      <div>
+                        <p className="text-sm font-medium text-gray-800">Dual Agency Consent</p>
+                        <p className="text-xs text-gray-400">Buyer consents to potential dual agency</p>
+                      </div>
+                      <Switch checked={form.dual_agency_consent || false} onCheckedChange={(v) => set("dual_agency_consent", v)} />
+                    </div>
+                  </div>
+                </Section>
+
+                <Separator />
+
+                {/* Coordinator */}
+                <Section label="Coordinator">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <F label="Transaction Coordinator *" id="agent">
+                      <Input id="agent" value={form.agent || ""} onChange={(e) => set("agent", e.target.value)} placeholder="TC Name" required className="mt-1.5" />
                     </F>
-                    <F label="Inspection Deadline" id="inspection_deadline">
-                      <Input id="inspection_deadline" type="date" value={form.inspection_deadline || ""} onChange={(e) => set("inspection_deadline", e.target.value)} className="mt-1.5" />
+                    <F label="TC Email *" id="agent_email">
+                      <Input id="agent_email" type="email" value={form.agent_email || ""} onChange={(e) => set("agent_email", e.target.value)} placeholder="tc@office.com" required className="mt-1.5" />
                     </F>
-                    <F label="Due Diligence Deadline" id="due_diligence_deadline">
-                      <Input id="due_diligence_deadline" type="date" value={form.due_diligence_deadline || ""} onChange={(e) => set("due_diligence_deadline", e.target.value)} className="mt-1.5" />
+                  </div>
+                </Section>
+
+                <Separator />
+
+                {/* Client Contact */}
+                <Section label="Client Contact">
+                  <div className="space-y-2">
+                    <Label className="text-sm font-medium text-gray-700">Client Email(s) <span className="text-gray-400 font-normal">(each gets a portal invite)</span></Label>
+                    {clientEmails.map((email, i) => (
+                      <div key={i} className="flex gap-2 items-center">
+                        <Input type="email" value={email}
+                          onChange={(e) => { const next = [...clientEmails]; next[i] = e.target.value; setClientEmails(next); }}
+                          placeholder={i === 0 ? "client@email.com" : "Additional client email"} className="flex-1" />
+                        {clientEmails.length > 1 && (
+                          <Button type="button" variant="ghost" size="icon" className="h-9 w-9 text-gray-400 hover:text-red-500"
+                            onClick={() => setClientEmails(clientEmails.filter((_, idx) => idx !== i))}>
+                            <X className="w-4 h-4" />
+                          </Button>
+                        )}
+                      </div>
+                    ))}
+                    <Button type="button" variant="outline" size="sm" className="text-xs h-8 mt-1" onClick={() => setClientEmails([...clientEmails, ""])}>
+                      <Plus className="w-3 h-3 mr-1" /> Add Another Email
+                    </Button>
+                  </div>
+                  <F label="Client Phone" id="client_phone">
+                    <Input id="client_phone" type="tel" value={form.client_phone || ""} onChange={(e) => set("client_phone", e.target.value)} placeholder="(555) 123-4567" className="mt-1.5" />
+                  </F>
+                </Section>
+
+                <div className="flex justify-end pt-2">
+                  <Button type="submit" disabled={createMutation.isPending} className="bg-blue-600 hover:bg-blue-700 px-8">
+                    {createMutation.isPending ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Send className="w-4 h-4 mr-2" />}
+                    Save Representation Agreement
+                  </Button>
+                </div>
+              </>
+            ) : (
+              /* ── STANDARD FORM (Purchase & Sale / Listing / Dual) ── */
+              <>
+                {/* Property */}
+                <Section label="Property">
+                  <F label="Property Address *" id="address">
+                    <Input id="address" value={form.address || ""} onChange={(e) => set("address", e.target.value)} placeholder="123 Main St, City, State" required className="mt-1.5" />
+                  </F>
+                  <div className="grid grid-cols-2 gap-4">
+                    <F label="MLS Number" id="mls_number">
+                      <Input id="mls_number" value={form.mls_number || ""} onChange={(e) => set("mls_number", e.target.value)} placeholder="MLS#" className="mt-1.5" />
                     </F>
-                    {!form.is_cash_transaction && (
-                      <F label="Financing Commitment Date" id="financing_deadline">
-                        <Input id="financing_deadline" type="date" value={form.financing_deadline || ""} onChange={(e) => set("financing_deadline", e.target.value)} className="mt-1.5" />
+                    <F label={isListing ? "List Price" : "Sale Price"} id="sale_price">
+                      <Input id="sale_price" type="number" value={form.sale_price || ""} onChange={(e) => set("sale_price", e.target.value)} placeholder="e.g. 600000" className="mt-1.5" />
+                    </F>
+                    <F label="Commission" id="commission">
+                      <Input id="commission" value={form.commission || ""} onChange={(e) => set("commission", e.target.value)} placeholder="5% or $15,000" className="mt-1.5" />
+                    </F>
+                  </div>
+                </Section>
+
+                <Separator />
+
+                {/* Buyer side — buyer UC only */}
+                {isBuyerUC && (
+                  <>
+                    <Section label="Buyer Side">
+                      <div className="space-y-2">
+                        <Label className="text-sm font-medium text-gray-700">Buyer Name(s) *</Label>
+                        {buyers.map((b, i) => (
+                          <div key={i} className="flex gap-2 items-center">
+                            <Input value={b} onChange={(e) => { const n = [...buyers]; n[i] = e.target.value; setBuyers(n); }}
+                              placeholder={i === 0 ? "John Smith" : "Additional buyer"} required={i === 0} className="flex-1" />
+                            {buyers.length > 1 && (
+                              <Button type="button" variant="ghost" size="icon" className="h-9 w-9 text-gray-400 hover:text-red-500" onClick={() => setBuyers(buyers.filter((_, idx) => idx !== i))}>
+                                <X className="w-4 h-4" />
+                              </Button>
+                            )}
+                          </div>
+                        ))}
+                        <Button type="button" variant="outline" size="sm" className="text-xs h-8 mt-1" onClick={() => setBuyers([...buyers, ""])}>
+                          <Plus className="w-3 h-3 mr-1" /> Add Buyer
+                        </Button>
+                      </div>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-2">
+                        <F label="Buyer's Agent Name" id="buyers_agent_name">
+                          <Input id="buyers_agent_name" value={form.buyers_agent_name || ""} onChange={(e) => set("buyers_agent_name", e.target.value)} placeholder="Agent full name" className="mt-1.5" />
+                        </F>
+                        <F label="Buyer Brokerage" id="buyer_brokerage">
+                          <Input id="buyer_brokerage" value={form.buyer_brokerage || ""} onChange={(e) => set("buyer_brokerage", e.target.value)} placeholder="Brokerage name" className="mt-1.5" />
+                        </F>
+                      </div>
+                    </Section>
+                    <Separator />
+                  </>
+                )}
+
+                {/* Seller side */}
+                <Section label="Seller Side">
+                  <div className="space-y-2">
+                    <Label className="text-sm font-medium text-gray-700">Seller Name(s) *</Label>
+                    {sellers.map((s, i) => (
+                      <div key={i} className="flex gap-2 items-center">
+                        <Input value={s} onChange={(e) => { const n = [...sellers]; n[i] = e.target.value; setSellers(n); }}
+                          placeholder={i === 0 ? "Robert Doe" : "Additional seller"} required={i === 0} className="flex-1" />
+                        {sellers.length > 1 && (
+                          <Button type="button" variant="ghost" size="icon" className="h-9 w-9 text-gray-400 hover:text-red-500" onClick={() => setSellers(sellers.filter((_, idx) => idx !== i))}>
+                            <X className="w-4 h-4" />
+                          </Button>
+                        )}
+                      </div>
+                    ))}
+                    <Button type="button" variant="outline" size="sm" className="text-xs h-8 mt-1" onClick={() => setSellers([...sellers, ""])}>
+                      <Plus className="w-3 h-3 mr-1" /> Add Seller
+                    </Button>
+                  </div>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-2">
+                    <F label="Seller's Agent Name" id="sellers_agent_name">
+                      <Input id="sellers_agent_name" value={form.sellers_agent_name || ""} onChange={(e) => set("sellers_agent_name", e.target.value)} placeholder="Agent full name" className="mt-1.5" />
+                    </F>
+                    <F label="Seller Brokerage" id="seller_brokerage">
+                      <Input id="seller_brokerage" value={form.seller_brokerage || ""} onChange={(e) => set("seller_brokerage", e.target.value)} placeholder="Brokerage name" className="mt-1.5" />
+                    </F>
+                  </div>
+                </Section>
+
+                <Separator />
+
+                {/* Coordinator & Title */}
+                <Section label="Coordinator &amp; Title">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <F label="Transaction Coordinator *" id="agent">
+                      <Input id="agent" value={form.agent || ""} onChange={(e) => set("agent", e.target.value)} placeholder="TC Name" required className="mt-1.5" />
+                    </F>
+                    <F label="TC Email *" id="agent_email">
+                      <Input id="agent_email" type="email" value={form.agent_email || ""} onChange={(e) => set("agent_email", e.target.value)} placeholder="tc@office.com" required className="mt-1.5" />
+                    </F>
+                    {isUnderContract && (
+                      <F label="Closing / Title Company" id="closing_title_company">
+                        <Input id="closing_title_company" value={form.closing_title_company || ""} onChange={(e) => set("closing_title_company", e.target.value)} placeholder="NH Title & Escrow" className="mt-1.5" />
                       </F>
                     )}
                   </div>
                 </Section>
+
+                <Separator />
+
+                {/* Client Contact */}
+                <Section label="Client Contact">
+                  <div className="space-y-2">
+                    <Label className="text-sm font-medium text-gray-700">Client Email(s) <span className="text-gray-400 font-normal">(each gets a portal invite)</span></Label>
+                    {clientEmails.map((email, i) => (
+                      <div key={i} className="flex gap-2 items-center">
+                        <Input type="email" value={email}
+                          onChange={(e) => { const next = [...clientEmails]; next[i] = e.target.value; setClientEmails(next); }}
+                          placeholder={i === 0 ? "client@email.com" : "Additional client email"} className="flex-1" />
+                        {clientEmails.length > 1 && (
+                          <Button type="button" variant="ghost" size="icon" className="h-9 w-9 text-gray-400 hover:text-red-500"
+                            onClick={() => setClientEmails(clientEmails.filter((_, idx) => idx !== i))}>
+                            <X className="w-4 h-4" />
+                          </Button>
+                        )}
+                      </div>
+                    ))}
+                    <Button type="button" variant="outline" size="sm" className="text-xs h-8 mt-1"
+                      onClick={() => setClientEmails([...clientEmails, ""])}>
+                      <Plus className="w-3 h-3 mr-1" /> Add Another Email
+                    </Button>
+                  </div>
+                  <F label="Client Phone" id="client_phone">
+                    <Input id="client_phone" type="tel" value={form.client_phone || ""} onChange={(e) => set("client_phone", e.target.value)} placeholder="(555) 123-4567" className="mt-1.5" />
+                  </F>
+                </Section>
+
+                <Separator />
+
+                {/* Listing Dates */}
+                {isListing && (
+                  <Section label="Listing Dates">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      <F label="Listing Start Date" id="contract_date">
+                        <Input id="contract_date" type="date" value={form.contract_date || ""} onChange={(e) => set("contract_date", e.target.value)} className="mt-1.5" />
+                      </F>
+                      <F label="Listing Expiration Date" id="closing_date">
+                        <Input id="closing_date" type="date" value={form.closing_date || ""} onChange={(e) => set("closing_date", e.target.value)} className="mt-1.5" />
+                      </F>
+                    </div>
+                  </Section>
+                )}
+
+                {/* Lender — buyer UC only */}
+                {isBuyerUC && (
+                  <>
+                    <Separator />
+                    <Section label="Lender">
+                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                        <F label="Lender Name" id="lender_name">
+                          <Input id="lender_name" value={form.lender_name || ""} onChange={(e) => set("lender_name", e.target.value)} placeholder="Jane Smith" className="mt-1.5" />
+                        </F>
+                        <F label="Lender Email" id="lender_email">
+                          <Input id="lender_email" type="email" value={form.lender_email || ""} onChange={(e) => set("lender_email", e.target.value)} placeholder="lender@bank.com" className="mt-1.5" />
+                        </F>
+                        <F label="Lender Phone" id="lender_phone">
+                          <Input id="lender_phone" type="tel" value={form.lender_phone || ""} onChange={(e) => set("lender_phone", e.target.value)} placeholder="(555) 123-4567" className="mt-1.5" />
+                        </F>
+                      </div>
+                    </Section>
+                  </>
+                )}
+
+                {/* Purchase Deadlines */}
+                {isUnderContract && (
+                  <>
+                    <Separator />
+                    <div className="flex items-center justify-between rounded-xl border border-gray-100 bg-gray-50 px-4 py-3">
+                      <div>
+                        <p className="text-sm font-medium text-gray-800">Cash Transaction</p>
+                        <p className="text-xs text-gray-400">No financing required</p>
+                      </div>
+                      <Switch checked={form.is_cash_transaction || false} onCheckedChange={(v) => set("is_cash_transaction", v)} />
+                    </div>
+                    <Section label="Key Dates &amp; Deadlines">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <F label="Contract / Effective Date" id="contract_date">
+                          <Input id="contract_date" type="date" value={form.contract_date || ""} onChange={(e) => set("contract_date", e.target.value)} className="mt-1.5" />
+                        </F>
+                        <F label="Closing / Transfer of Title Date" id="closing_date">
+                          <Input id="closing_date" type="date" value={form.closing_date || ""} onChange={(e) => set("closing_date", e.target.value)} className="mt-1.5" />
+                        </F>
+                        <F label="Earnest Money Deadline" id="earnest_money_deadline">
+                          <Input id="earnest_money_deadline" type="date" value={form.earnest_money_deadline || ""} onChange={(e) => set("earnest_money_deadline", e.target.value)} className="mt-1.5" />
+                        </F>
+                        <F label="Inspection Deadline" id="inspection_deadline">
+                          <Input id="inspection_deadline" type="date" value={form.inspection_deadline || ""} onChange={(e) => set("inspection_deadline", e.target.value)} className="mt-1.5" />
+                        </F>
+                        <F label="Due Diligence Deadline" id="due_diligence_deadline">
+                          <Input id="due_diligence_deadline" type="date" value={form.due_diligence_deadline || ""} onChange={(e) => set("due_diligence_deadline", e.target.value)} className="mt-1.5" />
+                        </F>
+                        {!form.is_cash_transaction && (
+                          <F label="Financing Commitment Date" id="financing_deadline">
+                            <Input id="financing_deadline" type="date" value={form.financing_deadline || ""} onChange={(e) => set("financing_deadline", e.target.value)} className="mt-1.5" />
+                          </F>
+                        )}
+                      </div>
+                    </Section>
+                  </>
+                )}
+
+                <div className="flex justify-end pt-2">
+                  <Button type="submit" disabled={createMutation.isPending} className="bg-blue-600 hover:bg-blue-700 px-8">
+                    {createMutation.isPending ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Send className="w-4 h-4 mr-2" />}
+                    {isListing ? "Create Listing" : isBoth ? "Create Dual Transaction" : "Submit Buyer Transaction"}
+                  </Button>
+                </div>
               </>
             )}
-
-            <div className="flex justify-end pt-2">
-              <Button type="submit" disabled={createMutation.isPending} className="bg-blue-600 hover:bg-blue-700 px-8">
-                {createMutation.isPending ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Send className="w-4 h-4 mr-2" />}
-                {isListing ? "Create Listing" : isBoth ? "Create Dual Transaction" : "Submit Buyer Transaction"}
-              </Button>
-            </div>
           </form>
         </CardContent>
       </Card>
