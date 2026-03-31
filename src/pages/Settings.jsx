@@ -132,119 +132,134 @@ export default function Settings() {
   };
 
   const roleColors = ROLE_COLORS;
+  const [activeTab, setActiveTab] = useState("account");
+
+  const TABS = [
+    { id: "account",    label: "Account",      icon: SettingsIcon },
+    { id: "team",       label: "Team",         icon: Users,        adminOnly: true },
+    { id: "brokerage",  label: "Brokerage",    icon: Building2 },
+    { id: "finance",    label: "Finance",      icon: DollarSign },
+    { id: "email",      label: "Email",        icon: Mail },
+    { id: "templates",  label: "Templates",    icon: FileText,     adminOnly: true },
+    { id: "feedback",   label: "Feedback",     icon: MessageSquarePlus },
+    { id: "system",     label: "System",       icon: Activity },
+  ].filter(t => !t.adminOnly || isTCOrAdmin(currentUser));
 
   return (
-    <div className="max-w-3xl mx-auto space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold text-gray-900 tracking-tight">Settings</h1>
-        <p className="text-sm text-gray-500 mt-0.5">System configuration and user management.</p>
+    <div className="max-w-3xl mx-auto">
+      <div className="mb-5">
+        <h1 className="text-2xl font-bold tracking-tight" style={{ color: "var(--text-primary)" }}>Settings</h1>
+        <p className="text-sm mt-0.5" style={{ color: "var(--text-muted)" }}>System configuration and user management.</p>
       </div>
 
-      {/* Current User */}
-      <Card className="shadow-sm border-gray-100">
-        <CardHeader className="pb-3">
-          <CardTitle className="text-base font-semibold flex items-center gap-2">
-            <SettingsIcon className="w-4 h-4" /> My Account
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="flex items-center gap-4">
-            <div className="w-12 h-12 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 font-bold text-lg">
-              {currentUser?.full_name?.[0]?.toUpperCase() || "?"}
-            </div>
-            <div>
-              <p className="font-semibold text-gray-900">{currentUser?.full_name}</p>
-              <p className="text-sm text-gray-500">{currentUser?.email}</p>
-            </div>
-            <Badge variant="outline" className={`ml-auto capitalize ${roleColors[currentUser?.role] || roleColors.agent}`}>
-              {currentUser?.role || "agent"}
-            </Badge>
-          </div>
-        </CardContent>
-      </Card>
+      {/* Tab Bar */}
+      <div className="flex gap-1 p-1 rounded-xl mb-6 overflow-x-auto scrollbar-none" style={{ background: "var(--bg-tertiary)" }}>
+        {TABS.map(({ id, label, icon: Icon }) => (
+          <button
+            key={id}
+            onClick={() => setActiveTab(id)}
+            className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-medium whitespace-nowrap transition-all flex-shrink-0"
+            style={activeTab === id
+              ? { background: "var(--card-bg)", color: "var(--text-primary)", boxShadow: "var(--card-shadow)" }
+              : { color: "var(--text-muted)" }}
+          >
+            <Icon className="w-3.5 h-3.5" />
+            {label}
+          </button>
+        ))}
+      </div>
 
-      {/* Invite Users — TC/Admin only */}
-      {isTCOrAdmin(currentUser) && (
+      {/* ── Account ── */}
+      {activeTab === "account" && (
         <Card className="shadow-sm border-gray-100">
           <CardHeader className="pb-3">
             <CardTitle className="text-base font-semibold flex items-center gap-2">
-              <UserPlus className="w-4 h-4" /> Invite User
+              <SettingsIcon className="w-4 h-4" /> My Account
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <form onSubmit={handleInvite} className="flex flex-col sm:flex-row gap-3">
-              <Input
-                type="email"
-                placeholder="Email address"
-                value={inviteEmail}
-                onChange={(e) => setInviteEmail(e.target.value)}
-                required
-                className="flex-1"
-              />
-              <Select value={inviteRole} onValueChange={setInviteRole}>
-                <SelectTrigger className="w-32">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="tc">TC</SelectItem>
-                  <SelectItem value="agent">Agent</SelectItem>
-                  <SelectItem value="client">Client</SelectItem>
-                </SelectContent>
-              </Select>
-              <Button type="submit" disabled={inviting} className="bg-blue-600 hover:bg-blue-700">
-                {inviting ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> :
-                  invited ? <CheckCircle className="w-4 h-4 mr-2 text-white" /> :
-                  <UserPlus className="w-4 h-4 mr-2" />}
-                {invited ? "Invited!" : "Invite"}
-              </Button>
-            </form>
+            <div className="flex items-center gap-4">
+              <div className="w-12 h-12 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 font-bold text-lg">
+                {currentUser?.full_name?.[0]?.toUpperCase() || "?"}
+              </div>
+              <div>
+                <p className="font-semibold text-gray-900">{currentUser?.full_name}</p>
+                <p className="text-sm text-gray-500">{currentUser?.email}</p>
+              </div>
+              <Badge variant="outline" className={`ml-auto capitalize ${roleColors[currentUser?.role] || roleColors.agent}`}>
+                {currentUser?.role || "agent"}
+              </Badge>
+            </div>
           </CardContent>
         </Card>
       )}
 
-      {/* User list — TC/Admin only */}
-      {isTCOrAdmin(currentUser) && allUsers.length > 0 && (
-        <Card className="shadow-sm border-gray-100">
-          <CardHeader className="pb-3">
-            <CardTitle className="text-base font-semibold flex items-center gap-2">
-              <Users className="w-4 h-4" /> Team Members ({allUsers.length})
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-2">
-              {allUsers.map((u) => (
-                <div key={u.id} className="flex items-center gap-3 py-2 border-b border-gray-50 last:border-0">
-                  <div className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center text-gray-600 font-medium text-sm flex-shrink-0">
-                    {u.full_name?.[0]?.toUpperCase() || "?"}
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium text-gray-900 truncate">{u.full_name}</p>
-                    <p className="text-xs text-gray-400 truncate">{u.email}</p>
-                  </div>
-                  <Select
-                    value={u.role || "agent"}
-                    onValueChange={(role) => updateRoleMutation.mutate({ id: u.id, role })}
-                    disabled={u.id === currentUser?.id}
-                  >
-                    <SelectTrigger className="w-24 h-7 text-xs">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="tc">TC</SelectItem>
-                      <SelectItem value="agent">Agent</SelectItem>
-                      <SelectItem value="client">Client</SelectItem>
-                      <SelectItem value="admin">Admin</SelectItem>
-                    </SelectContent>
-                  </Select>
+      {/* ── Team ── */}
+      {activeTab === "team" && isTCOrAdmin(currentUser) && (
+        <div className="space-y-4">
+          <Card className="shadow-sm border-gray-100">
+            <CardHeader className="pb-3">
+              <CardTitle className="text-base font-semibold flex items-center gap-2">
+                <UserPlus className="w-4 h-4" /> Invite User
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <form onSubmit={handleInvite} className="flex flex-col sm:flex-row gap-3">
+                <Input type="email" placeholder="Email address" value={inviteEmail} onChange={(e) => setInviteEmail(e.target.value)} required className="flex-1" />
+                <Select value={inviteRole} onValueChange={setInviteRole}>
+                  <SelectTrigger className="w-32"><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="tc">TC</SelectItem>
+                    <SelectItem value="agent">Agent</SelectItem>
+                    <SelectItem value="client">Client</SelectItem>
+                  </SelectContent>
+                </Select>
+                <Button type="submit" disabled={inviting} className="bg-blue-600 hover:bg-blue-700">
+                  {inviting ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : invited ? <CheckCircle className="w-4 h-4 mr-2 text-white" /> : <UserPlus className="w-4 h-4 mr-2" />}
+                  {invited ? "Invited!" : "Invite"}
+                </Button>
+              </form>
+            </CardContent>
+          </Card>
+
+          {allUsers.length > 0 && (
+            <Card className="shadow-sm border-gray-100">
+              <CardHeader className="pb-3">
+                <CardTitle className="text-base font-semibold flex items-center gap-2">
+                  <Users className="w-4 h-4" /> Team Members ({allUsers.length})
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-2">
+                  {allUsers.map((u) => (
+                    <div key={u.id} className="flex items-center gap-3 py-2 border-b border-gray-50 last:border-0">
+                      <div className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center text-gray-600 font-medium text-sm flex-shrink-0">
+                        {u.full_name?.[0]?.toUpperCase() || "?"}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium text-gray-900 truncate">{u.full_name}</p>
+                        <p className="text-xs text-gray-400 truncate">{u.email}</p>
+                      </div>
+                      <Select value={u.role || "agent"} onValueChange={(role) => updateRoleMutation.mutate({ id: u.id, role })} disabled={u.id === currentUser?.id}>
+                        <SelectTrigger className="w-24 h-7 text-xs"><SelectValue /></SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="tc">TC</SelectItem>
+                          <SelectItem value="agent">Agent</SelectItem>
+                          <SelectItem value="client">Client</SelectItem>
+                          <SelectItem value="admin">Admin</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  ))}
                 </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
+              </CardContent>
+            </Card>
+          )}
+        </div>
       )}
 
-      {/* Brokerage info */}
-      {brokerage && (
+      {/* ── Brokerage ── */}
+      {activeTab === "brokerage" && (
         <Card className="shadow-sm border-gray-100">
           <CardHeader className="pb-3">
             <div className="flex items-center justify-between">
@@ -263,7 +278,9 @@ export default function Settings() {
             </div>
           </CardHeader>
           <CardContent>
-            {!editingBrokerage ? (
+            {!brokerage ? (
+              <p className="text-sm text-gray-400">No brokerage linked to your account.</p>
+            ) : !editingBrokerage ? (
               <div className="grid grid-cols-2 gap-3 text-sm">
                 <div><p className="text-xs text-gray-400">Name</p><p className="font-medium">{brokerage.name}</p></div>
                 <div><p className="text-xs text-gray-400">Status</p>
@@ -276,18 +293,9 @@ export default function Settings() {
               </div>
             ) : (
               <div className="space-y-3">
-                <div>
-                  <Label className="text-xs text-gray-500 mb-1 block">Name</Label>
-                  <Input value={brokerageForm.name} onChange={(e) => setBrokerageForm(f => ({ ...f, name: e.target.value }))} className="h-8 text-sm" />
-                </div>
-                <div>
-                  <Label className="text-xs text-gray-500 mb-1 block">Timezone</Label>
-                  <Input value={brokerageForm.timezone} onChange={(e) => setBrokerageForm(f => ({ ...f, timezone: e.target.value }))} placeholder="e.g. America/New_York" className="h-8 text-sm" />
-                </div>
-                <div>
-                  <Label className="text-xs text-gray-500 mb-1 block">Contact Email</Label>
-                  <Input type="email" value={brokerageForm.primary_contact_email} onChange={(e) => setBrokerageForm(f => ({ ...f, primary_contact_email: e.target.value }))} className="h-8 text-sm" />
-                </div>
+                <div><Label className="text-xs text-gray-500 mb-1 block">Name</Label><Input value={brokerageForm.name} onChange={(e) => setBrokerageForm(f => ({ ...f, name: e.target.value }))} className="h-8 text-sm" /></div>
+                <div><Label className="text-xs text-gray-500 mb-1 block">Timezone</Label><Input value={brokerageForm.timezone} onChange={(e) => setBrokerageForm(f => ({ ...f, timezone: e.target.value }))} placeholder="e.g. America/New_York" className="h-8 text-sm" /></div>
+                <div><Label className="text-xs text-gray-500 mb-1 block">Contact Email</Label><Input type="email" value={brokerageForm.primary_contact_email} onChange={(e) => setBrokerageForm(f => ({ ...f, primary_contact_email: e.target.value }))} className="h-8 text-sm" /></div>
                 <Button size="sm" className="bg-blue-600 hover:bg-blue-700 gap-1.5" onClick={() => saveBrokerageMutation.mutate(brokerageForm)} disabled={saveBrokerageMutation.isPending}>
                   {saveBrokerageMutation.isPending ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : brokerageSaved ? <CheckCircle className="w-3.5 h-3.5" /> : null}
                   {brokerageSaved ? "Saved!" : "Save Changes"}
@@ -298,99 +306,80 @@ export default function Settings() {
         </Card>
       )}
 
-      {/* Finance Defaults */}
-      <Card className="shadow-sm border-gray-100">
-        <CardHeader className="pb-3">
-          <CardTitle className="text-base font-semibold flex items-center gap-2">
-            <DollarSign className="w-4 h-4 text-emerald-500" /> Finance Defaults
-          </CardTitle>
-          <p className="text-xs text-gray-400 mt-0.5">These values auto-populate the Finance tab on each transaction.</p>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
-            {[
-              { label: "Broker Split %", field: "broker_split_percent" },
-              { label: "Franchise Fee %", field: "franchise_fee_percent" },
-              { label: "Transaction Fee ($)", field: "transaction_fee" },
-              { label: "E&O Fee ($)", field: "eo_fee" },
-              { label: "Broker Cap ($)", field: "broker_cap" },
-            ].map(({ label, field }) => (
-              <div key={field}>
-                <Label className="text-xs text-gray-500 mb-1 block">{label}</Label>
-                <Input
-                  type="number"
-                  step="0.1"
-                  value={financeForm[field]}
-                  onChange={(e) => setFinanceForm((prev) => ({ ...prev, [field]: parseFloat(e.target.value) || 0 }))}
-                  className="h-8 text-sm"
-                />
-              </div>
-            ))}
-          </div>
-          <div className="mt-4">
-            <Button
-              size="sm"
-              className="bg-emerald-600 hover:bg-emerald-700"
-              onClick={() => saveFinanceMutation.mutate(financeForm)}
-              disabled={saveFinanceMutation.isPending}
-            >
-              {financeSaved ? <CheckCircle className="w-4 h-4 mr-1.5" /> : <DollarSign className="w-4 h-4 mr-1.5" />}
-              {financeSaved ? "Saved!" : "Save Finance Defaults"}
+      {/* ── Finance ── */}
+      {activeTab === "finance" && (
+        <Card className="shadow-sm border-gray-100">
+          <CardHeader className="pb-3">
+            <CardTitle className="text-base font-semibold flex items-center gap-2">
+              <DollarSign className="w-4 h-4 text-emerald-500" /> Finance Defaults
+            </CardTitle>
+            <p className="text-xs text-gray-400 mt-0.5">These values auto-populate the Finance tab on each transaction.</p>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
+              {[
+                { label: "Broker Split %", field: "broker_split_percent" },
+                { label: "Franchise Fee %", field: "franchise_fee_percent" },
+                { label: "Transaction Fee ($)", field: "transaction_fee" },
+                { label: "E&O Fee ($)", field: "eo_fee" },
+                { label: "Broker Cap ($)", field: "broker_cap" },
+              ].map(({ label, field }) => (
+                <div key={field}>
+                  <Label className="text-xs text-gray-500 mb-1 block">{label}</Label>
+                  <Input type="number" step="0.1" value={financeForm[field]} onChange={(e) => setFinanceForm((prev) => ({ ...prev, [field]: parseFloat(e.target.value) || 0 }))} className="h-8 text-sm" />
+                </div>
+              ))}
+            </div>
+            <div className="mt-4">
+              <Button size="sm" className="bg-emerald-600 hover:bg-emerald-700" onClick={() => saveFinanceMutation.mutate(financeForm)} disabled={saveFinanceMutation.isPending}>
+                {financeSaved ? <CheckCircle className="w-4 h-4 mr-1.5" /> : <DollarSign className="w-4 h-4 mr-1.5" />}
+                {financeSaved ? "Saved!" : "Save Finance Defaults"}
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* ── Email Signature ── */}
+      {activeTab === "email" && (
+        <Card className="shadow-sm border-gray-100">
+          <CardHeader className="pb-3">
+            <CardTitle className="text-base font-semibold flex items-center gap-2">
+              <Mail className="w-4 h-4 text-blue-500" /> Email Signature
+            </CardTitle>
+            <p className="text-xs text-gray-400 mt-0.5">Appears at the bottom of every outgoing email sent from EliteTC.</p>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              {[
+                { label: "Name", field: "sig_name" },
+                { label: "Role / Title", field: "sig_role" },
+                { label: "Company", field: "sig_company" },
+                { label: "Phone", field: "sig_phone" },
+              ].map(({ label, field }) => (
+                <div key={field}>
+                  <Label className="text-xs text-gray-500 mb-1 block">{label}</Label>
+                  <Input value={signatureForm[field]} onChange={(e) => setSignatureForm((prev) => ({ ...prev, [field]: e.target.value }))} className="h-8 text-sm" />
+                </div>
+              ))}
+            </div>
+            <div className="mt-3 p-3 rounded-lg border bg-gray-50 text-sm text-gray-700 leading-relaxed">
+              <p className="text-xs text-gray-400 mb-2 font-semibold uppercase tracking-wide">Preview</p>
+              <p className="font-semibold">{signatureForm.sig_name || "—"}</p>
+              <p>{signatureForm.sig_role || ""}</p>
+              <p>{signatureForm.sig_company || ""}</p>
+              <p>{signatureForm.sig_phone || ""}</p>
+            </div>
+            <Button size="sm" className="bg-blue-600 hover:bg-blue-700" onClick={() => saveSignatureMutation.mutate(signatureForm)} disabled={saveSignatureMutation.isPending}>
+              {signatureSaved ? <CheckCircle className="w-4 h-4 mr-1.5" /> : <Mail className="w-4 h-4 mr-1.5" />}
+              {signatureSaved ? "Saved!" : "Save Signature"}
             </Button>
-          </div>
-        </CardContent>
-      </Card>
+          </CardContent>
+        </Card>
+      )}
 
-      {/* Email Signature */}
-      <Card className="shadow-sm border-gray-100">
-        <CardHeader className="pb-3">
-          <CardTitle className="text-base font-semibold flex items-center gap-2">
-            <Mail className="w-4 h-4 text-blue-500" /> Email Signature
-          </CardTitle>
-          <p className="text-xs text-gray-400 mt-0.5">Appears at the bottom of every outgoing email sent from EliteTC.</p>
-        </CardHeader>
-        <CardContent className="space-y-3">
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            {[
-              { label: "Name", field: "sig_name" },
-              { label: "Role / Title", field: "sig_role" },
-              { label: "Company", field: "sig_company" },
-              { label: "Phone", field: "sig_phone" },
-            ].map(({ label, field }) => (
-              <div key={field}>
-                <Label className="text-xs text-gray-500 mb-1 block">{label}</Label>
-                <Input
-                  value={signatureForm[field]}
-                  onChange={(e) => setSignatureForm((prev) => ({ ...prev, [field]: e.target.value }))}
-                  className="h-8 text-sm"
-                />
-              </div>
-            ))}
-          </div>
-
-          {/* Live Preview */}
-          <div className="mt-3 p-3 rounded-lg border bg-gray-50 text-sm text-gray-700 leading-relaxed">
-            <p className="text-xs text-gray-400 mb-2 font-semibold uppercase tracking-wide">Preview</p>
-            <p className="font-semibold">{signatureForm.sig_name || "—"}</p>
-            <p>{signatureForm.sig_role || ""}</p>
-            <p>{signatureForm.sig_company || ""}</p>
-            <p>{signatureForm.sig_phone || ""}</p>
-          </div>
-
-          <Button
-            size="sm"
-            className="bg-blue-600 hover:bg-blue-700"
-            onClick={() => saveSignatureMutation.mutate(signatureForm)}
-            disabled={saveSignatureMutation.isPending}
-          >
-            {signatureSaved ? <CheckCircle className="w-4 h-4 mr-1.5" /> : <Mail className="w-4 h-4 mr-1.5" />}
-            {signatureSaved ? "Saved!" : "Save Signature"}
-          </Button>
-        </CardContent>
-      </Card>
-
-      {/* PDF Template Library — TC/Admin only */}
-      {isTCOrAdmin(currentUser) && (
+      {/* ── Templates ── */}
+      {activeTab === "templates" && isTCOrAdmin(currentUser) && (
         <Card className="shadow-sm border-gray-100">
           <CardHeader className="pb-3">
             <CardTitle className="text-base font-semibold flex items-center gap-2">
@@ -404,86 +393,69 @@ export default function Settings() {
         </Card>
       )}
 
-      {/* Feedback & Requests */}
-      <Card className="shadow-sm border-gray-100">
-        <CardHeader className="pb-3">
-          <CardTitle className="text-base font-semibold flex items-center gap-2">
-            <MessageSquarePlus className="w-4 h-4 text-blue-500" /> Feedback & Requests
-          </CardTitle>
-          <p className="text-xs text-gray-400 mt-0.5">Help us improve EliteTC — report a bug, suggest a feature, or request an integration.</p>
-        </CardHeader>
-        <CardContent className="space-y-5">
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-            {[
-              { type: "bug", icon: Bug, label: "Report a Bug", desc: "Something broken or not working right", color: "text-red-500", bg: "hover:border-red-300 hover:bg-red-50/50" },
-              { type: "feature", icon: Lightbulb, label: "Suggest a Feature", desc: "An idea to improve the platform", color: "text-amber-500", bg: "hover:border-amber-300 hover:bg-amber-50/50" },
-              { type: "integration", icon: Puzzle, label: "Request Integration", desc: "Connect EliteTC to a tool you use", color: "text-purple-500", bg: "hover:border-purple-300 hover:bg-purple-50/50" },
-            ].map(({ type, icon: Icon, label, desc, color, bg }) => (
-              <button
-                key={type}
-                onClick={() => setFeedbackModal({ open: true, type })}
-                className={`text-left p-4 rounded-xl border transition-all ${bg}`}
-                style={{ background: "var(--bg-tertiary)", borderColor: "var(--card-border)" }}
-              >
-                <Icon className={`w-5 h-5 mb-2 ${color}`} />
-                <p className="text-sm font-semibold" style={{ color: "var(--text-primary)" }}>{label}</p>
-                <p className="text-xs mt-0.5" style={{ color: "var(--text-muted)" }}>{desc}</p>
-              </button>
-            ))}
-          </div>
-
-          {/* My submitted feedback */}
-          <div className="pt-3 border-t" style={{ borderColor: "var(--card-border)" }}>
-            <p className="text-sm font-semibold mb-3" style={{ color: "var(--text-primary)" }}>My Submitted Feedback</p>
-            <MyFeedbackSection userEmail={currentUser?.email} />
-          </div>
-        </CardContent>
-      </Card>
-
-      <FeedbackModal
-        open={feedbackModal.open}
-        onClose={() => setFeedbackModal({ open: false, type: "bug" })}
-        defaultType={feedbackModal.type}
-      />
-
-      {/* System Diagnostics */}
-      <Link to="/settings/system-diagnostics">
-        <Card className="shadow-sm border-gray-100 hover:border-blue-300 hover:bg-blue-50/30 transition-all cursor-pointer">
-          <CardHeader className="flex flex-row items-center gap-4 py-4">
-            <div className="w-9 h-9 rounded-lg bg-blue-50 flex items-center justify-center">
-              <Activity className="w-4 h-4 text-blue-500" />
-            </div>
-            <div>
-              <p className="font-semibold text-sm text-gray-900">System Diagnostics</p>
-              <p className="text-xs text-gray-400">Check PWA status, connectivity, and caching info.</p>
-            </div>
+      {/* ── Feedback ── */}
+      {activeTab === "feedback" && (
+        <Card className="shadow-sm border-gray-100">
+          <CardHeader className="pb-3">
+            <CardTitle className="text-base font-semibold flex items-center gap-2">
+              <MessageSquarePlus className="w-4 h-4 text-blue-500" /> Feedback & Requests
+            </CardTitle>
+            <p className="text-xs text-gray-400 mt-0.5">Help us improve EliteTC — report a bug, suggest a feature, or request an integration.</p>
           </CardHeader>
+          <CardContent className="space-y-5">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              {[
+                { type: "bug", icon: Bug, label: "Report a Bug", desc: "Something broken or not working right", color: "text-red-500", bg: "hover:border-red-300 hover:bg-red-50/50" },
+                { type: "feature", icon: Lightbulb, label: "Suggest a Feature", desc: "An idea to improve the platform", color: "text-amber-500", bg: "hover:border-amber-300 hover:bg-amber-50/50" },
+                { type: "integration", icon: Puzzle, label: "Request Integration", desc: "Connect EliteTC to a tool you use", color: "text-purple-500", bg: "hover:border-purple-300 hover:bg-purple-50/50" },
+              ].map(({ type, icon: Icon, label, desc, color, bg }) => (
+                <button key={type} onClick={() => setFeedbackModal({ open: true, type })} className={`text-left p-4 rounded-xl border transition-all ${bg}`} style={{ background: "var(--bg-tertiary)", borderColor: "var(--card-border)" }}>
+                  <Icon className={`w-5 h-5 mb-2 ${color}`} />
+                  <p className="text-sm font-semibold" style={{ color: "var(--text-primary)" }}>{label}</p>
+                  <p className="text-xs mt-0.5" style={{ color: "var(--text-muted)" }}>{desc}</p>
+                </button>
+              ))}
+            </div>
+            <div className="pt-3 border-t" style={{ borderColor: "var(--card-border)" }}>
+              <p className="text-sm font-semibold mb-3" style={{ color: "var(--text-primary)" }}>My Submitted Feedback</p>
+              <MyFeedbackSection userEmail={currentUser?.email} />
+            </div>
+          </CardContent>
         </Card>
-      </Link>
+      )}
 
-      {/* Placeholders */}
-      <Card className="shadow-sm border-gray-100 opacity-70">
-        <CardHeader className="flex flex-row items-center gap-4 py-4">
-          <div className="w-9 h-9 rounded-lg bg-gray-50 flex items-center justify-center">
-            <Bell className="w-4 h-4 text-gray-400" />
-          </div>
-          <div>
-            <p className="font-semibold text-sm text-gray-700">Notification Rules</p>
-            <p className="text-xs text-gray-400">Configure deadline alerts, task reminders, and doc checklist notifications.</p>
-          </div>
-        </CardHeader>
-      </Card>
-      <Card className="shadow-sm border-gray-100 opacity-70">
-        <CardHeader className="flex flex-row items-center gap-4 py-4">
-          <div className="w-9 h-9 rounded-lg bg-gray-50 flex items-center justify-center">
-            <Palette className="w-4 h-4 text-gray-400" />
-          </div>
-          <div>
-            <p className="font-semibold text-sm text-gray-700">Branding</p>
-            <p className="text-xs text-gray-400">Upload logo, set primary color, and customize the client portal.</p>
-          </div>
-        </CardHeader>
-      </Card>
+      {/* ── System ── */}
+      {activeTab === "system" && (
+        <div className="space-y-4">
+          <Link to="/settings/system-diagnostics">
+            <Card className="shadow-sm border-gray-100 hover:border-blue-300 hover:bg-blue-50/30 transition-all cursor-pointer">
+              <CardHeader className="flex flex-row items-center gap-4 py-4">
+                <div className="w-9 h-9 rounded-lg bg-blue-50 flex items-center justify-center">
+                  <Activity className="w-4 h-4 text-blue-500" />
+                </div>
+                <div>
+                  <p className="font-semibold text-sm text-gray-900">System Diagnostics</p>
+                  <p className="text-xs text-gray-400">Check PWA status, connectivity, and caching info.</p>
+                </div>
+              </CardHeader>
+            </Card>
+          </Link>
+          <Card className="shadow-sm border-gray-100 opacity-70">
+            <CardHeader className="flex flex-row items-center gap-4 py-4">
+              <div className="w-9 h-9 rounded-lg bg-gray-50 flex items-center justify-center"><Bell className="w-4 h-4 text-gray-400" /></div>
+              <div><p className="font-semibold text-sm text-gray-700">Notification Rules</p><p className="text-xs text-gray-400">Configure deadline alerts, task reminders, and doc checklist notifications.</p></div>
+            </CardHeader>
+          </Card>
+          <Card className="shadow-sm border-gray-100 opacity-70">
+            <CardHeader className="flex flex-row items-center gap-4 py-4">
+              <div className="w-9 h-9 rounded-lg bg-gray-50 flex items-center justify-center"><Palette className="w-4 h-4 text-gray-400" /></div>
+              <div><p className="font-semibold text-sm text-gray-700">Branding</p><p className="text-xs text-gray-400">Upload logo, set primary color, and customize the client portal.</p></div>
+            </CardHeader>
+          </Card>
+        </div>
+      )}
+
+      <FeedbackModal open={feedbackModal.open} onClose={() => setFeedbackModal({ open: false, type: "bug" })} defaultType={feedbackModal.type} />
     </div>
   );
 }
