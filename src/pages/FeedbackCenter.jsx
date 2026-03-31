@@ -162,7 +162,7 @@ function FeedbackRow({ item, selected, onSelect }) {
             </span>
           )}
           <span className="text-[10px]" style={{ color: "var(--text-muted)" }}>
-            {item.created_date ? formatDistanceToNow(parseISO(item.created_date), { addSuffix: true }) : ""}
+            {item.created_date ? formatDistanceToNow(new Date(item.created_date), { addSuffix: true }) : ""}
           </span>
         </div>
       </div>
@@ -410,7 +410,7 @@ function DetailPanel({ item, onClose, onUpdate, allItems }) {
             <div className="space-y-0.5">
               <DetailRow label="Submitted by" value={item.user_name ? `${item.user_name} (${item.user_email})` : item.user_email} />
               {item.created_date && (
-                <DetailRow label="Submitted" value={format(parseISO(item.created_date), "MMM d, yyyy h:mm a")} />
+                <DetailRow label="Submitted" value={new Date(item.created_date).toLocaleString("en-US", { month: "short", day: "numeric", year: "numeric", hour: "numeric", minute: "2-digit", hour12: true })} />
               )}
               {item.route_name && <DetailRow label="Page" value={item.route_name} />}
               {item.browser_info && <DetailRow label="Browser" value={item.browser_info} />}
