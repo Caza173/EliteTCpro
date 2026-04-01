@@ -144,7 +144,6 @@ export default function Settings() {
     { id: "account",    label: "Account",      icon: SettingsIcon },
     { id: "profile",    label: "Profile",      icon: UserCircle },
     { id: "team",       label: "Team",         icon: Users,        adminOnly: true },
-    { id: "brokerage",  label: "Brokerage",    icon: Building2 },
     { id: "finance",    label: "Finance",      icon: DollarSign },
 
     { id: "templates",  label: "Templates",    icon: FileText,     adminOnly: true },
