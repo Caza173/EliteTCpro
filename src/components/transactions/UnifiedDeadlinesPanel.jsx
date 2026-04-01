@@ -17,7 +17,7 @@ import { format, parseISO, differenceInDays } from "date-fns";
 import {
   Pencil, Check, X, Calendar, DollarSign, Home,
   CalendarCheck, CalendarPlus, Loader2, AlertTriangle,
-  Plus, Tag, Zap,
+  Plus, Tag, Zap, CheckCircle2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -26,10 +26,13 @@ import { toast } from "sonner";
 
 // System deadlines stored directly on the transaction record
 const SYSTEM_FIELDS = [
-  { key: "contract_date",          label: "Effective / Acceptance Date", category: "effective_date",  color: "blue" },
-  { key: "earnest_money_deadline", label: "Earnest Money Due",           category: "earnest_money",   color: "indigo", cashExcluded: false },
+  { key: "contract_date",          label: "Effective / Acceptance Date", category: "effective_date",  color: "blue",   nonActionable: true },
+  { key: "earnest_money_deadline", label: "Earnest Money Due",           category: "earnest_money",   color: "indigo", isEMD: true },
   { key: "closing_date",           label: "Closing / Transfer of Title", category: "closing",         color: "rose" },
 ];
+
+// These are reference dates — never "overdue"
+const NON_ACTIONABLE = new Set(["effective_date", "acceptance_date"]);
 
 const CATEGORY_COLORS = {
   effective_date:   { bg: "bg-blue-50",   border: "border-blue-200",   text: "text-blue-700",   dot: "bg-blue-400" },
@@ -59,10 +62,20 @@ function fmtDate(d) {
   try { return format(parseISO(d), "MMM d, yyyy"); } catch { return d; }
 }
 
-function getDaysLabel(dateStr) {
+function getDaysLabel(dateStr, opts = {}) {
   if (!dateStr) return null;
   try {
     const days = differenceInDays(parseISO(dateStr), new Date());
+    // Non-actionable dates (e.g. Effective Date) — never show overdue
+    if (opts.nonActionable) {
+      if (days === 0) return { label: "Today", cls: "text-blue-600 font-semibold" };
+      if (days > 0)   return { label: `${days}d away`, cls: "text-gray-400" };
+      return { label: "Reference Date", cls: "text-gray-400" };
+    }
+    // EMD with received flag
+    if (opts.emdReceived) {
+      return { label: "Received", cls: "text-emerald-600 font-semibold" };
+    }
     if (days < 0)  return { label: `${Math.abs(days)}d overdue`, cls: "text-red-600 font-semibold" };
     if (days === 0) return { label: "Today", cls: "text-orange-600 font-semibold" };
     if (days <= 3)  return { label: `${days}d left`, cls: "text-amber-600 font-semibold" };
@@ -76,10 +89,13 @@ function DeadlineRow({ item, calendarMaps, transactionId, onUpdateContingency, o
   const [editing, setEditing] = useState(false);
   const [editDate, setEditDate] = useState(item.date || "");
   const [syncing, setSyncing] = useState(false);
+  const [markingReceived, setMarkingReceived] = useState(false);
 
   const colors = CATEGORY_COLORS[item.category] || CATEGORY_COLORS.Other;
-  const daysInfo = getDaysLabel(item.date);
-  const isOverdue = daysInfo?.cls?.includes("red");
+  const emdReceived = item.isEMD && item.emdReceived;
+  const daysInfo = getDaysLabel(item.date, { nonActionable: item.nonActionable, emdReceived });
+  // Only show overdue ring for actionable, non-received deadlines
+  const isOverdue = !item.nonActionable && !emdReceived && daysInfo?.cls?.includes("red");
 
   // Check if this item has a calendar sync
   const calMapKey = item.sourceType === "system" ? item.key : `contingency_${item.id}`;
@@ -174,6 +190,9 @@ function DeadlineRow({ item, calendarMaps, transactionId, onUpdateContingency, o
                 {daysInfo && item.date && (
                   <span className={`ml-2 text-xs ${daysInfo.cls}`}>{daysInfo.label}</span>
                 )}
+                {item.isEMD && emdReceived && item.emdReceivedDate && (
+                  <span className="ml-2 text-xs text-emerald-600">on {fmtDate(item.emdReceivedDate)}</span>
+                )}
                 {item.daysFromEffective && (
                   <span className="ml-2 text-xs text-gray-400">{item.daysFromEffective}d from effective</span>
                 )}
@@ -181,6 +200,23 @@ function DeadlineRow({ item, calendarMaps, transactionId, onUpdateContingency, o
 
               {/* Action buttons */}
               <div className="flex items-center gap-1 flex-shrink-0">
+                {/* EMD: Mark Received button */}
+                {item.isEMD && !emdReceived && item.date && (
+                  <Button
+                    size="sm" variant="ghost"
+                    className="h-6 px-2 text-[10px] font-semibold text-emerald-700 hover:bg-emerald-50 gap-1"
+                    disabled={markingReceived}
+                    onClick={async () => {
+                      setMarkingReceived(true);
+                      onUpdateTransaction({ earnest_money_received: true, earnest_money_received_date: new Date().toISOString().split("T")[0] });
+                      setMarkingReceived(false);
+                    }}
+                    title="Mark earnest money as received"
+                  >
+                    {markingReceived ? <Loader2 className="w-3 h-3 animate-spin" /> : <CheckCircle2 className="w-3 h-3" />}
+                    Received
+                  </Button>
+                )}
                 {item.date && (
                   <Button
                     size="icon" variant="ghost"
@@ -339,6 +375,10 @@ export default function UnifiedDeadlinesPanel({ transaction, onSave }) {
     date: transaction[f.key] || null,
     category: f.category,
     sourceType: "system",
+    nonActionable: !!f.nonActionable,
+    isEMD: !!f.isEMD,
+    emdReceived: f.isEMD ? !!transaction.earnest_money_received : false,
+    emdReceivedDate: f.isEMD ? transaction.earnest_money_received_date : null,
     sortOrder: f.key === "contract_date" ? 0 : f.key === "closing_date" ? 999 : 1,
   }));
 
@@ -373,7 +413,14 @@ export default function UnifiedDeadlinesPanel({ transaction, onSave }) {
 
   // Stats
   const today = new Date();
-  const overdue = allItems.filter(i => i.date && differenceInDays(parseISO(i.date), today) < 0 && i.status !== "Completed" && i.status !== "Waived").length;
+  const overdue = allItems.filter(i =>
+    i.date &&
+    !i.nonActionable &&
+    !(i.isEMD && i.emdReceived) &&
+    differenceInDays(parseISO(i.date), today) < 0 &&
+    i.status !== "Completed" &&
+    i.status !== "Waived"
+  ).length;
   const upcoming = allItems.filter(i => i.date && differenceInDays(parseISO(i.date), today) >= 0 && differenceInDays(parseISO(i.date), today) <= 7).length;
   const synced = calendarMaps.length;
 

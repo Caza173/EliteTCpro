@@ -302,6 +302,16 @@
       "type": "string",
       "format": "date"
     },
+    "earnest_money_received": {
+      "type": "boolean",
+      "default": false,
+      "description": "Whether earnest money deposit has been received"
+    },
+    "earnest_money_received_date": {
+      "type": "string",
+      "format": "date",
+      "description": "Date earnest money was received"
+    },
     "ctc_target": {
       "type": "string",
       "format": "date"
