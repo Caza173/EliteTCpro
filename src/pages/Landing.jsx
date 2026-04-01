@@ -100,13 +100,13 @@ export default function Landing() {
           </div>
           <div className="flex items-center gap-3">
             <Link
-              to={createPageUrl("Dashboard")}
+              to="/agent-signin"
               className="hidden sm:inline-flex text-sm font-medium text-slate-600 hover:text-slate-900 transition-colors"
             >
               Sign In
             </Link>
             <Link
-              to={createPageUrl("AgentIntake")}
+              to="/agent-signin"
               className="inline-flex items-center px-4 py-2 rounded-lg bg-slate-900 text-white text-sm font-semibold hover:bg-slate-800 transition-colors"
             >
               Start a Transaction
@@ -138,7 +138,7 @@ export default function Landing() {
 
           <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
             <Link
-              to={createPageUrl("Dashboard")}
+              to="/agent-signin"
               className="w-full sm:w-auto inline-flex items-center justify-center px-7 py-3.5 rounded-xl bg-slate-900 text-white text-base font-semibold hover:bg-slate-800 active:scale-[0.98] transition-all shadow-lg shadow-slate-900/20"
             >
               Start a Transaction
@@ -323,7 +323,7 @@ export default function Landing() {
             Built for real estate professionals who don't miss details.
           </p>
           <Link
-            to={createPageUrl("Dashboard")}
+            to="/agent-signin"
             className="text-sm text-slate-500 hover:text-slate-900 transition-colors font-medium"
           >
             Sign In →
