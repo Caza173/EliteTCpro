@@ -165,8 +165,8 @@ export default function TasksDueToday({ transactions = [], notifications = [] })
           >
             {ICONS[item.type]}
             <div className="flex-1 min-w-0">
-              <p className="text-sm font-medium text-gray-800 break-words">{item.label}</p>
-              {item.sub && <p className="text-xs text-gray-500 break-words">{item.sub}</p>}
+              <p className="text-sm font-medium text-gray-800 truncate">{item.label}</p>
+              {item.sub && <p className="text-xs text-gray-500 truncate">{item.sub}</p>}
             </div>
           </Link>
           <Badge className={`text-xs flex-shrink-0 ${item.badgeColor}`}>{item.badge}</Badge>
