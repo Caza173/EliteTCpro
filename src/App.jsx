@@ -14,6 +14,9 @@ import Notifications from './pages/Notifications.jsx'
 import FeedbackCenter from './pages/FeedbackCenter.jsx'
 import SignDocument from './pages/SignDocument.jsx'
 import SystemDiagnostics from './pages/SystemDiagnostics.jsx'
+import AgentSignIn from './pages/AgentSignIn.jsx'
+import TCSignIn from './pages/TCSignIn.jsx'
+import AgentSubmitTransaction from './pages/AgentSubmitTransaction.jsx'
 import { QueryClientProvider } from '@tanstack/react-query'
 import { queryClientInstance } from '@/lib/query-client'
 import { pagesConfig } from './pages.config'
@@ -125,6 +128,9 @@ const AuthenticatedApp = () => {
           <SystemDiagnostics />
         </LayoutWrapper>
       } />
+      <Route path="/agent-signin" element={<AgentSignIn />} />
+      <Route path="/tc-signin" element={<TCSignIn />} />
+      <Route path="/agent/submit-transaction" element={<AgentSubmitTransaction />} />
       <Route path="*" element={<PageNotFound />} />
     </Routes>
   );
