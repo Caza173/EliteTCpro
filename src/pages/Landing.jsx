@@ -138,14 +138,11 @@ export default function Landing() {
 
           <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
             <Link
-              to={createPageUrl("AgentIntake")}
+              to={createPageUrl("Dashboard")}
               className="w-full sm:w-auto inline-flex items-center justify-center px-7 py-3.5 rounded-xl bg-slate-900 text-white text-base font-semibold hover:bg-slate-800 active:scale-[0.98] transition-all shadow-lg shadow-slate-900/20"
             >
               Start a Transaction
             </Link>
-            <button className="w-full sm:w-auto inline-flex items-center justify-center px-7 py-3.5 rounded-xl bg-white border border-slate-200 text-slate-800 text-base font-semibold hover:bg-slate-50 hover:border-slate-300 active:scale-[0.98] transition-all shadow-sm">
-              Request Demo
-            </button>
           </div>
         </div>
       </section>
@@ -304,14 +301,11 @@ export default function Landing() {
           </p>
           <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
             <Link
-              to={createPageUrl("AgentIntake")}
+              to={createPageUrl("Dashboard")}
               className="w-full sm:w-auto inline-flex items-center justify-center px-7 py-3.5 rounded-xl bg-slate-900 text-white text-base font-semibold hover:bg-slate-800 active:scale-[0.98] transition-all shadow-lg shadow-slate-900/20"
             >
               Start a Transaction
             </Link>
-            <button className="w-full sm:w-auto inline-flex items-center justify-center px-7 py-3.5 rounded-xl bg-white border border-slate-200 text-slate-800 text-base font-semibold hover:bg-slate-50 hover:border-slate-300 active:scale-[0.98] transition-all shadow-sm">
-              Request Demo
-            </button>
           </div>
         </div>
       </section>
