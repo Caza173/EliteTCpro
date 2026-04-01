@@ -94,13 +94,30 @@ function resolveRecipients(issue, ctx) {
   };
 }
 
-export default function EmailGeneratorModal({ issue, transaction, onClose }) {
+export default function EmailGeneratorModal({ issue, transaction, onClose, currentUser }) {
   const ctx = buildTransactionContext(transaction);
   const resolved = resolveRecipients(issue, ctx);
 
+  // Determine locked TC email
+  const tcEmail = (() => {
+    const role = currentUser?.role;
+    if (role === "tc" || role === "tc_lead" || role === "admin" || role === "owner") {
+      return currentUser?.email || null;
+    }
+    return ctx.tc_email || null;
+  })();
+
+  // Build initial CC: always include TC, plus any resolved CCs
+  const buildInitialCc = () => {
+    const parts = new Set();
+    if (tcEmail) parts.add(tcEmail);
+    resolved.cc.split(",").map(s => s.trim()).filter(Boolean).forEach(e => parts.add(e));
+    return Array.from(parts).join(", ");
+  };
+
   const [loading, setLoading] = useState(false);
   const [emailTo, setEmailTo] = useState(resolved.to);
-  const [emailCc, setEmailCc] = useState(resolved.cc);
+  const [emailCc, setEmailCc] = useState(buildInitialCc());
   const [subject, setSubject] = useState("");
   const [body, setBody] = useState("");
   const [generated, setGenerated] = useState(false);
@@ -244,8 +261,18 @@ Return JSON with:
                   <Input value={emailTo} onChange={e => setEmailTo(e.target.value)} placeholder="recipient@email.com" className="h-8 text-sm" />
                 </div>
                 <div className="space-y-1">
-                  <Label className="text-xs">CC</Label>
-                  <Input value={emailCc} onChange={e => setEmailCc(e.target.value)} placeholder="cc@email.com" className="h-8 text-sm" />
+                  <Label className="text-xs flex items-center gap-1.5">
+                    CC
+                    {tcEmail && (
+                      <span className="text-[10px] font-semibold text-blue-500 bg-blue-50 border border-blue-200 px-1.5 py-0.5 rounded-full">TC auto-included</span>
+                    )}
+                  </Label>
+                  <Input value={emailCc} onChange={e => {
+                    // Prevent removing TC email
+                    const val = e.target.value;
+                    if (tcEmail && !val.includes(tcEmail)) return;
+                    setEmailCc(val);
+                  }} placeholder="cc@email.com" className="h-8 text-sm" />
                 </div>
               </div>
 
@@ -289,10 +316,13 @@ Return JSON with:
                     onClick={async () => {
                       const to = emailTo.split(",").map(s => s.trim()).filter(Boolean);
                       if (!to.length) { toast.error("Enter a recipient"); return; }
+                      const cc = emailCc.split(",").map(s => s.trim()).filter(Boolean);
+                      if (tcEmail && !cc.includes(tcEmail)) { toast.error("TC email must remain in CC"); return; }
                       setSending(true);
                       try {
-                        const res = await base44.functions.invoke("sendEmail", {
+                        const res = await base44.functions.invoke("sendGmailEmail", {
                           to,
+                          cc,
                           subject,
                           body,
                           transaction_id: transaction?.id,

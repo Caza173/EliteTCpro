@@ -31,7 +31,7 @@ function adaptIssueForEmail(issue) {
   };
 }
 
-function IssueRow({ issue, transaction, autoSendEnabled }) {
+function IssueRow({ issue, transaction, autoSendEnabled, currentUser }) {
   const [emailModalOpen, setEmailModalOpen] = useState(false);
   const styles = SEVERITY_STYLES[issue.severity];
 
@@ -41,6 +41,7 @@ function IssueRow({ issue, transaction, autoSendEnabled }) {
         <EmailGeneratorModal
           issue={adaptIssueForEmail(issue)}
           transaction={transaction}
+          currentUser={currentUser}
           onClose={() => setEmailModalOpen(false)}
         />
       )}
@@ -83,7 +84,7 @@ function IssueRow({ issue, transaction, autoSendEnabled }) {
   );
 }
 
-export default function IssueDetectionPanel({ transaction }) {
+export default function IssueDetectionPanel({ transaction, currentUser }) {
   const [autoSend, setAutoSend] = useState(false);
   const [filter, setFilter] = useState("all");
 
@@ -209,6 +210,7 @@ export default function IssueDetectionPanel({ transaction }) {
               issue={issue}
               transaction={transaction}
               autoSendEnabled={autoSend}
+              currentUser={currentUser}
             />
           ))}
         </div>

@@ -489,6 +489,7 @@ export default function TransactionDetail() {
         open={emailModalOpen}
         onClose={() => setEmailModalOpen(false)}
         transaction={transaction}
+        currentUser={currentUser}
         documents={documents}
       />
       <ConfirmDialog
@@ -725,7 +726,7 @@ export default function TransactionDetail() {
                 <h3 className="text-sm font-semibold" style={{ color: "var(--text-primary)" }}>Issue Detection</h3>
                 <p className="text-xs mt-0.5" style={{ color: "var(--text-muted)" }}>Auto-scanned for missing documents, signatures, upcoming deadlines, and workflow gaps.</p>
               </div>
-              <IssueDetectionPanel transaction={transaction} />
+              <IssueDetectionPanel transaction={transaction} currentUser={currentUser} />
             </div>
           )}
 

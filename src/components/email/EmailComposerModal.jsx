@@ -52,6 +52,7 @@ const DOC_LABELS = {
  * Props:
  *  - open, onClose
  *  - transaction (optional)
+ *  - currentUser (optional) — logged-in user; used to auto-CC TC
  *  - defaultRecipients, defaultSubject, defaultBody, issueList
  *  - documents: Document[] (optional) — list of transaction docs for attachment picker
  *  - preselectedDocId: string (optional) — pre-check a document
@@ -60,6 +61,7 @@ export default function EmailComposerModal({
   open,
   onClose,
   transaction,
+  currentUser,
   defaultRecipients,
   defaultSubject,
   defaultBody,
@@ -69,6 +71,16 @@ export default function EmailComposerModal({
   htmlBody: defaultHtmlBody,   // pre-built HTML (renders as preview, editable via plain text override)
 }) {
   const parties = buildParties(transaction);
+
+  // Determine the locked TC CC email
+  const tcEmail = (() => {
+    const role = currentUser?.role;
+    if (role === "tc" || role === "tc_lead" || role === "admin" || role === "owner") {
+      return currentUser?.email || null;
+    }
+    // For agents or unknown: pull from transaction's assigned TC
+    return transaction?.agent_email || null;
+  })();
 
   const initSelectedEmails = () => {
     if (defaultRecipients?.length) return new Set(defaultRecipients);
@@ -81,6 +93,7 @@ export default function EmailComposerModal({
 
   const [selectedPartyEmails, setSelectedPartyEmails] = useState(initSelectedEmails);
   const [customRecipients, setCustomRecipients] = useState([""]);
+  const [additionalCCs, setAdditionalCCs] = useState([""]);
   const [subject, setSubject] = useState(
     defaultSubject || (transaction ? `Action Required – ${transaction.address}` : "")
   );
@@ -110,6 +123,10 @@ export default function EmailComposerModal({
   const removeCustomRecipient = (i) => setCustomRecipients(r => r.filter((_, idx) => idx !== i));
   const updateCustomRecipient = (i, v) => setCustomRecipients(r => r.map((x, idx) => idx === i ? v : x));
 
+  const addCC = () => setAdditionalCCs(c => [...c, ""]);
+  const removeCC = (i) => setAdditionalCCs(c => c.filter((_, idx) => idx !== i));
+  const updateCC = (i, v) => setAdditionalCCs(c => c.map((x, idx) => idx === i ? v : x));
+
   const toggleDoc = (id) => {
     setSelectedDocIds(prev => prev.includes(id) ? prev.filter(d => d !== id) : [...prev, id]);
   };
@@ -124,10 +141,16 @@ export default function EmailComposerModal({
     const hasContent = htmlBody || body.trim();
     if (!hasContent) { toast.error("Body is required"); return; }
 
+    const ccList = [
+      ...(tcEmail ? [tcEmail] : []),
+      ...additionalCCs.filter(c => c.trim()),
+    ];
+
     setSending(true);
     try {
       const res = await base44.functions.invoke("sendGmailEmail", {
         to: validTo,
+        cc: ccList,
         subject,
         ...(htmlBody ? { htmlBody } : { body }),
         transaction_id: transaction?.id,
@@ -208,6 +231,41 @@ export default function EmailComposerModal({
             ))}
             <button onClick={addCustomRecipient} className="text-xs text-blue-600 hover:underline flex items-center gap-1">
               <Plus className="w-3 h-3" /> Add other recipient
+            </button>
+          </div>
+
+          {/* CC Field */}
+          <div>
+            <label className="text-xs font-semibold text-gray-500 uppercase tracking-wide block mb-1">CC</label>
+
+            {/* Locked TC email */}
+            {tcEmail && (
+              <div className="flex items-center gap-2 mb-2 px-3 py-2 rounded-lg border border-blue-200 bg-blue-50">
+                <Check className="w-3.5 h-3.5 text-blue-500 flex-shrink-0" />
+                <span className="text-sm text-blue-700 flex-1">{tcEmail}</span>
+                <span className="text-[10px] font-semibold text-blue-500 bg-blue-100 px-1.5 py-0.5 rounded-full">TC · Required</span>
+              </div>
+            )}
+
+            {/* Additional CCs */}
+            {additionalCCs.map((cc, i) => (
+              <div key={i} className="flex items-center gap-2 mb-2">
+                <input
+                  type="email"
+                  className="flex-1 border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-300"
+                  placeholder="cc@example.com"
+                  value={cc}
+                  onChange={e => updateCC(i, e.target.value)}
+                />
+                {additionalCCs.length > 1 && (
+                  <button onClick={() => removeCC(i)} className="text-gray-400 hover:text-red-500">
+                    <Trash2 className="w-4 h-4" />
+                  </button>
+                )}
+              </div>
+            ))}
+            <button onClick={addCC} className="text-xs text-blue-600 hover:underline flex items-center gap-1">
+              <Plus className="w-3 h-3" /> Add CC
             </button>
           </div>
 

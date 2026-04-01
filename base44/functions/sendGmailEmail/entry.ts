@@ -104,6 +104,7 @@ Deno.serve(async (req) => {
     const body = await req.json();
     const {
       to,
+      cc,                      // CC recipients (array or comma-separated string)
       subject,
       body: emailBody,         // plain text / html fallback
       htmlBody,                // pre-built HTML (from commission modal etc.)
@@ -127,6 +128,11 @@ Deno.serve(async (req) => {
       brokerage_id,
       fromName,
     } = body;
+
+    // Normalize CC list
+    const ccRecipients = cc
+      ? (Array.isArray(cc) ? cc.filter(Boolean) : cc.split(",").map(s => s.trim()).filter(Boolean))
+      : [];
 
     // Use user's saved signature fields as fallback defaults
     const sigName    = senderName   || user.data?.sig_name    || user.full_name  || "Corey Caza";
@@ -215,12 +221,14 @@ Deno.serve(async (req) => {
     const buildMimeMessage = (recipient) => {
       const encodedSubject = `=?UTF-8?B?${btoa(unescape(encodeURIComponent(subject)))}?=`;
       const fromLabel = fromName || sigName || "EliteTC";
+      const ccLine = ccRecipients.length ? `\r\nCc: ${ccRecipients.join(", ")}` : "";
 
       if (attachments.length === 0) {
         // Simple HTML-only message (no attachments)
         return [
           `From: ${fromLabel} <me>`,
           `To: ${recipient}`,
+          ...(ccRecipients.length ? [`Cc: ${ccRecipients.join(", ")}`] : []),
           `Subject: ${encodedSubject}`,
           `MIME-Version: 1.0`,
           `Content-Type: text/html; charset=utf-8`,
@@ -236,6 +244,7 @@ Deno.serve(async (req) => {
       parts.push(
         `From: ${fromLabel} <me>`,
         `To: ${recipient}`,
+        ...(ccRecipients.length ? [`Cc: ${ccRecipients.join(", ")}`] : []),
         `Subject: ${encodedSubject}`,
         `MIME-Version: 1.0`,
         `Content-Type: multipart/mixed; boundary="${boundary}"`,
@@ -289,7 +298,7 @@ Deno.serve(async (req) => {
     const failed = results.filter(r => r.status === "rejected");
     const sent = results.filter(r => r.status === "fulfilled");
 
-    // Log to AIActivityLog
+    // Log to AIActivityLog (includes sender, CC, timestamp, transaction)
     try {
       await base44.asServiceRole.entities.AIActivityLog.create({
         brokerage_id: brokerage_id || user.data?.brokerage_id || "",
@@ -297,7 +306,7 @@ Deno.serve(async (req) => {
         deadline_type: "general_email",
         recipient_email: recipients.join(", "),
         subject,
-        message: finalHtml,
+        message: `Sender: ${user.email}\nTo: ${recipients.join(", ")}\nCC: ${ccRecipients.join(", ") || "none"}\nTimestamp: ${new Date().toISOString()}\n\n${finalHtml}`,
         response_status: "sent",
       });
     } catch (logErr) {
