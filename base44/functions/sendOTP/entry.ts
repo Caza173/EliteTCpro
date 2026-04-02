@@ -1,9 +1,9 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.23';
 
-// In-memory OTP store: email -> { code, phone, expiresAt, attempts }
+// In-memory OTP store: email -> { code, expiresAt, attempts }
 const otpStore = new Map();
 
-// Rate limiter: ip -> [timestamps]
+// Rate limiter: key -> [timestamps]
 const sendLog = new Map();
 
 function isRateLimited(key) {
@@ -23,7 +23,7 @@ Deno.serve(async (req) => {
   try {
     const base44 = createClientFromRequest(req);
     const body = await req.json();
-    const { action, email, phone, code, channel } = body; // channel: "email" | "sms"
+    const { action, email, code } = body;
 
     if (!email || typeof email !== 'string') {
       return Response.json({ error: 'Email is required' }, { status: 400 });
@@ -31,14 +31,9 @@ Deno.serve(async (req) => {
 
     const normalEmail = email.trim().toLowerCase();
     const ip = req.headers.get('x-forwarded-for') || 'unknown';
-    const sendChannel = channel || 'email'; // default to email
 
     // ── Send OTP ────────────────────────────────────────────────────────────
     if (action === 'send') {
-      if (sendChannel === 'sms' && !phone?.trim()) {
-        return Response.json({ error: 'Phone number is required to send via SMS' }, { status: 400 });
-      }
-
       const rateLimitKey = `${ip}:${normalEmail}`;
       if (isRateLimited(rateLimitKey)) {
         return Response.json({ error: 'Too many OTP requests. Please wait before trying again.' }, { status: 429 });
@@ -47,48 +42,27 @@ Deno.serve(async (req) => {
       const otp = generateOTP();
       otpStore.set(normalEmail, {
         code: otp,
-        phone: phone?.trim(),
         expiresAt: Date.now() + 10 * 60_000, // 10 minutes
         attempts: 0,
       });
 
-      if (sendChannel === 'sms') {
-        // Send via Twilio SMS
-        const accountSid = Deno.env.get('TWILIO_ACCOUNT_SID');
-        const authToken = Deno.env.get('TWILIO_AUTH_TOKEN');
-        const fromNumber = Deno.env.get('TWILIO_PHONE_NUMBER');
-
-        if (!accountSid || !authToken || !fromNumber) {
-          return Response.json({ error: 'SMS service is not configured. Please use email verification.' }, { status: 500 });
-        }
-
-        const { Twilio } = await import('npm:twilio@4.23.0');
-        const client = new Twilio(accountSid, authToken);
-        await client.messages.create({
-          body: `Your EliteTC verification code is: ${otp}. It expires in 10 minutes.`,
-          from: fromNumber,
-          to: phone.trim(),
-        });
-      } else {
-        // Send via email
-        await base44.integrations.Core.SendEmail({
-          to: normalEmail,
-          from_name: 'EliteTC Verification',
-          subject: 'Your verification code — EliteTC Deal Intake',
-          body: `
-            <div style="font-family:-apple-system,sans-serif;max-width:480px;margin:0 auto;padding:24px;">
-              <h2 style="color:#0f172a;margin:0 0 8px;">Verification Code</h2>
-              <p style="color:#475569;font-size:14px;margin:0 0 24px;">Use the code below to verify your email and complete your deal submission. It expires in 10 minutes.</p>
-              <div style="background:#f8fafc;border:2px solid #e2e8f0;border-radius:12px;padding:20px;text-align:center;margin-bottom:24px;">
-                <span style="font-size:36px;font-weight:700;letter-spacing:8px;color:#2563eb;">${otp}</span>
-              </div>
-              <p style="color:#94a3b8;font-size:12px;margin:0;">If you did not request this code, please ignore this email.</p>
+      await base44.integrations.Core.SendEmail({
+        to: normalEmail,
+        from_name: 'EliteTC Verification',
+        subject: 'Your verification code — EliteTC Deal Intake',
+        body: `
+          <div style="font-family:-apple-system,sans-serif;max-width:480px;margin:0 auto;padding:24px;">
+            <h2 style="color:#0f172a;margin:0 0 8px;">Verification Code</h2>
+            <p style="color:#475569;font-size:14px;margin:0 0 24px;">Use the code below to verify your email and complete your deal submission. It expires in 10 minutes.</p>
+            <div style="background:#f8fafc;border:2px solid #e2e8f0;border-radius:12px;padding:20px;text-align:center;margin-bottom:24px;">
+              <span style="font-size:36px;font-weight:700;letter-spacing:8px;color:#2563eb;">${otp}</span>
             </div>
-          `,
-        });
-      }
+            <p style="color:#94a3b8;font-size:12px;margin:0;">If you did not request this code, please ignore this email.</p>
+          </div>
+        `,
+      });
 
-      return Response.json({ sent: true, channel: sendChannel });
+      return Response.json({ sent: true });
     }
 
     // ── Verify OTP ──────────────────────────────────────────────────────────

@@ -70,8 +70,7 @@ const initialBuyerAgency = {
 
 // ── OTP Verification Component ────────────────────────────────────────────────
 
-function OTPVerification({ email, phone, onVerified }) {
-  const [channel, setChannel] = useState("email"); // "email" | "sms"
+function OTPVerification({ email, onVerified }) {
   const [sending, setSending] = useState(false);
   const [sent, setSent] = useState(false);
   const [code, setCode] = useState("");
@@ -81,10 +80,9 @@ function OTPVerification({ email, phone, onVerified }) {
 
   const sendOTP = async () => {
     if (!email) { setError("Email is required."); return; }
-    if (channel === "sms" && !phone?.trim()) { setError("Phone number is required for SMS verification."); return; }
     setSending(true); setError("");
     try {
-      const res = await base44.functions.invoke("sendOTP", { action: "send", email, phone, channel });
+      const res = await base44.functions.invoke("sendOTP", { action: "send", email });
       if (res.data?.error) throw new Error(res.data.error);
       setSent(true);
       setCooldown(60);
@@ -104,33 +102,17 @@ function OTPVerification({ email, phone, onVerified }) {
     setVerifying(false);
   };
 
-  const handleChannelChange = (c) => { setChannel(c); setSent(false); setCode(""); setError(""); };
-
   return (
     <div className="space-y-4">
-      {/* Channel selector */}
-      <div className="flex gap-1 p-1 rounded-xl bg-gray-100 w-fit">
-        <button type="button" onClick={() => handleChannelChange("email")}
-          className={`flex items-center gap-1.5 px-4 py-1.5 rounded-lg text-sm font-medium transition-all ${channel === "email" ? "bg-white shadow text-gray-900" : "text-gray-500 hover:text-gray-700"}`}>
-          <Mail className="w-3.5 h-3.5" /> Email
-        </button>
-        <button type="button" onClick={() => handleChannelChange("sms")}
-          className={`flex items-center gap-1.5 px-4 py-1.5 rounded-lg text-sm font-medium transition-all ${channel === "sms" ? "bg-white shadow text-gray-900" : "text-gray-500 hover:text-gray-700"}`}>
-          <Phone className="w-3.5 h-3.5" /> SMS
-        </button>
-      </div>
-
       <div className="flex items-center gap-2 p-3 rounded-xl bg-blue-50 border border-blue-100 text-sm text-blue-700">
         <ShieldCheck className="w-4 h-4 flex-shrink-0" />
-        {channel === "sms"
-          ? <>We'll send a code to <strong>{phone || "your phone"}</strong></>
-          : <>We'll send a code to <strong>{email}</strong></>}
+        We'll send a 6-digit verification code to <strong>{email}</strong>
       </div>
 
       {!sent ? (
-        <Button onClick={sendOTP} disabled={sending || !email || (channel === "sms" && !phone)} className="w-full bg-blue-600 hover:bg-blue-700 text-white gap-2">
-          {sending ? <Loader2 className="w-4 h-4 animate-spin" /> : channel === "sms" ? <Phone className="w-4 h-4" /> : <Mail className="w-4 h-4" />}
-          Send Code via {channel === "sms" ? "SMS" : "Email"}
+        <Button onClick={sendOTP} disabled={sending || !email} className="w-full bg-blue-600 hover:bg-blue-700 text-white gap-2">
+          {sending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Mail className="w-4 h-4" />}
+          Send Verification Code
         </Button>
       ) : (
         <div className="space-y-3">
@@ -763,7 +745,6 @@ export default function AgentIntake() {
               ) : (
                 <OTPVerification
                   email={form.agent_email}
-                  phone={form.agent_phone}
                   onVerified={() => { setEmailVerified(true); setShowOTP(false); }}
                 />
               )}
