@@ -159,24 +159,27 @@ Deno.serve(async (req) => {
 
         const message = buildMessage(field.label, hoursRemaining);
 
+        if (!tx.brokerage_id) continue;
         for (const email of recipients) {
-          await base44.asServiceRole.entities.InAppNotification.create({
-            brokerage_id: tx.brokerage_id,
-            transaction_id: tx.id,
-            user_email: email,
-            title: message,
-            body: `${tx.address} — Effective date: ${effectiveDate}${extension_exists ? " (Extended)" : ""}`,
-            type: "deadline",
-            deadline_field: field.key,
-            deadline_type: field.type,
-            severity: severity,
-            addendum_status: addendumStatus,
-            addendum_response: addendumStatus === "REQUIRED" ? "pending" : undefined,
-            dismissed: false,
-            // Future hooks (placeholders — not implemented):
-            // actions: { generate_addendum: null, send_email: null, notify_agent: null }
-          });
-          totalCreated++;
+          try {
+            await base44.asServiceRole.entities.InAppNotification.create({
+              brokerage_id: tx.brokerage_id,
+              transaction_id: tx.id,
+              user_email: email,
+              title: message,
+              body: `${tx.address} — Effective date: ${effectiveDate}${extension_exists ? " (Extended)" : ""}`,
+              type: "deadline",
+              deadline_field: field.key,
+              deadline_type: field.type,
+              severity: severity,
+              addendum_status: addendumStatus,
+              addendum_response: addendumStatus === "REQUIRED" ? "pending" : undefined,
+              dismissed: false,
+            });
+            totalCreated++;
+          } catch (notifyErr) {
+            console.warn(`[deadlineEngine] InAppNotification failed for tx ${tx.id}:`, notifyErr.message);
+          }
         }
       }
     }

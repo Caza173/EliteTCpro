@@ -1,4 +1,4 @@
-import { createClientFromRequest } from 'npm:@base44/sdk@0.8.20';
+import { createClientFromRequest } from 'npm:@base44/sdk@0.8.23';
 
 const DEADLINE_FIELDS = [
   { key: "earnest_money_deadline", label: "Earnest Money Deposit" },
@@ -59,16 +59,22 @@ Deno.serve(async (req) => {
 
         for (const recipient of recipients) {
           // In-app notification
-          await base44.asServiceRole.entities.InAppNotification.create({
-            brokerage_id: tx.brokerage_id,
-            transaction_id: tx.id,
-            user_email: recipient.email,
-            title,
-            body,
-            type: "deadline",
-            alert_interval_hours: days * 24,
-            deadline_field: field.key,
-          });
+          if (!tx.brokerage_id) continue;
+          try {
+            await base44.asServiceRole.entities.InAppNotification.create({
+              brokerage_id: tx.brokerage_id,
+              transaction_id: tx.id,
+              user_email: recipient.email,
+              title,
+              body,
+              type: "deadline",
+              alert_interval_hours: days * 24,
+              deadline_field: field.key,
+            });
+          } catch (notifyErr) {
+            console.warn(`[sendDeadlineAlerts] InAppNotification failed for tx ${tx.id}:`, notifyErr.message);
+            continue;
+          }
 
           // Email notification (best-effort — only works for registered app users)
           try {

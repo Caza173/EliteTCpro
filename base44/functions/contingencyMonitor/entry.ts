@@ -112,15 +112,21 @@ Deno.serve(async (req) => {
         }
 
         // In-app notification
-        await base44.asServiceRole.entities.InAppNotification.create({
-          brokerage_id: tx.brokerage_id,
-          transaction_id: tx.id,
-          user_email: tx.agent_email,
-          title: `${label} ${bucket === 'overdue' ? 'Overdue' : `in ${bucket}`} – ${tx.address}`,
-          body: `The ${label} contingency is ${bucket === 'overdue' ? 'past due' : `due in ${bucket}`}.`,
-          type: 'deadline',
-          deadline_field: `contingency_${c.id}`,
-        });
+        if (tx.brokerage_id) {
+          try {
+            await base44.asServiceRole.entities.InAppNotification.create({
+              brokerage_id: tx.brokerage_id,
+              transaction_id: tx.id,
+              user_email: tx.agent_email,
+              title: `${label} ${bucket === 'overdue' ? 'Overdue' : `in ${bucket}`} – ${tx.address}`,
+              body: `The ${label} contingency is ${bucket === 'overdue' ? 'past due' : `due in ${bucket}`}.`,
+              type: 'deadline',
+              deadline_field: `contingency_${c.id}`,
+            });
+          } catch (notifyErr) {
+            console.warn(`[contingencyMonitor] InAppNotification failed for ${tx.id}:`, notifyErr.message);
+          }
+        }
 
         // Log for dedup
         await base44.asServiceRole.entities.AIActivityLog.create({
