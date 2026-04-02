@@ -1,0 +1,100 @@
+{
+  "name": "IntakeSubmission",
+  "type": "object",
+  "properties": {
+    "brokerage_id": {
+      "type": "string"
+    },
+    "deal_type": {
+      "type": "string",
+      "enum": [
+        "buyer_uc",
+        "listing",
+        "both",
+        "buyer_agency"
+      ]
+    },
+    "form_data": {
+      "type": "object",
+      "description": "Full form payload",
+      "additionalProperties": true
+    },
+    "buyers": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "sellers": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "client_emails": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "agent_name": {
+      "type": "string"
+    },
+    "agent_email": {
+      "type": "string"
+    },
+    "agent_phone": {
+      "type": "string"
+    },
+    "property_address": {
+      "type": "string"
+    },
+    "document_url": {
+      "type": "string"
+    },
+    "document_name": {
+      "type": "string"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "pending_review",
+        "approved",
+        "rejected"
+      ],
+      "default": "pending_review"
+    },
+    "review_notes": {
+      "type": "string"
+    },
+    "reviewed_by": {
+      "type": "string"
+    },
+    "reviewed_at": {
+      "type": "string"
+    },
+    "transaction_id": {
+      "type": "string",
+      "description": "Set after TC approves and transaction is created"
+    },
+    "email_verified": {
+      "type": "boolean",
+      "default": false
+    },
+    "is_generic_email": {
+      "type": "boolean",
+      "default": false,
+      "description": "True if email domain is gmail/yahoo etc."
+    },
+    "submitter_ip": {
+      "type": "string"
+    },
+    "submitted_at": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "agent_email",
+    "deal_type"
+  ]
+}
