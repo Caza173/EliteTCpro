@@ -500,6 +500,37 @@ export default function AgentIntake() {
         <p>Email verification required · All submissions are reviewed by a TC before activation · Agent portal access codes are issued after approval.</p>
       </div>
 
+      {/* ── Email Verification — top of form ── */}
+      <Card className="shadow-sm border-gray-100">
+        <CardContent className="pt-5 pb-5">
+          <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">Email Verification *</p>
+          {emailVerified ? (
+            <div className="flex items-center gap-2 p-3 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-700 text-sm">
+              <ShieldCheck className="w-4 h-4" />
+              <span>Email verified — <strong>{form.agent_email}</strong></span>
+            </div>
+          ) : (
+            <>
+              <div className="mb-3">
+                <Label className="text-sm font-medium text-gray-700">Agent Email *</Label>
+                <Input
+                  type="email"
+                  className="mt-1.5"
+                  placeholder="agent@brokerage.com"
+                  value={form.agent_email || ""}
+                  onChange={e => { set("agent_email", e.target.value); setEmailVerified(false); }}
+                  required
+                />
+              </div>
+              <OTPVerification
+                email={form.agent_email}
+                onVerified={() => { setEmailVerified(true); setShowOTP(false); }}
+              />
+            </>
+          )}
+        </CardContent>
+      </Card>
+
       {/* Document Upload */}
       <Card className="shadow-sm border-blue-100 bg-blue-50/20">
         <CardHeader className="pb-3">
@@ -733,23 +764,6 @@ export default function AgentIntake() {
               </>
             )}
 
-            <Separator />
-
-            {/* ── OTP Verification ── */}
-            <Section label="Email Verification *">
-              {emailVerified ? (
-                <div className="flex items-center gap-2 p-3 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-700 text-sm">
-                  <ShieldCheck className="w-4 h-4" />
-                  <span>Email verified — <strong>{form.agent_email}</strong></span>
-                </div>
-              ) : (
-                <OTPVerification
-                  email={form.agent_email}
-                  onVerified={() => { setEmailVerified(true); setShowOTP(false); }}
-                />
-              )}
-            </Section>
-
             {/* ── Error ── */}
             {submitError && (
               <div className="flex items-center gap-2 p-3 rounded-xl bg-red-50 border border-red-200 text-red-600 text-sm">
@@ -767,7 +781,7 @@ export default function AgentIntake() {
               </Button>
             </div>
             {!emailVerified && (
-              <p className="text-xs text-right text-amber-600">⚠ Verify your email above to enable submission</p>
+              <p className="text-xs text-right text-amber-600">⚠ Verify your email at the top to enable submission</p>
             )}
             {requiresDoc && !documentUrl && (
               <p className="text-xs text-right text-red-500">⚠ A signed document upload is required</p>
