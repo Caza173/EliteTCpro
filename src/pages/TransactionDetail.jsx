@@ -535,7 +535,11 @@ export default function TransactionDetail() {
       <div className="flex-shrink-0 px-5 pt-4 pb-3 border-b" style={{ borderColor: "var(--card-border)", background: "var(--bg-secondary)" }}>
         {/* Row 1: Back + address + badges */}
         <div className="flex flex-wrap items-center gap-3 mb-2">
-          <Link to={createPageUrl("Transactions")}>
+          <Link to={createPageUrl(
+            currentUser?.role === "agent" || currentUser?.role === "user" ? "AgentPortal"
+            : currentUser?.role === "client" ? "ClientPortal"
+            : "Transactions"
+          )}>
             <Button variant="ghost" size="sm" className="text-gray-500 hover:text-gray-800 -ml-2 h-8">
               <ArrowLeft className="w-4 h-4 mr-1" /> Back
             </Button>

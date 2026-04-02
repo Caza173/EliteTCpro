@@ -132,10 +132,11 @@ export default function Layout({ children, currentPageName }) {
     const email = currentUser.email;
     const path = window.location.hash.replace("#", "") || "/";
     const isClientPage = path.startsWith("/ClientPortal");
+    const isTransactionDetail = path.startsWith("/TransactionDetail");
     if (email === "nhcazateam@gmail.com") return;
-    if (role === "client" && !isClientPage) {
+    if (role === "client" && !isClientPage && !isTransactionDetail) {
       navigate(createPageUrl("ClientPortal"), { replace: true });
-    } else if (!role || role === "user") {
+    } else if ((!role || role === "user") && !isTransactionDetail) {
       navigate(createPageUrl("Dashboard"), { replace: true });
     }
   }, [currentUser, navigate]);
