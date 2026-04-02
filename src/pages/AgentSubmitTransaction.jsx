@@ -121,8 +121,9 @@ export default function AgentSubmitTransaction() {
       navigate("/agent-signin", { replace: true });
       return;
     }
+    // Allow agents, admins, owners, and generic "user" role (default for newly invited agents)
     const role = currentUser.role;
-    if (role !== "agent" && role !== "admin" && role !== "owner") {
+    if (role === "client") {
       setAccessDenied(true);
     }
   }, [currentUser, isLoading, navigate]);
