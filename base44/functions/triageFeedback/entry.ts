@@ -15,7 +15,10 @@ function hasTransactionRisk(text) {
 Deno.serve(async (req) => {
   try {
     const base44 = createClientFromRequest(req);
-    const { feedback_item_id } = await req.json();
+    const body = await req.json();
+
+    // Support both direct calls (feedback_item_id) and entity automation payload (event.entity_id or data.id)
+    const feedback_item_id = body.feedback_item_id || body.event?.entity_id || body.data?.id;
 
     if (!feedback_item_id) return Response.json({ error: "feedback_item_id required" }, { status: 400 });
 
