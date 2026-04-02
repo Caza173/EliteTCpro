@@ -148,7 +148,7 @@ export default function Layout({ children, currentPageName }) {
     : role === "agent"    ? AGENT_NAV
     : TC_NAV;
 
-  if (currentPageName === "Landing" || currentPageName === "PortalSelect" || currentPageName === "SetupProfile") {
+  if (currentPageName === "Landing" || currentPageName === "PortalSelect" || currentPageName === "SetupProfile" || currentPageName === "TCSignIn" || currentPageName === "AgentSignIn") {
     return <ThemeProvider>{children}</ThemeProvider>;
   }
 
