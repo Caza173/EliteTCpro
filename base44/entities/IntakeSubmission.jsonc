@@ -9,6 +9,7 @@
       "type": "string",
       "enum": [
         "buyer_uc",
+        "seller_uc",
         "listing",
         "both",
         "buyer_agency"

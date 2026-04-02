@@ -21,9 +21,10 @@ import IntakePendingReviews from "../components/intake/IntakePendingReviews";
 // ── Deal Type Config ──────────────────────────────────────────────────────────
 
 const DEAL_TYPES = [
-  { id: "buyer_uc",  label: "Buyer Under Contract",  desc: "You represent the buyer — PSA signed. Lender, inspections, appraisal tracked.", icon: UserCheck,      color: "#2563eb", bg: "#eff6ff" },
-  { id: "listing",   label: "Listing Input",          desc: "You represent the seller — MLS input, photos, showings. No buyer or PSA yet.", icon: Home,          color: "#d97706", bg: "#fef3c7" },
-  { id: "both",      label: "Both (Dual)",            desc: "You represent both buyer and seller on the same transaction.",                  icon: FileSignature, color: "#7c3aed", bg: "#f5f3ff" },
+  { id: "buyer_uc",    label: "Buyer Under Contract",  desc: "You represent the buyer — PSA signed. Lender, inspections, appraisal tracked.", icon: UserCheck,      color: "#2563eb", bg: "#eff6ff" },
+  { id: "seller_uc",  label: "Seller Under Contract", desc: "You represent the seller — PSA signed. Buyer-side financing, inspections tracked.", icon: Home,         color: "#16a34a", bg: "#f0fdf4" },
+  { id: "listing",    label: "Listing Input",          desc: "You represent the seller — MLS input, photos, showings. No buyer or PSA yet.", icon: Home,            color: "#d97706", bg: "#fef3c7" },
+  { id: "both",       label: "Both (Dual)",            desc: "You represent both buyer and seller on the same transaction.",                  icon: FileSignature,  color: "#7c3aed", bg: "#f5f3ff" },
 ];
 
 const initialBuyerUC = {
@@ -263,6 +264,7 @@ export default function AgentIntake() {
     setBuyers([""]); setSellers([""]); setClientEmails([""]);
     if (type === "listing") setForm({ ...initialListing });
     else if (type === "both") setForm({ ...initialBoth });
+    else if (type === "seller_uc") setForm({ ...initialBuyerUC, transaction_type: "seller" });
     else setForm({ ...initialBuyerUC });
   };
 
@@ -351,7 +353,7 @@ export default function AgentIntake() {
 
     try {
       const res = await base44.functions.invoke("submitIntake", {
-        deal_type: isBuyerAgency ? "buyer_agency" : dealType,
+        deal_type: isBuyerAgency ? "buyer_agency" : isSellerUC ? "seller_uc" : dealType,
         form_data: {
           ...form,
           sale_price: form.sale_price ? Number(form.sale_price) : undefined,
@@ -409,10 +411,11 @@ export default function AgentIntake() {
   // ── TC Review Tab (TC users only) ─────────────────────────────────────────
 
   const isBuyerUC = dealType === "buyer_uc";
+  const isSellerUC = dealType === "seller_uc";
   const isListing = dealType === "listing";
   const isBoth = dealType === "both";
   const isBuyerAgency = isBuyerUC && docType === "buyer_agency";
-  const isUnderContract = (isBoth || isBuyerUC) && !isBuyerAgency;
+  const isUnderContract = (isBoth || isBuyerUC || isSellerUC) && !isBuyerAgency;
   const requiresDoc = !isBuyerAgency;
   const dealConfig = DEAL_TYPES.find(d => d.id === dealType);
 
@@ -497,6 +500,7 @@ export default function AgentIntake() {
             {isListing ? "Create a listing file — buyer fields not required yet."
               : isBoth ? "Dual transaction — both buyer and seller represented."
               : isBuyerAgency ? "Pre-transaction representation agreement."
+              : isSellerUC ? "Seller-side under contract — PSA signed, buyer financing and inspections tracked."
               : "Buyer-side — PSA, lender, inspections, appraisal tracked."}
           </p>
         </div>
@@ -772,7 +776,7 @@ export default function AgentIntake() {
                 disabled={submitting || !emailVerified || (requiresDoc && !documentUrl)}
                 className="bg-blue-600 hover:bg-blue-700 px-8 gap-2">
                 {submitting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
-                {isListing ? "Submit Listing" : isBoth ? "Submit Dual Transaction" : isBuyerAgency ? "Submit Representation Agreement" : "Submit Buyer Transaction"}
+                {isListing ? "Submit Listing" : isBoth ? "Submit Dual Transaction" : isBuyerAgency ? "Submit Representation Agreement" : isSellerUC ? "Submit Seller Transaction" : "Submit Buyer Transaction"}
               </Button>
             </div>
             {!emailVerified && (
