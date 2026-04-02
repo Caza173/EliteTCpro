@@ -303,25 +303,24 @@ export default function Dashboard() {
                 </div>
               </div>
 
-              {/* Tasks + Alerts side-by-side on xl, stacked below */}
-              <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
-                {!isLoading && (
-                  <div className="theme-card overflow-hidden w-full">
-                    <div className="px-4 py-3 border-b" style={{ borderColor: "var(--border)" }}>
-                      <h3 className="text-sm font-semibold" style={{ color: "var(--text-primary)" }}>Upcoming Tasks & Deadlines</h3>
+              {/* Alerts & Tasks Combined */}
+              {!isLoading && (
+                <div className="theme-card overflow-hidden w-full">
+                  <div className="px-4 py-3 border-b" style={{ borderColor: "var(--border)" }}>
+                    <h3 className="text-sm font-semibold" style={{ color: "var(--text-primary)" }}>Alerts & Tasks</h3>
+                  </div>
+                  <div className="p-4 space-y-6">
+                    <div>
+                      <h4 className="text-xs font-semibold uppercase mb-3" style={{ color: "var(--text-muted)" }}>Transaction Alerts</h4>
+                      <TransactionAlertsPanel brokerageId={currentUser?.brokerage_id} />
                     </div>
-                    <div className="p-4">
+                    <div className="border-t pt-6" style={{ borderColor: "var(--border)" }}>
+                      <h4 className="text-xs font-semibold uppercase mb-3" style={{ color: "var(--text-muted)" }}>Upcoming Tasks & Deadlines</h4>
                       <TasksDueToday transactions={transactions} notifications={notifications} />
                     </div>
                   </div>
-                )}
-                <div className="theme-card overflow-hidden w-full">
-                  <div className="px-4 py-3 border-b" style={{ borderColor: "var(--border)" }}>
-                    <h3 className="text-sm font-semibold" style={{ color: "var(--text-primary)" }}>Alerts</h3>
-                  </div>
-                  <div className="p-4"><TransactionAlertsPanel brokerageId={currentUser?.brokerage_id} /></div>
                 </div>
-              </div>
+              )}
             </div>
 
             {/* AI Assistant — hidden below xl, col-span-3 on xl */}
