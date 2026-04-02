@@ -11,7 +11,15 @@
     },
     "client_access_code": {
       "type": "string",
-      "description": "Unique code for client portal lookup (no login required)"
+      "description": "Legacy client access code"
+    },
+    "client_code": {
+      "type": "string",
+      "description": "Unique client portal code (random, non-sequential)"
+    },
+    "agent_code": {
+      "type": "string",
+      "description": "Unique agent portal code (random, non-sequential)"
     },
     "property_type": {
       "type": "string",
@@ -304,13 +312,11 @@
     },
     "earnest_money_received": {
       "type": "boolean",
-      "default": false,
-      "description": "Whether earnest money deposit has been received"
+      "default": false
     },
     "earnest_money_received_date": {
       "type": "string",
-      "format": "date",
-      "description": "Date earnest money was received"
+      "format": "date"
     },
     "ctc_target": {
       "type": "string",
@@ -318,8 +324,7 @@
     },
     "agreement_expiration_deadline": {
       "type": "string",
-      "format": "date",
-      "description": "Buyer Agency Agreement expiration date extracted from Section 3"
+      "format": "date"
     },
     "tasks": {
       "type": "array",
@@ -352,7 +357,6 @@
     },
     "phase_notify_settings": {
       "type": "object",
-      "description": "Per-phase auto-notify settings. Keys are phase numbers. Each value: { autoEnabled, notified, notifiedAt }",
       "additionalProperties": {
         "type": "object",
         "properties": {
