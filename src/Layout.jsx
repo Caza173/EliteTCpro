@@ -36,6 +36,7 @@ import { ThemeProvider } from "./components/theme/ThemeContext";
 import ThemeToggle from "./components/theme/ThemeToggle";
 import OfflineBanner from "./components/pwa/OfflineBanner";
 import UserMenuDropdown from "./components/user/UserMenuDropdown";
+import LogoutButton from "./components/auth/LogoutButton";
 import { useCurrentUser as useCurrentUserCtx } from "./lib/CurrentUserContext.jsx";
 
 const TC_NAV = [
