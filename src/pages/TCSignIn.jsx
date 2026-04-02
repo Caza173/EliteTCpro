@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { base44 } from "@/api/base44Client";
 import { Building2 } from "lucide-react";
 import { useCurrentUser } from "@/lib/CurrentUserContext.jsx";
+import { createPageUrl } from "@/utils";
 
 export default function TCSignIn() {
   const { currentUser, isLoading } = useCurrentUser();
@@ -13,7 +14,7 @@ export default function TCSignIn() {
     if (currentUser) {
       const role = currentUser.role;
       if (role === "admin" || role === "owner" || role === "tc" || role === "tc_lead") {
-        navigate("/Dashboard", { replace: true });
+        navigate(createPageUrl("Dashboard"), { replace: true });
       } else if (role === "agent") {
         navigate("/agent/submit-transaction", { replace: true });
       }
@@ -21,7 +22,7 @@ export default function TCSignIn() {
   }, [currentUser, isLoading, navigate]);
 
   const handleSignIn = () => {
-    base44.auth.redirectToLogin("/Dashboard");
+    base44.auth.redirectToLogin(createPageUrl("Dashboard"));
   };
 
   return (
