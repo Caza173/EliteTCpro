@@ -51,7 +51,6 @@ import NotesPanel from "../components/transactions/NotesPanel";
 const TX_TABS = [
   { id: "overview",      label: "Overview",      icon: LayoutDashboard, info: "Phase checklist, tasks, and compliance summary" },
   { id: "issues",        label: "Issues",        icon: AlertTriangle,   info: "Auto-detected issues: missing docs, signatures, deadlines" },
-  { id: "timeline",      label: "Timeline",      icon: GitBranch,       info: "Chronological contract events and activity history" },
   { id: "deadlines",     label: "Deadlines",     icon: Clock,           info: "All key dates — edit inline or sync to Google Calendar" },
   { id: "documents",     label: "Documents",     icon: FolderOpen,      info: "Upload, classify, and manage transaction documents" },
   { id: "compliance",    label: "Compliance",    icon: ShieldCheck,     info: "AI-powered scan for missing signatures and blockers" },
@@ -62,7 +61,6 @@ const LISTING_TABS = [
   { id: "listing_intake", label: "Listing Intake", icon: ClipboardCheck, info: "Property details, pricing, photos, and listing checklist" },
   { id: "overview",      label: "Overview",      icon: LayoutDashboard, info: "Phase checklist, tasks, and compliance summary" },
   { id: "issues",        label: "Issues",        icon: AlertTriangle,   info: "Auto-detected issues: missing docs, signatures, deadlines" },
-  { id: "timeline",      label: "Timeline",      icon: GitBranch,       info: "Chronological contract events and activity history" },
   { id: "deadlines",     label: "Deadlines",     icon: Clock,           info: "All key dates — edit inline or sync to Google Calendar" },
   { id: "documents",     label: "Documents",     icon: FolderOpen,      info: "Upload, classify, and manage transaction documents" },
   { id: "compliance",    label: "Compliance",    icon: ShieldCheck,     info: "AI-powered scan for missing signatures and blockers" },
@@ -894,7 +892,7 @@ export default function TransactionDetail() {
         style={{
           position: "fixed",
           bottom: "24px",
-          left: "80px",
+          right: "24px",
           zIndex: 9999,
           background: "#2563eb",
           color: "#ffffff",
