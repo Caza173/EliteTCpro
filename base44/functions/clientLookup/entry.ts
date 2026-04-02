@@ -1,24 +1,26 @@
-import { createClientFromRequest } from 'npm:@base44/sdk@0.8.23';
+import { createClientFromRequest } from 'npm:@base44/sdk@0.8.20';
 
 Deno.serve(async (req) => {
   try {
     const base44 = createClientFromRequest(req);
-    const { code } = await req.json();
+    const body = await req.json();
+    const code = (body.code || "").trim().toUpperCase();
 
     if (!code) {
       return Response.json({ error: 'Access code is required' }, { status: 400 });
     }
 
-    // Search all transactions for this code using service role (public endpoint)
-    const transactions = await base44.asServiceRole.entities.Transaction.filter({
-      client_access_code: code.toUpperCase().trim()
-    });
+    // Use service role to bypass RLS (same pattern as portalSupport)
+    const allTransactions = await base44.asServiceRole.entities.Transaction.list("-updated_date", 2000);
 
-    if (!transactions || transactions.length === 0) {
-      return Response.json({ error: 'No transaction found for this code.' }, { status: 404 });
+    const tx = allTransactions.find(t => (t.client_access_code || "").trim().toUpperCase() === code);
+
+    if (!tx) {
+      return Response.json({ 
+        error: 'No transaction found for this code.',
+        debug_count: allTransactions.length,
+      }, { status: 404 });
     }
-
-    const tx = transactions[0];
 
     // Return only safe, client-facing fields
     return Response.json({

@@ -429,9 +429,6 @@
     "agent"
   ],
   "rls": {
-    "read": {
-      "data.brokerage_id": "{{user.data.brokerage_id}}"
-    },
     "update": {
       "data.brokerage_id": "{{user.data.brokerage_id}}"
     }
