@@ -1,5 +1,6 @@
 import React from "react";
 import { Link } from "react-router-dom";
+import TransactionStatusChecker from "../components/landing/TransactionStatusChecker";
 import { createPageUrl } from "@/utils";
 import {
   FileText,
@@ -146,6 +147,8 @@ export default function Landing() {
           </div>
         </div>
       </section>
+
+      <TransactionStatusChecker />
 
       {/* ── PROBLEM / TRUST ── */}
       <section className="py-16 md:py-24 bg-white">
