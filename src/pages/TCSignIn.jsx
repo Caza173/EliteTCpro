@@ -21,7 +21,7 @@ export default function TCSignIn() {
   }, [currentUser, isLoading, navigate]);
 
   const handleSignIn = () => {
-    base44.auth.redirectToLogin(window.location.origin + "/Dashboard");
+    base44.auth.redirectToLogin("/Dashboard");
   };
 
   return (
