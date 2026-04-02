@@ -16,16 +16,21 @@ Deno.serve(async (req) => {
     if (event?.entity_id && !transactionId) {
       transactionId = event.entity_id;
     }
+    // Use entity automation data payload if available
+    if (body?.data && !txData) {
+      txData = body.data;
+    }
 
     if (!transactionId) {
       return Response.json({ error: 'transaction_id required' }, { status: 400 });
     }
 
-    // Fetch transaction if not provided
+    // Fetch transaction if not provided, use filter to avoid throwing on missing records
     if (!txData) {
-      txData = await base44.asServiceRole.entities.Transaction.get(transactionId);
+      const results = await base44.asServiceRole.entities.Transaction.filter({ id: transactionId });
+      txData = results[0] || null;
     }
-    if (!txData) return Response.json({ error: 'Transaction not found' }, { status: 404 });
+    if (!txData) return Response.json({ success: true, skipped: true, reason: 'Transaction not found or deleted' }, { status: 200 });
 
     // Fetch finance record
     const financeList = await base44.asServiceRole.entities.TransactionFinance.filter({ transaction_id: transactionId });
