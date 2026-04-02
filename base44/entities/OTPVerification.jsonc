@@ -1,0 +1,29 @@
+{
+  "name": "OTPVerification",
+  "type": "object",
+  "properties": {
+    "email": {
+      "type": "string",
+      "description": "Email address requesting verification"
+    },
+    "code": {
+      "type": "string",
+      "description": "6-digit OTP code"
+    },
+    "expiresAt": {
+      "type": "string",
+      "format": "date-time",
+      "description": "When the OTP expires"
+    },
+    "attempts": {
+      "type": "integer",
+      "default": 0,
+      "description": "Number of failed verification attempts"
+    }
+  },
+  "required": [
+    "email",
+    "code",
+    "expiresAt"
+  ]
+}

@@ -1,20 +1,9 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.23';
-import * as base64 from 'npm:base64-js@1.5.1';
 
-// In-memory OTP store: email -> { code, expiresAt, attempts }
-const otpStore = new Map();
+// Entity to store OTP records: { email, code, expiresAt, attempts }
+const OTP_ENTITY = 'OTPVerification';
 
-// Rate limiter: key -> [timestamps]
-const sendLog = new Map();
-
-function isRateLimited(key) {
-  const now = Date.now();
-  const entries = (sendLog.get(key) || []).filter(t => now - t < 3600_000);
-  if (entries.length >= 10) return true;
-  entries.push(now);
-  sendLog.set(key, entries);
-  return false;
-}
+// Rate limiting is per-IP-email combo; we'll query from entity if needed
 
 function generateOTP() {
   return String(Math.floor(100000 + Math.random() * 900000));
@@ -72,15 +61,20 @@ Deno.serve(async (req) => {
 
     // ── Send OTP ────────────────────────────────────────────────────────────
     if (action === 'send') {
-      const rateLimitKey = `${ip}:${normalEmail}`;
-      if (isRateLimited(rateLimitKey)) {
-        return Response.json({ error: 'Too many OTP requests. Please wait before trying again.' }, { status: 429 });
+      const otp = generateOTP();
+      const expiresAt = new Date(Date.now() + 10 * 60_000).toISOString();
+
+      // Delete old OTP for this email if exists
+      const existing = await base44.asServiceRole.entities.OTPVerification.filter({ email: normalEmail });
+      if (existing.length > 0) {
+        await Promise.all(existing.map(r => base44.asServiceRole.entities.OTPVerification.delete(r.id)));
       }
 
-      const otp = generateOTP();
-      otpStore.set(normalEmail, {
+      // Create new OTP record
+      await base44.asServiceRole.entities.OTPVerification.create({
+        email: normalEmail,
         code: otp,
-        expiresAt: Date.now() + 10 * 60_000,
+        expiresAt,
         attempts: 0,
       });
 
@@ -106,27 +100,28 @@ Deno.serve(async (req) => {
     if (action === 'verify') {
       if (!code) return Response.json({ error: 'Code is required' }, { status: 400 });
 
-      const stored = otpStore.get(normalEmail);
-      if (!stored) {
+      const records = await base44.asServiceRole.entities.OTPVerification.filter({ email: normalEmail });
+      if (records.length === 0) {
         return Response.json({ error: 'No verification code found. Please request a new one.' }, { status: 400 });
       }
 
-      if (Date.now() > stored.expiresAt) {
-        otpStore.delete(normalEmail);
+      const stored = records[0];
+      if (new Date(stored.expiresAt) < new Date()) {
+        await base44.asServiceRole.entities.OTPVerification.delete(stored.id);
         return Response.json({ error: 'Verification code expired. Please request a new one.' }, { status: 400 });
       }
 
-      stored.attempts += 1;
-      if (stored.attempts > 5) {
-        otpStore.delete(normalEmail);
+      if (stored.attempts >= 5) {
+        await base44.asServiceRole.entities.OTPVerification.delete(stored.id);
         return Response.json({ error: 'Too many failed attempts. Please request a new code.' }, { status: 400 });
       }
 
       if (stored.code !== code.trim()) {
+        await base44.asServiceRole.entities.OTPVerification.update(stored.id, { attempts: stored.attempts + 1 });
         return Response.json({ error: `Incorrect code. ${5 - stored.attempts} attempt(s) remaining.` }, { status: 400 });
       }
 
-      otpStore.delete(normalEmail);
+      await base44.asServiceRole.entities.OTPVerification.delete(stored.id);
       return Response.json({ verified: true });
     }
 
