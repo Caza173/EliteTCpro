@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
 import { Button } from "@/components/ui/button";
-import { X, Send, Loader2, Plus, Trash2, Paperclip, FileText, Check } from "lucide-react";
+import { X, Send, Loader2, Plus, Trash2, Paperclip, FileText, Check, Eye } from "lucide-react";
 import { toast } from "sonner";
 
 /** Build all known parties from a transaction object */
@@ -105,6 +105,7 @@ export default function EmailComposerModal({
   const [showHtmlPreview, setShowHtmlPreview] = useState(!!defaultHtmlBody);
   const [sending, setSending] = useState(false);
   const [selectedDocIds, setSelectedDocIds] = useState(preselectedDocId ? [preselectedDocId] : []);
+  const [previewOpen, setPreviewOpen] = useState(false);
 
   // Sync preselected doc when it changes (e.g. opened from doc row)
   useEffect(() => {
@@ -342,12 +343,67 @@ export default function EmailComposerModal({
         </div>
 
         {/* Footer */}
-        <div className="px-6 py-4 border-t flex justify-end gap-2">
-          <Button variant="outline" onClick={onClose} disabled={sending}>Cancel</Button>
-          <Button onClick={handleSend} disabled={sending} className="bg-blue-600 hover:bg-blue-700 text-white">
-            {sending ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Sending…</> : <><Send className="w-4 h-4 mr-2" /> Send Email</>}
+        <div className="px-6 py-4 border-t flex justify-between items-center gap-2">
+          <Button variant="outline" size="sm" onClick={() => setPreviewOpen(true)} className="text-gray-600 gap-1.5">
+            <Eye className="w-4 h-4" /> Preview Email
           </Button>
+          <div className="flex gap-2">
+            <Button variant="outline" onClick={onClose} disabled={sending}>Cancel</Button>
+            <Button onClick={handleSend} disabled={sending} className="bg-blue-600 hover:bg-blue-700 text-white">
+              {sending ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Sending…</> : <><Send className="w-4 h-4 mr-2" /> Send Email</>}
+            </Button>
+          </div>
         </div>
+
+        {/* Email Preview Modal */}
+        {previewOpen && (
+          <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/50">
+            <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[80vh] flex flex-col">
+              <div className="flex items-center justify-between px-6 py-4 border-b">
+                <h3 className="font-semibold text-gray-900 flex items-center gap-2">
+                  <Eye className="w-4 h-4 text-gray-500" /> Email Preview
+                </h3>
+                <button onClick={() => setPreviewOpen(false)} className="p-1 rounded hover:bg-gray-100">
+                  <X className="w-4 h-4 text-gray-500" />
+                </button>
+              </div>
+              <div className="flex-1 overflow-y-auto px-6 py-4 space-y-3 text-sm">
+                <div className="bg-gray-50 rounded-lg p-3 space-y-1.5">
+                  <p><span className="font-semibold text-gray-500 w-16 inline-block">To:</span> <span className="text-gray-800">{[...selectedPartyEmails, ...customRecipients.filter(Boolean)].join(", ") || "—"}</span></p>
+                  {[...(tcEmail ? [tcEmail] : []), ...additionalCCs.filter(Boolean)].length > 0 && (
+                    <p><span className="font-semibold text-gray-500 w-16 inline-block">CC:</span> <span className="text-gray-800">{[...(tcEmail ? [tcEmail] : []), ...additionalCCs.filter(Boolean)].join(", ")}</span></p>
+                  )}
+                  <p><span className="font-semibold text-gray-500 w-16 inline-block">Subject:</span> <span className="text-gray-800">{subject || "—"}</span></p>
+                </div>
+                <div className="border border-gray-200 rounded-lg p-4">
+                  {htmlBody ? (
+                    <div dangerouslySetInnerHTML={{ __html: htmlBody }} className="prose prose-sm max-w-none" />
+                  ) : (
+                    <pre className="whitespace-pre-wrap font-sans text-sm text-gray-700">{body}</pre>
+                  )}
+                </div>
+                {selectedDocIds.length > 0 && (
+                  <div>
+                    <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">Attachments</p>
+                    <div className="space-y-1">
+                      {documents.filter(d => selectedDocIds.includes(d.id)).map(d => (
+                        <div key={d.id} className="flex items-center gap-2 text-xs text-gray-600">
+                          <FileText className="w-3.5 h-3.5 text-gray-400" /> {d.file_name || "Document"}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+              <div className="px-6 py-4 border-t flex justify-end gap-2">
+                <Button variant="outline" onClick={() => setPreviewOpen(false)}>Close</Button>
+                <Button onClick={() => { setPreviewOpen(false); handleSend(); }} disabled={sending} className="bg-blue-600 hover:bg-blue-700 text-white">
+                  <Send className="w-4 h-4 mr-2" /> Send Now
+                </Button>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
