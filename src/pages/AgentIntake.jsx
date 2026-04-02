@@ -8,8 +8,8 @@ import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { Separator } from "@/components/ui/separator";
 import {
-  Loader2, Send, CheckCircle, FileSearch, Link2, Copy, Plus, X, Upload,
-  FileText, Zap, Home, FileSignature, UserCheck, ShieldCheck, Mail, Phone, Eye,
+  Loader2, Send, CheckCircle, FileSearch, Plus, X, Upload,
+  FileText, Zap, Home, FileSignature, UserCheck, ShieldCheck, Mail, Phone,
   ClipboardList, AlertTriangle,
 } from "lucide-react";
 import { generateSmartTasks } from "../components/transactions/defaultTasks";
@@ -71,6 +71,7 @@ const initialBuyerAgency = {
 // ── OTP Verification Component ────────────────────────────────────────────────
 
 function OTPVerification({ email, phone, onVerified }) {
+  const [channel, setChannel] = useState("email"); // "email" | "sms"
   const [sending, setSending] = useState(false);
   const [sent, setSent] = useState(false);
   const [code, setCode] = useState("");
@@ -79,13 +80,13 @@ function OTPVerification({ email, phone, onVerified }) {
   const [cooldown, setCooldown] = useState(0);
 
   const sendOTP = async () => {
-    if (!email || !phone) { setError("Email and phone are required."); return; }
+    if (!email) { setError("Email is required."); return; }
+    if (channel === "sms" && !phone?.trim()) { setError("Phone number is required for SMS verification."); return; }
     setSending(true); setError("");
     try {
-      const res = await base44.functions.invoke("sendOTP", { action: "send", email, phone });
+      const res = await base44.functions.invoke("sendOTP", { action: "send", email, phone, channel });
       if (res.data?.error) throw new Error(res.data.error);
       setSent(true);
-      // 60s cooldown before resend
       setCooldown(60);
       const iv = setInterval(() => setCooldown(c => { if (c <= 1) { clearInterval(iv); return 0; } return c - 1; }), 1000);
     } catch (e) { setError(e.message || "Failed to send code."); }
@@ -93,7 +94,7 @@ function OTPVerification({ email, phone, onVerified }) {
   };
 
   const verifyOTP = async () => {
-    if (!code.trim()) { setError("Enter the code from your email."); return; }
+    if (!code.trim()) { setError("Enter the 6-digit code."); return; }
     setVerifying(true); setError("");
     try {
       const res = await base44.functions.invoke("sendOTP", { action: "verify", email, code });
@@ -103,17 +104,33 @@ function OTPVerification({ email, phone, onVerified }) {
     setVerifying(false);
   };
 
+  const handleChannelChange = (c) => { setChannel(c); setSent(false); setCode(""); setError(""); };
+
   return (
     <div className="space-y-4">
+      {/* Channel selector */}
+      <div className="flex gap-1 p-1 rounded-xl bg-gray-100 w-fit">
+        <button type="button" onClick={() => handleChannelChange("email")}
+          className={`flex items-center gap-1.5 px-4 py-1.5 rounded-lg text-sm font-medium transition-all ${channel === "email" ? "bg-white shadow text-gray-900" : "text-gray-500 hover:text-gray-700"}`}>
+          <Mail className="w-3.5 h-3.5" /> Email
+        </button>
+        <button type="button" onClick={() => handleChannelChange("sms")}
+          className={`flex items-center gap-1.5 px-4 py-1.5 rounded-lg text-sm font-medium transition-all ${channel === "sms" ? "bg-white shadow text-gray-900" : "text-gray-500 hover:text-gray-700"}`}>
+          <Phone className="w-3.5 h-3.5" /> SMS
+        </button>
+      </div>
+
       <div className="flex items-center gap-2 p-3 rounded-xl bg-blue-50 border border-blue-100 text-sm text-blue-700">
         <ShieldCheck className="w-4 h-4 flex-shrink-0" />
-        We'll send a 6-digit verification code to <strong>{email}</strong>
+        {channel === "sms"
+          ? <>We'll send a code to <strong>{phone || "your phone"}</strong></>
+          : <>We'll send a code to <strong>{email}</strong></>}
       </div>
 
       {!sent ? (
-        <Button onClick={sendOTP} disabled={sending || !email || !phone} className="w-full bg-blue-600 hover:bg-blue-700 text-white gap-2">
-          {sending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Mail className="w-4 h-4" />}
-          Send Verification Code
+        <Button onClick={sendOTP} disabled={sending || !email || (channel === "sms" && !phone)} className="w-full bg-blue-600 hover:bg-blue-700 text-white gap-2">
+          {sending ? <Loader2 className="w-4 h-4 animate-spin" /> : channel === "sms" ? <Phone className="w-4 h-4" /> : <Mail className="w-4 h-4" />}
+          Send Code via {channel === "sms" ? "SMS" : "Email"}
         </Button>
       ) : (
         <div className="space-y-3">
@@ -380,9 +397,7 @@ export default function AgentIntake() {
     setSubmitting(false);
   };
 
-  const intakeUrl = `${window.location.origin}${window.location.pathname}#/AgentIntake`;
-  const [copied, setCopied] = useState(false);
-  const handleCopy = () => { navigator.clipboard.writeText(intakeUrl); setCopied(true); setTimeout(() => setCopied(false), 2000); };
+
 
   // ── Success ───────────────────────────────────────────────────────────────
 
@@ -452,16 +467,7 @@ export default function AgentIntake() {
               <p className="text-sm text-gray-500 mt-0.5">What are you creating today?</p>
             </div>
 
-            <div className="flex items-center gap-3 px-4 py-3 rounded-xl bg-indigo-50 border border-indigo-100">
-              <Link2 className="w-4 h-4 text-indigo-500 flex-shrink-0" />
-              <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium text-indigo-800">Share intake form</p>
-                <p className="text-xs text-indigo-500 truncate mt-0.5">{intakeUrl}</p>
-              </div>
-              <Button size="sm" variant="outline" className="border-indigo-200 text-indigo-700 hover:bg-indigo-100 flex-shrink-0 h-8 text-xs" onClick={handleCopy}>
-                <Copy className="w-3 h-3 mr-1" />{copied ? "Copied!" : "Copy Link"}
-              </Button>
-            </div>
+
 
             <div className="grid grid-cols-1 gap-3">
               {DEAL_TYPES.map(({ id, label, desc, icon: Icon, color, bg }) => (
