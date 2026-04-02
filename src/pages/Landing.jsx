@@ -101,12 +101,12 @@ export default function Landing() {
             <span className="text-base font-bold text-slate-900 tracking-tight">EliteTC</span>
           </div>
           <div className="flex items-center gap-3">
-             <button
-               onClick={() => base44.auth.redirectToLogin()}
+             <a
+               href="/tc-login"
                className="hidden sm:inline-flex text-sm font-medium text-slate-600 hover:text-slate-900 transition-colors"
              >
                Sign In
-             </button>
+             </a>
              <Link
                to="/AgentIntake"
                className="inline-flex items-center px-4 py-2 rounded-lg bg-slate-900 text-white text-sm font-semibold hover:bg-slate-800 transition-colors"
@@ -326,12 +326,12 @@ export default function Landing() {
           <p className="text-sm text-slate-400 text-center">
             Built for real estate professionals who don't miss details.
           </p>
-          <button
-            onClick={() => base44.auth.redirectToLogin()}
+          <a
+            href="/tc-login"
             className="text-sm text-slate-500 hover:text-slate-900 transition-colors font-medium"
           >
             Sign In →
-          </button>
+          </a>
         </div>
       </footer>
 

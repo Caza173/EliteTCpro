@@ -22,7 +22,7 @@ export default function TCSignIn() {
   }, [currentUser, isLoading, navigate]);
 
   const handleSignIn = () => {
-    base44.auth.redirectToLogin(createPageUrl("Dashboard"));
+    base44.auth.redirectToLogin(window.location.origin + createPageUrl("Dashboard"));
   };
 
   return (
