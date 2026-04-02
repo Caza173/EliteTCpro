@@ -629,7 +629,7 @@ export default function TransactionDetail() {
               <Trash2 className="w-3.5 h-3.5" />
             </Button>
             <QuickFeedbackButton defaultType="bug" label="Report" variant="badge"
-              className="border-gray-200 text-gray-500 hover:border-gray-300 h-8"
+              className="border-orange-300 text-orange-500 hover:border-orange-400 hover:bg-orange-50 h-8"
               context={{ transaction_id: transaction?.id, transaction_address: transaction?.address, route_name: "Transaction Page" }} />
           </div>
 
