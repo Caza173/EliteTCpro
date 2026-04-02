@@ -9,26 +9,44 @@ function generateOTP() {
   return String(Math.floor(100000 + Math.random() * 900000));
 }
 
-function buildMimeEmail({ to, subject, htmlBody, fromName }) {
+function sanitizeCode(code) {
+  return String(code)
+    .normalize('NFKC')
+    .replace(/[^A-Z0-9]/gi, '');
+}
+
+function buildMimeEmail({ to, subject, htmlBody, plainTextBody, fromName }) {
+  const boundary = 'boundary_' + Date.now();
   const msg = [
-    `From: ${fromName} <me>`,
+    `From: ${fromName} <noreply@elitetc.app>`,
     `To: ${to}`,
     `Subject: ${subject}`,
     `MIME-Version: 1.0`,
+    `Content-Type: multipart/alternative; boundary="${boundary}"`,
+    ``,
+    `--${boundary}`,
+    `Content-Type: text/plain; charset=UTF-8`,
+    `Content-Transfer-Encoding: quoted-printable`,
+    ``,
+    plainTextBody,
+    ``,
+    `--${boundary}`,
     `Content-Type: text/html; charset=UTF-8`,
+    `Content-Transfer-Encoding: quoted-printable`,
     ``,
     htmlBody,
+    ``,
+    `--${boundary}--`,
   ].join('\r\n');
-  // base64url encode
-  return btoa(unescape(encodeURIComponent(msg)))
-    .replace(/\+/g, '-')
-    .replace(/\//g, '_')
-    .replace(/=+$/, '');
+  
+  // Proper base64url encoding for RFC 4648
+  const base64 = btoa(unescape(encodeURIComponent(msg)));
+  return base64.replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
 }
 
-async function sendViaGmail(base44, { to, subject, htmlBody }) {
+async function sendViaGmail(base44, { to, subject, plainTextBody, htmlBody }) {
   const { accessToken } = await base44.asServiceRole.connectors.getConnection('gmail');
-  const raw = buildMimeEmail({ to, subject, htmlBody, fromName: 'EliteTC Verification' });
+  const raw = buildMimeEmail({ to, subject, plainTextBody, htmlBody, fromName: 'EliteTC Verification' });
 
   const res = await fetch('https://gmail.googleapis.com/gmail/v1/users/me/messages/send', {
     method: 'POST',
@@ -78,19 +96,27 @@ Deno.serve(async (req) => {
         attempts: 0,
       });
 
+      const cleanCode = sanitizeCode(otp);
+      
+      const plainTextBody = `Your verification code: ${cleanCode}\n\nThis code expires in 10 minutes.\n\nIf you did not request this code, please ignore this email.`;
+      
+      const htmlBody = `<html><body style="font-family:Arial,sans-serif;margin:0;padding:0;">
+<div style="max-width:480px;margin:0 auto;padding:24px;">
+<h2 style="color:#0f172a;margin:0 0 16px;">Verification Code</h2>
+<p style="color:#475569;font-size:14px;margin:0 0 24px;">Use the code below to verify your email and complete your deal submission. It expires in 10 minutes.</p>
+<div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;padding:20px;text-align:center;margin-bottom:24px;">
+<p style="margin:0 0 12px;color:#475569;font-size:12px;">Your code:</p>
+<p style="font-size:32px;font-weight:700;letter-spacing:4px;color:#2563eb;margin:0;font-family:monospace;">${cleanCode}</p>
+</div>
+<p style="color:#94a3b8;font-size:12px;margin:0;">If you did not request this code, please ignore this email.</p>
+</div>
+</body></html>`;
+      
       await sendViaGmail(base44, {
         to: normalEmail,
         subject: 'Your verification code — EliteTC Deal Intake',
-        htmlBody: `
-          <div style="font-family:-apple-system,sans-serif;max-width:480px;margin:0 auto;padding:24px;">
-            <h2 style="color:#0f172a;margin:0 0 8px;">Verification Code</h2>
-            <p style="color:#475569;font-size:14px;margin:0 0 24px;">Use the code below to verify your email and complete your deal submission. It expires in 10 minutes.</p>
-            <div style="background:#f8fafc;border:2px solid #e2e8f0;border-radius:12px;padding:20px;text-align:center;margin-bottom:24px;">
-              <span style="font-size:36px;font-weight:700;letter-spacing:8px;color:#2563eb;">${otp}</span>
-            </div>
-            <p style="color:#94a3b8;font-size:12px;margin:0;">If you did not request this code, please ignore this email.</p>
-          </div>
-        `,
+        plainTextBody,
+        htmlBody,
       });
 
       return Response.json({ sent: true });
