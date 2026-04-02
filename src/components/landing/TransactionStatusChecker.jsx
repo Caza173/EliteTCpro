@@ -54,7 +54,7 @@ function DeadlineRow({ label, date }) {
 }
 
 export default function TransactionStatusChecker() {
-  const [query, setQuery] = useState("");
+  const [code, setCode] = useState("");
   const [contact, setContact] = useState("");
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState(null);
@@ -62,32 +62,29 @@ export default function TransactionStatusChecker() {
   const [requesting, setRequesting] = useState(false);
   const [requestSent, setRequestSent] = useState(false);
 
+  const CODE_PATTERN = /^TC-\d{4}-[A-Z0-9]{4}$/i;
+
   const handleCheck = async (e) => {
     e.preventDefault();
-    if (!query.trim()) return;
+    if (!code.trim()) return;
+
+    if (!CODE_PATTERN.test(code.trim())) {
+      setError("invalid_format");
+      setResult(null);
+      return;
+    }
+
     setLoading(true);
     setError("");
     setResult(null);
     setRequestSent(false);
 
     try {
-      // Search by address OR transaction ID
-      const [byAddress, byId] = await Promise.all([
-        base44.entities.Transaction.filter({ address: query.trim() }),
-        query.length > 10
-          ? base44.entities.Transaction.filter({ id: query.trim() })
-          : Promise.resolve([]),
-      ]);
-
-      let matches = [...byAddress];
-      // Also do partial address search
-      if (matches.length === 0) {
-        const all = await base44.entities.Transaction.list("-updated_date", 500);
-        matches = all.filter(tx =>
-          tx.address?.toLowerCase().includes(query.trim().toLowerCase())
-        );
-      }
-      if (matches.length === 0) matches = byId;
+      // Search by client_access_code
+      const all = await base44.entities.Transaction.list("-updated_date", 500);
+      const matches = all.filter(tx =>
+        tx.client_access_code?.toLowerCase() === code.trim().toLowerCase()
+      );
 
       if (matches.length === 0) {
         setError("no_transaction");
@@ -182,7 +179,7 @@ export default function TransactionStatusChecker() {
               </div>
               <h2 className="text-xl font-bold text-white">Check Your Transaction Status</h2>
             </div>
-            <p className="text-slate-400 text-sm ml-12">Enter your property address or transaction ID to see real-time status — no login required.</p>
+            <p className="text-slate-400 text-sm ml-12">Enter your transaction code to see real-time status — no login required.</p>
           </div>
 
           {/* Search Form */}
@@ -191,10 +188,10 @@ export default function TransactionStatusChecker() {
               <div className="flex-1 relative">
                 <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
                 <input
-                  value={query}
-                  onChange={e => setQuery(e.target.value)}
-                  placeholder="Property address or Transaction ID…"
-                  className="w-full pl-10 pr-4 h-11 rounded-xl border border-slate-200 text-sm bg-slate-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                  value={code}
+                  onChange={e => { setCode(e.target.value.toUpperCase()); setError(""); }}
+                  placeholder="Enter your transaction code (e.g. TC-2026-A7F3)"
+                  className={`w-full pl-10 pr-4 h-11 rounded-xl border text-sm bg-slate-50 focus:bg-white focus:outline-none focus:ring-2 focus:border-transparent transition-all ${error === "invalid_format" ? "border-red-300 focus:ring-red-400" : "border-slate-200 focus:ring-blue-500"}`}
                 />
               </div>
               <div className="sm:w-64 relative">
@@ -208,7 +205,7 @@ export default function TransactionStatusChecker() {
               </div>
               <button
                 type="submit"
-                disabled={loading || !query.trim()}
+                disabled={loading || !code.trim()}
                 className="h-11 px-6 rounded-xl bg-blue-600 text-white text-sm font-semibold hover:bg-blue-700 active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed transition-all flex items-center gap-2 whitespace-nowrap"
               >
                 {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <ChevronRight className="w-4 h-4" />}
@@ -218,6 +215,16 @@ export default function TransactionStatusChecker() {
           </div>
 
           {/* Error States */}
+          {error === "invalid_format" && (
+            <div className="px-8 py-6 text-center">
+              <div className="w-12 h-12 rounded-full bg-red-50 flex items-center justify-center mx-auto mb-3">
+                <AlertTriangle className="w-6 h-6 text-red-400" />
+              </div>
+              <p className="font-semibold text-slate-700 mb-1">Invalid Code Format</p>
+              <p className="text-sm text-slate-400">Please enter a valid transaction code in the format <span className="font-mono font-semibold text-slate-600">TC-YYYY-XXXX</span> (e.g. TC-2026-A7F3).</p>
+            </div>
+          )}
+
           {error === "no_transaction" && (
             <div className="px-8 py-8 text-center">
               <div className="w-12 h-12 rounded-full bg-slate-100 flex items-center justify-center mx-auto mb-3">
