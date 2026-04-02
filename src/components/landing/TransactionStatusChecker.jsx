@@ -80,19 +80,15 @@ export default function TransactionStatusChecker() {
     setRequestSent(false);
 
     try {
-      // Search by client_access_code
-      const all = await base44.entities.Transaction.list("-updated_date", 500);
-      const matches = all.filter(tx =>
-        tx.client_access_code?.toLowerCase() === code.trim().toLowerCase()
-      );
+      // Use backend function (works without auth)
+      const res = await base44.functions.invoke("clientLookup", { code: code.trim() });
+      const tx = res.data;
 
-      if (matches.length === 0) {
+      if (!tx || tx.error) {
         setError("no_transaction");
         setLoading(false);
         return;
       }
-
-      const tx = matches[0];
 
       // Optional contact verification
       if (contact.trim()) {
@@ -139,8 +135,13 @@ export default function TransactionStatusChecker() {
         last_activity_at: tx.last_activity_at || tx.updated_date,
         transaction_id: tx.id,
       });
-    } catch {
-      setError("no_transaction");
+    } catch (err) {
+      const msg = err?.response?.data?.error || err?.message || "";
+      if (msg.toLowerCase().includes("not found") || err?.response?.status === 404) {
+        setError("no_transaction");
+      } else {
+        setError("no_transaction");
+      }
     }
     setLoading(false);
   };

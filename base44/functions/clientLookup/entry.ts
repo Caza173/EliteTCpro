@@ -36,6 +36,13 @@ Deno.serve(async (req) => {
       earnest_money_deadline: tx.earnest_money_deadline,
       contract_date: tx.contract_date,
       is_cash_transaction: tx.is_cash_transaction,
+      risk_level: tx.risk_level,
+      health_score: tx.health_score,
+      last_activity_at: tx.last_activity_at || tx.updated_date,
+      agent_email: tx.agent_email,
+      client_email: tx.client_email,
+      client_emails: tx.client_emails || [],
+      client_phone: tx.client_phone,
     });
   } catch (error) {
     return Response.json({ error: error.message }, { status: 500 });
