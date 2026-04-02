@@ -1,5 +1,6 @@
 import React from "react";
 import { Link } from "react-router-dom";
+import { base44 } from "@/api/base44Client";
 import TransactionStatusChecker from "../components/landing/TransactionStatusChecker";
 import { createPageUrl } from "@/utils";
 import {
@@ -100,19 +101,19 @@ export default function Landing() {
             <span className="text-base font-bold text-slate-900 tracking-tight">EliteTC</span>
           </div>
           <div className="flex items-center gap-3">
-            <Link
-              to="/AgentIntake"
-              className="hidden sm:inline-flex text-sm font-medium text-slate-600 hover:text-slate-900 transition-colors"
-            >
-              Sign In
-            </Link>
-            <Link
-              to="/AgentIntake"
-              className="inline-flex items-center px-4 py-2 rounded-lg bg-slate-900 text-white text-sm font-semibold hover:bg-slate-800 transition-colors"
-            >
-              Start a Transaction
-            </Link>
-          </div>
+             <button
+               onClick={() => base44.auth.redirectToLogin()}
+               className="hidden sm:inline-flex text-sm font-medium text-slate-600 hover:text-slate-900 transition-colors"
+             >
+               Sign In
+             </button>
+             <Link
+               to="/AgentIntake"
+               className="inline-flex items-center px-4 py-2 rounded-lg bg-slate-900 text-white text-sm font-semibold hover:bg-slate-800 transition-colors"
+             >
+               Start a Transaction
+             </Link>
+           </div>
         </div>
       </nav>
 
@@ -325,12 +326,12 @@ export default function Landing() {
           <p className="text-sm text-slate-400 text-center">
             Built for real estate professionals who don't miss details.
           </p>
-          <Link
-            to="/AgentIntake"
+          <button
+            onClick={() => base44.auth.redirectToLogin()}
             className="text-sm text-slate-500 hover:text-slate-900 transition-colors font-medium"
           >
             Sign In →
-          </Link>
+          </button>
         </div>
       </footer>
 
