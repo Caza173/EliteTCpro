@@ -437,6 +437,28 @@ export default function TransactionDetail() {
     });
   };
 
+  // ── Deadline → task keyword mapping ─────────────────────────────────────────
+  // If ALL matched tasks are completed, the deadline is considered resolved even if past due.
+  const DEADLINE_TASK_KEYWORDS = {
+    earnest_money_deadline: ["earnest money", "deposit received", "emd"],
+    inspection_deadline:    ["inspection scheduled", "inspection completed", "inspection report", "inspection"],
+    due_diligence_deadline: ["due diligence", "contingency removal", "review contingency"],
+    appraisal_deadline:     ["appraisal", "appraisal ordered", "appraisal received"],
+    financing_deadline:     ["financing", "loan commitment", "mortgage commitment", "clear to close"],
+    closing_date:           ["closing", "transfer of title"],
+  };
+
+  // Returns true if there are linked tasks AND all of them are completed
+  const isDeadlineResolvedByTasks = (deadlineKey) => {
+    const keywords = DEADLINE_TASK_KEYWORDS[deadlineKey] || [];
+    if (keywords.length === 0) return false;
+    const linked = txTasks.filter(t =>
+      keywords.some(kw => t.title?.toLowerCase().includes(kw.toLowerCase()))
+    );
+    if (linked.length === 0) return false; // no linked tasks → fall back to date logic
+    return linked.every(t => t.is_completed);
+  };
+
   if (isLoading) {
     return (
       <div className="max-w-5xl mx-auto space-y-6 w-full min-w-0">
@@ -458,15 +480,15 @@ export default function TransactionDetail() {
     );
   }
 
-  // Compute attention items
+  // Compute attention items — task-aware overdue logic
   const now = new Date();
   const attentionItems = [];
   const deadlineFields = [
-    { key: "inspection_deadline", label: "Inspection" },
+    { key: "inspection_deadline",    label: "Inspection" },
     { key: "due_diligence_deadline", label: "Due Diligence" },
-    { key: "financing_deadline", label: "Financing" },
-    { key: "appraisal_deadline", label: "Appraisal" },
-    { key: "closing_date", label: "Closing" },
+    { key: "financing_deadline",     label: "Financing" },
+    { key: "appraisal_deadline",     label: "Appraisal" },
+    { key: "closing_date",           label: "Closing" },
     { key: "earnest_money_deadline", label: "Earnest Money" },
   ];
   deadlineFields.forEach(({ key, label }) => {
@@ -474,8 +496,14 @@ export default function TransactionDetail() {
     if (!d) return;
     const date = new Date(d);
     const diffHrs = (date - now) / 36e5;
-    if (diffHrs < 0) attentionItems.push({ type: "deadline", label: `${label} OVERDUE`, tab: "deadlines", urgent: true });
-    else if (diffHrs < 48) attentionItems.push({ type: "deadline", label: `${label} in ${Math.round(diffHrs)}h`, tab: "deadlines", urgent: diffHrs < 24 });
+    if (diffHrs < 0) {
+      // Only show OVERDUE if not resolved by task completion
+      if (!isDeadlineResolvedByTasks(key)) {
+        attentionItems.push({ type: "deadline", label: `${label} OVERDUE`, tab: "deadlines", urgent: true });
+      }
+    } else if (diffHrs < 48) {
+      attentionItems.push({ type: "deadline", label: `${label} in ${Math.round(diffHrs)}h`, tab: "deadlines", urgent: diffHrs < 24 });
+    }
   });
   const overdueTasks = txTasks.filter(t => !t.is_completed && t.due_date && new Date(t.due_date) < now);
   if (overdueTasks.length > 0) attentionItems.push({ type: "task", label: `${overdueTasks.length} overdue task${overdueTasks.length > 1 ? "s" : ""}`, tab: "overview", urgent: true });
@@ -483,7 +511,7 @@ export default function TransactionDetail() {
   const tabs = transaction.transaction_type === "seller" ? LISTING_TABS : TX_TABS;
 
   return (
-    <div className="flex flex-col -mx-4 -mb-4 lg:-mx-5 lg:-mb-5">
+    <div className="flex flex-col -mx-4 -mb-4 lg:-mx-5 lg:-mb-5" style={{ height: "calc(100vh - 48px)", overflow: "hidden" }}>
 
       <EmailComposerModal
         open={emailModalOpen}
@@ -531,8 +559,8 @@ export default function TransactionDetail() {
         </div>
       )}
 
-      {/* ── TOP HEADER BAR ── */}
-      <div className="flex-shrink-0 px-5 pt-4 pb-3 border-b" style={{ borderColor: "var(--card-border)", background: "var(--bg-secondary)" }}>
+      {/* ── TOP HEADER BAR — sticky ── */}
+      <div className="flex-shrink-0 px-5 pt-4 pb-3 border-b" style={{ borderColor: "var(--card-border)", background: "var(--bg-secondary)", position: "sticky", top: 0, zIndex: 20 }}>
         {/* Row 1: Back + address + badges */}
         <div className="flex flex-wrap items-center gap-3 mb-2">
           <Link to={createPageUrl(
@@ -632,10 +660,10 @@ export default function TransactionDetail() {
       </div>
 
       {/* ── MAIN 2-COLUMN BODY ── */}
-      <div className="flex flex-col lg:flex-row lg:min-h-0 lg:overflow-hidden lg:flex-1">
+      <div className="flex flex-col lg:flex-row flex-1 min-h-0 overflow-hidden">
 
         {/* LEFT COLUMN — full on mobile, 70% on desktop */}
-        <div className="flex-1 min-w-0 p-4 lg:p-5 space-y-4 lg:overflow-y-auto">
+        <div className="flex-1 min-w-0 p-4 lg:p-5 space-y-4 overflow-y-auto">
 
           {/* Contacts — collapsible */}
           <div className="rounded-xl border" style={{ background: "var(--card-bg)", borderColor: "var(--card-border)" }}>
