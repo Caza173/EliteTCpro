@@ -111,10 +111,6 @@ export default function Layout({ children, currentPageName }) {
 
   useEffect(() => {
     if (currentUser === undefined) return;
-    if (currentUser !== null && currentPageName === "Landing") {
-      navigate(createPageUrl("Dashboard"), { replace: true });
-      return;
-    }
     // Enforce profile setup for logged-in users who haven't completed it
     if (currentUser !== null && currentUser.profile_completed === false && currentPageName !== "SetupProfile") {
       navigate("/SetupProfile", { replace: true });
@@ -291,19 +287,7 @@ export default function Layout({ children, currentPageName }) {
                 </div>
               </div>
             )}
-            <button
-              onClick={() => base44.auth.logout()}
-              title={sidebarCollapsed ? "Sign Out" : undefined}
-              className={`w-full flex items-center gap-2 px-2.5 py-2 rounded-lg text-xs font-medium transition-colors ${
-                sidebarCollapsed ? "justify-center" : ""
-              }`}
-              style={{ color: "var(--sidebar-text)" }}
-              onMouseEnter={e => { e.currentTarget.style.color = "#EF4444"; e.currentTarget.style.backgroundColor = "rgba(239,68,68,0.08)"; }}
-              onMouseLeave={e => { e.currentTarget.style.color = "var(--sidebar-text)"; e.currentTarget.style.backgroundColor = ""; }}
-            >
-              <LogOut className="w-4 h-4 flex-shrink-0" />
-              {!sidebarCollapsed && "Sign Out"}
-            </button>
+            <LogoutButton sidebarCollapsed={sidebarCollapsed} />
           </div>
         </aside>
 

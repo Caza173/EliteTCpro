@@ -2,24 +2,24 @@ import React, { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { base44 } from "@/api/base44Client";
 import { Building2 } from "lucide-react";
-import { useCurrentUser } from "@/lib/CurrentUserContext.jsx";
+import { useAuth } from "@/lib/AuthContext";
 import { createPageUrl } from "@/utils";
 
 export default function TCSignIn() {
-  const { currentUser, isLoading } = useCurrentUser();
+  const { user, isLoadingAuth } = useAuth();
   const navigate = useNavigate();
 
   useEffect(() => {
-    if (isLoading) return;
-    if (currentUser) {
-      const role = currentUser.role;
+    if (isLoadingAuth) return;
+    if (user) {
+      const role = user.role;
       if (role === "admin" || role === "owner" || role === "tc" || role === "tc_lead") {
         navigate(createPageUrl("Dashboard"), { replace: true });
       } else if (role === "agent") {
         navigate("/agent/submit-transaction", { replace: true });
       }
     }
-  }, [currentUser, isLoading, navigate]);
+  }, [user, isLoadingAuth, navigate]);
 
   const handleSignIn = () => {
     base44.auth.redirectToLogin(window.location.origin + createPageUrl("Dashboard"));

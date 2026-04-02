@@ -27,6 +27,7 @@ import { AuthProvider, useAuth } from '@/lib/AuthContext';
 import { CurrentUserProvider } from '@/lib/CurrentUserContext.jsx';
 import { PWAProvider } from '@/lib/PWAContext.jsx';
 import UserNotRegisteredError from '@/components/UserNotRegisteredError';
+import RequireAuth from '@/components/auth/RequireAuth';
 
 const { Pages, Layout, mainPage } = pagesConfig;
 const mainPageKey = mainPage ?? Object.keys(Pages)[0];
@@ -60,70 +61,98 @@ const AuthenticatedApp = () => {
     <Routes>
       <Route path="/" element={<Landing />} />
       <Route path="/Landing" element={<Landing />} />
-      <Route path="/SetupProfile" element={<SetupProfile />} />
+      <Route path="/SetupProfile" element={
+        <RequireAuth>
+          <LayoutWrapper currentPageName="SetupProfile">
+            <SetupProfile />
+          </LayoutWrapper>
+        </RequireAuth>
+      } />
       {Object.entries(Pages).map(([path, Page]) => (
         <Route
           key={path}
           path={`/${path}`}
           element={
-            <LayoutWrapper currentPageName={path}>
-              <Page />
-            </LayoutWrapper>
+            <RequireAuth>
+              <LayoutWrapper currentPageName={path}>
+                <Page />
+              </LayoutWrapper>
+            </RequireAuth>
           }
         />
       ))}
       <Route path="/UserManagement" element={
-        <LayoutWrapper currentPageName="UserManagement">
-          <UserManagement />
-        </LayoutWrapper>
+        <RequireAuth>
+          <LayoutWrapper currentPageName="UserManagement">
+            <UserManagement />
+          </LayoutWrapper>
+        </RequireAuth>
       } />
       <Route path="/DotloopIntegration" element={
-        <LayoutWrapper currentPageName="DotloopIntegration">
-          <DotloopIntegration />
-        </LayoutWrapper>
+        <RequireAuth>
+          <LayoutWrapper currentPageName="DotloopIntegration">
+            <DotloopIntegration />
+          </LayoutWrapper>
+        </RequireAuth>
       } />
       <Route path="/CommissionStatements" element={
-        <LayoutWrapper currentPageName="CommissionStatements">
-          <CommissionStatements />
-        </LayoutWrapper>
+        <RequireAuth>
+          <LayoutWrapper currentPageName="CommissionStatements">
+            <CommissionStatements />
+          </LayoutWrapper>
+        </RequireAuth>
       } />
       <Route path="/Contacts" element={
-        <LayoutWrapper currentPageName="Contacts">
-          <Contacts />
-        </LayoutWrapper>
+        <RequireAuth>
+          <LayoutWrapper currentPageName="Contacts">
+            <Contacts />
+          </LayoutWrapper>
+        </RequireAuth>
       } />
       <Route path="/FuelProrations" element={
-        <LayoutWrapper currentPageName="FuelProrations">
-          <FuelProrations />
-        </LayoutWrapper>
+        <RequireAuth>
+          <LayoutWrapper currentPageName="FuelProrations">
+            <FuelProrations />
+          </LayoutWrapper>
+        </RequireAuth>
       } />
       <Route path="/help" element={
-        <LayoutWrapper currentPageName="TutorialFAQPage">
-          <TutorialFAQPage />
-        </LayoutWrapper>
+        <RequireAuth>
+          <LayoutWrapper currentPageName="TutorialFAQPage">
+            <TutorialFAQPage />
+          </LayoutWrapper>
+        </RequireAuth>
       } />
       <Route path="/DeadlineResponse" element={<DeadlineResponse />} />
       <Route path="/ClientLookup" element={<ClientLookup />} />
       <Route path="/AddendumBuilder" element={
-        <LayoutWrapper currentPageName="AddendumBuilder">
-          <AddendumBuilder />
-        </LayoutWrapper>
+        <RequireAuth>
+          <LayoutWrapper currentPageName="AddendumBuilder">
+            <AddendumBuilder />
+          </LayoutWrapper>
+        </RequireAuth>
       } />
       <Route path="/FeedbackCenter" element={
-        <LayoutWrapper currentPageName="FeedbackCenter">
-          <FeedbackCenter />
-        </LayoutWrapper>
+        <RequireAuth>
+          <LayoutWrapper currentPageName="FeedbackCenter">
+            <FeedbackCenter />
+          </LayoutWrapper>
+        </RequireAuth>
       } />
       <Route path="/Notifications" element={
-        <LayoutWrapper currentPageName="Notifications">
-          <Notifications />
-        </LayoutWrapper>
+        <RequireAuth>
+          <LayoutWrapper currentPageName="Notifications">
+            <Notifications />
+          </LayoutWrapper>
+        </RequireAuth>
       } />
       <Route path="/SignDocument" element={<SignDocument />} />
       <Route path="/settings/system-diagnostics" element={
-        <LayoutWrapper currentPageName="SystemDiagnostics">
-          <SystemDiagnostics />
-        </LayoutWrapper>
+        <RequireAuth>
+          <LayoutWrapper currentPageName="SystemDiagnostics">
+            <SystemDiagnostics />
+          </LayoutWrapper>
+        </RequireAuth>
       } />
       <Route path="/agent-signin" element={<AgentSignIn />} />
       <Route path="/tc-login" element={<TCSignIn />} />
