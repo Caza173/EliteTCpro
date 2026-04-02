@@ -167,7 +167,7 @@ export default function Dashboard() {
             {new Date().toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric" })}
           </p>
         </div>
-        <Link to={createPageUrl("AgentIntake")}>
+        <Link to={createPageUrl("AddTransaction")}>
           <Button size="sm" style={{ background: "var(--accent)", color: "var(--accent-text)" }}
             className="gap-1.5 shadow-sm hover:opacity-90 transition-opacity">
             + New Transaction
@@ -348,7 +348,7 @@ export default function Dashboard() {
           ) : transactions.length === 0 ? (
             <div className="text-center py-12">
               <p className="text-sm" style={{ color: "var(--text-muted)" }}>No transactions yet.</p>
-              <Link to={createPageUrl("AgentIntake")}><Button size="sm" className="mt-3" style={{ background: "var(--accent)", color: "var(--accent-text)" }}>Create your first</Button></Link>
+              <Link to={createPageUrl("AddTransaction")}><Button size="sm" className="mt-3" style={{ background: "var(--accent)", color: "var(--accent-text)" }}>Create your first</Button></Link>
             </div>
           ) : (
             <div>{transactions.map(tx => <TransactionRow key={tx.id} tx={tx} />)}</div>
