@@ -531,8 +531,15 @@ export default function AgentIntake() {
         </CardContent>
       </Card>
 
-      {/* Document Upload */}
-      <Card className="shadow-sm border-blue-100 bg-blue-50/20">
+      {/* Document Upload — only shown after email verified */}
+      {!emailVerified && (
+        <div className="flex items-center gap-3 px-4 py-4 rounded-xl bg-amber-50 border border-amber-200 text-amber-700 text-sm">
+          <ShieldCheck className="w-5 h-5 flex-shrink-0" />
+          <p>Verify your email above to unlock the form and document upload.</p>
+        </div>
+      )}
+
+      {emailVerified && <Card className="shadow-sm border-blue-100 bg-blue-50/20">
         <CardHeader className="pb-3">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
@@ -578,9 +585,9 @@ export default function AgentIntake() {
             </>
           )}
         </CardContent>
-      </Card>
+      </Card>}
 
-      <Card className="shadow-sm border-gray-100">
+      {emailVerified && <Card className="shadow-sm border-gray-100">
         <CardContent className="pt-6">
           {/* Honeypot — hidden from humans */}
           <input
@@ -788,7 +795,7 @@ export default function AgentIntake() {
             )}
           </form>
         </CardContent>
-      </Card>
+      </Card>}
     </div>
   );
 }
