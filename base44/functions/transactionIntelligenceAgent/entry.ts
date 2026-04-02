@@ -35,15 +35,19 @@ async function handleTransactionCreated(base44, tx) {
   });
 
   const notifyEmail = tx.agent_email || tx.created_by;
-  if (notifyEmail) {
-    await base44.asServiceRole.entities.InAppNotification.create({
-      brokerage_id: tx.brokerage_id,
-      transaction_id: tx.id,
-      user_email: notifyEmail,
-      title: `Transaction Started: ${tx.address}`,
-      body: `New ${tx.transaction_type || 'buyer'} transaction created for ${tx.address}. Upload the P&S Agreement to auto-populate all deadlines and key fields.`,
-      type: 'system',
-    });
+  if (notifyEmail && tx.brokerage_id) {
+    try {
+      await base44.asServiceRole.entities.InAppNotification.create({
+        brokerage_id: tx.brokerage_id,
+        transaction_id: tx.id,
+        user_email: notifyEmail,
+        title: `Transaction Started: ${tx.address}`,
+        body: `New ${tx.transaction_type || 'buyer'} transaction created for ${tx.address}. Upload the P&S Agreement to auto-populate all deadlines and key fields.`,
+        type: 'system',
+      });
+    } catch (err) {
+      console.warn('[TIA] Could not create onboarding notification:', err.message);
+    }
   }
 }
 
@@ -133,15 +137,19 @@ async function handleDocumentUploaded(base44, doc, docId) {
           description: `P&S auto-parsed by Transaction Intelligence Agent. Updated: ${Object.keys(updates).join(', ')}.`,
         });
 
-        if (notifyEmail) {
-          await base44.asServiceRole.entities.InAppNotification.create({
-            brokerage_id: brokerageId,
-            transaction_id: tx.id,
-            user_email: notifyEmail,
-            title: `✅ P&S Auto-Parsed: ${tx.address}`,
-            body: `Key data extracted automatically — Buyer: ${r.buyer_names || '—'}, Seller: ${r.seller_names || '—'}, Closing: ${r.closing_date || '—'}, Price: ${r.purchase_price ? '$' + r.purchase_price.toLocaleString() : '—'}. Please review.`,
-            type: 'document',
-          });
+        if (notifyEmail && brokerageId) {
+          try {
+            await base44.asServiceRole.entities.InAppNotification.create({
+              brokerage_id: brokerageId,
+              transaction_id: tx.id,
+              user_email: notifyEmail,
+              title: `✅ P&S Auto-Parsed: ${tx.address}`,
+              body: `Key data extracted automatically — Buyer: ${r.buyer_names || '—'}, Seller: ${r.seller_names || '—'}, Closing: ${r.closing_date || '—'}, Price: ${r.purchase_price ? '$' + r.purchase_price.toLocaleString() : '—'}. Please review.`,
+              type: 'document',
+            });
+          } catch (err) {
+            console.warn('[TIA] Could not create P&S notification:', err.message);
+          }
         }
       }
     } catch (err) {
@@ -217,15 +225,19 @@ Return JSON only.`,
       summary: result.summary || ''
     });
 
-    if (status !== 'compliant' && notifyEmail) {
-      await base44.asServiceRole.entities.InAppNotification.create({
-        brokerage_id: brokerageId,
-        transaction_id: tx.id,
-        user_email: notifyEmail,
-        title: `${status === 'blockers' ? '🚨 Compliance Blocker' : '⚠️ Compliance Warning'}: ${file_name}`,
-        body: result.summary || `Compliance check found ${status} for "${file_name}".`,
-        type: 'document',
-      });
+    if (status !== 'compliant' && notifyEmail && brokerageId) {
+      try {
+        await base44.asServiceRole.entities.InAppNotification.create({
+          brokerage_id: brokerageId,
+          transaction_id: tx.id,
+          user_email: notifyEmail,
+          title: `${status === 'blockers' ? '🚨 Compliance Blocker' : '⚠️ Compliance Warning'}: ${file_name}`,
+          body: result.summary || `Compliance check found ${status} for "${file_name}".`,
+          type: 'document',
+        });
+      } catch (err) {
+        console.warn('[TIA] Could not create compliance notification:', err.message);
+      }
     }
 
     console.log(`[TIA] Compliance: ${status}, score: ${result.compliance_score}`);
