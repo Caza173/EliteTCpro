@@ -1,5 +1,5 @@
-import React from "react";
-import { Lightbulb, FileText } from "lucide-react";
+import React, { useState } from "react";
+import { Lightbulb, FileText, X } from "lucide-react";
 
 const SUGGESTIONS = {
   residential: ["Property Disclosure", "Lead Paint Disclosure"],
@@ -20,12 +20,13 @@ const PROPERTY_TYPE_LABELS = {
 };
 
 export default function SuggestedDocuments({ propertyType, uploadedFileNames = [] }) {
+  const [dismissed, setDismissed] = useState(new Set());
+
   if (!propertyType) return null;
 
   const suggested = SUGGESTIONS[propertyType] || [];
-  // Filter out docs that appear to already be uploaded (loose name match)
   const filtered = suggested.filter(
-    (s) => !uploadedFileNames.some((name) =>
+    (s) => !dismissed.has(s) && !uploadedFileNames.some((name) =>
       name?.toLowerCase().replace(/[\s_-]/g, "").includes(s.toLowerCase().replace(/[\s_-]/g, ""))
     )
   );
@@ -46,6 +47,13 @@ export default function SuggestedDocuments({ propertyType, uploadedFileNames = [
           <div key={doc} className="flex items-center gap-1.5 bg-white border border-amber-200 rounded-lg px-3 py-1.5">
             <FileText className="w-3.5 h-3.5 text-amber-500 flex-shrink-0" />
             <span className="text-xs font-medium text-amber-900">{doc}</span>
+            <button
+              onClick={() => setDismissed(prev => new Set([...prev, doc]))}
+              title="Mark as N/A"
+              className="ml-1 text-amber-400 hover:text-amber-700 transition-colors"
+            >
+              <X className="w-3 h-3" />
+            </button>
           </div>
         ))}
       </div>
