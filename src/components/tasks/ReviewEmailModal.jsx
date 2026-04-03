@@ -18,10 +18,12 @@ function interpolate(template, vars) {
 }
 
 export default function ReviewEmailModal({ open, onClose, transaction, currentUser, task, onTaskUpdated }) {
-  const [loading, setLoading] = useState(false);
-  
-  const clientEmails = transaction.client_emails?.length ? transaction.client_emails : (transaction.client_email ? [transaction.client_email] : []);
-  const clientName = transaction.buyers?.length ? transaction.buyers[0] : transaction.buyer || "Valued Client";
+   const [loading, setLoading] = useState(false);
+
+   if (!transaction) return null;
+
+   const clientEmails = transaction.client_emails?.length ? transaction.client_emails : (transaction.client_email ? [transaction.client_email] : []);
+   const clientName = transaction.buyers?.length ? transaction.buyers[0] : transaction.buyer || "Valued Client";
   
   const vars = {
     client_name: clientName,
