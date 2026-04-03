@@ -170,6 +170,22 @@ export default function TransactionDetail() {
     enabled: !!id,
   });
 
+  // Fetch compliance reports for badge count (must be before early returns)
+  const { data: complianceReports = [] } = useQuery({
+    queryKey: ["compliance-reports", id],
+    queryFn: () => base44.entities.ComplianceReport.filter({ transaction_id: id }, "-created_date"),
+    enabled: !!id,
+    staleTime: 60_000,
+  });
+
+  // Fetch comms for badge count (must be before early returns)
+  const { data: commAutomations = [] } = useQuery({
+    queryKey: ["comm-automations", id],
+    queryFn: () => base44.entities.CommAutomation.filter({ transaction_id: id }),
+    enabled: !!id,
+    staleTime: 30_000,
+  });
+
   // Auto-switch to listing_intake tab for seller transactions
   useEffect(() => {
     if (transaction?.transaction_type === "seller" && !urlTab) {
@@ -534,21 +550,6 @@ export default function TransactionDetail() {
   const overdueTasks = txTasks.filter(t => !t.is_completed && t.due_date && new Date(t.due_date) < now);
   if (overdueTasks.length > 0) attentionItems.push({ type: "task", label: `${overdueTasks.length} overdue task${overdueTasks.length > 1 ? "s" : ""}`, tab: "overview", urgent: true });
 
-  // Fetch compliance reports for badge count
-  const { data: complianceReports = [] } = useQuery({
-    queryKey: ["compliance-reports", id],
-    queryFn: () => base44.entities.ComplianceReport.filter({ transaction_id: id }, "-created_date"),
-    enabled: !!id,
-    staleTime: 60_000,
-  });
-
-  // Fetch comms for badge count
-  const { data: commAutomations = [] } = useQuery({
-    queryKey: ["comm-automations", id],
-    queryFn: () => base44.entities.CommAutomation.filter({ transaction_id: id }),
-    enabled: !!id,
-    staleTime: 30_000,
-  });
   const commsReadyCount = commAutomations.filter(c => c.template_status === "ready").length;
   const commsBlockedCount = commAutomations.filter(c => c.template_status === "blocked").length;
 
