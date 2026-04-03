@@ -151,10 +151,23 @@ Deno.serve(async (req) => {
         });
 
         // ── Deduplication ────────────────────────────────────────────────────
-        const fieldNotifications = existingForTx.filter(n => n.deadline_field === field.key);
+        const fieldNotifications = existingForTx.filter(n => n.deadline_field === field.key && n.deadline_type === field.type);
+        const activeNotifs = fieldNotifications.filter(n => !n.dismissed);
+        const dismissedNotif = fieldNotifications.find(n => n.dismissed);
+
+        // If there's an active (non-dismissed) notification, just update severity/title if escalated
+        if (activeNotifs.length > 0) {
+          const activeNotif = activeNotifs[0];
+          if (activeNotif.severity !== severity) {
+            await base44.asServiceRole.entities.InAppNotification.update(activeNotif.id, {
+              severity,
+              title: buildMessage(field.label, hoursRemaining),
+            });
+          }
+          continue;
+        }
 
         // Check if there's a recently dismissed notification (within 24h = snooze window)
-        const dismissedNotif = fieldNotifications.find(n => n.dismissed);
         if (dismissedNotif) {
           const dismissedAt = dismissedNotif.dismissed_at ? new Date(dismissedNotif.dismissed_at) : null;
           const hoursSinceDismiss = dismissedAt ? (now.getTime() - dismissedAt.getTime()) / MS_PER_HOUR : 0;
@@ -164,22 +177,7 @@ Deno.serve(async (req) => {
           } else {
             // Snooze expired — delete the old dismissed record so a fresh one gets created
             try { await base44.asServiceRole.entities.InAppNotification.delete(dismissedNotif.id); } catch {}
-            // Remove from local cache so we don't find it again this loop
-            const idx = existingForTx.findIndex(n => n.id === dismissedNotif.id);
-            if (idx !== -1) existingForTx.splice(idx, 1);
           }
-        }
-
-        // If there's an active (non-dismissed) notification, just update severity/title if escalated
-        const activeNotif = fieldNotifications.filter(n => !n.dismissed).find(Boolean);
-        if (activeNotif) {
-          if (activeNotif.severity !== severity) {
-            await base44.asServiceRole.entities.InAppNotification.update(activeNotif.id, {
-              severity,
-              title: buildMessage(field.label, hoursRemaining),
-            });
-          }
-          continue;
         }
 
         // ── Create new notification ───────────────────────────────────────────
