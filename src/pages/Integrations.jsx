@@ -37,19 +37,19 @@ const INTEGRATIONS = [
     id: "gmail",
     name: "Gmail",
     icon: Mail,
-    status: "Coming Soon",
-    description: "Integration will be available soon",
+    status: "Active",
+    description: "Send transactional emails to clients and parties",
     color: "from-red-50 to-red-100",
-    route: null,
+    route: "GmailSetup",
   },
   {
     id: "google-calendar",
     name: "Google Calendar",
     icon: Calendar,
-    status: "Coming Soon",
-    description: "Integration will be available soon",
+    status: "Active",
+    description: "Sync transaction deadlines to your calendar",
     color: "from-blue-50 to-blue-100",
-    route: null,
+    route: "GoogleCalendarSetup",
   },
   {
     id: "digital-signatures",
@@ -91,7 +91,7 @@ export default function Integrations() {
           const isComingSoon = integration.status === "Coming Soon";
           
           const TileContent = (
-            <div className={`rounded-xl border transition-all ${isComingSoon ? "opacity-60 cursor-not-allowed" : "hover:shadow-lg hover:-translate-y-0.5 cursor-pointer"}`}
+            <div className={`rounded-xl border transition-all ${isComingSoon ? "opacity-60" : "hover:shadow-lg hover:-translate-y-0.5"} ${!isComingSoon ? "cursor-pointer" : "cursor-not-allowed"}`}
               style={{
                 background: "var(--card-bg)",
                 borderColor: "var(--card-border)",
@@ -105,12 +105,14 @@ export default function Integrations() {
                     }}>
                     <Icon className="w-6 h-6 text-blue-600" />
                   </div>
-                  <span className="text-xs font-semibold px-2.5 py-1 rounded-full border"
-                    style={{
+                  <span className={`text-xs font-semibold px-2.5 py-1 rounded-full border ${
+                    integration.status === "Active" ? "bg-emerald-50 border-emerald-200 text-emerald-700" : ""
+                  }`}
+                    style={integration.status !== "Active" ? {
                       background: "var(--bg-tertiary)",
                       borderColor: "var(--border)",
                       color: "var(--text-muted)"
-                    }}>
+                    } : {}}>
                     {integration.status}
                   </span>
                 </div>
