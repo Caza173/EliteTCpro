@@ -468,6 +468,66 @@
     },
     "goLiveDate": {
       "type": "string"
+    },
+    "utility_info": {
+      "type": "object",
+      "description": "Utility provider information",
+      "properties": {
+        "electric_provider": {
+          "type": "string"
+        },
+        "propane_provider": {
+          "type": "string"
+        },
+        "oil_provider": {
+          "type": "string"
+        },
+        "natural_gas_provider": {
+          "type": "string"
+        },
+        "water_provider": {
+          "type": "string"
+        },
+        "sewer_provider": {
+          "type": "string"
+        },
+        "internet_provider": {
+          "type": "string"
+        },
+        "trash_provider": {
+          "type": "string"
+        },
+        "other_utility_notes": {
+          "type": "string"
+        }
+      }
+    },
+    "email_tracking": {
+      "type": "object",
+      "description": "Email tracking for special tasks",
+      "properties": {
+        "zillow_review_drafted_at": {
+          "type": "string"
+        },
+        "zillow_review_sent_at": {
+          "type": "string"
+        },
+        "zillow_review_sent_by": {
+          "type": "string"
+        },
+        "utility_request_draft_created_at": {
+          "type": "string"
+        },
+        "utility_request_sent_at": {
+          "type": "string"
+        },
+        "utility_request_sent_by": {
+          "type": "string"
+        },
+        "utility_info_received_at": {
+          "type": "string"
+        }
+      }
     }
   },
   "required": [

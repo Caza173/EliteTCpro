@@ -10,6 +10,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { getPhasesForType, isTaskIncompatible } from "@/lib/taskLibrary";
 import TaskLibraryModal from "@/components/tasks/TaskLibraryModal";
 import PhaseCompletionBadge from "./PhaseCompletionBadge";
+import TaskActionToolbar from "@/components/tasks/TaskActionToolbar";
 
 // ── Determine phase status ──────────────────────────────────────────────────
 function getPhaseStatus(phaseNum, tasks, phasesCompleted = []) {
@@ -37,11 +38,13 @@ function getActivePhaseNum(phases, tasks, phasesCompleted) {
 // ── Task Row ────────────────────────────────────────────────────────────────
 const TaskRow = memo(function TaskRow({
   task, index, allPhases, onToggleTask, onDelete, onMoveTo, onSaveEdit,
+  transaction, currentUser, onTaskUpdated, phase
 }) {
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState(task.title);
   const [moveOpen, setMoveOpen] = useState(false);
   const isAtRisk = !task.is_completed && task.due_date && new Date(task.due_date) < new Date();
+  const phaseNum = phase?.phaseNum || 0;
 
   const saveEdit = async () => {
     setEditing(false);
@@ -99,6 +102,16 @@ const TaskRow = memo(function TaskRow({
 
           {task.is_required && !task.is_completed && (
             <span className="text-[9px] font-semibold px-1 py-0.5 rounded bg-orange-50 text-orange-500 border border-orange-200 flex-shrink-0">REQ</span>
+          )}
+
+          {/* Task-specific actions toolbar */}
+          {!task.is_completed && transaction && (
+            <TaskActionToolbar 
+              task={task} 
+              transaction={transaction} 
+              onTaskUpdated={onTaskUpdated}
+              phaseNum={phaseNum}
+            />
           )}
 
           <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0 relative">
@@ -261,6 +274,9 @@ function PhaseCard({
                   onDelete={onDelete}
                   onMoveTo={onMoveTo}
                   onSaveEdit={onSaveEdit}
+                  transaction={transaction}
+                  onTaskUpdated={onTasksChanged}
+                  phase={phase}
                 />
               ))}
               {provided.placeholder}
