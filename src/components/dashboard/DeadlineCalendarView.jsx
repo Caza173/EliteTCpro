@@ -1,5 +1,6 @@
 import React, { useState, useMemo, useRef, useEffect } from "react";
 import { createPortal } from "react-dom";
+import { base44 } from "@/api/base44Client";
 import {
   format, startOfMonth, endOfMonth, eachDayOfInterval, isToday,
   parseISO, isSameDay, startOfWeek, endOfWeek, addWeeks, subWeeks,
@@ -95,20 +96,40 @@ function DayHoverPopup({ day, dayEvents, dayRect, onClose }) {
   );
 }
 
-          export default function DeadlineCalendarView({ transactions = [] }) {
+export default function DeadlineCalendarView({ transactions = [] }) {
   const [view, setView] = useState("month");
   const [cursor, setCursor] = useState(new Date()); // reference date
   const [selectedDay, setSelectedDay] = useState(null);
   const [hoveredDay, setHoveredDay] = useState(null);
+  const [txList, setTxList] = useState(transactions);
+
+  // Subscribe to transaction updates for real-time deadline syncing
+  useEffect(() => {
+    if (!transactions.length) return;
+    const unsubscribe = base44.entities.Transaction.subscribe((event) => {
+      setTxList(prev => {
+        if (event.type === "update") {
+          return prev.map(t => t.id === event.id ? event.data : t);
+        }
+        return prev;
+      });
+    });
+    return unsubscribe;
+  }, [transactions.length]);
+
+  // Fallback to prop updates if subscription doesn't fire
+  useEffect(() => {
+    setTxList(transactions);
+  }, [transactions]);
 
   const dedupedTx = useMemo(() => {
     const seen = new Set();
-    return transactions.filter(tx => {
+    return txList.filter(tx => {
       if (seen.has(tx.address)) return false;
       seen.add(tx.address);
       return true;
     });
-  }, [transactions]);
+  }, [txList]);
 
   const events = useMemo(() => {
     const map = {};
@@ -119,7 +140,7 @@ function DayHoverPopup({ day, dayEvents, dayRect, onClose }) {
         if (dt.key === "financing_deadline" && tx.is_cash_transaction) return;
         const key = tx[dt.key];
         if (!map[key]) map[key] = [];
-        map[key].push({ label: dt.label, address: tx.address, dot: dt.dot, pill: dt.pill, txId: tx.id });
+        map[key].push({ label: dt.label, address: tx.address, dot: dt.dot, pill: dt.pill, txId: tx.id, category: dt.key });
       });
     });
     return map;
