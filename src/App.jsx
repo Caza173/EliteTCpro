@@ -16,6 +16,7 @@ import SignDocument from './pages/SignDocument.jsx'
 import SystemDiagnostics from './pages/SystemDiagnostics.jsx'
 import AgentSignIn from './pages/AgentSignIn.jsx'
 import AgentIntake from './pages/AgentIntake'
+import TemplateManager from './pages/TemplateManager'
 import TCSignIn from './pages/TCSignIn.jsx'
 import AgentSubmitTransaction from './pages/AgentSubmitTransaction.jsx'
 import { QueryClientProvider } from '@tanstack/react-query'
@@ -158,6 +159,13 @@ const AuthenticatedApp = () => {
       <Route path="/tc-login" element={<TCSignIn />} />
       <Route path="/agent/submit-transaction" element={<AgentSubmitTransaction />} />
       <Route path="/AgentIntake" element={<AgentIntake />} />
+      <Route path="/TemplateManager" element={
+        <RequireAuth>
+          <LayoutWrapper currentPageName="TemplateManager">
+            <TemplateManager />
+          </LayoutWrapper>
+        </RequireAuth>
+      } />
       <Route path="*" element={<PageNotFound />} />
     </Routes>
   );

@@ -1,0 +1,209 @@
+{
+  "name": "WorkflowTemplate",
+  "type": "object",
+  "properties": {
+    "brokerage_id": {
+      "type": "string"
+    },
+    "name": {
+      "type": "string"
+    },
+    "description": {
+      "type": "string"
+    },
+    "transaction_type": {
+      "type": "string",
+      "enum": [
+        "buyer",
+        "seller",
+        "dual",
+        "lease",
+        "multifamily",
+        "land",
+        "commercial"
+      ],
+      "default": "buyer"
+    },
+    "source": {
+      "type": "string",
+      "enum": [
+        "manual",
+        "uploaded",
+        "system"
+      ],
+      "default": "manual"
+    },
+    "original_file_url": {
+      "type": "string"
+    },
+    "original_file_name": {
+      "type": "string"
+    },
+    "state": {
+      "type": "string",
+      "default": "NH"
+    },
+    "version": {
+      "type": "number",
+      "default": 1
+    },
+    "is_default": {
+      "type": "boolean",
+      "default": false
+    },
+    "phases": {
+      "type": "array",
+      "description": "Phase definitions",
+      "items": {
+        "type": "object",
+        "properties": {
+          "phase_number": {
+            "type": "number"
+          },
+          "phase_name": {
+            "type": "string"
+          },
+          "phase_description": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "tasks": {
+      "type": "array",
+      "description": "Task templates",
+      "items": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "phase_number": {
+            "type": "number"
+          },
+          "task_name": {
+            "type": "string"
+          },
+          "default_assignee_role": {
+            "type": "string",
+            "enum": [
+              "tc",
+              "agent",
+              "client"
+            ]
+          },
+          "due_offset_days": {
+            "type": "number"
+          },
+          "due_anchor": {
+            "type": "string",
+            "enum": [
+              "contract_date",
+              "closing_date",
+              "effective_date"
+            ]
+          },
+          "required": {
+            "type": "boolean",
+            "default": true
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "pending",
+              "complete"
+            ],
+            "default": "pending"
+          },
+          "alert_trigger": {
+            "type": "string"
+          },
+          "compliance_rule": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "deadlines": {
+      "type": "array",
+      "description": "Deadline templates",
+      "items": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "deadline_type": {
+            "type": "string"
+          },
+          "due_offset_days": {
+            "type": "number"
+          },
+          "due_anchor": {
+            "type": "string",
+            "enum": [
+              "contract_date",
+              "closing_date",
+              "effective_date"
+            ]
+          }
+        }
+      }
+    },
+    "doc_checklist": {
+      "type": "array",
+      "description": "Document checklist items",
+      "items": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "doc_type": {
+            "type": "string"
+          },
+          "required": {
+            "type": "boolean",
+            "default": true
+          },
+          "required_by_phase": {
+            "type": "number"
+          },
+          "visible_to_client": {
+            "type": "boolean",
+            "default": false
+          }
+        }
+      }
+    },
+    "compliance_rules": {
+      "type": "array",
+      "description": "Compliance rules for this template type",
+      "items": {
+        "type": "object",
+        "properties": {
+          "rule_id": {
+            "type": "string"
+          },
+          "check": {
+            "type": "string"
+          },
+          "severity": {
+            "type": "string",
+            "enum": [
+              "blocker",
+              "warning",
+              "info"
+            ]
+          },
+          "message": {
+            "type": "string"
+          }
+        }
+      }
+    }
+  },
+  "required": [
+    "name"
+  ]
+}
