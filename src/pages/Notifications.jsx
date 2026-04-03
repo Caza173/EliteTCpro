@@ -38,7 +38,9 @@ export default function Notifications() {
   });
 
   const dismissMutation = useMutation({
-    mutationFn: (id) => base44.entities.InAppNotification.delete(id),
+    mutationFn: async (id) => {
+      try { await base44.entities.InAppNotification.delete(id); } catch {}
+    },
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["notifications"] }),
   });
 

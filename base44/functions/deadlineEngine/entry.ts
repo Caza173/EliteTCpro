@@ -124,7 +124,7 @@ Deno.serve(async (req) => {
             continue;
           } else {
             // Snooze expired — delete the old dismissed record so a fresh one gets created
-            await base44.asServiceRole.entities.InAppNotification.delete(dismissedNotif.id);
+            try { await base44.asServiceRole.entities.InAppNotification.delete(dismissedNotif.id); } catch {}
             // Remove from local cache so we don't find it again this loop
             const idx = existingForTx.findIndex(n => n.id === dismissedNotif.id);
             if (idx !== -1) existingForTx.splice(idx, 1);
