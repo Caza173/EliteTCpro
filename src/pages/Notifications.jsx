@@ -3,7 +3,7 @@ import { base44 } from "@/api/base44Client";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useCurrentUser } from "@/components/auth/useCurrentUser";
 import { format, parseISO } from "date-fns";
-import { Bell, CheckCheck, AlertTriangle, AlertCircle, Info, Clock, RefreshCw, Loader2 } from "lucide-react";
+import { Bell, CheckCheck, AlertTriangle, AlertCircle, Info, Clock, RefreshCw, Loader2, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
