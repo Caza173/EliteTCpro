@@ -1,5 +1,5 @@
 import React, { useState, useRef } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { createPageUrl } from "@/utils";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -138,6 +138,8 @@ const statusStyles = {
 };
 
 export default function TransactionTable({ transactions, sorted = false }) {
+  const navigate = useNavigate();
+
   if (!transactions || transactions.length === 0) {
     return (
       <div className="text-center py-16">
@@ -180,7 +182,10 @@ export default function TransactionTable({ transactions, sorted = false }) {
              return (
              <TableRow 
                key={tx.id} 
-               onClick={() => window.location.href = createPageUrl("TransactionDetail") + `?id=${tx.id}`}
+               onClick={() => {
+                 console.log("Clicked transaction ID:", tx.id);
+                 navigate(`/transactions/${tx.id}`);
+               }}
                className={`cursor-pointer hover:bg-gray-50 transition-colors border-gray-100 group ${score >= 80 ? "bg-red-50/30" : score >= 40 ? "bg-amber-50/20" : ""}`}
              >
                <TableCell>

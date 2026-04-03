@@ -22,6 +22,7 @@ import AgentIntake from './pages/AgentIntake'
 import TemplateManager from './pages/TemplateManager'
 import TCSignIn from './pages/TCSignIn.jsx'
 import AgentSubmitTransaction from './pages/AgentSubmitTransaction.jsx'
+import TransactionDetail from './pages/TransactionDetail'
 import { QueryClientProvider } from '@tanstack/react-query'
 import { queryClientInstance } from '@/lib/query-client'
 import { pagesConfig } from './pages.config'
@@ -187,6 +188,13 @@ const AuthenticatedApp = () => {
         <RequireAuth>
           <LayoutWrapper currentPageName="TemplateManager">
             <TemplateManager />
+          </LayoutWrapper>
+        </RequireAuth>
+      } />
+      <Route path="/transactions/:id" element={
+        <RequireAuth>
+          <LayoutWrapper currentPageName="TransactionDetail">
+            <TransactionDetail />
           </LayoutWrapper>
         </RequireAuth>
       } />

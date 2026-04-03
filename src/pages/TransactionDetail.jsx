@@ -84,15 +84,19 @@ const statusStyles = {
 };
 
 export default function TransactionDetail() {
-  const hashSearch = window.location.hash.includes("?") ? window.location.hash.split("?")[1] : window.location.search;
-  const urlParams = new URLSearchParams(hashSearch);
-  const id = urlParams.get("id");
+  const { id } = useParams();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const { data: currentUser } = useCurrentUser();
 
-  const urlTab = urlParams.get("tab");
+  const urlSearch = new URLSearchParams(window.location.search);
+  const urlTab = urlSearch.get("tab");
   const [activeTab, setActiveTab] = useState(urlTab || "overview");
+  
+  // Debug logging
+  useEffect(() => {
+    console.log("TransactionDetail - Route ID:", id);
+  }, [id]);
   const [selectedPhase, setSelectedPhase] = useState(1);
   const [mobileAIOpen, setMobileAIOpen] = useState(false);
   const [sendingTimeline, setSendingTimeline] = useState(false);
@@ -145,12 +149,44 @@ export default function TransactionDetail() {
     };
   }, []);
 
-  const { data: transactions = [], isLoading } = useQuery({
+  const { data: transactions = [], isLoading: isLoadingList } = useQuery({
     queryKey: ["transactions"],
     queryFn: () => base44.entities.Transaction.list(),
   });
 
-  const transaction = transactions.find((t) => t.id === id);
+  const [transactionFromId, setTransactionFromId] = useState(null);
+  const [isLoadingById, setIsLoadingById] = useState(false);
+  const [notFound, setNotFound] = useState(false);
+
+  // Try to find in list first, fallback to fetch by ID
+  const transaction = transactions.find((t) => t.id === id) || transactionFromId;
+
+  // Fallback fetch if not found in list
+  useEffect(() => {
+    if (!id || isLoadingList) return;
+    if (transaction) return; // Already found
+    if (notFound) return; // Already tried and failed
+    
+    const fetchById = async () => {
+      setIsLoadingById(true);
+      try {
+        const result = await base44.entities.Transaction.filter({ id });
+        if (result && result.length > 0) {
+          setTransactionFromId(result[0]);
+          console.log("TransactionDetail - Fetched from DB:", result[0].id);
+        } else {
+          setNotFound(true);
+          console.log("TransactionDetail - Transaction not found:", id);
+        }
+      } catch (e) {
+        console.error("TransactionDetail - Fetch error:", e);
+        setNotFound(true);
+      }
+      setIsLoadingById(false);
+    };
+
+    fetchById();
+  }, [id, isLoadingList, transaction, notFound]);
 
   const { data: checklistItems = [] } = useQuery({
     queryKey: ["checklist", id],
@@ -501,6 +537,8 @@ export default function TransactionDetail() {
     return linked.every(t => t.is_completed);
   };
 
+  const isLoading = isLoadingList || isLoadingById;
+
   if (isLoading) {
     return (
       <div className="max-w-5xl mx-auto space-y-6 w-full min-w-0">
@@ -514,7 +552,7 @@ export default function TransactionDetail() {
   if (!transaction) {
     return (
       <div className="max-w-5xl mx-auto text-center py-20 w-full min-w-0">
-        <p className="text-gray-500 mb-4">Transaction not found.</p>
+        <p className="text-gray-500 mb-4">Transaction not found (ID: {id}).</p>
         <Link to={createPageUrl("Transactions")}>
           <Button variant="outline"><ArrowLeft className="w-4 h-4 mr-2" /> Back to Transactions</Button>
         </Link>
