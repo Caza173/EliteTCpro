@@ -112,15 +112,27 @@ Deno.serve(async (req) => {
         });
 
         // ── Deduplication ────────────────────────────────────────────────────
-        // Find all notifications for this transaction + deadline field
         const fieldNotifications = existingForTx.filter(n => n.deadline_field === field.key);
 
-        // If user dismissed any notification for this field, respect that — don't recreate
-        const hasDismissed = fieldNotifications.some(n => n.dismissed);
-        if (hasDismissed) continue;
+        // Check if there's a recently dismissed notification (within 24h = snooze window)
+        const dismissedNotif = fieldNotifications.find(n => n.dismissed);
+        if (dismissedNotif) {
+          const dismissedAt = dismissedNotif.dismissed_at ? new Date(dismissedNotif.dismissed_at) : null;
+          const hoursSinceDismiss = dismissedAt ? (now.getTime() - dismissedAt.getTime()) / MS_PER_HOUR : 0;
+          if (hoursSinceDismiss < 24) {
+            // Still within snooze window — skip
+            continue;
+          } else {
+            // Snooze expired — delete the old dismissed record so a fresh one gets created
+            await base44.asServiceRole.entities.InAppNotification.delete(dismissedNotif.id);
+            // Remove from local cache so we don't find it again this loop
+            const idx = existingForTx.findIndex(n => n.id === dismissedNotif.id);
+            if (idx !== -1) existingForTx.splice(idx, 1);
+          }
+        }
 
         // If there's an active (non-dismissed) notification, just update severity/title if escalated
-        const activeNotif = fieldNotifications.find(n => !n.dismissed);
+        const activeNotif = fieldNotifications.filter(n => !n.dismissed).find(Boolean);
         if (activeNotif) {
           if (activeNotif.severity !== severity) {
             await base44.asServiceRole.entities.InAppNotification.update(activeNotif.id, {

@@ -67,6 +67,10 @@
       "type": "boolean",
       "default": false
     },
+    "dismissed_at": {
+      "type": "string",
+      "description": "Timestamp when dismissed \u2014 used to auto-expire snooze after 24h"
+    },
     "addendum_response": {
       "type": "string",
       "enum": [
