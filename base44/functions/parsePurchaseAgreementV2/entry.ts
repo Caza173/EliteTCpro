@@ -33,6 +33,7 @@ Deno.serve(async (req) => {
           purchase_price:            { type: "number", description: "SELLING PRICE / purchase price. In NHAR forms the dollar value (e.g. $540,000) often appears on the line AFTER the 'SELLING PRICE' label — scan up to 3 lines after that label. Return as a plain number (540000), no $ or commas." },
           deposit_amount:            { type: "number", description: "Earnest money deposit amount. In NHAR forms the dollar value often appears on the line AFTER 'deposit of earnest money in the amount of' — scan up to 3 lines after that phrase. Return as a plain number (10000), no $ or commas." },
           earnest_money_days:        { type: "number", description: "Days from acceptance date to deliver deposit" },
+          earnest_money_deadline:    { type: "string", description: "Explicit earnest money deadline date in YYYY-MM-DD format if stated in document" },
           closing_date:              { type: "string", description: "Transfer of Title date in YYYY-MM-DD" },
           title_company:             { type: "string", description: "Closing/escrow/title company name" },
           buyer_agent:               { type: "string", description: "Buyer agent name from Section 7" },
@@ -40,11 +41,14 @@ Deno.serve(async (req) => {
           buyer_brokerage:           { type: "string", description: "Buyer agent's firm/brokerage" },
           seller_brokerage:          { type: "string", description: "Seller agent's firm/brokerage" },
           inspection_days:           { type: "number", description: "General building inspection days from Section 15" },
+          inspection_deadline:       { type: "string", description: "Explicit inspection deadline date in YYYY-MM-DD format if stated" },
           sewage_days:               { type: "number", description: "Sewage/septic inspection days" },
           water_quality_days:        { type: "number", description: "Water quality inspection days" },
           radon_days:                { type: "number", description: "Radon inspection days" },
           due_diligence_days:        { type: "number", description: "Due diligence days from Section 16" },
+          due_diligence_deadline:    { type: "string", description: "Explicit due diligence deadline date in YYYY-MM-DD format if stated" },
           financing_commitment_date: { type: "string", description: "Financing commitment deadline in YYYY-MM-DD from Section 19" },
+          appraisal_deadline:        { type: "string", description: "Explicit appraisal deadline date in YYYY-MM-DD format if stated" },
           commission_percent:        { type: "number", description: "Commission percentage from Section 20" },
           commission_type:           { type: "string", description: "'percent' or 'flat'" },
           seller_concession_amount:  { type: "number", description: "Seller concession dollar amount" },
@@ -92,14 +96,14 @@ Deno.serve(async (req) => {
     if (!result.purchase_price) result.purchase_price_undetected = true;
     if (!result.deposit_amount) result.deposit_amount_undetected = true;
 
-    // Calculate deadline dates from day offsets + acceptance date
+    // Calculate deadline dates from day offsets + acceptance date (fallback if explicit dates not extracted)
     const acceptanceDate = result.acceptance_date || null;
-    result.inspection_deadline    = addDays(acceptanceDate, result.inspection_days);
+    result.inspection_deadline    = result.inspection_deadline || addDays(acceptanceDate, result.inspection_days);
     result.sewage_deadline        = addDays(acceptanceDate, result.sewage_days);
     result.water_quality_deadline = addDays(acceptanceDate, result.water_quality_days);
     result.radon_deadline         = addDays(acceptanceDate, result.radon_days);
-    result.earnest_money_deadline = addDays(acceptanceDate, result.earnest_money_days);
-    result.due_diligence_deadline = addDays(acceptanceDate, result.due_diligence_days);
+    result.earnest_money_deadline = result.earnest_money_deadline || addDays(acceptanceDate, result.earnest_money_days);
+    result.due_diligence_deadline = result.due_diligence_deadline || addDays(acceptanceDate, result.due_diligence_days);
 
     console.log("Extraction complete:", {
       buyer: result.buyer_names,
