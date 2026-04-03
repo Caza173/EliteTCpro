@@ -47,6 +47,7 @@ import ContactsSection from "../components/transactions/ContactsSection";
 import IssueDetectionPanel from "../components/issues/IssueDetectionPanel";
 import QuickFeedbackButton from "../components/feedback/QuickFeedbackButton";
 import NotesPanel from "../components/transactions/NotesPanel";
+import UnderContractCommsPanel from "../components/comms/UnderContractCommsPanel";
 
 const TX_TABS = [
   { id: "overview",      label: "Overview",      icon: LayoutDashboard, info: "Phase checklist, tasks, and compliance summary" },
@@ -54,6 +55,7 @@ const TX_TABS = [
   { id: "deadlines",     label: "Deadlines",     icon: Clock,           info: "All key dates — edit inline or sync to Google Calendar" },
   { id: "documents",     label: "Documents",     icon: FolderOpen,      info: "Upload, classify, and manage transaction documents" },
   { id: "compliance",    label: "Compliance",    icon: ShieldCheck,     info: "AI-powered scan for missing signatures and blockers" },
+  { id: "communications", label: "Communications", icon: Send,          info: "Atlas under-contract communications and status" },
   { id: "financial_tools", label: "Financial Tools", icon: Receipt,     info: "Commission statements, fuel prorations, and deal expenses" },
 ];
 
@@ -64,6 +66,7 @@ const LISTING_TABS = [
   { id: "deadlines",     label: "Deadlines",     icon: Clock,           info: "All key dates — edit inline or sync to Google Calendar" },
   { id: "documents",     label: "Documents",     icon: FolderOpen,      info: "Upload, classify, and manage transaction documents" },
   { id: "compliance",    label: "Compliance",    icon: ShieldCheck,     info: "AI-powered scan for missing signatures and blockers" },
+  { id: "communications", label: "Communications", icon: Send,          info: "Atlas under-contract communications and status" },
   { id: "financial_tools", label: "Financial Tools", icon: Receipt,     info: "Commission statements, fuel prorations, and deal expenses" },
 ];
 
@@ -539,6 +542,16 @@ export default function TransactionDetail() {
     staleTime: 60_000,
   });
 
+  // Fetch comms for badge count
+  const { data: commAutomations = [] } = useQuery({
+    queryKey: ["comm-automations", id],
+    queryFn: () => base44.entities.CommAutomation.filter({ transaction_id: id }),
+    enabled: !!id,
+    staleTime: 30_000,
+  });
+  const commsReadyCount = commAutomations.filter(c => c.template_status === "ready").length;
+  const commsBlockedCount = commAutomations.filter(c => c.template_status === "blocked").length;
+
   const tabs = transaction.transaction_type === "seller" ? LISTING_TABS : TX_TABS;
 
   // ── Tab badge counts ──────────────────────────────────────────────────────
@@ -556,7 +569,10 @@ export default function TransactionDetail() {
     documents:       missingDocCount,
     compliance:      complianceBlockerCount,
     overview:        overdueTaskCount,
+    communications:  commsReadyCount + commsBlockedCount,
   };
+
+  const COMM_BADGE_CLS = commsBlockedCount > 0 ? "bg-red-500 text-white" : "bg-blue-500 text-white";
 
   return (
     <div className="flex flex-col -mx-4 -mb-4 lg:-mx-5 lg:-mb-5" style={{ height: "calc(100vh - 48px)", overflow: "hidden" }}>
@@ -866,6 +882,11 @@ export default function TransactionDetail() {
           {activeTab === "documents" && <TransactionDocumentsTab transaction={transaction} currentUser={currentUser} />}
           {activeTab === "compliance" && <ComplianceScanPanel transaction={transaction} currentUser={currentUser} />}
           {activeTab === "financial_tools" && <TransactionFinancialTools transaction={transaction} currentUser={currentUser} />}
+          {/* ── Tab: Communications ── */}
+          {activeTab === "communications" && (
+            <UnderContractCommsPanel transaction={transaction} currentUser={currentUser} />
+          )}
+
           {activeTab === "listing_intake" && (
             <ListingIntakeTab
               transaction={transaction}

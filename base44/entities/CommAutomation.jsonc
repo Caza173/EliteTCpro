@@ -1,0 +1,141 @@
+{
+  "name": "CommAutomation",
+  "type": "object",
+  "properties": {
+    "transaction_id": {
+      "type": "string"
+    },
+    "brokerage_id": {
+      "type": "string"
+    },
+    "template_type": {
+      "type": "string",
+      "enum": [
+        "buyer_under_contract_email",
+        "seller_under_contract_email",
+        "lender_title_intro_email",
+        "buyer_sms",
+        "seller_sms",
+        "inspection_issue_email",
+        "financing_reminder_email",
+        "closing_reminder_email",
+        "extension_addendum_email"
+      ]
+    },
+    "template_status": {
+      "type": "string",
+      "enum": [
+        "ready",
+        "partial",
+        "blocked",
+        "sent",
+        "draft"
+      ],
+      "default": "draft"
+    },
+    "subject": {
+      "type": "string"
+    },
+    "generated_content": {
+      "type": "string"
+    },
+    "missing_fields": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "field": {
+            "type": "string"
+          },
+          "label": {
+            "type": "string"
+          },
+          "section": {
+            "type": "string"
+          },
+          "required_for": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "recipients": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "cc_recipients": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "sent_at": {
+      "type": "string"
+    },
+    "sent_by": {
+      "type": "string"
+    },
+    "source_document_id": {
+      "type": "string"
+    },
+    "source_document_name": {
+      "type": "string"
+    },
+    "source_sections_used": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "contract_data_snapshot": {
+      "type": "object",
+      "additionalProperties": true,
+      "description": "The parsed contract fields used to generate this communication"
+    },
+    "preflight_status": {
+      "type": "string",
+      "enum": [
+        "READY",
+        "PARTIAL",
+        "BLOCKED"
+      ],
+      "description": "Atlas preflight check result"
+    },
+    "preflight_issues": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "severity": {
+            "type": "string"
+          },
+          "field": {
+            "type": "string"
+          },
+          "message": {
+            "type": "string"
+          },
+          "section": {
+            "type": "string"
+          },
+          "page": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "regenerated_at": {
+      "type": "string"
+    },
+    "reminders_scheduled": {
+      "type": "boolean",
+      "default": false
+    }
+  },
+  "required": [
+    "transaction_id",
+    "template_type"
+  ]
+}
