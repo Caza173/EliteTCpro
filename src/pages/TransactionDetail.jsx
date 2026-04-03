@@ -175,7 +175,7 @@ export default function TransactionDetail() {
     if (transaction?.transaction_type === "seller" && !urlTab) {
       setActiveTab("listing_intake");
     }
-  }, [transaction?.id]);
+  }, [transaction?.transaction_type, urlTab]);
 
   // Track which phases have already been seeded this session
   const seededPhasesRef = useRef(new Set());
