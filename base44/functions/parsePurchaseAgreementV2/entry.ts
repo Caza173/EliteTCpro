@@ -9,6 +9,43 @@ function addDays(isoDate, days) {
   } catch { return null; }
 }
 
+// Extract relative dates from text (e.g., "within 5 days of the effective date")
+function extractRelativeDates(text, effectiveDate) {
+  if (!text || !effectiveDate) return {};
+  
+  const result = {};
+  
+  // Earnest money due
+  const emdMatch = text.match(/within\s+(\d+)\s+days\s+of\s+the\s+(?:effective\s+)?date/i);
+  if (emdMatch) {
+    const days = parseInt(emdMatch[1]);
+    result.earnest_money_deadline = addDays(effectiveDate, days);
+  }
+  
+  // Inspection deadline
+  const inspMatch = text.match(/inspection[^.]*?within\s+(\d+)\s+days/i);
+  if (inspMatch) {
+    const days = parseInt(inspMatch[1]);
+    result.inspection_deadline = addDays(effectiveDate, days);
+  }
+  
+  // Due diligence deadline
+  const dueDilMatch = text.match(/due\s+diligence[^.]*?within\s+(\d+)\s+days/i);
+  if (dueDilMatch) {
+    const days = parseInt(dueDilMatch[1]);
+    result.due_diligence_deadline = addDays(effectiveDate, days);
+  }
+  
+  // Appraisal deadline
+  const apprMatch = text.match(/appraisal[^.]*?within\s+(\d+)\s+days/i);
+  if (apprMatch) {
+    const days = parseInt(apprMatch[1]);
+    result.appraisal_deadline = addDays(effectiveDate, days);
+  }
+  
+  return result;
+}
+
 Deno.serve(async (req) => {
   try {
     const base44 = createClientFromRequest(req);
@@ -19,6 +56,7 @@ Deno.serve(async (req) => {
     if (!file_url) return Response.json({ error: "No file_url provided" }, { status: 400 });
 
     console.log("Extracting data from document...");
+    const debugFlags = [];
 
     const extraction = await base44.integrations.Core.ExtractDataFromUploadedFile({
       file_url,
@@ -98,12 +136,46 @@ Deno.serve(async (req) => {
 
     // Calculate deadline dates from day offsets + acceptance date (fallback if explicit dates not extracted)
     const acceptanceDate = result.acceptance_date || null;
-    result.inspection_deadline    = result.inspection_deadline || addDays(acceptanceDate, result.inspection_days);
+
+    // Try to extract relative dates from raw document text via second AI pass
+    let relativeDatesFromText = {};
+    if (acceptanceDate) {
+      try {
+        const textExtraction = await base44.integrations.Core.ExtractDataFromUploadedFile({
+          file_url,
+          json_schema: {
+            type: "object",
+            description: "Extract all deadline-related text for relative date calculation",
+            properties: {
+              raw_deadline_text: { type: "string", description: "All text containing deadline deadlines, inspection, due diligence, and appraisal information" }
+            }
+          }
+        });
+
+        if (textExtraction.status !== "error" && textExtraction.output?.raw_deadline_text) {
+          relativeDatesFromText = extractRelativeDates(textExtraction.output.raw_deadline_text, acceptanceDate);
+          debugFlags.push("RELATIVE_DATES_EXTRACTED");
+        }
+      } catch (e) {
+        console.warn("Could not extract relative dates from text:", e.message);
+      }
+    }
+
+    // Apply extracted relative dates, fall back to calculated dates
+    result.inspection_deadline    = result.inspection_deadline || relativeDatesFromText.inspection_deadline || addDays(acceptanceDate, result.inspection_days);
     result.sewage_deadline        = addDays(acceptanceDate, result.sewage_days);
     result.water_quality_deadline = addDays(acceptanceDate, result.water_quality_days);
     result.radon_deadline         = addDays(acceptanceDate, result.radon_days);
-    result.earnest_money_deadline = result.earnest_money_deadline || addDays(acceptanceDate, result.earnest_money_days);
-    result.due_diligence_deadline = result.due_diligence_deadline || addDays(acceptanceDate, result.due_diligence_days);
+    result.earnest_money_deadline = result.earnest_money_deadline || relativeDatesFromText.earnest_money_deadline || addDays(acceptanceDate, result.earnest_money_days);
+    result.due_diligence_deadline = result.due_diligence_deadline || relativeDatesFromText.due_diligence_deadline || addDays(acceptanceDate, result.due_diligence_days);
+    result.appraisal_deadline     = result.appraisal_deadline || relativeDatesFromText.appraisal_deadline;
+
+    // Add debug info
+    result._debug = {
+      text_confidence: !result.acceptance_date ? "LOW" : "HIGH",
+      relative_dates_detected: debugFlags.includes("RELATIVE_DATES_EXTRACTED"),
+      flags: debugFlags,
+    };
 
     console.log("Extraction complete:", {
       buyer: result.buyer_names,
@@ -111,6 +183,7 @@ Deno.serve(async (req) => {
       address: result.property_address,
       price: result.purchase_price,
       closing: result.closing_date,
+      debug: result._debug,
     });
 
     // ── Auto-create Contingency records if transaction_id provided ──
