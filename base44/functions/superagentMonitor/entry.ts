@@ -54,6 +54,9 @@ Deno.serve(async (req) => {
       }
     }
 
+    // ---- Fetch TransactionTasks (separate entity) in one go ----
+    const allTransactionTasks = await base44.asServiceRole.entities.TransactionTask.list();
+
     const alertsToCreate = [];
 
     for (const tx of activeTransactions) {
@@ -70,11 +73,101 @@ Deno.serve(async (req) => {
         { field: "ctc_target", label: "Clear to Close Target" },
       ];
 
-      const tasks = tx.tasks || [];
-      const overdueTasks = tasks.filter(t =>
-        !t.completed && t.due_date && new Date(t.due_date) < today
-      );
-      const incompleteTasks = tasks.filter(t => !t.completed);
+      // Combine inline tasks + TransactionTask entity records
+      const inlineTasks = tx.tasks || [];
+      const entityTasks = allTransactionTasks.filter(t => t.transaction_id === txId);
+
+      // Deadline is "done" if earnest_money_received flag set, or all tasks for that keyword completed
+      const DEADLINE_COMPLETION_KEYWORDS = {
+        earnest_money_deadline: ["earnest money", "emd", "deposit"],
+        inspection_deadline:    ["inspection"],
+        due_diligence_deadline: ["due diligence", "contingency"],
+        financing_deadline:     ["financing", "loan", "commitment"],
+        appraisal_deadline:     ["appraisal"],
+      };
+
+      function isDeadlineSatisfied(field) {
+        // Special flag on transaction
+        if (field === "earnest_money_deadline" && tx.earnest_money_received) return true;
+        const keywords = DEADLINE_COMPLETION_KEYWORDS[field];
+        if (!keywords) return false;
+        // Check entity tasks
+        const linked = entityTasks.filter(t =>
+          keywords.some(kw => t.title?.toLowerCase().includes(kw))
+        );
+        if (linked.length > 0 && linked.every(t => t.is_completed)) return true;
+        // Check inline tasks
+        const linkedInline = inlineTasks.filter(t =>
+          keywords.some(kw => t.name?.toLowerCase().includes(kw))
+        );
+        if (linkedInline.length > 0 && linkedInline.every(t => t.completed)) return true;
+        return false;
+      }
+
+      // ---- AUTO-RESOLVE stale open alerts ----
+      const openAlertsForTx = existingAlerts.filter(a => a.transaction_id === txId && a.status === "open");
+      for (const openAlert of openAlertsForTx) {
+        let shouldResolve = false;
+
+        if (openAlert.alert_type === "deadline_overdue" || openAlert.alert_type === "deadline_approaching") {
+          // Resolve if deadline was removed from transaction, or it's now satisfied by tasks
+          const field = openAlert.detail_key;
+          if (!tx[field]) {
+            shouldResolve = true; // deadline removed
+          } else if (isDeadlineSatisfied(field)) {
+            shouldResolve = true; // tasks confirm it's done
+          } else {
+            // Resolve if deadline approaching alert is now past the 7-day window OR overdue alert has a future date (extended)
+            const deadlineDate = new Date(tx[field]);
+            const daysLeft = Math.ceil((deadlineDate - today) / (1000 * 60 * 60 * 24));
+            if (openAlert.alert_type === "deadline_approaching" && (daysLeft < 0 || daysLeft > 7)) {
+              shouldResolve = true;
+            }
+          }
+        }
+
+        if (openAlert.alert_type === "tasks_overdue") {
+          // Resolve if no more overdue tasks
+          const currentOverdue = [
+            ...inlineTasks.filter(t => !t.completed && t.due_date && new Date(t.due_date) < today),
+            ...entityTasks.filter(t => !t.is_completed && t.due_date && new Date(t.due_date) < today),
+          ];
+          if (currentOverdue.length === 0) shouldResolve = true;
+        }
+
+        if (openAlert.alert_type === "missing_documents") {
+          const txChecklist = checklistItems.filter(ci => ci.transaction_id === txId);
+          const currentPhase = tx.phase || 1;
+          const stillMissing = txChecklist.filter(ci =>
+            ci.required && ci.status === "missing" && (ci.required_by_phase || 1) <= currentPhase
+          );
+          if (stillMissing.length === 0) shouldResolve = true;
+        }
+
+        if (openAlert.alert_type === "compliance_blockers") {
+          const txCompliance = complianceIssues.filter(ci => ci.transaction_id === txId);
+          if (txCompliance.filter(ci => ci.severity === "blocker").length === 0) shouldResolve = true;
+        }
+
+        if (shouldResolve) {
+          await base44.asServiceRole.entities.MonitorAlert.update(openAlert.id, {
+            status: "resolved",
+            resolved_at: new Date().toISOString(),
+          });
+          // Update the map so we don't recreate this alert below
+          existingAlertMap.set(`${openAlert.transaction_id}|${openAlert.alert_type}|${openAlert.detail_key || ""}`, { ...openAlert, status: "resolved" });
+        }
+      }
+
+      const tasks = inlineTasks;
+      const overdueTasks = [
+        ...inlineTasks.filter(t => !t.completed && t.due_date && new Date(t.due_date) < today),
+        ...entityTasks.filter(t => !t.is_completed && t.due_date && new Date(t.due_date) < today),
+      ];
+      const incompleteTasks = [
+        ...inlineTasks.filter(t => !t.completed),
+        ...entityTasks.filter(t => !t.is_completed),
+      ];
 
       const txChecklist = checklistItems.filter(ci => ci.transaction_id === txId);
       const txCompliance = complianceIssues.filter(ci => ci.transaction_id === txId);
@@ -82,6 +175,8 @@ Deno.serve(async (req) => {
       // ---- 1. Deadline Monitoring ----
       for (const { field, label } of DEADLINE_FIELDS) {
         if (!tx[field]) continue;
+        // Skip if deadline is confirmed done
+        if (isDeadlineSatisfied(field)) continue;
         const deadlineDate = new Date(tx[field]);
         const daysLeft = Math.ceil((deadlineDate - today) / (1000 * 60 * 60 * 24));
 
@@ -156,7 +251,7 @@ Deno.serve(async (req) => {
               alert_type: "tasks_overdue",
               priority: "warning",
               detail_key: "tasks",
-              message: `${overdueTasks.length} task${overdueTasks.length > 1 ? "s are" : " is"} overdue: ${overdueTasks.slice(0, 3).map(t => t.name).join(", ")}${overdueTasks.length > 3 ? "..." : ""}`,
+              message: `${overdueTasks.length} task${overdueTasks.length > 1 ? "s are" : " is"} overdue: ${overdueTasks.slice(0, 3).map(t => t.name || t.title).join(", ")}${overdueTasks.length > 3 ? "..." : ""}`,
               suggested_action: "Review and complete or reassign overdue tasks.",
               status: "open",
             });
@@ -164,7 +259,7 @@ Deno.serve(async (req) => {
           // If open already, update message in place
           else if (existing.status === "open") {
             await base44.asServiceRole.entities.MonitorAlert.update(existing.id, {
-              message: `${overdueTasks.length} task${overdueTasks.length > 1 ? "s are" : " is"} overdue: ${overdueTasks.slice(0, 3).map(t => t.name).join(", ")}${overdueTasks.length > 3 ? "..." : ""}`,
+              message: `${overdueTasks.length} task${overdueTasks.length > 1 ? "s are" : " is"} overdue: ${overdueTasks.slice(0, 3).map(t => t.name || t.title).join(", ")}${overdueTasks.length > 3 ? "..." : ""}`,
             });
           }
         }
