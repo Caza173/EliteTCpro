@@ -90,9 +90,6 @@
     "title"
   ],
   "rls": {
-    "create": {
-      "data.brokerage_id": "{{user.data.brokerage_id}}"
-    },
     "read": {
       "data.user_email": "{{user.email}}"
     },
