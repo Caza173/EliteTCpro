@@ -1,6 +1,8 @@
 import React, { useState, useRef } from "react";
 import { base44 } from "@/api/base44Client";
 import { useQuery } from "@tanstack/react-query";
+import { Link } from "react-router-dom";
+import { createPageUrl } from "@/utils";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -10,7 +12,7 @@ import { Separator } from "@/components/ui/separator";
 import {
   Loader2, Send, CheckCircle, FileSearch, Plus, X, Upload,
   FileText, Zap, Home, FileSignature, UserCheck, ShieldCheck, Mail, Phone,
-  ClipboardList, AlertTriangle,
+  ClipboardList, AlertTriangle, ArrowLeft,
 } from "lucide-react";
 import { generateSmartTasks } from "../components/transactions/defaultTasks";
 import PurchaseAgreementUpload from "../components/forms/PurchaseAgreementUpload";
@@ -435,19 +437,29 @@ export default function AgentIntake() {
         )}
 
         {activeTab === "review" && isTC ? (
-          <div className="space-y-4">
-            <div>
-              <h1 className="text-2xl font-bold text-gray-900">Pending Intake Reviews</h1>
-              <p className="text-sm text-gray-500 mt-0.5">Approve or reject agent deal submissions below.</p>
-            </div>
-            <IntakePendingReviews currentUser={currentUser} />
-          </div>
-        ) : (
-          <>
-            <div>
-              <h1 className="text-2xl font-bold text-gray-900 tracking-tight">Deal Intake</h1>
-              <p className="text-sm text-gray-500 mt-0.5">What are you creating today?</p>
-            </div>
+           <div className="space-y-4">
+             <Link to={createPageUrl("Dashboard")}>
+               <Button variant="ghost" size="sm" className="text-gray-500 hover:text-gray-800 -ml-2 h-8 gap-1">
+                 <ArrowLeft className="w-4 h-4" /> Back
+               </Button>
+             </Link>
+             <div>
+               <h1 className="text-2xl font-bold text-gray-900">Pending Intake Reviews</h1>
+               <p className="text-sm text-gray-500 mt-0.5">Approve or reject agent deal submissions below.</p>
+             </div>
+             <IntakePendingReviews currentUser={currentUser} />
+           </div>
+         ) : (
+           <>
+             <Link to={createPageUrl("Dashboard")}>
+               <Button variant="ghost" size="sm" className="text-gray-500 hover:text-gray-800 -ml-2 h-8 gap-1">
+                 <ArrowLeft className="w-4 h-4" /> Back
+               </Button>
+             </Link>
+             <div>
+               <h1 className="text-2xl font-bold text-gray-900 tracking-tight">Deal Intake</h1>
+               <p className="text-sm text-gray-500 mt-0.5">What are you creating today?</p>
+             </div>
 
 
 
@@ -479,7 +491,9 @@ export default function AgentIntake() {
   return (
     <div className="max-w-3xl mx-auto space-y-6">
       <div className="flex items-center gap-3">
-        <button onClick={() => setDealType(null)} className="text-sm text-blue-600 hover:underline">← Back</button>
+        <button onClick={() => setDealType(null)} className="text-gray-500 hover:text-gray-800 -ml-2 h-8 flex items-center gap-1 px-2 rounded hover:bg-gray-100">
+          <ArrowLeft className="w-4 h-4" /> Back
+        </button>
         <div>
           <h1 className="text-2xl font-bold text-gray-900 tracking-tight">
             {isBuyerAgency ? "Buyer Representation Agreement" : dealConfig?.label}
