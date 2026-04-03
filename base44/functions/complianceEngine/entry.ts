@@ -350,20 +350,53 @@ Deno.serve(async (req) => {
 
     console.log(`[complianceEngine] PDF fields extracted: ${pdfFields?.total || 0} (missing sigs: ${pdfFields?.missingSignatures?.length || 0}, missing initials: ${pdfFields?.missingInitials?.length || 0})`);
 
-    // ─── 3. PAGE-LEVEL AI DOCUMENT SCAN ──────────────────────────────────────
-    // First pass: classify the document type
-    const classifyPrompt = `You are a real estate compliance engine for New Hampshire (NHAR) transactions.
+    // ─── 3. SINGLE-PASS AI DOCUMENT SCAN ─────────────────────────────────────
+    // One combined call: classify + deep analysis to avoid timeout
+    const allNharTemplates = Object.keys(NHAR_TEMPLATES).join(" | ");
+    const companionDocsFallback = [];
 
-Look at this document and classify it. Return ONLY valid JSON:
-{
-  "document_type": "Purchase and Sales Agreement | Agency Disclosure | Property Disclosure | Lead Paint Disclosure | Addendum | Inspection Report | Appraisal | Closing Disclosure | Earnest Money Receipt | Other",
-  "page_count": <integer>,
-  "has_digital_signature_verification": <boolean>,
-  "digital_signature_platform": "dotloop | docusign | hellosign | none | unknown"
-}`;
+    const combinedPrompt = `You are a strict real estate compliance engine for New Hampshire (NHAR) real estate transactions.
 
-    const classifyResult = await base44.integrations.Core.InvokeLLM({
-      prompt: classifyPrompt,
+Transaction context:
+- Address: ${transaction_data?.address || 'Unknown'}
+- Transaction Type: ${transaction_data?.transaction_type || 'buyer'}
+- Is Cash Transaction: ${transaction_data?.is_cash_transaction ? 'Yes' : 'No'}
+- Sale Price: ${transaction_data?.sale_price ? '$' + Number(transaction_data.sale_price).toLocaleString() : 'Unknown'}
+- PDF Has Structured Form Fields: ${hasPdfFields ? 'YES — use field data as PRIMARY source of truth' : 'NO — use visual/OCR detection only'}
+
+${pdfFieldContext ? `━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+${pdfFieldContext}
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+IMPORTANT: PDF field data above is AUTHORITATIVE. Generate compliance issues for every MISSING field listed.
+` : "No PDF form fields were extractable — use visual/OCR detection only."}
+
+STEP 1 — CLASSIFY THE DOCUMENT:
+Identify document_type (one of: ${allNharTemplates} | Other), page_count, and whether it has digital signatures (dotloop/docusign/hellosign).
+
+STEP 2 — DEEP COMPLIANCE ANALYSIS:
+${hasPdfFields
+  ? 'Use PDF field extraction above as PRIMARY source. Do NOT override field data with visual inference.'
+  : 'Check each page visually for signatures, initials, and required fields.'
+}
+
+Check for:
+- Buyer, seller, agent signatures (present/missing/not_found)
+- Missing initials on interior pages (P&S Agreement only)
+- Blank required fields (purchase price, closing date, earnest money, names, address)
+- Unusual concessions >$5,000 or unusual contingency language
+
+STEP 3 — EXTRACT FIELDS:
+purchase_price (number), earnest_money (number), buyer_name, seller_name, buyers_agent, sellers_agent,
+closing_date (YYYY-MM-DD), inspection_deadline (YYYY-MM-DD), financing_deadline (YYYY-MM-DD),
+earnest_money_deadline (YYYY-MM-DD), property_address, commission_percent (number), effective_date (YYYY-MM-DD)
+
+STEP 4 — COMPLIANCE SCORE:
+Start at 100. Deduct: -20 per missing buyer/seller signature, -10 per missing agent signature, -5 per missing initials field, -7 per warning, -3 per blank required field. Minimum 10.
+
+Return ONLY valid JSON matching this schema exactly.`;
+
+    const result = await base44.integrations.Core.InvokeLLM({
+      prompt: combinedPrompt,
       file_urls: [document_url],
       response_json_schema: {
         type: "object",
@@ -372,151 +405,40 @@ Look at this document and classify it. Return ONLY valid JSON:
           page_count: { type: "number" },
           has_digital_signature_verification: { type: "boolean" },
           digital_signature_platform: { type: "string" },
-        }
-      }
-    });
-
-    const docType = classifyResult.document_type || "Other";
-    const pageCount = classifyResult.page_count || 1;
-    const hasDigitalSig = classifyResult.has_digital_signature_verification || false;
-    const template = getTemplate(docType);
-    const templateContext = buildTemplateContext(template, docType);
-    const companionDocs = template?.companion_docs || [];
-
-    // Second pass: deep page-level analysis
-    const deepPrompt = `You are a strict real estate compliance engine for New Hampshire (NHAR) real estate transactions.
-
-Transaction context:
-- Address: ${transaction_data?.address || 'Unknown'}
-- Transaction Type: ${transaction_data?.transaction_type || 'buyer'}
-- Is Cash Transaction: ${transaction_data?.is_cash_transaction ? 'Yes' : 'No'}
-- Sale Price: ${transaction_data?.sale_price ? '$' + Number(transaction_data.sale_price).toLocaleString() : 'Unknown'}
-- Document Type: ${docType}
-- Total Pages: ${pageCount}
-- Digital Signature Detected: ${hasDigitalSig ? 'Yes (' + (classifyResult.digital_signature_platform || 'unknown platform') + ')' : 'No'}
-- PDF Has Structured Form Fields: ${hasPdfFields ? 'YES — use field data as PRIMARY source of truth' : 'NO — use visual/OCR detection only'}
-
-${templateContext}
-
-${pdfFieldContext ? `━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-${pdfFieldContext}
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-IMPORTANT: The PDF form field data above is AUTHORITATIVE. Fields listed as MISSING above ARE missing — do not override with visual inference. Generate compliance issues for every missing signature and initial field listed above.
-` : "No PDF form fields were extractable — use visual/OCR detection only."}
-
-INSTRUCTIONS:
-Analyze this document with PAGE-LEVEL ACCURACY. For each issue, identify the EXACT page number where it occurs.
-
-1. SIGNATURE DETECTION
-${hasPdfFields
-  ? `PDF form fields have been extracted above. Use them as the PRIMARY source.
-- Any field listed as MISSING in the PDF data above = "missing" signature
-- Any field listed as COMPLETED = "present"
-- If a required party (buyer/seller/agent) has no field at all = "not_found"`
-  : hasDigitalSig
-    ? '- Document contains digital signature verification. Mark all digitally-verified signatures as "present". Check if all required parties have signed.'
-    : '- Check each signature block visually. "present" = filled/signed, "missing" = blank line exists but unsigned, "not_found" = no signature block exists for that party.'
-}
-Check: buyer_signature, seller_signature, buyer_agent_signature, seller_agent_signature
-For each missing signature, note which PAGE it should appear on.
-
-2. INITIALS CHECK (if P&S Agreement)
-${hasPdfFields && (pdfFields?.missingInitials?.length ?? 0) > 0
-  ? `PDF fields show ${pdfFields.missingInitials.length} missing initial field(s): ${pdfFields.missingInitials.map(f => f.name).join(', ')}. Generate a warning for each.`
-  : template?.initials_required
-    ? `This is a P&S Agreement. Check EVERY interior page (pages 2 through ${pageCount - 1}) for buyer and seller initials in the footer.
-List each page number where initials are MISSING.`
-    : 'Initials not required for this document type.'
-}
-
-3. REQUIRED FIELD DETECTION
-${hasPdfFields
-  ? 'Use the PDF field extraction data above as the primary source. Also check visually for any fields containing "______" or "[  ]".'
-  : `Check these required fields and note the page where each is located or missing:
-${template?.required_fields.map(f => `- "${f.label}" (expected page ${f.page})`).join('\n') || 'Extract all key fields.'}
-Also check for any field containing "______", "[  ]", or obviously blank where a value is required.`
-}
-
-4. FIELD EXTRACTION
-Extract as many of these as you can find:
-purchase_price (number), earnest_money (number), buyer_name, seller_name, buyers_agent, sellers_agent, 
-closing_date (YYYY-MM-DD), inspection_deadline (YYYY-MM-DD), financing_deadline (YYYY-MM-DD), 
-earnest_money_deadline (YYYY-MM-DD), property_address, commission_percent (number), effective_date (YYYY-MM-DD)
-
-5. COMPLIANCE ISSUES
-Generate issues for EVERY missing signature and initial found above. For EACH issue include the page_number.
-Severity rules:
-- "blocker": Missing required signature (buyer/seller) — use category "missing_signature"
-- "warning": Missing initials, missing date fields — use category "missing_initial" or "missing_field"
-- "info": Unusual terms, advisory notes
-
-Also provide:
-- suggested_task (short action item)
-- suggested_email_subject (professional)
-- suggested_email_body (reference property address: ${transaction_data?.address || '[Property Address]'})
-
-6. UNUSUAL TERMS
-Flag non-standard concessions (>$5,000), unusual contingency language, anything that may delay closing.
-
-7. COMPLIANCE SCORE
-Start at 100. Deduct: -20 per missing buyer/seller signature (blocker), -10 per missing agent signature, -5 per missing initial field, -7 per warning, -3 per blank required field. Minimum: 10.
-
-Return ONLY valid JSON:
-{
-  "document_type": "${docType}",
-  "page_count": ${pageCount},
-  "extracted_fields": {
-    "purchase_price": null, "earnest_money": null, "buyer_name": null, "seller_name": null,
-    "buyers_agent": null, "sellers_agent": null, "closing_date": null, "inspection_deadline": null,
-    "financing_deadline": null, "earnest_money_deadline": null, "property_address": null,
-    "commission_percent": null, "effective_date": null
-  },
-  "signatures": {
-    "buyer_signature": "present|missing|not_found",
-    "seller_signature": "present|missing|not_found",
-    "buyer_agent_signature": "present|missing|not_found",
-    "seller_agent_signature": "present|missing|not_found"
-  },
-  "missing_initials_pages": [],
-  "blank_fields": [],
-  "issues": [
-    {
-      "id": "issue_1",
-      "severity": "blocker|warning|info",
-      "category": "missing_signature|missing_initial|missing_field|blank_field|missing_doc|contract_term|deadline|financial",
-      "page_number": 1,
-      "message": "Clear human-readable description",
-      "field": "field_name_if_applicable",
-      "suggested_task": "Short task name",
-      "suggested_email_subject": "Professional email subject",
-      "suggested_email_body": "Professional email body"
-    }
-  ],
-  "missing_companion_docs": ${JSON.stringify(companionDocs)},
-  "compliance_score": 100,
-  "summary": "One sentence summary"
-}`;
-
-    const result = await base44.integrations.Core.InvokeLLM({
-      prompt: deepPrompt,
-      file_urls: [document_url],
-      model: "claude_sonnet_4_6",
-      response_json_schema: {
-        type: "object",
-        properties: {
-          document_type: { type: "string" },
-          page_count: { type: "number" },
           extracted_fields: { type: "object" },
           signatures: { type: "object" },
           missing_initials_pages: { type: "array", items: { type: "number" } },
           blank_fields: { type: "array", items: { type: "string" } },
-          issues: { type: "array", items: { type: "object" } },
+          issues: {
+            type: "array",
+            items: {
+              type: "object",
+              properties: {
+                id: { type: "string" },
+                severity: { type: "string" },
+                category: { type: "string" },
+                page_number: { type: "number" },
+                message: { type: "string" },
+                field: { type: "string" },
+                suggested_task: { type: "string" },
+                suggested_email_subject: { type: "string" },
+                suggested_email_body: { type: "string" },
+              }
+            }
+          },
           missing_companion_docs: { type: "array", items: { type: "string" } },
           compliance_score: { type: "number" },
           summary: { type: "string" }
         }
       }
     });
+
+    const docType = result.document_type || "Other";
+    const pageCount = result.page_count || 1;
+    const hasDigitalSig = result.has_digital_signature_verification || false;
+    const template = getTemplate(docType);
+    const companionDocs = template?.companion_docs || companionDocsFallback;
+    const classifyResult = result; // unified result object
 
     // ── Inject PDF-derived issues as authoritative ground truth ──────────────
     const pdfDerivedIssues = [];
@@ -596,7 +518,7 @@ Return ONLY valid JSON:
       missing_docs: result.missing_companion_docs || [],
       summary: result.summary || '',
       has_digital_signature: hasDigitalSig,
-      digital_signature_platform: classifyResult.digital_signature_platform || null,
+      digital_signature_platform: result.digital_signature_platform || null,
     });
 
     // Persist AI issues to ComplianceIssue entity
@@ -647,7 +569,7 @@ Return ONLY valid JSON:
         : "";
 
       const digitalSigNote = hasDigitalSig
-        ? `\n\nNote: Digital signatures were detected via ${classifyResult.digital_signature_platform || "e-sign platform"}.`
+        ? `\n\nNote: Digital signatures were detected via ${result.digital_signature_platform || "e-sign platform"}.`
         : "";
 
       const emailBody = `Hello,
