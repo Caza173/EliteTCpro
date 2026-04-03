@@ -86,31 +86,40 @@ function NoteCard({ note, onEdit, onComplete, onDelete, isDeleting }) {
 }
 
 function AddNoteForm({ transactionId, brokerageId, currentUser, onSave, onCancel }) {
+  const today = format(new Date(), "yyyy-MM-dd");
   const [form, setForm] = useState({
     title: "",
     message: "",
-    assigned_to: "",
-    due_date: "",
+    assigned_to: currentUser?.email || "",
+    due_date: today,
     status: "open",
   });
   const [saving, setSaving] = useState(false);
   const queryClient = useQueryClient();
+
+  const { data: users = [] } = useQuery({
+    queryKey: ["brokerage-users"],
+    queryFn: () => base44.entities.User.list(),
+    staleTime: 60_000,
+  });
 
   const handleSave = async () => {
     if (!form.title.trim() || !form.message.trim()) return;
     setSaving(true);
     try {
       await base44.entities.Note.create({
-        transaction_id: transactionId,
-        brokerage_id: brokerageId,
+        transaction_id: transactionId || null,
+        brokerage_id: brokerageId || currentUser?.brokerage_id || null,
         title: form.title,
         message: form.message,
         assigned_to: form.assigned_to || currentUser?.email,
         due_date: form.due_date || null,
         status: form.status,
         created_by: currentUser?.email,
+        created_by_name: currentUser?.full_name || currentUser?.email,
       });
       queryClient.invalidateQueries({ queryKey: ["notes", transactionId] });
+      queryClient.invalidateQueries({ queryKey: ["notes", null] });
       onSave();
     } catch (err) {
       console.error("Error creating note:", err);
@@ -137,14 +146,19 @@ function AddNoteForm({ transactionId, brokerageId, currentUser, onSave, onCancel
         style={{ borderColor: "var(--input-border)", background: "var(--input-bg)", color: "var(--text-primary)" }}
       />
       <div className="grid grid-cols-3 gap-2">
-        <input
-          type="email"
-          placeholder="Assign to"
+        <select
           value={form.assigned_to}
           onChange={e => setForm(f => ({ ...f, assigned_to: e.target.value }))}
           className="text-sm rounded-md border px-3 py-2 focus:outline-none focus:ring-1"
           style={{ borderColor: "var(--input-border)", background: "var(--input-bg)", color: "var(--text-primary)" }}
-        />
+        >
+          <option value="">Assign to...</option>
+          {users.map(u => (
+            <option key={u.id} value={u.email}>
+              {u.full_name || u.email}
+            </option>
+          ))}
+        </select>
         <input
           type="date"
           value={form.due_date}
@@ -188,8 +202,10 @@ export default function NotesTab({ transactionId, brokerageId, currentUser }) {
 
   const { data: notes = [], isLoading } = useQuery({
     queryKey: ["notes", transactionId],
-    queryFn: () => base44.entities.Note.filter({ transaction_id: transactionId }, "-created_date"),
-    enabled: !!transactionId,
+    queryFn: () => transactionId
+      ? base44.entities.Note.filter({ transaction_id: transactionId }, "-created_date")
+      : base44.entities.Note.list("-created_date", 50),
+    enabled: true,
   });
 
   const updateMutation = useMutation({
