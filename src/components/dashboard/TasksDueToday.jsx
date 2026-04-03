@@ -1,12 +1,13 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { createPageUrl } from "@/utils";
 import { CheckCircle2, Circle, AlertTriangle, Bell, FileInput, X } from "lucide-react";
 import { differenceInHours, parseISO, isToday } from "date-fns";
-import { getDaysUntil, normalizeDeadline } from "@/utils/dateUtils";
+import { getDaysUntil } from "@/utils/dateUtils";
 import { Badge } from "@/components/ui/badge";
 import { base44 } from "@/api/base44Client";
 import { useCurrentUser } from "../auth/useCurrentUser";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 
 const DEADLINE_LABELS = {
   earnest_money_deadline: "Earnest Money Deposit",
@@ -17,14 +18,60 @@ const DEADLINE_LABELS = {
   closing_date: "Closing Date",
 };
 
+// Entity used to persist dismissed/resolved state for deadline & task items
+const DISMISSED_TYPE = "task"; // we reuse the InAppNotification entity with type="task"
+
 export default function TasksDueToday({ transactions = [], notifications = [] }) {
-  const items = [];
-  const [dismissed, setDismissed] = useState(new Set());
-  const [resolved, setResolved] = useState(new Set());
   const { data: currentUser } = useCurrentUser();
+  const queryClient = useQueryClient();
+
+  // Load persisted dismissed/resolved state from DB
+  const { data: persistedStates = [] } = useQuery({
+    queryKey: ["taskDismissedStates", currentUser?.email],
+    queryFn: () =>
+      base44.entities.InAppNotification.filter({
+        user_email: currentUser.email,
+        type: "task",
+      }),
+    enabled: !!currentUser?.email,
+    staleTime: 30_000,
+  });
+
+  // Build a map of key → status from persisted records
+  const persistedMap = new Map(
+    persistedStates.map((r) => [r.deadline_field, r.dismissed ? "dismissed" : r.read_at ? "resolved" : "active"])
+  );
+
+  const persistDismiss = useMutation({
+    mutationFn: async ({ key, action }) => {
+      // Check if record already exists
+      const existing = persistedStates.find((r) => r.deadline_field === key);
+      if (existing) {
+        if (action === "dismiss") {
+          return base44.entities.InAppNotification.update(existing.id, { dismissed: true });
+        } else {
+          return base44.entities.InAppNotification.update(existing.id, { read_at: new Date().toISOString() });
+        }
+      } else {
+        return base44.entities.InAppNotification.create({
+          user_email: currentUser.email,
+          brokerage_id: currentUser.brokerage_id,
+          title: key,
+          body: "",
+          type: "task",
+          deadline_field: key,
+          dismissed: action === "dismiss",
+          read_at: action === "resolve" ? new Date().toISOString() : undefined,
+        });
+      }
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["taskDismissedStates", currentUser?.email] });
+    },
+  });
 
   const logAction = async (item, action) => {
-    const tx = transactions.find(t => t.id === item.txId);
+    const tx = transactions.find((t) => t.id === item.txId);
     try {
       await base44.entities.AuditLog.create({
         brokerage_id: tx?.brokerage_id,
@@ -41,18 +88,20 @@ export default function TasksDueToday({ transactions = [], notifications = [] })
   const handleDismiss = (e, item) => {
     e.preventDefault();
     e.stopPropagation();
-    setDismissed(prev => new Set([...prev, item.key]));
+    persistDismiss.mutate({ key: item.key, action: "dismiss" });
     logAction(item, "dismissed");
   };
 
   const handleResolve = (e, item) => {
     e.preventDefault();
     e.stopPropagation();
-    setResolved(prev => new Set([...prev, item.key]));
+    persistDismiss.mutate({ key: item.key, action: "resolve" });
     logAction(item, "resolved");
   };
 
-  // 1 — Tasks due within 24 hours (use calendar days for consistency)
+  const items = [];
+
+  // 1 — Tasks due within 24 hours
   transactions.forEach((tx) => {
     if (tx.status === "closed" || tx.status === "cancelled") return;
     (tx.tasks || []).forEach((task) => {
@@ -73,7 +122,7 @@ export default function TasksDueToday({ transactions = [], notifications = [] })
     });
   });
 
-  // 2 — New deals submitted by agent (created today, not yet processed = no tasks)
+  // 2 — New deals submitted today (no tasks yet)
   transactions.forEach((tx) => {
     if (tx.status === "closed" || tx.status === "cancelled") return;
     try {
@@ -92,7 +141,7 @@ export default function TasksDueToday({ transactions = [], notifications = [] })
     } catch {}
   });
 
-  // 3 — Pending addendum requests (must have a deadline_field set, indicating a real deadline alert)
+  // 3 — Pending addendum requests
   notifications.forEach((n) => {
     if (n.addendum_response === "pending" && n.deadline_field && n.transaction_id) {
       items.push({
@@ -107,7 +156,7 @@ export default function TasksDueToday({ transactions = [], notifications = [] })
     }
   });
 
-  // 4 — Deadlines within 3 days that haven't been actioned
+  // 4 — Deadlines within 3 days (skip if dismissed/resolved in DB)
   transactions.forEach((tx) => {
     if (tx.status === "closed" || tx.status === "cancelled") return;
     Object.keys(DEADLINE_LABELS).forEach((field) => {
@@ -119,10 +168,18 @@ export default function TasksDueToday({ transactions = [], notifications = [] })
         (t) => t.linked_deadline === field && t.completed
       );
       if (!linkedTaskDone) {
+        const key = `deadline-${tx.id}-${field}`;
+        // Skip if persisted as dismissed or resolved
+        const persistedStatus = persistedMap.get(key);
+        if (persistedStatus === "dismissed" || persistedStatus === "resolved") return;
+
         const badge = days === 0 ? "Due Today" : days === 1 ? "Due Tomorrow" : `${days}d`;
-        const badgeColor = days === 0 ? "bg-red-100 text-red-700" : days === 1 ? "bg-red-100 text-red-700" : "bg-orange-100 text-orange-700";
+        const badgeColor =
+          days === 0 ? "bg-red-100 text-red-700"
+          : days === 1 ? "bg-red-100 text-red-700"
+          : "bg-orange-100 text-orange-700";
         items.push({
-          key: `deadline-${tx.id}-${field}`,
+          key,
           type: "deadline",
           label: `${DEADLINE_LABELS[field]}: ${tx.address}`,
           sub: days === 0 ? "Due Today" : days === 1 ? "Due Tomorrow" : `Due in ${days}d`,
@@ -134,6 +191,10 @@ export default function TasksDueToday({ transactions = [], notifications = [] })
     });
   });
 
+  // Filter out in-memory dismissed items (tasks/addenda that haven't been persisted yet)
+  const [localDismissed, setLocalDismissed] = useState(new Set());
+  const visibleItems = items.filter((i) => !localDismissed.has(i.key));
+
   const ICONS = {
     task: <Circle className="w-4 h-4 text-amber-400 flex-shrink-0" />,
     new_deal: <FileInput className="w-4 h-4 text-blue-400 flex-shrink-0" />,
@@ -141,7 +202,16 @@ export default function TasksDueToday({ transactions = [], notifications = [] })
     deadline: <AlertTriangle className="w-4 h-4 text-orange-400 flex-shrink-0" />,
   };
 
-  const visibleItems = items.filter(i => !dismissed.has(i.key) && !resolved.has(i.key));
+  const onDismiss = (e, item) => {
+    // Optimistically hide immediately
+    setLocalDismissed((prev) => new Set([...prev, item.key]));
+    handleDismiss(e, item);
+  };
+
+  const onResolve = (e, item) => {
+    setLocalDismissed((prev) => new Set([...prev, item.key]));
+    handleResolve(e, item);
+  };
 
   if (visibleItems.length === 0) {
     return (
@@ -170,17 +240,16 @@ export default function TasksDueToday({ transactions = [], notifications = [] })
             </div>
           </Link>
           <Badge className={`text-xs flex-shrink-0 ${item.badgeColor}`}>{item.badge}</Badge>
-          {/* Action buttons — visible on hover */}
           <div className="flex gap-1 flex-shrink-0 opacity-0 group-hover:opacity-100 transition-opacity ml-1">
             <button
-              onClick={(e) => handleResolve(e, item)}
+              onClick={(e) => onResolve(e, item)}
               title="Mark resolved"
               className="flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-semibold bg-green-100 text-green-700 hover:bg-green-200 border border-green-200 transition-colors"
             >
               <CheckCircle2 className="w-3 h-3" /> Resolved
             </button>
             <button
-              onClick={(e) => handleDismiss(e, item)}
+              onClick={(e) => onDismiss(e, item)}
               title="Dismiss"
               className="flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-semibold bg-white text-gray-500 hover:bg-gray-100 border border-gray-200 transition-colors"
             >
