@@ -5,6 +5,8 @@ import UserManagement from './pages/UserManagement'
 import Contacts from './pages/Contacts'
 import DotloopIntegration from './pages/DotloopIntegration'
 import Integrations from './pages/Integrations'
+import GmailSetup from './pages/GmailSetup'
+import GoogleCalendarSetup from './pages/GoogleCalendarSetup'
 import CommissionStatements from './pages/CommissionStatements'
 import FuelProrations from './pages/FuelProrations'
 import DeadlineResponse from './pages/DeadlineResponse'
@@ -94,6 +96,20 @@ const AuthenticatedApp = () => {
         <RequireAuth>
           <LayoutWrapper currentPageName="Integrations">
             <Integrations />
+          </LayoutWrapper>
+        </RequireAuth>
+      } />
+      <Route path="/GmailSetup" element={
+        <RequireAuth>
+          <LayoutWrapper currentPageName="GmailSetup">
+            <GmailSetup />
+          </LayoutWrapper>
+        </RequireAuth>
+      } />
+      <Route path="/GoogleCalendarSetup" element={
+        <RequireAuth>
+          <LayoutWrapper currentPageName="GoogleCalendarSetup">
+            <GoogleCalendarSetup />
           </LayoutWrapper>
         </RequireAuth>
       } />
