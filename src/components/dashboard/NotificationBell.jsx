@@ -11,17 +11,19 @@ export default function NotificationBell() {
 
   const { data: notifications = [] } = useQuery({
     queryKey: ["notifications", currentUser?.email],
-    queryFn: () =>
-      base44.entities.InAppNotification.filter(
+    queryFn: async () => {
+      const all = await base44.entities.InAppNotification.filter(
         { user_email: currentUser?.email },
         "-created_date",
-        20
-      ),
+        50
+      );
+      return all.filter(n => !n.dismissed);
+    },
     enabled: !!currentUser?.email,
     refetchInterval: 30000,
   });
 
-  const unread = notifications.filter((n) => !n.read_at).length;
+  const unread = notifications.filter((n) => !n.read_at && !n.dismissed).length;
 
   return (
     <Link to={createPageUrl("Notifications")} className="relative p-2 rounded-lg hover:bg-gray-100 transition-colors">
