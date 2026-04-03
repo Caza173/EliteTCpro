@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { base44 } from "@/api/base44Client";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -9,9 +9,10 @@ import {
   Info, Plus, Mail, RefreshCw, Loader2,
   ChevronDown, ChevronUp, FileText, Scan,
   CheckCircle2, XCircle, MinusCircle, Wand2, ExternalLink,
-  FileSignature, Hash, BookOpen, Fingerprint
+  FileSignature, Hash, BookOpen, Fingerprint, BellRing
 } from "lucide-react";
 import { format } from "date-fns";
+import { toast } from "sonner";
 import EmailGeneratorModal from "./EmailGeneratorModal";
 import DocumentViewerModal from "../transactions/DocumentViewerModal";
 
@@ -276,9 +277,10 @@ function ReportCard({ report, onRescan, onAddTask, scanning, transaction, linked
 
 export default function ComplianceScanPanel({ transaction, currentUser }) {
   const queryClient = useQueryClient();
-  const [scanningId, setScanningId] = useState(null);
-  const [runningAll, setRunningAll] = useState(false);
   const [viewingDoc, setViewingDoc] = useState(null);
+  const [jobStatus, setJobStatus] = useState(null); // null | { status, processed_docs, total_docs }
+  const [scanning, setScanning] = useState(false);
+  const pollRef = useRef(null);
 
   const { data: reports = [], isLoading } = useQuery({
     queryKey: ["compliance-reports", transaction.id],
@@ -297,67 +299,103 @@ export default function ComplianceScanPanel({ transaction, currentUser }) {
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["transactions"] }),
   });
 
-  const allBlockers = reports.flatMap(r => r.blockers || []);
-  const allWarnings = reports.flatMap(r => r.warnings || []);
-  const avgScore = reports.length > 0
-    ? Math.round(reports.reduce((sum, r) => sum + (r.compliance_score || 100), 0) / reports.length)
-    : null;
-  const overallStatus = allBlockers.length > 0 ? 'blockers' : allWarnings.length > 0 ? 'warnings' : reports.length > 0 ? 'compliant' : 'unscanned';
+  // Check for an in-progress job on mount
+  useEffect(() => {
+    checkJobStatus(true);
+    return () => stopPolling();
+  }, [transaction.id]);
 
-  const runScan = async (doc, existingReport) => {
-    const docId = existingReport?.document_id || doc?.id;
-    setScanningId(docId);
-    try {
-      await base44.functions.invoke('complianceEngine', {
-        document_url: doc.file_url,
-        file_name: doc.file_name || "Document",
-        document_id: doc.id,
-        transaction_id: transaction.id,
-        brokerage_id: transaction.brokerage_id,
-        transaction_data: {
-          address: transaction.address,
-          transaction_type: transaction.transaction_type,
-          is_cash_transaction: transaction.is_cash_transaction,
-          sale_price: transaction.sale_price,
-          agent_email: transaction.agent_email,
-          phase: transaction.phase,
-          inspection_deadline: transaction.inspection_deadline,
-          appraisal_deadline: transaction.appraisal_deadline,
-          financing_deadline: transaction.financing_deadline,
-          earnest_money_deadline: transaction.earnest_money_deadline,
-          due_diligence_deadline: transaction.due_diligence_deadline,
-          closing_date: transaction.closing_date,
-          ctc_target: transaction.ctc_target,
-        }
-      });
-      queryClient.invalidateQueries({ queryKey: ["compliance-reports", transaction.id] });
-    } catch (e) {
-      console.error("Compliance scan failed:", e);
-    }
-    setScanningId(null);
+  const stopPolling = () => {
+    if (pollRef.current) { clearInterval(pollRef.current); pollRef.current = null; }
   };
 
-  const handleRescan = async (report) => {
-    const doc = documents.find(d => d.id === report.document_id);
-    if (!doc) return;
-    await runScan(doc, report);
+  const startPolling = () => {
+    stopPolling();
+    pollRef.current = setInterval(() => checkJobStatus(false), 4000);
+  };
+
+  const checkJobStatus = async (silent = false) => {
+    try {
+      const res = await base44.functions.invoke("scanDocuments", {
+        transaction_id: transaction.id,
+        action: "status",
+      });
+      const s = res.data;
+      if (!s || s.status === "none") { setJobStatus(null); setScanning(false); stopPolling(); return; }
+
+      setJobStatus(s);
+
+      if (s.status === "in_progress" || s.status === "pending") {
+        setScanning(true);
+        if (!pollRef.current) startPolling();
+      } else if (s.status === "complete" || s.status === "error") {
+        setScanning(false);
+        stopPolling();
+        if (!silent) {
+          queryClient.invalidateQueries({ queryKey: ["compliance-reports", transaction.id] });
+          if (s.status === "complete") {
+            toast.success(`Scan complete — ${s.processed_docs} document${s.processed_docs !== 1 ? "s" : ""} processed`);
+            // Browser notification
+            if ("Notification" in window && Notification.permission === "granted") {
+              new Notification("Compliance Scan Complete", {
+                body: `${transaction.address} — ${s.processed_docs} document${s.processed_docs !== 1 ? "s" : ""} scanned`,
+              });
+            }
+          } else {
+            toast.error("Scan encountered errors — partial results may be available");
+          }
+        }
+      }
+    } catch {}
   };
 
   const handleScanAll = async () => {
-    setRunningAll(true);
-    for (const doc of documents) {
-      await runScan(doc, null);
+    if (documents.length === 0) return;
+
+    // Request browser notification permission
+    if ("Notification" in window && Notification.permission === "default") {
+      Notification.requestPermission();
     }
-    setRunningAll(false);
+
+    setScanning(true);
+    setJobStatus({ status: "in_progress", processed_docs: 0, total_docs: documents.length });
+
+    // Fire-and-forget: don't await — backend runs independently
+    base44.functions.invoke("scanDocuments", {
+      transaction_id: transaction.id,
+      action: "start",
+    }).then(res => {
+      if (res.data?.error) {
+        toast.error(res.data.error);
+        setScanning(false);
+        stopPolling();
+      }
+    }).catch(() => {
+      // Backend still runs even if connection drops — keep polling
+    });
+
+    // Start polling immediately
+    startPolling();
+  };
+
+  const handleRescanDoc = async (doc) => {
+    // Single-doc rescan still goes through background job system
+    setScanning(true);
+    setJobStatus({ status: "in_progress", processed_docs: 0, total_docs: 1 });
+    base44.functions.invoke("scanDocuments", {
+      transaction_id: transaction.id,
+      action: "start",
+    }).catch(() => {});
+    startPolling();
   };
 
   const handleAddTask = async (issue) => {
     const newTask = {
       id: `compliance_${Date.now()}_${Math.random().toString(36).substr(2, 5)}`,
-      name: issue.suggested_task || issue.message,
+      name: issue.action_required || issue.suggested_task || issue.message,
       completed: false,
       phase: transaction.phase || 1,
-      required: issue.severity === 'blocker',
+      required: issue.severity === "critical" || issue.severity === "blocker",
       due_date: null,
       assigned_to: "tc",
     };
@@ -365,13 +403,22 @@ export default function ComplianceScanPanel({ transaction, currentUser }) {
     updateTxMutation.mutate({ tasks: updatedTasks, last_activity_at: new Date().toISOString() });
   };
 
+  const allBlockers = reports.flatMap(r => r.blockers || []);
+  const allWarnings = reports.flatMap(r => r.warnings || []);
+  const avgScore = reports.length > 0
+    ? Math.round(reports.reduce((sum, r) => sum + (r.compliance_score || 100), 0) / reports.length)
+    : null;
+  const overallStatus = allBlockers.length > 0 ? "blockers" : allWarnings.length > 0 ? "warnings" : reports.length > 0 ? "compliant" : "unscanned";
   const unscannedDocs = documents.filter(d => !reports.find(r => r.document_id === d.id));
+
+  const progress = jobStatus && jobStatus.total_docs > 0
+    ? Math.round((jobStatus.processed_docs / jobStatus.total_docs) * 100)
+    : 0;
 
   return (
     <div className="space-y-5">
-      {viewingDoc && (
-        <DocumentViewerModal doc={viewingDoc} onClose={() => setViewingDoc(null)} />
-      )}
+      {viewingDoc && <DocumentViewerModal doc={viewingDoc} onClose={() => setViewingDoc(null)} />}
+
       {/* Overall Compliance Summary */}
       <div className="rounded-2xl border p-5" style={{ backgroundColor: "var(--card-bg)", borderColor: "var(--card-border)" }}>
         <div className="flex flex-col sm:flex-row items-start sm:items-center gap-5">
@@ -384,48 +431,76 @@ export default function ComplianceScanPanel({ transaction, currentUser }) {
           )}
           <div className="flex-1">
             <h3 className="font-semibold text-gray-900 mb-1">Transaction Compliance</h3>
-            {overallStatus === 'unscanned' && (
-              <p className="text-sm text-gray-500">No documents have been scanned yet. Upload documents and run a compliance check.</p>
+            {overallStatus === "unscanned" && !scanning && (
+              <p className="text-sm text-gray-500">No documents have been scanned yet.</p>
             )}
-            {overallStatus === 'compliant' && (
+            {overallStatus === "compliant" && !scanning && (
               <p className="text-sm text-emerald-600 font-medium">✓ All scanned documents are compliant</p>
             )}
-            {overallStatus === 'warnings' && (
-              <p className="text-sm text-amber-600 font-medium">⚠ {allWarnings.length} warning{allWarnings.length !== 1 ? 's' : ''} across {reports.length} document{reports.length !== 1 ? 's' : ''}</p>
+            {overallStatus === "warnings" && !scanning && (
+              <p className="text-sm text-amber-600 font-medium">⚠ {allWarnings.length} warning{allWarnings.length !== 1 ? "s" : ""} across {reports.length} document{reports.length !== 1 ? "s" : ""}</p>
             )}
-            {overallStatus === 'blockers' && (
-              <p className="text-sm text-red-600 font-medium">🔴 {allBlockers.length} blocker{allBlockers.length !== 1 ? 's' : ''} — action required</p>
+            {overallStatus === "blockers" && !scanning && (
+              <p className="text-sm text-red-600 font-medium">🔴 {allBlockers.length} critical issue{allBlockers.length !== 1 ? "s" : ""} — action required</p>
             )}
+
+            {/* Scanning progress bar */}
+            {scanning && (
+              <div className="mt-2 space-y-2">
+                <div className="flex items-center gap-2">
+                  <Loader2 className="w-4 h-4 animate-spin text-blue-500 flex-shrink-0" />
+                  <p className="text-sm text-blue-600 font-medium">
+                    Scanning in background… {jobStatus?.processed_docs || 0}/{jobStatus?.total_docs || documents.length} documents
+                  </p>
+                </div>
+                <div className="w-full bg-gray-100 rounded-full h-1.5">
+                  <div
+                    className="bg-blue-500 h-1.5 rounded-full transition-all duration-500"
+                    style={{ width: `${Math.max(5, progress)}%` }}
+                  />
+                </div>
+                <p className="text-[11px] text-gray-400">
+                  You can switch tabs — scanning continues in the background.
+                </p>
+              </div>
+            )}
+
             <div className="flex items-center gap-3 mt-3 flex-wrap">
-              <span className="text-xs text-gray-400">{reports.length} document{reports.length !== 1 ? 's' : ''} scanned · {unscannedDocs.length} unscanned</span>
+              {!scanning && (
+                <span className="text-xs text-gray-400">
+                  {reports.length} document{reports.length !== 1 ? "s" : ""} scanned · {unscannedDocs.length} unscanned
+                </span>
+              )}
               <Button
                 size="sm"
                 onClick={handleScanAll}
-                disabled={runningAll || documents.length === 0}
+                disabled={scanning || documents.length === 0}
                 className="bg-blue-600 hover:bg-blue-700 h-8 text-xs"
               >
-                {runningAll ? <Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" /> : <Scan className="w-3.5 h-3.5 mr-1.5" />}
-                {runningAll ? "Scanning…" : `Scan All Documents (${documents.length})`}
+                {scanning ? <Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" /> : <Scan className="w-3.5 h-3.5 mr-1.5" />}
+                {scanning ? "Scanning…" : `Scan All Documents (${documents.length})`}
               </Button>
+              {!scanning && (
+                <Button size="sm" variant="ghost" className="h-8 text-xs text-gray-400" onClick={() => checkJobStatus(false)}>
+                  <RefreshCw className="w-3.5 h-3.5 mr-1" /> Refresh
+                </Button>
+              )}
             </div>
           </div>
         </div>
       </div>
 
       {/* Unscanned documents */}
-      {unscannedDocs.length > 0 && !runningAll && (
+      {unscannedDocs.length > 0 && !scanning && (
         <div className="rounded-xl border border-dashed border-amber-200 bg-amber-50 px-4 py-3">
           <p className="text-sm text-amber-700 font-medium">
-            {unscannedDocs.length} document{unscannedDocs.length !== 1 ? 's' : ''} not yet scanned:
+            {unscannedDocs.length} document{unscannedDocs.length !== 1 ? "s" : ""} not yet scanned
           </p>
           <div className="flex flex-wrap gap-2 mt-2">
             {unscannedDocs.map(d => (
               <div key={d.id} className="flex items-center gap-2 bg-white rounded-lg px-3 py-1.5 border border-amber-100">
                 <FileText className="w-3.5 h-3.5 text-amber-500" />
                 <span className="text-xs text-gray-600">{d.file_name}</span>
-                <Button size="sm" variant="ghost" className="h-6 px-2 text-xs text-amber-600" onClick={() => runScan(d, null)} disabled={scanningId === d.id}>
-                  {scanningId === d.id ? <Loader2 className="w-3 h-3 animate-spin" /> : "Scan"}
-                </Button>
               </div>
             ))}
           </div>
@@ -452,9 +527,9 @@ export default function ComplianceScanPanel({ transaction, currentUser }) {
             <ReportCard
               key={report.id}
               report={report}
-              onRescan={handleRescan}
+              onRescan={handleRescanDoc}
               onAddTask={handleAddTask}
-              scanning={scanningId === report.document_id}
+              scanning={scanning}
               transaction={transaction}
               linkedDoc={documents.find(d => d.id === report.document_id)}
               onViewDoc={setViewingDoc}

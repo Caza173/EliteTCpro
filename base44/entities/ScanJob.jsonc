@@ -1,0 +1,46 @@
+{
+  "name": "ScanJob",
+  "type": "object",
+  "properties": {
+    "transaction_id": {
+      "type": "string"
+    },
+    "brokerage_id": {
+      "type": "string"
+    },
+    "triggered_by": {
+      "type": "string",
+      "description": "Email of user who triggered the scan"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "pending",
+        "in_progress",
+        "complete",
+        "error"
+      ],
+      "default": "pending"
+    },
+    "total_docs": {
+      "type": "number",
+      "default": 0
+    },
+    "processed_docs": {
+      "type": "number",
+      "default": 0
+    },
+    "error_message": {
+      "type": "string"
+    },
+    "started_at": {
+      "type": "string"
+    },
+    "completed_at": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "transaction_id"
+  ]
+}
