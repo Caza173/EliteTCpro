@@ -9,6 +9,7 @@ import { base44 } from "@/api/base44Client";
 import { useQueryClient } from "@tanstack/react-query";
 import { getPhasesForType, isTaskIncompatible } from "@/lib/taskLibrary";
 import TaskLibraryModal from "@/components/tasks/TaskLibraryModal";
+import PhaseCompletionBadge from "./PhaseCompletionBadge";
 
 // ── Determine phase status ──────────────────────────────────────────────────
 function getPhaseStatus(phaseNum, tasks, phasesCompleted = []) {
@@ -142,7 +143,7 @@ const TaskRow = memo(function TaskRow({
 // ── Phase Card ───────────────────────────────────────────────────────────────
 function PhaseCard({
   phase, tasks, allPhases, isActive, isComplete, isMobile, defaultExpanded,
-  onToggleTask, onDelete, onMoveTo, onSaveEdit, onAddTask, brokerageId, transactionId, onTasksChanged,
+  onToggleTask, onDelete, onMoveTo, onSaveEdit, onAddTask, brokerageId, transactionId, onTasksChanged, transaction,
 }) {
   const [expanded, setExpanded] = useState(defaultExpanded);
   const [addingTask, setAddingTask] = useState(false);
@@ -201,7 +202,7 @@ function PhaseCard({
         className={`px-3 py-2.5 ${headerStyle} flex items-center justify-between gap-2 cursor-pointer`}
         onClick={() => isMobile && setExpanded(v => !v)}
       >
-        <div className="flex items-center gap-2 min-w-0">
+        <div className="flex items-center gap-2 min-w-0 flex-1">
           {isComplete ? (
             <div className="w-5 h-5 rounded-full bg-emerald-500 flex items-center justify-center flex-shrink-0">
               <Check className="w-3 h-3 text-white" />
@@ -213,13 +214,16 @@ function PhaseCard({
           ) : (
             <div className="w-5 h-5 rounded-full border-2 border-gray-300 flex-shrink-0" />
           )}
-          <div className="min-w-0">
+          <div className="min-w-0 flex-1">
             <p className={`text-xs font-semibold truncate ${isComplete ? "text-emerald-700 line-through" : isActive ? "text-blue-700" : "text-gray-600"}`}>
               {phase.label}
             </p>
             <p className="text-[10px] text-gray-400">{completed}/{total} tasks</p>
           </div>
         </div>
+        {transaction && isComplete && (
+          <PhaseCompletionBadge transaction={transaction} phaseNumber={phase.phaseNum} />
+        )}
         {isMobile && (
           expanded ? <ChevronUp className="w-3.5 h-3.5 text-gray-400 flex-shrink-0" /> : <ChevronDown className="w-3.5 h-3.5 text-gray-400 flex-shrink-0" />
         )}
@@ -517,6 +521,7 @@ export default function UnifiedPhaseBoard({
                   brokerageId={brokerageId}
                   transactionId={transactionId}
                   onTasksChanged={onTasksChanged}
+                  transaction={transaction}
                 />
               </div>
             );
