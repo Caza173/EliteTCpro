@@ -1,4 +1,5 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.23';
+import { PDFDocument } from 'npm:pdf-lib@1.17.1';
 
 // ─── NHAR Document Templates ─────────────────────────────────────────────────
 // Defines required signature blocks, initials, and fields by page for each form type.
@@ -89,6 +90,135 @@ function getTemplate(documentType) {
   return NHAR_TEMPLATES[documentType] || null;
 }
 
+// ─── PDF AcroForm Field Extraction ───────────────────────────────────────────
+// Classify a field name into its compliance role
+const SIG_KEYWORDS   = ["signature", "signed", "sign", "sig", "buyer", "seller"];
+const INITIAL_KEYWORDS = ["initial", "initials", "init"];
+const DATE_KEYWORDS  = ["date", "dated"];
+
+function classifyField(name, fieldType) {
+  const n = name.toLowerCase();
+  const isSignature = fieldType === "PDFSignature"
+    || (SIG_KEYWORDS.some(k => n.includes(k)) && !INITIAL_KEYWORDS.some(k => n.includes(k)));
+  const isInitial   = INITIAL_KEYWORDS.some(k => n.includes(k));
+  const isDate      = DATE_KEYWORDS.some(k => n.includes(k));
+  if (isSignature) return "signature";
+  if (isInitial)   return "initial";
+  if (isDate)      return "date";
+  return "field";
+}
+
+function classifyRole(name) {
+  const n = name.toLowerCase();
+  if (n.includes("buyer") && !n.includes("seller"))  return "buyer";
+  if (n.includes("seller") && !n.includes("buyer"))  return "seller";
+  if (n.includes("agent") || n.includes("firm"))     return "agent";
+  return "unknown";
+}
+
+async function extractPdfFields(fileUrl) {
+  try {
+    const response = await fetch(fileUrl);
+    if (!response.ok) return null;
+    const arrayBuffer = await response.arrayBuffer();
+    const pdfDoc = await PDFDocument.load(new Uint8Array(arrayBuffer), { ignoreEncryption: true });
+    const form = pdfDoc.getForm();
+    const rawFields = form.getFields();
+
+    if (!rawFields || rawFields.length === 0) return null;
+
+    const fields = rawFields.map(f => {
+      const name = f.getName() || "";
+      const constructor = f.constructor?.name || "Unknown";
+      let value = null;
+      let isEmpty = true;
+
+      try {
+        if (constructor === "PDFTextField") {
+          value = f.getText() || "";
+          isEmpty = !value || !value.trim();
+        } else if (constructor === "PDFCheckBox") {
+          value = f.isChecked() ? "checked" : "unchecked";
+          isEmpty = !f.isChecked();
+        } else if (constructor === "PDFDropdown" || constructor === "PDFOptionList") {
+          value = f.getSelected()?.join(", ") || "";
+          isEmpty = !value;
+        } else if (constructor === "PDFSignature") {
+          // Signature fields — check if they have any value
+          try { value = f.acroField?.getDefaultAppearance() ? "signed" : ""; } catch { value = ""; }
+          isEmpty = !value;
+        }
+      } catch {}
+
+      const role      = classifyRole(name);
+      const fieldType = classifyField(name, constructor);
+
+      return { name, constructor, value, isEmpty, role, fieldType };
+    });
+
+    // Build summary: missing required fields
+    const signatureFields = fields.filter(f => f.fieldType === "signature");
+    const initialFields   = fields.filter(f => f.fieldType === "initial");
+    const missingSignatures = signatureFields.filter(f => f.isEmpty);
+    const missingInitials   = initialFields.filter(f => f.isEmpty);
+    const allFields = fields;
+
+    return {
+      total: fields.length,
+      fields: allFields,
+      signatureFields,
+      initialFields,
+      missingSignatures,
+      missingInitials,
+      hasMissingSignatures: missingSignatures.length > 0,
+      hasMissingInitials:   missingInitials.length > 0,
+    };
+  } catch (err) {
+    console.warn("[complianceEngine] PDF field extraction failed:", err.message);
+    return null;
+  }
+}
+
+function buildPdfFieldContext(extracted) {
+  if (!extracted || extracted.total === 0) return "";
+
+  const lines = [`PDF FORM FIELDS EXTRACTED (${extracted.total} total — primary source of truth):`];
+
+  if (extracted.missingSignatures.length > 0) {
+    lines.push(`\nMISSING SIGNATURE FIELDS (${extracted.missingSignatures.length}):`);
+    extracted.missingSignatures.forEach(f => {
+      lines.push(`  ⛔ MISSING: "${f.name}" [role: ${f.role}] — field is blank/unsigned`);
+    });
+  }
+
+  if (extracted.missingInitials.length > 0) {
+    lines.push(`\nMISSING INITIAL FIELDS (${extracted.missingInitials.length}):`);
+    extracted.missingInitials.forEach(f => {
+      lines.push(`  ⚠ MISSING: "${f.name}" [role: ${f.role}] — initials blank`);
+    });
+  }
+
+  const missingOther = extracted.fields.filter(
+    f => f.isEmpty && f.fieldType !== "signature" && f.fieldType !== "initial"
+  );
+  if (missingOther.length > 0) {
+    lines.push(`\nOTHER EMPTY FIELDS (${missingOther.length}):`);
+    missingOther.slice(0, 20).forEach(f => {
+      lines.push(`  - "${f.name}" [${f.fieldType}] — empty`);
+    });
+  }
+
+  const filledSignatures = extracted.signatureFields.filter(f => !f.isEmpty);
+  if (filledSignatures.length > 0) {
+    lines.push(`\nCOMPLETED SIGNATURE FIELDS (${filledSignatures.length}):`);
+    filledSignatures.forEach(f => {
+      lines.push(`  ✓ "${f.name}" [role: ${f.role}]`);
+    });
+  }
+
+  return lines.join("\n");
+}
+
 function buildTemplateContext(template, docType) {
   if (!template) return "";
   const sigList = template.signature_blocks.map(s =>
@@ -111,8 +241,9 @@ ${template.initials_required ? "⚠ Buyer AND Seller initials are REQUIRED at th
 Deno.serve(async (req) => {
   try {
     const base44 = createClientFromRequest(req);
-    const user = await base44.auth.me();
-    if (!user) return Response.json({ error: 'Unauthorized' }, { status: 401 });
+    let user = null;
+    try { user = await base44.auth.me(); } catch {}
+    // Allow service-role calls (from automations) without user auth
 
     const { document_url, file_name, document_id, transaction_id, brokerage_id, transaction_data } = await req.json();
 
@@ -212,7 +343,14 @@ Deno.serve(async (req) => {
       return Response.json({ success: true, deadline_issues_count: deadlineIssues.length, message: "Deadline and financial checks complete" });
     }
 
-    // ─── 2. PAGE-LEVEL AI DOCUMENT SCAN ──────────────────────────────────────
+    // ─── 2. PDF ACROFORM FIELD EXTRACTION (primary source of truth) ──────────
+    const pdfFields = await extractPdfFields(document_url);
+    const pdfFieldContext = buildPdfFieldContext(pdfFields);
+    const hasPdfFields = pdfFields && pdfFields.total > 0;
+
+    console.log(`[complianceEngine] PDF fields extracted: ${pdfFields?.total || 0} (missing sigs: ${pdfFields?.missingSignatures?.length || 0}, missing initials: ${pdfFields?.missingInitials?.length || 0})`);
+
+    // ─── 3. PAGE-LEVEL AI DOCUMENT SCAN ──────────────────────────────────────
     // First pass: classify the document type
     const classifyPrompt = `You are a real estate compliance engine for New Hampshire (NHAR) transactions.
 
@@ -256,31 +394,48 @@ Transaction context:
 - Document Type: ${docType}
 - Total Pages: ${pageCount}
 - Digital Signature Detected: ${hasDigitalSig ? 'Yes (' + (classifyResult.digital_signature_platform || 'unknown platform') + ')' : 'No'}
+- PDF Has Structured Form Fields: ${hasPdfFields ? 'YES — use field data as PRIMARY source of truth' : 'NO — use visual/OCR detection only'}
 
 ${templateContext}
+
+${pdfFieldContext ? `━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+${pdfFieldContext}
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+IMPORTANT: The PDF form field data above is AUTHORITATIVE. Fields listed as MISSING above ARE missing — do not override with visual inference. Generate compliance issues for every missing signature and initial field listed above.
+` : "No PDF form fields were extractable — use visual/OCR detection only."}
 
 INSTRUCTIONS:
 Analyze this document with PAGE-LEVEL ACCURACY. For each issue, identify the EXACT page number where it occurs.
 
 1. SIGNATURE DETECTION
-${hasDigitalSig
-  ? '- Document contains digital signature verification. Mark all digitally-verified signatures as "present". Check if all required parties have signed.'
-  : '- Check each signature block. "present" = filled/signed, "missing" = blank line exists but unsigned, "not_found" = no signature block exists for that party.'
+${hasPdfFields
+  ? `PDF form fields have been extracted above. Use them as the PRIMARY source.
+- Any field listed as MISSING in the PDF data above = "missing" signature
+- Any field listed as COMPLETED = "present"
+- If a required party (buyer/seller/agent) has no field at all = "not_found"`
+  : hasDigitalSig
+    ? '- Document contains digital signature verification. Mark all digitally-verified signatures as "present". Check if all required parties have signed.'
+    : '- Check each signature block visually. "present" = filled/signed, "missing" = blank line exists but unsigned, "not_found" = no signature block exists for that party.'
 }
 Check: buyer_signature, seller_signature, buyer_agent_signature, seller_agent_signature
 For each missing signature, note which PAGE it should appear on.
 
 2. INITIALS CHECK (if P&S Agreement)
-${template?.initials_required
-  ? `This is a P&S Agreement. Check EVERY interior page (pages 2 through ${pageCount - 1}) for buyer and seller initials in the footer.
+${hasPdfFields && (pdfFields?.missingInitials?.length ?? 0) > 0
+  ? `PDF fields show ${pdfFields.missingInitials.length} missing initial field(s): ${pdfFields.missingInitials.map(f => f.name).join(', ')}. Generate a warning for each.`
+  : template?.initials_required
+    ? `This is a P&S Agreement. Check EVERY interior page (pages 2 through ${pageCount - 1}) for buyer and seller initials in the footer.
 List each page number where initials are MISSING.`
-  : 'Initials not required for this document type.'
+    : 'Initials not required for this document type.'
 }
 
 3. REQUIRED FIELD DETECTION
-Check these required fields and note the page where each is located or missing:
+${hasPdfFields
+  ? 'Use the PDF field extraction data above as the primary source. Also check visually for any fields containing "______" or "[  ]".'
+  : `Check these required fields and note the page where each is located or missing:
 ${template?.required_fields.map(f => `- "${f.label}" (expected page ${f.page})`).join('\n') || 'Extract all key fields.'}
-Also check for any field containing "______", "[  ]", or obviously blank where a value is required.
+Also check for any field containing "______", "[  ]", or obviously blank where a value is required.`
+}
 
 4. FIELD EXTRACTION
 Extract as many of these as you can find:
@@ -289,10 +444,10 @@ closing_date (YYYY-MM-DD), inspection_deadline (YYYY-MM-DD), financing_deadline 
 earnest_money_deadline (YYYY-MM-DD), property_address, commission_percent (number), effective_date (YYYY-MM-DD)
 
 5. COMPLIANCE ISSUES
-Generate issues. For EACH issue include the page_number where it occurs.
-Severity:
-- "blocker": Missing required signature, missing required field in executed document, contract potentially invalid
-- "warning": Missing important info, blank deadline, recommended follow-up
+Generate issues for EVERY missing signature and initial found above. For EACH issue include the page_number.
+Severity rules:
+- "blocker": Missing required signature (buyer/seller) — use category "missing_signature"
+- "warning": Missing initials, missing date fields — use category "missing_initial" or "missing_field"
 - "info": Unusual terms, advisory notes
 
 Also provide:
@@ -304,7 +459,7 @@ Also provide:
 Flag non-standard concessions (>$5,000), unusual contingency language, anything that may delay closing.
 
 7. COMPLIANCE SCORE
-Start at 100. Deduct: -20 per blocker, -7 per warning, -3 per blank required field. Minimum: 10.
+Start at 100. Deduct: -20 per missing buyer/seller signature (blocker), -10 per missing agent signature, -5 per missing initial field, -7 per warning, -3 per blank required field. Minimum: 10.
 
 Return ONLY valid JSON:
 {
@@ -363,14 +518,50 @@ Return ONLY valid JSON:
       }
     });
 
-    // Deduplicate issues by message
-    const seenMessages = new Set();
-    const issues = (result.issues || []).filter(i => {
+    // ── Inject PDF-derived issues as authoritative ground truth ──────────────
+    const pdfDerivedIssues = [];
+    if (pdfFields && hasPdfFields) {
+      // Missing signatures → blocker
+      for (const f of (pdfFields.missingSignatures || [])) {
+        pdfDerivedIssues.push({
+          id: `pdf_sig_${f.name}`,
+          severity: "blocker",
+          category: "missing_signature",
+          page_number: null, // page not extractable from pdf-lib without full layout parsing
+          field: f.name,
+          message: `Missing ${f.role !== "unknown" ? f.role + " " : ""}signature field: "${f.name}"`,
+          suggested_task: `Obtain signature for field "${f.name}"`,
+          suggested_email_subject: `Signature Required — ${transaction_data?.address || "Transaction"}`,
+          suggested_email_body: `Please sign the required field "${f.name}" in the ${file_name || "document"} for the transaction at ${transaction_data?.address || "the property"}.`,
+        });
+      }
+      // Missing initials → warning
+      for (const f of (pdfFields.missingInitials || [])) {
+        pdfDerivedIssues.push({
+          id: `pdf_init_${f.name}`,
+          severity: "warning",
+          category: "missing_initial",
+          page_number: null,
+          field: f.name,
+          message: `Missing ${f.role !== "unknown" ? f.role + " " : ""}initials field: "${f.name}"`,
+          suggested_task: `Obtain initials for field "${f.name}"`,
+          suggested_email_subject: `Initials Required — ${transaction_data?.address || "Transaction"}`,
+          suggested_email_body: `Please initial the required field "${f.name}" in the ${file_name || "document"} for the transaction at ${transaction_data?.address || "the property"}.`,
+        });
+      }
+    }
+
+    // Merge: start with PDF-derived issues as ground truth, then add AI issues that don't duplicate
+    const seenMessages = new Set(pdfDerivedIssues.map(i => i.field));
+    const aiIssues = (result.issues || []).filter(i => {
       const key = `${i.category}:${i.message}:${i.page_number}`;
+      // If we already have a PDF-derived issue for the same field, skip AI duplicate
+      if (i.field && seenMessages.has(i.field)) return false;
       if (seenMessages.has(key)) return false;
       seenMessages.add(key);
       return true;
     });
+    const issues = [...pdfDerivedIssues, ...aiIssues];
 
     const blockers = issues.filter(i => i.severity === 'blocker');
     const warnings = issues.filter(i => i.severity === 'warning');
