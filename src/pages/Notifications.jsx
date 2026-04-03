@@ -31,8 +31,8 @@ export default function Notifications() {
   const { data: notifications = [], isLoading } = useQuery({
     queryKey: ["notifications", currentUser?.email],
     queryFn: async () => {
-      const all = await base44.entities.InAppNotification.filter({ user_email: currentUser.email }, "-created_date", 100);
-      return all.filter(n => !n.dismissed);
+      // Only fetch non-dismissed notifications from the backend
+      return await base44.entities.InAppNotification.filter({ user_email: currentUser.email, dismissed: false }, "-created_date", 100);
     },
     enabled: !!currentUser?.email,
   });
