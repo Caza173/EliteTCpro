@@ -50,7 +50,7 @@ const TC_NAV = [
   { label: "Fuel Prorations",page: "FuelProrations",   icon: Droplets },
   { label: "Addendum Builder",page: "AddendumBuilder", icon: ClipboardList },
   { label: "Templates",      page: "TemplateManager", icon: Layers },
-  { label: "Integrations",   page: "DotloopIntegration", icon: Plug },
+  { label: "Integrations",   page: "Integrations", icon: Plug },
   { label: "Help & Training", page: "help",             icon: HelpCircle, path: "/help" },
   { label: "Settings",       page: "Settings",         icon: Settings },
 ];
@@ -68,7 +68,7 @@ const OWNER_NAV = [
   { label: "Billing",          page: "Billing",          icon: CreditCard },
   { label: "Audit Log",      page: "AuditLog",       icon: Shield },
   { label: "Feedback Center",page: "FeedbackCenter", icon: MessageSquarePlus },
-  { label: "Integrations",   page: "DotloopIntegration", icon: Plug },
+  { label: "Integrations",   page: "Integrations", icon: Plug },
   { label: "Help & Training", page: "help",            icon: HelpCircle, path: "/help" },
   { label: "Settings",       page: "Settings",       icon: Settings },
 ];
@@ -93,6 +93,7 @@ const PAGE_TITLES = {
   AgentPortal:       "My Transactions",
   UserManagement:    "User Management",
   DotloopIntegration:"Dotloop Integration",
+  Integrations:      "Integrations",
   FuelProrations:    "Fuel Prorations",
   Billing:           "Billing",
   Settings:          "Settings",

@@ -4,6 +4,7 @@ import SetupProfile from './pages/SetupProfile'
 import UserManagement from './pages/UserManagement'
 import Contacts from './pages/Contacts'
 import DotloopIntegration from './pages/DotloopIntegration'
+import Integrations from './pages/Integrations'
 import CommissionStatements from './pages/CommissionStatements'
 import FuelProrations from './pages/FuelProrations'
 import DeadlineResponse from './pages/DeadlineResponse'
@@ -86,6 +87,13 @@ const AuthenticatedApp = () => {
         <RequireAuth>
           <LayoutWrapper currentPageName="UserManagement">
             <UserManagement />
+          </LayoutWrapper>
+        </RequireAuth>
+      } />
+      <Route path="/Integrations" element={
+        <RequireAuth>
+          <LayoutWrapper currentPageName="Integrations">
+            <Integrations />
           </LayoutWrapper>
         </RequireAuth>
       } />
