@@ -1,0 +1,73 @@
+{
+  "name": "MonitorAlert",
+  "type": "object",
+  "properties": {
+    "transaction_id": {
+      "type": "string",
+      "description": "Reference to Transaction"
+    },
+    "brokerage_id": {
+      "type": "string"
+    },
+    "transaction_address": {
+      "type": "string",
+      "description": "Denormalized for fast display"
+    },
+    "alert_type": {
+      "type": "string",
+      "enum": [
+        "deadline_approaching",
+        "deadline_overdue",
+        "tasks_overdue",
+        "missing_documents",
+        "compliance_blockers",
+        "closing_risk"
+      ]
+    },
+    "priority": {
+      "type": "string",
+      "enum": [
+        "critical",
+        "warning",
+        "info"
+      ],
+      "default": "info"
+    },
+    "message": {
+      "type": "string"
+    },
+    "suggested_action": {
+      "type": "string"
+    },
+    "detail_key": {
+      "type": "string",
+      "description": "Dedup key fragment (e.g. field name or count)"
+    },
+    "deadline_value": {
+      "type": "string",
+      "description": "The deadline date value at time of alert creation \u2014 used to detect if deadline has changed (extension)"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "open",
+        "dismissed",
+        "resolved"
+      ],
+      "default": "open"
+    },
+    "dismissed_at": {
+      "type": "string",
+      "description": "Timestamp when dismissed"
+    },
+    "resolved_at": {
+      "type": "string",
+      "description": "Timestamp when resolved"
+    }
+  },
+  "required": [
+    "transaction_id",
+    "alert_type",
+    "message"
+  ]
+}

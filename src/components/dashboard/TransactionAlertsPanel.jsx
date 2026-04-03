@@ -39,7 +39,11 @@ export default function TransactionAlertsPanel({ brokerageId }) {
   // Update alert status (resolve or dismiss)
   const updateAlertMutation = useMutation({
     mutationFn: ({ alertId, status }) =>
-      base44.entities.MonitorAlert.update(alertId, { status }),
+      base44.entities.MonitorAlert.update(alertId, {
+        status,
+        ...(status === "dismissed" ? { dismissed_at: new Date().toISOString() } : {}),
+        ...(status === "resolved"  ? { resolved_at:  new Date().toISOString() } : {}),
+      }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["monitorAlerts", brokerageId] });
     },
