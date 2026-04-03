@@ -107,8 +107,7 @@ function AddNoteForm({ transactionId, brokerageId, currentUser, onSave, onCancel
     if (!form.title.trim() || !form.message.trim()) return;
     setSaving(true);
     try {
-      await base44.entities.Note.create({
-        transaction_id: transactionId || null,
+      const noteData = {
         brokerage_id: brokerageId || currentUser?.brokerage_id || null,
         title: form.title,
         message: form.message,
@@ -117,7 +116,9 @@ function AddNoteForm({ transactionId, brokerageId, currentUser, onSave, onCancel
         status: form.status,
         created_by: currentUser?.email,
         created_by_name: currentUser?.full_name || currentUser?.email,
-      });
+      };
+      if (transactionId) noteData.transaction_id = transactionId;
+      await base44.entities.Note.create(noteData);
       queryClient.invalidateQueries({ queryKey: ["notes", transactionId] });
       queryClient.invalidateQueries({ queryKey: ["notes", null] });
       onSave();
