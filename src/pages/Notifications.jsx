@@ -83,6 +83,14 @@ export default function Notifications() {
             {running ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <RefreshCw className="w-3.5 h-3.5" />}
             Check Deadlines
           </Button>
+          {notifications.length > 0 && (
+            <Button size="sm" variant="ghost" className="h-8 text-xs gap-1.5 text-gray-500"
+              onClick={async () => {
+                await Promise.all(notifications.map(n => dismissMutation.mutateAsync(n.id)));
+              }}>
+              <X className="w-3.5 h-3.5" /> Dismiss All
+            </Button>
+          )}
           {unread > 0 && (
             <Button size="sm" variant="ghost" className="h-8 text-xs gap-1.5 text-gray-500"
               onClick={async () => {
