@@ -4,7 +4,7 @@ import { Badge } from "@/components/ui/badge";
 import { Clock, AlertTriangle, CalendarCheck, Calendar } from "lucide-react";
 import { format, differenceInDays, isPast, isToday } from "date-fns";
 
-export default function DeadlinePanel({ transactions = [] }) {
+export default function DeadlinePanel({ transactions = [], isDeadlineResolved }) {
   const deadlines = [];
 
   const FIELDS = [
@@ -21,6 +21,10 @@ export default function DeadlinePanel({ transactions = [] }) {
     FIELDS.forEach((f) => {
       if (f.cashExcluded && tx.is_cash_transaction) return;
       if (tx[f.key]) {
+        // Skip overdue deadlines that are resolved by completed tasks
+        const date = new Date(tx[f.key]);
+        const isOverdue = isPast(date) && !isToday(date);
+        if (isOverdue && isDeadlineResolved?.(tx.id, f.key, tx)) return;
         deadlines.push({
           id: `${tx.id}-${f.key}`,
           label: f.label,

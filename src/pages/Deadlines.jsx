@@ -7,6 +7,15 @@ import DeadlinePanel from "../components/transactions/DeadlinePanel";
 import DeadlineAlerts from "../components/transactions/DeadlineAlerts";
 import { useCurrentUser, isOwnerOrAdmin } from "../components/auth/useCurrentUser";
 
+const DEADLINE_TASK_KEYWORDS = {
+  earnest_money_deadline: ["earnest money", "deposit received", "emd"],
+  inspection_deadline:    ["inspection scheduled", "inspection completed", "inspection report", "inspection"],
+  due_diligence_deadline: ["due diligence", "contingency removal", "review contingency"],
+  appraisal_deadline:     ["appraisal", "appraisal ordered", "appraisal received"],
+  financing_deadline:     ["financing", "loan commitment", "mortgage commitment", "clear to close"],
+  closing_date:           ["closing", "transfer of title"],
+};
+
 export default function Deadlines() {
   const { data: currentUser } = useCurrentUser();
 
@@ -19,6 +28,34 @@ export default function Deadlines() {
     },
     enabled: !!currentUser,
   });
+
+  const { data: allTasks = [] } = useQuery({
+    queryKey: ["allTransactionTasks"],
+    queryFn: () => base44.entities.TransactionTask.list(),
+    enabled: !!currentUser,
+    staleTime: 60_000,
+  });
+
+  // Build a map of tasksByTransactionId for quick lookup
+  const tasksByTxId = useMemo(() => {
+    const map = new Map();
+    allTasks.forEach(t => {
+      if (!map.has(t.transaction_id)) map.set(t.transaction_id, []);
+      map.get(t.transaction_id).push(t);
+    });
+    return map;
+  }, [allTasks]);
+
+  // Returns true if deadline is resolved by completed tasks
+  const isDeadlineResolvedByTasks = (txId, deadlineKey, tx) => {
+    if (deadlineKey === "earnest_money_deadline" && tx.earnest_money_received) return true;
+    const keywords = DEADLINE_TASK_KEYWORDS[deadlineKey] || [];
+    if (keywords.length === 0) return false;
+    const tasks = tasksByTxId.get(txId) || [];
+    const linked = tasks.filter(t => keywords.some(kw => t.title?.toLowerCase().includes(kw.toLowerCase())));
+    if (linked.length === 0) return false;
+    return linked.every(t => t.is_completed);
+  };
 
   const transactions = useMemo(() => {
     const seen = new Map();
@@ -38,7 +75,7 @@ export default function Deadlines() {
       </div>
 
       {/* Alerts */}
-      {!isLoading && <DeadlineAlerts transactions={transactions} />}
+      {!isLoading && <DeadlineAlerts transactions={transactions} isDeadlineResolved={isDeadlineResolvedByTasks} />}
 
       <Card className="shadow-sm border-gray-100">
         <CardHeader>
@@ -52,7 +89,7 @@ export default function Deadlines() {
               ))}
             </div>
           ) : (
-            <DeadlinePanel transactions={transactions} />
+            <DeadlinePanel transactions={transactions} isDeadlineResolved={isDeadlineResolvedByTasks} />
           )}
         </CardContent>
       </Card>

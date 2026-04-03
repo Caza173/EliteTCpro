@@ -2,7 +2,15 @@ import React from "react";
 import { differenceInDays, isPast, isToday, parseISO } from "date-fns";
 import { AlertTriangle, Clock, X } from "lucide-react";
 
-function getAlerts(transactions) {
+const DEADLINE_KEYS = {
+  "Inspection Deadline": "inspection_deadline",
+  "Appraisal Deadline": "appraisal_deadline",
+  "Financing Commitment": "financing_deadline",
+  "Clear to Close Target": "ctc_target",
+  "Closing Date": "closing_date",
+};
+
+function getAlerts(transactions, isDeadlineResolved) {
   const alerts = [];
   const today = new Date();
 
@@ -13,7 +21,11 @@ function getAlerts(transactions) {
       if (!dateStr) return;
       const date = parseISO(dateStr);
       const days = differenceInDays(date, today);
-      if (isPast(date) && !isToday(date)) {
+      const isOverdue = isPast(date) && !isToday(date);
+      // Skip if resolved by tasks
+      const deadlineKey = DEADLINE_KEYS[label];
+      if (isOverdue && deadlineKey && isDeadlineResolved?.(tx.id, deadlineKey, tx)) return;
+      if (isOverdue) {
         alerts.push({ id: `${tx.id}-${label}`, address: tx.address, label, days, overdue: true });
       } else if (days <= 3) {
         alerts.push({ id: `${tx.id}-${label}`, address: tx.address, label, days, overdue: false });
@@ -37,8 +49,8 @@ function dayLabel(days, overdue) {
   return `in ${days} days`;
 }
 
-export default function DeadlineAlerts({ transactions = [] }) {
-  const alerts = getAlerts(transactions);
+export default function DeadlineAlerts({ transactions = [], isDeadlineResolved }) {
+  const alerts = getAlerts(transactions, isDeadlineResolved);
   if (alerts.length === 0) return null;
 
   return (
