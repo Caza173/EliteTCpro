@@ -572,8 +572,6 @@ export default function TransactionDetail() {
     communications:  commsReadyCount + commsBlockedCount,
   };
 
-  const COMM_BADGE_CLS = commsBlockedCount > 0 ? "bg-red-500 text-white" : "bg-blue-500 text-white";
-
   return (
     <div className="flex flex-col -mx-4 -mb-4 lg:-mx-5 lg:-mb-5" style={{ height: "calc(100vh - 48px)", overflow: "hidden" }}>
 
@@ -777,6 +775,8 @@ export default function TransactionDetail() {
                         ? "bg-red-500 text-white"
                         : tabId === "deadlines"
                         ? "bg-amber-500 text-white"
+                        : tabId === "communications"
+                        ? (commsBlockedCount > 0 ? "bg-red-500 text-white" : "bg-blue-500 text-white")
                         : "bg-orange-400 text-white"
                     }`}>
                       {badgeCount}
