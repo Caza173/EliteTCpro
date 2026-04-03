@@ -320,17 +320,32 @@ export default function TransactionDetail() {
   const handleToggleTxTask = async (taskId) => {
     const task = txTasks.find(t => t.id === taskId);
     if (!task) return;
+    
+    const isCompleting = !task.is_completed;
+    
     // Optimistic update so PhaseChecklist re-renders immediately
     queryClient.setQueryData(["txTasks", id], (old = []) =>
       old.map(t => t.id === taskId ? { ...t, is_completed: !t.is_completed } : t)
     );
     await base44.entities.TransactionTask.update(taskId, { is_completed: !task.is_completed });
     refetchTxTasks();
+    
     await writeAuditLog({
       brokerageId: transaction.brokerage_id, transactionId: transaction.id,
       actorEmail: currentUser?.email, action: "task_completed", entityType: "task",
       entityId: taskId, description: `Task "${task.title}" toggled`,
     });
+    
+    // If completing a task that resolves a deadline, invalidate notifications
+    if (isCompleting) {
+      Object.entries(DEADLINE_RESOLUTION_MAP).forEach(([deadlineKey, taskNames]) => {
+        if (taskNames.some(name => task.title?.toLowerCase().includes(name.toLowerCase()))) {
+          console.log(`[Task Resolution] Task "${task.title}" resolves deadline: ${deadlineKey}`);
+          queryClient.invalidateQueries({ queryKey: ["notifications"] });
+        }
+      });
+    }
+    
     // Auto-complete phase if all required tasks done
     const updatedTasks = txTasks.map(t => t.id === taskId ? { ...t, is_completed: !t.is_completed } : t);
     const phaseDone = updatedTasks.filter(t => t.phase === task.phase && t.is_required).every(t => t.is_completed);
@@ -515,26 +530,37 @@ export default function TransactionDetail() {
     });
   };
 
-  // ── Deadline → task keyword mapping ─────────────────────────────────────────
-  // If ALL matched tasks are completed, the deadline is considered resolved even if past due.
-  const DEADLINE_TASK_KEYWORDS = {
-    earnest_money_deadline: ["earnest money", "deposit received", "emd"],
-    inspection_deadline:    ["inspection scheduled", "inspection completed", "inspection report", "inspection"],
-    due_diligence_deadline: ["due diligence", "contingency removal", "review contingency"],
-    appraisal_deadline:     ["appraisal", "appraisal ordered", "appraisal received"],
-    financing_deadline:     ["financing", "loan commitment", "mortgage commitment", "clear to close"],
-    closing_date:           ["closing", "transfer of title"],
+  // ── Deadline → task resolution mapping ───────────────────────────────────────
+  // Maps deadlines to specific tasks that satisfy them when completed
+  const DEADLINE_RESOLUTION_MAP = {
+    earnest_money_deadline: ["Earnest money deposit received + verified", "earnest_money_received"],
+    inspection_deadline:    ["Inspection completed", "inspection_completed"],
+    due_diligence_deadline: ["Due Diligence completed", "due_diligence_completed"],
+    appraisal_deadline:     ["Appraisal received", "appraisal_received"],
+    financing_deadline:     ["Clear to Close received", "financing_completed"],
+    closing_date:           ["Closing completed", "closing_completed"],
   };
 
-  // Returns true if there are linked tasks AND all of them are completed
+  // Returns true if the specific task that satisfies this deadline is completed
   const isDeadlineResolvedByTasks = (deadlineKey) => {
-    const keywords = DEADLINE_TASK_KEYWORDS[deadlineKey] || [];
-    if (keywords.length === 0) return false;
-    const linked = txTasks.filter(t =>
-      keywords.some(kw => t.title?.toLowerCase().includes(kw.toLowerCase()))
+    const requiredTaskNames = DEADLINE_RESOLUTION_MAP[deadlineKey] || [];
+    if (requiredTaskNames.length === 0) return false;
+    
+    const satisfied = txTasks.some(t => 
+      requiredTaskNames.some(name => 
+        t.title?.toLowerCase().includes(name.toLowerCase()) && t.is_completed
+      )
     );
-    if (linked.length === 0) return false; // no linked tasks → fall back to date logic
-    return linked.every(t => t.is_completed);
+    
+    if (process.env.NODE_ENV === 'development') {
+      console.log(`[Deadline Resolution] ${deadlineKey}:`, {
+        requiredTasks: requiredTaskNames,
+        satisfied,
+        completedTasks: txTasks.filter(t => t.is_completed).map(t => t.title)
+      });
+    }
+    
+    return satisfied;
   };
 
   const isLoading = isLoadingList || isLoadingById;
@@ -574,14 +600,20 @@ export default function TransactionDetail() {
   deadlineFields.forEach(({ key, label }) => {
     const d = transaction[key];
     if (!d) return;
+    
+    // Check if deadline is resolved by task completion
+    const isResolved = isDeadlineResolvedByTasks(key);
+    
     const date = new Date(d);
     const diffHrs = (date - now) / 36e5;
+    
     if (diffHrs < 0) {
       // Only show OVERDUE if not resolved by task completion
-      if (!isDeadlineResolvedByTasks(key)) {
+      if (!isResolved) {
         attentionItems.push({ type: "deadline", label: `${label} OVERDUE`, tab: "deadlines", urgent: true });
       }
-    } else if (diffHrs < 48) {
+    } else if (diffHrs < 48 && !isResolved) {
+      // Only show approaching deadline if not already resolved
       attentionItems.push({ type: "deadline", label: `${label} in ${Math.round(diffHrs)}h`, tab: "deadlines", urgent: diffHrs < 24 });
     }
   });
