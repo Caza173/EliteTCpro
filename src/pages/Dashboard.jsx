@@ -100,6 +100,7 @@ export default function Dashboard() {
   const [deadlineView, setDeadlineView] = useState("list");
   const [activeTab, setActiveTab] = useState("overview");
   const [aiOpen, setAiOpen] = useState(false);
+  const [aiPanelCollapsed, setAiPanelCollapsed] = useState(false);
   const { data: currentUser } = useCurrentUser();
 
   const { data: rawTransactions = [], isLoading } = useQuery({
@@ -291,12 +292,21 @@ export default function Dashboard() {
         <div className="space-y-6">
           {/* 12-col grid: calendar (9) + AI panel (3) */}
           <div className="grid grid-cols-12 gap-6">
-            {/* Main content — full width on mobile, 9 cols on xl */}
-            <div className="col-span-12 xl:col-span-9 space-y-6">
+            {/* Main content — full width on mobile, 9 cols on xl (expands when AI collapsed) */}
+            <div className={`col-span-12 space-y-6 ${aiPanelCollapsed ? "xl:col-span-12" : "xl:col-span-9"}`}>
               {/* Calendar */}
               <div className="theme-card overflow-hidden w-full">
-                <div className="px-4 py-3 border-b" style={{ borderColor: "var(--border)" }}>
+                <div className="px-4 py-3 border-b flex items-center justify-between" style={{ borderColor: "var(--border)" }}>
                   <h3 className="text-sm font-semibold" style={{ color: "var(--text-primary)" }}>Deadline Calendar</h3>
+                  <button
+                    onClick={() => setAiPanelCollapsed(c => !c)}
+                    className="hidden xl:flex items-center gap-1.5 text-xs font-medium px-2.5 py-1 rounded-lg border transition-colors hover:opacity-80"
+                    style={{ borderColor: "var(--border)", color: "var(--text-muted)", background: "var(--bg-tertiary)" }}
+                    title={aiPanelCollapsed ? "Show AI Assistant" : "Hide AI Assistant"}
+                  >
+                    <MessageSquare className="w-3.5 h-3.5" />
+                    {aiPanelCollapsed ? "Show AI" : "Hide AI"}
+                  </button>
                 </div>
                 <div className="p-4">
                   {isLoading ? <Skeleton className="h-64 rounded-xl" /> : <DeadlineCalendarView transactions={transactions} />}
@@ -324,8 +334,8 @@ export default function Dashboard() {
             </div>
 
             {/* AI Assistant — hidden below xl, col-span-3 on xl */}
-            <div className="hidden xl:block xl:col-span-3">
-              {!isLoading && (
+            <div className={`hidden xl:block transition-all duration-300 ${aiPanelCollapsed ? "xl:col-span-0 w-0 overflow-hidden" : "xl:col-span-3"}`}>
+              {!isLoading && !aiPanelCollapsed && (
                 <GlobalAIAssistant transactions={transactions} checklistItems={checklistItems} />
               )}
             </div>
