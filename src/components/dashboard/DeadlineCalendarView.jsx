@@ -21,14 +21,25 @@ const DEADLINE_TYPES = [
 
 function useContingencies(txIds) {
   const [contingencies, setContingencies] = React.useState([]);
+  const cachedTxIds = React.useRef("");
   
   React.useEffect(() => {
     if (!txIds.length) return;
+    
+    // Only refetch if tx list actually changed
+    const newKey = txIds.sort().join(",");
+    if (cachedTxIds.current === newKey) return;
+    cachedTxIds.current = newKey;
+    
     (async () => {
-      const allConts = await Promise.all(
-        txIds.map(id => base44.entities.Contingency.filter({ transaction_id: id }).catch(() => []))
-      );
-      setContingencies(allConts.flat());
+      try {
+        // Fetch all contingencies once, then filter client-side
+        const allConts = await base44.entities.Contingency.list(undefined, 1000);
+        const filtered = allConts.filter(c => txIds.includes(c.transaction_id));
+        setContingencies(filtered);
+      } catch {
+        setContingencies([]);
+      }
     })();
   }, [txIds]);
   
