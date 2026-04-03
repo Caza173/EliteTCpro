@@ -880,14 +880,6 @@ export default function TransactionDetail() {
                 </div>
               </div>
 
-              {/* Compliance Monitor */}
-              <div className="flex-shrink-0 border-b p-3" style={{ borderColor: "var(--card-border)" }}>
-                <ComplianceMonitorWidget
-                  transaction={transaction}
-                  onNavigateToCompliance={() => setActiveTab("compliance")}
-                />
-              </div>
-
               {/* Notes — fills remaining height */}
               <div className="flex-1 min-h-0 flex flex-col lg:overflow-hidden">
                 <NotesPanel transaction={transaction} currentUser={currentUser} />
