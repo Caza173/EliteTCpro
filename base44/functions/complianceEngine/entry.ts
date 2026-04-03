@@ -351,49 +351,77 @@ Deno.serve(async (req) => {
     console.log(`[complianceEngine] PDF fields extracted: ${pdfFields?.total || 0} (missing sigs: ${pdfFields?.missingSignatures?.length || 0}, missing initials: ${pdfFields?.missingInitials?.length || 0})`);
 
     // ─── 3. SINGLE-PASS AI DOCUMENT SCAN ─────────────────────────────────────
-    // One combined call: classify + deep analysis to avoid timeout
     const allNharTemplates = Object.keys(NHAR_TEMPLATES).join(" | ");
     const companionDocsFallback = [];
 
-    const combinedPrompt = `You are a strict real estate compliance engine for New Hampshire (NHAR) real estate transactions.
+    const combinedPrompt = `You are a strict real estate compliance auditor for New Hampshire (NHAR) transactions.
+
+Analyze this real estate document for compliance. Return structured issues ONLY — do NOT summarize.
 
 Transaction context:
 - Address: ${transaction_data?.address || 'Unknown'}
 - Transaction Type: ${transaction_data?.transaction_type || 'buyer'}
 - Is Cash Transaction: ${transaction_data?.is_cash_transaction ? 'Yes' : 'No'}
 - Sale Price: ${transaction_data?.sale_price ? '$' + Number(transaction_data.sale_price).toLocaleString() : 'Unknown'}
-- PDF Has Structured Form Fields: ${hasPdfFields ? 'YES — use field data as PRIMARY source of truth' : 'NO — use visual/OCR detection only'}
 
 ${pdfFieldContext ? `━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+PDF FORM FIELD DATA (AUTHORITATIVE — use as primary source):
 ${pdfFieldContext}
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-IMPORTANT: PDF field data above is AUTHORITATIVE. Generate compliance issues for every MISSING field listed.
-` : "No PDF form fields were extractable — use visual/OCR detection only."}
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━` : "No structured form fields detected — use visual/OCR analysis only."}
 
-STEP 1 — CLASSIFY THE DOCUMENT:
-Identify document_type (one of: ${allNharTemplates} | Other), page_count, and whether it has digital signatures (dotloop/docusign/hellosign).
+DOCUMENT CLASSIFICATION:
+Identify: document_type (one of: ${allNharTemplates} | Other), page_count, digital signature platform if present.
 
-STEP 2 — DEEP COMPLIANCE ANALYSIS:
-${hasPdfFields
-  ? 'Use PDF field extraction above as PRIMARY source. Do NOT override field data with visual inference.'
-  : 'Check each page visually for signatures, initials, and required fields.'
+ISSUE DETECTION RULES — list EVERY issue individually, do NOT group:
+1. SIGNATURE BLOCKS — check every page for signature lines:
+   - Is each signature block signed or blank?
+   - Identify exact party: buyer, seller, agent
+   - Include exact page number and location (e.g. "Bottom of page 3, Seller signature line")
+   - Type: missing_signature
+
+2. INITIALS — check footer/margin of every interior page:
+   - Are buyer AND seller initials present on each page?
+   - If missing on any page, report each page separately
+   - Type: missing_initial, include page number
+
+3. BLANK FIELDS — scan for any required field left blank:
+   - Purchase price, earnest money amount, closing date, property address, buyer name, seller name
+   - Also: insulation disclosures, fuel tank fields, radon, lead paint checkboxes, etc.
+   - Include exact field name and page number
+   - Type: blank_field
+
+4. INVALID DATES — check all dates:
+   - Is the year correct (current or near-future)?
+   - Are dates logically consistent (e.g. closing after contract)?
+   - Type: invalid_date, include field name and page
+
+5. MISSING DOCUMENTS — based on document type, flag required companion docs
+   - Type: missing_document
+
+For EVERY issue you MUST provide:
+- type: missing_signature | missing_initial | blank_field | invalid_date | missing_document
+- description: clear one-sentence description (e.g. "Buyer signature is missing on page 4")
+- field: exact field or section name
+- party: buyer | seller | agent (whoever is responsible)
+- location: exact location (e.g. "Page 4, bottom signature block")
+- page: page number (integer)
+- severity: critical (missing sig/date) | high (blank required field) | medium (blank optional field) | low (minor)
+- action_required: specific action (e.g. "Obtain buyer signature on page 4")
+
+OUTPUT FORMAT — return JSON only, no explanations outside JSON:
+{
+  "document_type": "...",
+  "page_count": N,
+  "has_digital_signature_verification": bool,
+  "digital_signature_platform": "...",
+  "issues": [ ...one object per issue... ],
+  "extracted_fields": { purchase_price, earnest_money, buyer_name, seller_name, closing_date, inspection_deadline, financing_deadline, property_address },
+  "missing_companion_docs": [...],
+  "compliance_score": N,
+  "summary": "one sentence"
 }
 
-Check for:
-- Buyer, seller, agent signatures (present/missing/not_found)
-- Missing initials on interior pages (P&S Agreement only)
-- Blank required fields (purchase price, closing date, earnest money, names, address)
-- Unusual concessions >$5,000 or unusual contingency language
-
-STEP 3 — EXTRACT FIELDS:
-purchase_price (number), earnest_money (number), buyer_name, seller_name, buyers_agent, sellers_agent,
-closing_date (YYYY-MM-DD), inspection_deadline (YYYY-MM-DD), financing_deadline (YYYY-MM-DD),
-earnest_money_deadline (YYYY-MM-DD), property_address, commission_percent (number), effective_date (YYYY-MM-DD)
-
-STEP 4 — COMPLIANCE SCORE:
-Start at 100. Deduct: -20 per missing buyer/seller signature, -10 per missing agent signature, -5 per missing initials field, -7 per warning, -3 per blank required field. Minimum 10.
-
-Return ONLY valid JSON matching this schema exactly.`;
+Do NOT summarize issues. Do NOT generalize. List every issue as its own object.`;
 
     const result = await base44.integrations.Core.InvokeLLM({
       prompt: combinedPrompt,
@@ -406,23 +434,20 @@ Return ONLY valid JSON matching this schema exactly.`;
           has_digital_signature_verification: { type: "boolean" },
           digital_signature_platform: { type: "string" },
           extracted_fields: { type: "object" },
-          signatures: { type: "object" },
-          missing_initials_pages: { type: "array", items: { type: "number" } },
-          blank_fields: { type: "array", items: { type: "string" } },
           issues: {
             type: "array",
             items: {
               type: "object",
               properties: {
                 id: { type: "string" },
-                severity: { type: "string" },
-                category: { type: "string" },
-                page_number: { type: "number" },
-                message: { type: "string" },
+                type: { type: "string" },
+                description: { type: "string" },
                 field: { type: "string" },
-                suggested_task: { type: "string" },
-                suggested_email_subject: { type: "string" },
-                suggested_email_body: { type: "string" },
+                party: { type: "string" },
+                location: { type: "string" },
+                page: { type: "number" },
+                severity: { type: "string" },
+                action_required: { type: "string" },
               }
             }
           },
@@ -438,56 +463,80 @@ Return ONLY valid JSON matching this schema exactly.`;
     const hasDigitalSig = result.has_digital_signature_verification || false;
     const template = getTemplate(docType);
     const companionDocs = template?.companion_docs || companionDocsFallback;
-    const classifyResult = result; // unified result object
 
     // ── Inject PDF-derived issues as authoritative ground truth ──────────────
     const pdfDerivedIssues = [];
     if (pdfFields && hasPdfFields) {
-      // Missing signatures → blocker
       for (const f of (pdfFields.missingSignatures || [])) {
         pdfDerivedIssues.push({
           id: `pdf_sig_${f.name}`,
-          severity: "blocker",
-          category: "missing_signature",
-          page_number: null, // page not extractable from pdf-lib without full layout parsing
+          type: "missing_signature",
+          description: `Missing ${f.role !== "unknown" ? f.role + " " : ""}signature: "${f.name}"`,
           field: f.name,
+          party: f.role !== "unknown" ? f.role : null,
+          location: `Signature field "${f.name}"`,
+          page: null,
+          severity: "critical",
+          action_required: `Obtain ${f.role !== "unknown" ? f.role + " " : ""}signature for field "${f.name}"`,
+          // Legacy compatibility
+          category: "missing_signature",
           message: `Missing ${f.role !== "unknown" ? f.role + " " : ""}signature field: "${f.name}"`,
           suggested_task: `Obtain signature for field "${f.name}"`,
-          suggested_email_subject: `Signature Required — ${transaction_data?.address || "Transaction"}`,
-          suggested_email_body: `Please sign the required field "${f.name}" in the ${file_name || "document"} for the transaction at ${transaction_data?.address || "the property"}.`,
         });
       }
-      // Missing initials → warning
       for (const f of (pdfFields.missingInitials || [])) {
         pdfDerivedIssues.push({
           id: `pdf_init_${f.name}`,
-          severity: "warning",
-          category: "missing_initial",
-          page_number: null,
+          type: "missing_initial",
+          description: `Missing ${f.role !== "unknown" ? f.role + " " : ""}initials: "${f.name}"`,
           field: f.name,
+          party: f.role !== "unknown" ? f.role : null,
+          location: `Initials field "${f.name}"`,
+          page: null,
+          severity: "high",
+          action_required: `Obtain initials for field "${f.name}"`,
+          category: "missing_initial",
           message: `Missing ${f.role !== "unknown" ? f.role + " " : ""}initials field: "${f.name}"`,
           suggested_task: `Obtain initials for field "${f.name}"`,
-          suggested_email_subject: `Initials Required — ${transaction_data?.address || "Transaction"}`,
-          suggested_email_body: `Please initial the required field "${f.name}" in the ${file_name || "document"} for the transaction at ${transaction_data?.address || "the property"}.`,
         });
       }
     }
 
-    // Merge: start with PDF-derived issues as ground truth, then add AI issues that don't duplicate
-    const seenMessages = new Set(pdfDerivedIssues.map(i => i.field));
-    const aiIssues = (result.issues || []).filter(i => {
-      const key = `${i.category}:${i.message}:${i.page_number}`;
-      // If we already have a PDF-derived issue for the same field, skip AI duplicate
-      if (i.field && seenMessages.has(i.field)) return false;
-      if (seenMessages.has(key)) return false;
-      seenMessages.add(key);
+    // Normalize AI issues to unified schema
+    const seenFields = new Set(pdfDerivedIssues.map(i => i.field));
+    const aiIssues = (result.issues || []).map((i, idx) => ({
+      id: i.id || `ai_${idx}`,
+      type: i.type || "blank_field",
+      description: i.description || i.message || "Compliance issue detected",
+      field: i.field || null,
+      party: i.party || null,
+      location: i.location || (i.page ? `Page ${i.page}` : null),
+      page: i.page || i.page_number || null,
+      severity: i.severity || "medium",
+      action_required: i.action_required || i.suggested_task || "Review and correct",
+      // Legacy compat
+      category: i.type || i.category || "other",
+      message: i.description || i.message || "Compliance issue detected",
+      suggested_task: i.action_required || i.suggested_task || null,
+      page_number: i.page || i.page_number || null,
+    })).filter(i => {
+      if (i.field && seenFields.has(i.field)) return false;
+      seenFields.add(i.field || i.description);
       return true;
     });
+
     const issues = [...pdfDerivedIssues, ...aiIssues];
 
-    const blockers = issues.filter(i => i.severity === 'blocker');
-    const warnings = issues.filter(i => i.severity === 'warning');
-    const infoItems = issues.filter(i => i.severity === 'info');
+    // Map severity to old blocker/warning/info for backward compat
+    const toOldSeverity = (s) => {
+      if (s === "critical") return "blocker";
+      if (s === "high") return "warning";
+      if (s === "medium") return "warning";
+      return "info";
+    };
+    const blockers = issues.filter(i => i.severity === "critical" || i.severity === "blocker");
+    const warnings = issues.filter(i => i.severity === "high" || i.severity === "medium" || i.severity === "warning");
+    const infoItems = issues.filter(i => i.severity === "low" || i.severity === "info");
     const status = blockers.length > 0 ? 'blockers' : warnings.length > 0 ? 'warnings' : 'compliant';
 
     // Delete existing report for this document
@@ -512,9 +561,9 @@ Return ONLY valid JSON matching this schema exactly.`;
       info_items: infoItems,
       all_issues: issues,
       extracted_fields: result.extracted_fields || {},
-      signatures: result.signatures || {},
-      missing_initials_pages: result.missing_initials_pages || [],
-      blank_fields: result.blank_fields || [],
+      signatures: {},
+      missing_initials_pages: [],
+      blank_fields: [],
       missing_docs: result.missing_companion_docs || [],
       summary: result.summary || '',
       has_digital_signature: hasDigitalSig,

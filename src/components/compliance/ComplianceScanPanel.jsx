@@ -16,30 +16,15 @@ import EmailGeneratorModal from "./EmailGeneratorModal";
 import DocumentViewerModal from "../transactions/DocumentViewerModal";
 
 const SEVERITY_CONFIG = {
-  blocker: {
-    icon: ShieldX,
-    bg: "bg-red-50 border-red-100",
-    iconCls: "text-red-500",
-    badgeCls: "bg-red-100 text-red-700",
-    titleCls: "text-red-900",
-    label: "Blocker",
-  },
-  warning: {
-    icon: AlertTriangle,
-    bg: "bg-amber-50 border-amber-100",
-    iconCls: "text-amber-500",
-    badgeCls: "bg-amber-100 text-amber-700",
-    titleCls: "text-amber-900",
-    label: "Warning",
-  },
-  info: {
-    icon: Info,
-    bg: "bg-blue-50 border-blue-100",
-    iconCls: "text-blue-500",
-    badgeCls: "bg-blue-100 text-blue-700",
-    titleCls: "text-blue-900",
-    label: "Info",
-  },
+  // New schema
+  critical: { icon: ShieldX,      bg: "bg-red-50 border-red-200",    iconCls: "text-red-500",    badgeCls: "bg-red-100 text-red-700",     titleCls: "text-red-900",    label: "Critical" },
+  high:     { icon: AlertTriangle, bg: "bg-orange-50 border-orange-200", iconCls: "text-orange-500", badgeCls: "bg-orange-100 text-orange-700", titleCls: "text-orange-900", label: "High" },
+  medium:   { icon: AlertTriangle, bg: "bg-amber-50 border-amber-100",  iconCls: "text-amber-500",  badgeCls: "bg-amber-100 text-amber-700",  titleCls: "text-amber-900",  label: "Medium" },
+  low:      { icon: Info,          bg: "bg-blue-50 border-blue-100",   iconCls: "text-blue-400",   badgeCls: "bg-blue-100 text-blue-600",    titleCls: "text-blue-900",   label: "Low" },
+  // Legacy compat
+  blocker:  { icon: ShieldX,      bg: "bg-red-50 border-red-200",    iconCls: "text-red-500",    badgeCls: "bg-red-100 text-red-700",     titleCls: "text-red-900",    label: "Critical" },
+  warning:  { icon: AlertTriangle, bg: "bg-amber-50 border-amber-100", iconCls: "text-amber-500",  badgeCls: "bg-amber-100 text-amber-700", titleCls: "text-amber-900",  label: "Warning" },
+  info:     { icon: Info,          bg: "bg-blue-50 border-blue-100",   iconCls: "text-blue-500",   badgeCls: "bg-blue-100 text-blue-700",   titleCls: "text-blue-900",   label: "Info" },
 };
 
 const SIG_ICONS = {
@@ -55,14 +40,19 @@ const SIG_LABELS = {
   seller_agent_signature: "Seller's Agent",
 };
 
-const CATEGORY_ICONS = {
+const TYPE_ICONS = {
   missing_signature: <FileSignature className="w-3.5 h-3.5" />,
-  missing_initial: <Hash className="w-3.5 h-3.5" />,
-  missing_field: <BookOpen className="w-3.5 h-3.5" />,
-  blank_field: <BookOpen className="w-3.5 h-3.5" />,
-  signature: <FileSignature className="w-3.5 h-3.5" />,
-  deadline: <AlertTriangle className="w-3.5 h-3.5" />,
-  financial: <Info className="w-3.5 h-3.5" />,
+  missing_initial:   <Hash className="w-3.5 h-3.5" />,
+  blank_field:       <BookOpen className="w-3.5 h-3.5" />,
+  invalid_date:      <AlertTriangle className="w-3.5 h-3.5" />,
+  missing_document:  <FileText className="w-3.5 h-3.5" />,
+};
+const TYPE_LABELS = {
+  missing_signature: "Missing Signature",
+  missing_initial:   "Missing Initial",
+  blank_field:       "Blank Field",
+  invalid_date:      "Invalid Date",
+  missing_document:  "Missing Document",
 };
 
 function ScoreRing({ score }) {
@@ -81,95 +71,69 @@ function ScoreRing({ score }) {
   );
 }
 
-function IssueCard({ issue, onAddTask, transaction }) {
-  const [emailOpen, setEmailOpen] = useState(false);
+function IssueCard({ issue, onAddTask, transaction, allIssues }) {
   const [taskAdded, setTaskAdded] = useState(false);
   const [showEmailModal, setShowEmailModal] = useState(false);
-  const cfg = SEVERITY_CONFIG[issue.severity] || SEVERITY_CONFIG.info;
+  const cfg = SEVERITY_CONFIG[issue.severity] || SEVERITY_CONFIG.medium;
   const Icon = cfg.icon;
-
-  const handleAddTask = () => {
-    onAddTask(issue);
-    setTaskAdded(true);
-  };
+  const issueType = issue.type || issue.category || "blank_field";
+  const description = issue.description || issue.message || "Compliance issue";
+  const actionRequired = issue.action_required || issue.suggested_task || "";
+  const location = issue.location || (issue.page || issue.page_number ? `Page ${issue.page || issue.page_number}` : null);
+  const party = issue.party;
 
   return (
-    <div className={`rounded-xl border p-4 ${cfg.bg}`}>
-      <div className="flex items-start justify-between gap-3">
-        <div className="flex items-start gap-3 flex-1 min-w-0">
-          <Icon className={`w-4 h-4 mt-0.5 flex-shrink-0 ${cfg.iconCls}`} />
-          <div className="flex-1 min-w-0">
-          <p className={`text-sm font-medium ${cfg.titleCls}`}>{issue.message}</p>
-          <div className="flex items-center gap-2 mt-1.5 flex-wrap">
-            <Badge className={`text-[11px] capitalize ${cfg.badgeCls}`}>{cfg.label}</Badge>
-            {issue.category && (
-              <Badge variant="outline" className="text-[11px] capitalize border-current opacity-60 flex items-center gap-1">
-                {CATEGORY_ICONS[issue.category]}
-                {issue.category.replace(/_/g, " ")}
-              </Badge>
+    <div className={`rounded-xl border p-3.5 ${cfg.bg}`}>
+      <div className="flex items-start gap-3">
+        <Icon className={`w-4 h-4 mt-0.5 flex-shrink-0 ${cfg.iconCls}`} />
+        <div className="flex-1 min-w-0">
+          {/* Title row */}
+          <div className="flex items-start justify-between gap-2">
+            <p className={`text-sm font-semibold leading-snug ${cfg.titleCls}`}>{description}</p>
+            <div className="flex gap-1.5 flex-shrink-0">
+              <Button size="sm" variant="outline" className="h-6 text-[11px] px-2"
+                onClick={() => { onAddTask(issue); setTaskAdded(true); }} disabled={taskAdded}>
+                {taskAdded ? <CheckCircle2 className="w-3 h-3 text-emerald-500" /> : <Plus className="w-3 h-3" />}
+                {taskAdded ? "Added" : "Task"}
+              </Button>
+              <Button size="sm" variant="outline" className="h-6 text-[11px] px-2 text-blue-600 border-blue-200 hover:bg-blue-50"
+                onClick={() => setShowEmailModal(true)}>
+                <Mail className="w-3 h-3 mr-0.5" /> Email
+              </Button>
+            </div>
+          </div>
+
+          {/* Meta chips */}
+          <div className="flex items-center gap-1.5 mt-1.5 flex-wrap">
+            <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${cfg.badgeCls}`}>{cfg.label}</span>
+            <span className="text-[10px] px-2 py-0.5 rounded-full bg-white/70 border border-current/20 text-gray-500 flex items-center gap-1">
+              {TYPE_ICONS[issueType]}
+              {TYPE_LABELS[issueType] || issueType.replace(/_/g, " ")}
+            </span>
+            {party && (
+              <span className="text-[10px] px-2 py-0.5 rounded-full bg-white/70 border border-gray-200 text-gray-500 capitalize">{party}</span>
             )}
-            {issue.page_number && (
-              <Badge variant="outline" className="text-[11px] border-gray-300 text-gray-500 font-mono">
-                p.{issue.page_number}
-              </Badge>
+            {location && (
+              <span className="text-[10px] px-2 py-0.5 rounded-full bg-white/80 border border-gray-200 text-gray-500 font-mono">{location}</span>
             )}
           </div>
-          </div>
-        </div>
-        <div className="flex gap-1.5 flex-shrink-0 flex-wrap justify-end">
-          {issue.suggested_task && (
-            <Button
-              size="sm" variant="outline"
-              className="h-7 text-xs"
-              onClick={handleAddTask}
-              disabled={taskAdded}
-            >
-              {taskAdded ? <CheckCircle2 className="w-3 h-3 mr-1 text-emerald-500" /> : <Plus className="w-3 h-3 mr-1" />}
-              {taskAdded ? "Added" : "Task"}
-            </Button>
-          )}
-          <Button
-            size="sm" variant="outline"
-            className="h-7 text-xs text-blue-600 border-blue-200 hover:bg-blue-50"
-            onClick={() => setShowEmailModal(true)}
-          >
-            <Wand2 className="w-3 h-3 mr-1" />
-            Generate Email
-          </Button>
-          {issue.suggested_email_body && (
-            <Button
-              size="sm" variant="outline"
-              className="h-7 text-xs"
-              onClick={() => setEmailOpen(!emailOpen)}
-            >
-              <Mail className="w-3 h-3 mr-1" />
-              Draft
-              {emailOpen ? <ChevronUp className="w-3 h-3 ml-0.5" /> : <ChevronDown className="w-3 h-3 ml-0.5" />}
-            </Button>
+
+          {/* Action required */}
+          {actionRequired && (
+            <p className="text-[11px] mt-1.5 font-medium" style={{ color: "var(--text-secondary)" }}>
+              → {actionRequired}
+            </p>
           )}
         </div>
-        {showEmailModal && (
-          <EmailGeneratorModal
-            issue={issue}
-            transaction={transaction}
-            onClose={() => setShowEmailModal(false)}
-          />
-        )}
       </div>
 
-      {emailOpen && issue.suggested_email_body && (
-        <div className="mt-3 ml-7 p-3 bg-white rounded-lg border border-white/80 text-xs text-gray-700">
-          <p className="font-semibold text-gray-900 mb-1">Subject: {issue.suggested_email_subject}</p>
-          <p className="whitespace-pre-wrap text-gray-600">{issue.suggested_email_body}</p>
-          <Button
-            size="sm" className="mt-2 h-7 text-xs bg-blue-600 hover:bg-blue-700"
-            onClick={() => {
-              navigator.clipboard.writeText(`Subject: ${issue.suggested_email_subject}\n\n${issue.suggested_email_body}`);
-            }}
-          >
-            Copy to Clipboard
-          </Button>
-        </div>
+      {showEmailModal && (
+        <EmailGeneratorModal
+          issue={issue}
+          allIssues={allIssues}
+          transaction={transaction}
+          onClose={() => setShowEmailModal(false)}
+        />
       )}
     </div>
   );
@@ -239,48 +203,24 @@ function ReportCard({ report, onRescan, onAddTask, scanning, transaction, linked
             </div>
           )}
 
-          {/* Signature Status */}
-          {Object.keys(sigs).length > 0 && (
-            <div>
-              <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Signature Status</p>
-              <div className="grid grid-cols-2 gap-2">
-                {Object.entries(sigs).map(([key, status]) => (
-                  <div key={key} className="flex items-center gap-2 text-xs text-gray-600">
-                    {SIG_ICONS[status] || SIG_ICONS.not_found}
-                    <span>{SIG_LABELS[key] || key.replace(/_/g, " ")}</span>
-                    {status === "missing" && (
-                      <span className="text-red-500 font-semibold text-[10px]">MISSING</span>
-                    )}
-                  </div>
+          {/* Issues — grouped by severity */}
+          {(report.all_issues || []).length > 0 ? (() => {
+            const all = report.all_issues || [];
+            const criticals = all.filter(i => i.severity === "critical" || i.severity === "blocker");
+            const highs     = all.filter(i => i.severity === "high");
+            const mediums   = all.filter(i => i.severity === "medium" || i.severity === "warning");
+            const lows      = all.filter(i => i.severity === "low" || i.severity === "info");
+            return (
+              <div className="space-y-2">
+                <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide">
+                  Issues ({all.length}) — {criticals.length} critical · {highs.length} high · {mediums.length} medium · {lows.length} low
+                </p>
+                {[...criticals, ...highs, ...mediums, ...lows].map((issue, i) => (
+                  <IssueCard key={issue.id || i} issue={issue} onAddTask={onAddTask} transaction={transaction} allIssues={all} />
                 ))}
               </div>
-            </div>
-          )}
-
-          {/* Missing initials pages */}
-          {(report.missing_initials_pages || []).length > 0 && (
-            <div>
-              <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Missing Initials</p>
-              <div className="flex flex-wrap gap-1.5">
-                {report.missing_initials_pages.map(pg => (
-                  <span key={pg} className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-red-50 border border-red-200 text-xs text-red-700 font-mono">
-                    <Hash className="w-3 h-3" /> Page {pg}
-                  </span>
-                ))}
-              </div>
-              <p className="text-[11px] text-gray-400 mt-1">Buyer & Seller initials required on these pages</p>
-            </div>
-          )}
-
-          {/* Issues */}
-          {(report.all_issues || []).length > 0 ? (
-            <div className="space-y-2">
-              <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Issues ({report.all_issues.length})</p>
-              {(report.all_issues || []).map((issue, i) => (
-                <IssueCard key={issue.id || i} issue={issue} onAddTask={onAddTask} transaction={transaction} />
-              ))}
-            </div>
-          ) : (
+            );
+          })() : (
             <div className="flex items-center gap-2 py-3 text-sm text-emerald-600">
               <ShieldCheck className="w-4 h-4" />
               No compliance issues found.

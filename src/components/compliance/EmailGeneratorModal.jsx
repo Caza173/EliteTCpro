@@ -94,9 +94,11 @@ function resolveRecipients(issue, ctx) {
   };
 }
 
-export default function EmailGeneratorModal({ issue, transaction, onClose, currentUser }) {
+export default function EmailGeneratorModal({ issue, allIssues, transaction, onClose, currentUser }) {
   const ctx = buildTransactionContext(transaction);
   const resolved = resolveRecipients(issue, ctx);
+  // Use all issues if available (for bulk email), otherwise just this one
+  const issueList = allIssues && allIssues.length > 0 ? allIssues : [issue];
 
   // Determine locked TC email
   const tcEmail = (() => {
@@ -147,36 +149,43 @@ CTA: "Please provide an update as soon as possible on status and next steps."
 Note: Mention that this may impact the closing timeline.`;
     }
 
+    // Build structured issue list for the prompt
+    const issueLines = issueList.map(iss => {
+      const desc = iss.description || iss.message || "Compliance issue";
+      const action = iss.action_required || iss.suggested_task || "";
+      const loc = iss.location || (iss.page || iss.page_number ? `Page ${iss.page || iss.page_number}` : "");
+      return `- ${desc}${loc ? ` (${loc})` : ""}${action ? ` — ${action}` : ""}`;
+    }).join("\n");
+
     const prompt = `You are a professional real estate transaction coordinator drafting a transaction follow-up email.
 
 TONE: ${toneLevel}
 ${toneInstructions}
 
-STRICT RULES — follow exactly:
-- Under 120 words
-- No exclamation points
-- No emojis
-- No words like: "critical", "urgent", "immediate attention", "high severity", "failure", "violation"
-- No legal jargon or compliance-heavy language
-- Plain, calm, solution-focused language only
-- Always assume positive intent — do not accuse
+STRICT RULES:
+- Under 150 words
+- No exclamation points, no emojis
+- No words like: "critical", "urgent", "violation", "failure"
+- Plain, calm, solution-focused language
+- Always assume positive intent
 - Sign off as "Team EliteTC"
 
-Transaction details:
-- Property Address: ${ctx.property_address}
+Transaction:
+- Property: ${ctx.property_address}
 - Buyer(s): ${ctx.buyer_name}
 - Seller(s): ${ctx.seller_name}
 - Closing Date: ${ctx.closing_date}
-- Inspection Deadline: ${ctx.inspection_deadline}
-- Financing Deadline: ${ctx.financing_deadline}
 
-Issue:
-"${issue.message}"
-Category: ${issue.category || "general"}
+Issues requiring attention:
+${issueLines}
 
-Return JSON with:
+Write the email body by looping through each issue and stating what needs to be done.
+Include page references where provided.
+End with a clear call to action.
+
+Return JSON:
 {
-  "subject": "concise subject line (no alarming words)",
+  "subject": "concise subject line",
   "body": "plain text email body with line breaks"
 }`;
 
@@ -227,8 +236,15 @@ Return JSON with:
 
         <div className="space-y-4">
           {/* Issue context */}
-          <div className="rounded-lg bg-amber-50 border border-amber-100 px-4 py-3 text-sm text-amber-800">
-            <span className="font-medium">Issue: </span>{issue.message}
+          <div className="rounded-lg bg-amber-50 border border-amber-100 px-4 py-3 text-sm text-amber-800 space-y-1">
+            <p className="font-semibold text-amber-900">{issueList.length > 1 ? `${issueList.length} issues` : "Issue"}</p>
+            {issueList.slice(0, 5).map((iss, i) => {
+              const loc = iss.location || (iss.page || iss.page_number ? `Page ${iss.page || iss.page_number}` : null);
+              return (
+                <p key={i} className="text-xs">• {iss.description || iss.message}{loc ? <span className="text-amber-600 ml-1">({loc})</span> : ""}</p>
+              );
+            })}
+            {issueList.length > 5 && <p className="text-xs text-amber-600">+ {issueList.length - 5} more</p>}
           </div>
           {/* Warn if no recipients resolved */}
           {!resolved.to && (
