@@ -7,6 +7,7 @@ import { Plus, Search, Droplets } from "lucide-react";
 import { useCurrentUser } from "../components/auth/useCurrentUser";
 import FuelProrationFormModal from "../components/fuel/FuelProrationFormModal";
 import FuelProrationDetailModal from "../components/fuel/FuelProrationDetailModal";
+import ConfirmModal from "../components/ui/ConfirmModal";
 
 const STATUS_STYLES = { draft: "bg-gray-100 text-gray-600", ready: "bg-blue-50 text-blue-700", sent: "bg-purple-50 text-purple-700" };
 const STATUS_LABELS = { draft: "Draft", ready: "Ready", sent: "Sent" };
@@ -17,6 +18,8 @@ export default function FuelProrations() {
   const [showForm, setShowForm] = useState(false);
   const [editing, setEditing] = useState(null);
   const [viewing, setViewing] = useState(null);
+  const [showDelete, setShowDelete] = useState(false);
+  const [selectedId, setSelectedId] = useState(null);
   const { data: currentUser } = useCurrentUser();
   const queryClient = useQueryClient();
 
@@ -39,6 +42,19 @@ export default function FuelProrations() {
     queryClient.invalidateQueries({ queryKey: ["fuelProrations"] });
     setShowForm(false);
     setEditing(null);
+  };
+
+  const handleDeleteClick = (id) => {
+    setSelectedId(id);
+    setShowDelete(true);
+  };
+
+  const confirmDelete = () => {
+    if (selectedId) {
+      deleteMutation.mutate(selectedId);
+      setShowDelete(false);
+      setSelectedId(null);
+    }
   };
 
   return (
@@ -98,7 +114,7 @@ export default function FuelProrations() {
                       <div className="flex items-center gap-2">
                         <button onClick={() => setViewing(p)} className="text-xs text-blue-600 hover:underline font-medium">View</button>
                         <button onClick={() => { setEditing(p); setShowForm(true); }} className="text-xs text-gray-500 hover:underline">Edit</button>
-                        <button onClick={() => { if (window.confirm("Delete this proration?")) deleteMutation.mutate(p.id); }} className="text-xs text-red-500 hover:underline">Delete</button>
+                        <button onClick={() => handleDeleteClick(p.id)} className="text-xs text-red-500 hover:underline">Delete</button>
                       </div>
                     </td>
                   </tr>
@@ -128,6 +144,17 @@ export default function FuelProrations() {
           }}
         />
       )}
+
+      <ConfirmModal
+        open={showDelete}
+        onClose={() => setShowDelete(false)}
+        onConfirm={confirmDelete}
+        title="Delete Proration"
+        description="This action cannot be undone."
+        confirmText="Delete"
+        variant="danger"
+        isLoading={deleteMutation.isPending}
+      />
     </div>
   );
 }
