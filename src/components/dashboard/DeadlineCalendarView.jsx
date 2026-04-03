@@ -19,6 +19,22 @@ const DEADLINE_TYPES = [
   { key: "closing_date",            label: "Closing",         dot: "bg-rose-400",    pill: "bg-rose-50 text-rose-700 border-rose-200" },
 ];
 
+function useContingencies(txIds) {
+  const [contingencies, setContingencies] = React.useState([]);
+  
+  React.useEffect(() => {
+    if (!txIds.length) return;
+    (async () => {
+      const allConts = await Promise.all(
+        txIds.map(id => base44.entities.Contingency.filter({ transaction_id: id }).catch(() => []))
+      );
+      setContingencies(allConts.flat());
+    })();
+  }, [txIds]);
+  
+  return contingencies;
+}
+
 const DAY_NAMES = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 const VIEWS = ["month", "week", "day"];
 
@@ -103,10 +119,11 @@ export default function DeadlineCalendarView({ transactions = [] }) {
   const [hoveredDay, setHoveredDay] = useState(null);
   const [txList, setTxList] = useState(transactions);
 
-  // Subscribe to transaction updates for real-time deadline syncing
+  // Subscribe to transaction & contingency updates for real-time deadline syncing
   useEffect(() => {
     if (!transactions.length) return;
-    const unsubscribe = base44.entities.Transaction.subscribe((event) => {
+    
+    const unsubTx = base44.entities.Transaction.subscribe((event) => {
       setTxList(prev => {
         if (event.type === "update") {
           return prev.map(t => t.id === event.id ? event.data : t);
@@ -114,7 +131,28 @@ export default function DeadlineCalendarView({ transactions = [] }) {
         return prev;
       });
     });
-    return unsubscribe;
+    
+    // Also listen for contingency changes (custom deadlines) to trigger calendar refresh
+    const unsubCont = base44.entities.Contingency.subscribe((event) => {
+      // When a contingency is created/updated, refresh transactions to pick up new deadline
+      const txId = event.data?.transaction_id;
+      if (txId) {
+        setTxList(prev => {
+          const updated = [...prev];
+          const idx = updated.findIndex(t => t.id === txId);
+          if (idx >= 0) {
+            // Force re-render by shallow copy
+            updated[idx] = { ...updated[idx] };
+          }
+          return updated;
+        });
+      }
+    });
+    
+    return () => {
+      unsubTx();
+      unsubCont();
+    };
   }, [transactions.length]);
 
   // Fallback to prop updates if subscription doesn't fire
@@ -131,8 +169,13 @@ export default function DeadlineCalendarView({ transactions = [] }) {
     });
   }, [txList]);
 
+  // Fetch contingencies (custom deadlines) for all transactions
+  const contingencies = useContingencies(dedupedTx.map(t => t.id));
+
   const events = useMemo(() => {
     const map = {};
+    
+    // System deadlines
     dedupedTx.forEach((tx) => {
       if (tx.status === "closed" || tx.status === "cancelled") return;
       DEADLINE_TYPES.forEach((dt) => {
@@ -143,8 +186,28 @@ export default function DeadlineCalendarView({ transactions = [] }) {
         map[key].push({ label: dt.label, address: tx.address, dot: dt.dot, pill: dt.pill, txId: tx.id, category: dt.key });
       });
     });
+    
+    // Custom contingency deadlines
+    contingencies.forEach((cont) => {
+      if (!cont.due_date || !cont.is_active) return;
+      const tx = dedupedTx.find(t => t.id === cont.transaction_id);
+      if (!tx || tx.status === "closed" || tx.status === "cancelled") return;
+      const label = cont.contingency_type === "Other" ? cont.sub_type : `${cont.contingency_type}${cont.sub_type ? ` – ${cont.sub_type}` : ""}`;
+      const categoryDot = {
+        Inspection: "bg-orange-400",
+        Financing: "bg-emerald-400",
+        Appraisal: "bg-teal-400",
+        Title: "bg-purple-400",
+        "Due Diligence": "bg-purple-400",
+        Other: "bg-gray-400",
+      }[cont.contingency_type] || "bg-gray-400";
+      
+      if (!map[cont.due_date]) map[cont.due_date] = [];
+      map[cont.due_date].push({ label, address: tx.address, dot: categoryDot, pill: "bg-gray-50 text-gray-700 border-gray-200", txId: tx.id, category: "custom" });
+    });
+    
     return map;
-  }, [dedupedTx]);
+  }, [dedupedTx, contingencies]);
 
   const getEventsForDay = (day) => events[format(day, "yyyy-MM-dd")] || [];
 
