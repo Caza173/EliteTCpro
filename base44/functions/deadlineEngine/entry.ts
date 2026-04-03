@@ -9,6 +9,23 @@ const DEADLINE_FIELDS = [
   { key: "closing_date",           label: "Closing / Transfer of Title", type: "closing" },
 ];
 
+// Task title keywords that, when completed, mark the linked deadline as done
+const DEADLINE_TASK_KEYWORDS = {
+  earnest_money_deadline: ["earnest money", "emd", "deposit received"],
+  inspection_deadline:    ["inspection completed", "inspection scheduled", "inspection report", "inspection"],
+  due_diligence_deadline: ["due diligence", "contingency removal"],
+};
+
+function isDeadlineCompletedByTask(deadlineKey, txTasks = []) {
+  const keywords = DEADLINE_TASK_KEYWORDS[deadlineKey];
+  if (!keywords) return false;
+  const linked = txTasks.filter(t =>
+    keywords.some(kw => t.title?.toLowerCase().includes(kw.toLowerCase()))
+  );
+  if (linked.length === 0) return false;
+  return linked.every(t => t.is_completed);
+}
+
 const MS_PER_HOUR = 1000 * 60 * 60;
 
 function getSeverity(hoursRemaining) {
@@ -70,14 +87,36 @@ Deno.serve(async (req) => {
 
       const txContingencies = allContingencies.filter(c => c.transaction_id === tx.id);
 
-      // Fetch all existing notifications for this transaction once
-      const existingForTx = await base44.asServiceRole.entities.InAppNotification.filter({
-        transaction_id: tx.id,
-      });
+      // Fetch all existing notifications and tasks for this transaction once
+      const [existingForTx, txTasks] = await Promise.all([
+        base44.asServiceRole.entities.InAppNotification.filter({ transaction_id: tx.id }),
+        base44.asServiceRole.entities.TransactionTask.filter({ transaction_id: tx.id }),
+      ]);
 
       for (const field of DEADLINE_FIELDS) {
         const originalDate = tx[field.key];
         if (!originalDate) continue;
+
+        // ── Skip if linked tasks are all completed ──────────────────────────
+        if (isDeadlineCompletedByTask(field.key, txTasks)) {
+          // Auto-resolve any active InAppNotifications for this field
+          const activeNotifs = existingForTx.filter(n => n.deadline_field === field.key && !n.dismissed);
+          for (const n of activeNotifs) {
+            try { await base44.asServiceRole.entities.InAppNotification.update(n.id, { dismissed: true, dismissed_at: new Date().toISOString() }); } catch {}
+          }
+          // Auto-resolve any MonitorAlerts for this field
+          try {
+            const alerts = await base44.asServiceRole.entities.MonitorAlert.filter({
+              transaction_id: tx.id,
+              detail_key: field.key,
+              status: "open",
+            });
+            for (const a of alerts) {
+              await base44.asServiceRole.entities.MonitorAlert.update(a.id, { status: "resolved", resolved_at: new Date().toISOString() });
+            }
+          } catch {}
+          continue;
+        }
 
         const matchingContingency = txContingencies.find(c =>
           c.contingency_type?.toLowerCase().includes(field.type.replace("_", " ")) ||

@@ -18,12 +18,38 @@ const DEADLINE_LABELS = {
   closing_date: "Closing Date",
 };
 
+// Same keyword map as the engine — if all linked tasks are complete, deadline is resolved
+const DEADLINE_TASK_KEYWORDS = {
+  earnest_money_deadline: ["earnest money", "emd", "deposit received"],
+  inspection_deadline:    ["inspection completed", "inspection scheduled", "inspection report", "inspection"],
+  due_diligence_deadline: ["due diligence", "contingency removal"],
+};
+
+function isDeadlineCompletedByTask(deadlineKey, txTasks = []) {
+  const keywords = DEADLINE_TASK_KEYWORDS[deadlineKey];
+  if (!keywords) return false;
+  const linked = txTasks.filter(t =>
+    keywords.some(kw => t.title?.toLowerCase().includes(kw.toLowerCase()))
+  );
+  if (linked.length === 0) return false;
+  return linked.every(t => t.is_completed);
+}
+
 // Entity used to persist dismissed/resolved state for deadline & task items
 const DISMISSED_TYPE = "task"; // we reuse the InAppNotification entity with type="task"
 
 export default function TasksDueToday({ transactions = [], notifications = [] }) {
   const { data: currentUser } = useCurrentUser();
   const queryClient = useQueryClient();
+
+  // Fetch all TransactionTasks for active transactions
+  const activeIds = transactions.filter(t => t.status !== "closed" && t.status !== "cancelled").map(t => t.id);
+  const { data: allTxTasks = [] } = useQuery({
+    queryKey: ["allTxTasksForDeadlines", activeIds.join(",")],
+    queryFn: () => base44.entities.TransactionTask.filter({ is_completed: true }),
+    enabled: activeIds.length > 0,
+    staleTime: 30_000,
+  });
 
   // Load persisted dismissed/resolved state from DB
   const { data: persistedStates = [] } = useQuery({
@@ -164,10 +190,8 @@ export default function TasksDueToday({ transactions = [], notifications = [] })
       if (!dateStr) return;
       const days = getDaysUntil(dateStr);
       if (days === null || days < 0 || days > 3) return;
-      const linkedTaskDone = (tx.tasks || []).some(
-        (t) => t.linked_deadline === field && t.completed
-      );
-      if (!linkedTaskDone) {
+      const txCompletedTasks = allTxTasks.filter(t => t.transaction_id === tx.id);
+      if (!isDeadlineCompletedByTask(field, txCompletedTasks)) {
         const key = `deadline-${tx.id}-${field}`;
         // Skip if persisted as dismissed or resolved
         const persistedStatus = persistedMap.get(key);
