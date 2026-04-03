@@ -201,6 +201,36 @@
     "appraiser_company": {
       "type": "string"
     },
+    "additional_contacts": {
+      "type": "array",
+      "description": "Additional contacts added manually to the transaction",
+      "items": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "role": {
+            "type": "string"
+          },
+          "email": {
+            "type": "string"
+          },
+          "phone": {
+            "type": "string"
+          },
+          "company": {
+            "type": "string"
+          },
+          "color": {
+            "type": "string"
+          }
+        }
+      }
+    },
     "mls_number": {
       "type": "string"
     },

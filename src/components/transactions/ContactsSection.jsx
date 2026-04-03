@@ -3,6 +3,9 @@ import ContactCard from "./ContactCard";
 import { hasFullAccess } from "../auth/useCurrentUser";
 import { base44 } from "@/api/base44Client";
 import QuickEmailModal from "./QuickEmailModal";
+import AddContactModal from "./AddContactModal";
+import { Button } from "@/components/ui/button";
+import { UserPlus, Trash2 } from "lucide-react";
 
 const GRID = {
   display: "grid",
@@ -25,7 +28,8 @@ function SectionGroup({ title, children }) {
 export default function ContactsSection({ transaction, onUpdate, currentUser }) {
   const tx = transaction;
   const canEdit = hasFullAccess(currentUser);
-  const [emailModal, setEmailModal] = useState(null); // { to, toName }
+  const [emailModal, setEmailModal] = useState(null);
+  const [addOpen, setAddOpen] = useState(false);
 
   const openEmail = (to, toName) => setEmailModal({ to, toName });
 
@@ -45,6 +49,24 @@ export default function ContactsSection({ transaction, onUpdate, currentUser }) 
     await base44.entities.Transaction.update(tx.id, data);
   };
 
+  const additionalContacts = tx.additional_contacts || [];
+
+  const handleAddContact = async (contact) => {
+    const newContact = { ...contact, id: `c_${Date.now()}` };
+    const updated = [...additionalContacts, newContact];
+    await save({ additional_contacts: updated });
+  };
+
+  const handleRemoveAdditional = async (id) => {
+    const updated = additionalContacts.filter(c => c.id !== id);
+    await save({ additional_contacts: updated });
+  };
+
+  const handleUpdateAdditional = async (id, fields) => {
+    const updated = additionalContacts.map(c => c.id === id ? { ...c, ...fields } : c);
+    await save({ additional_contacts: updated });
+  };
+
   return (
     <div className="space-y-4">
       {emailModal && (
@@ -53,6 +75,13 @@ export default function ContactsSection({ transaction, onUpdate, currentUser }) 
           toName={emailModal.toName}
           transaction={tx}
           onClose={() => setEmailModal(null)}
+        />
+      )}
+      {addOpen && (
+        <AddContactModal
+          open={addOpen}
+          onClose={() => setAddOpen(false)}
+          onSave={handleAddContact}
         />
       )}
 
@@ -269,6 +298,52 @@ export default function ContactsSection({ transaction, onUpdate, currentUser }) 
             />
           )}
         </SectionGroup>
+      )}
+
+      {/* Additional Contacts */}
+      {additionalContacts.length > 0 && (
+        <SectionGroup title="Additional Contacts">
+          {additionalContacts.map(contact => (
+            <div key={contact.id} className="relative group">
+              <ContactCard
+                name={contact.name}
+                role={contact.role}
+                email={contact.email}
+                phone={contact.phone}
+                company={contact.company}
+                accent={contact.color || "#94a3b8"}
+                canEdit={canEdit}
+                onEmailClick={openEmail}
+                fields={{ name: true, email: true, phone: true, company: true }}
+                onSave={({ name, email, phone, company }) =>
+                  handleUpdateAdditional(contact.id, { name, email, phone, company })
+                }
+              />
+              {canEdit && (
+                <button
+                  onClick={() => handleRemoveAdditional(contact.id)}
+                  className="absolute top-2 right-8 p-1 rounded opacity-0 group-hover:opacity-100 transition-opacity hover:bg-red-50 text-gray-300 hover:text-red-400"
+                  title="Remove contact"
+                >
+                  <Trash2 className="w-3.5 h-3.5" />
+                </button>
+              )}
+            </div>
+          ))}
+        </SectionGroup>
+      )}
+
+      {/* Add Contact button */}
+      {canEdit && (
+        <Button
+          variant="outline"
+          size="sm"
+          className="gap-1.5 h-8 text-xs border-dashed"
+          onClick={() => setAddOpen(true)}
+        >
+          <UserPlus className="w-3.5 h-3.5" />
+          Add Contact
+        </Button>
       )}
     </div>
   );
