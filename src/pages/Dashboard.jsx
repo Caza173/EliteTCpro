@@ -168,12 +168,7 @@ export default function Dashboard() {
             {new Date().toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric" })}
           </p>
         </div>
-        <Link to={createPageUrl("AddTransaction")}>
-          <Button size="sm" style={{ background: "var(--accent)", color: "var(--accent-text)" }}
-            className="gap-1.5 shadow-sm hover:opacity-90 transition-opacity">
-            + New Transaction
-          </Button>
-        </Link>
+
       </div>
 
       {/* Alert strip */}
