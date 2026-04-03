@@ -27,8 +27,10 @@ import { toast } from "sonner";
 // System deadlines stored directly on the transaction record
 const SYSTEM_FIELDS = [
   { key: "contract_date",          label: "Effective / Acceptance Date", category: "effective_date",  color: "blue",   nonActionable: true },
+  { key: "inspection_deadline",    label: "Inspection",                  category: "inspection",      color: "orange", hasTime: true, timeKey: "inspection_time" },
+  { key: "appraisal_deadline",     label: "Appraisal",                   category: "appraisal",       color: "teal",   hasTime: true, timeKey: "appraisal_time" },
   { key: "earnest_money_deadline", label: "Earnest Money Due",           category: "earnest_money",   color: "indigo", isEMD: true },
-  { key: "closing_date",           label: "Closing / Transfer of Title", category: "closing",         color: "rose" },
+  { key: "closing_date",           label: "Closing / Transfer of Title", category: "closing",         color: "rose",   hasTime: true, timeKey: "closing_time" },
 ];
 
 // These are reference dates — never "overdue"
@@ -88,6 +90,7 @@ function getDaysLabel(dateStr, opts = {}) {
 function DeadlineRow({ item, calendarMaps, transactionId, onUpdateContingency, onUpdateTransaction, onAddManual, onRefreshCalendar }) {
   const [editing, setEditing] = useState(false);
   const [editDate, setEditDate] = useState(item.date || "");
+  const [editTime, setEditTime] = useState(item.time || "");
   const [syncing, setSyncing] = useState(false);
   const [markingReceived, setMarkingReceived] = useState(false);
 
@@ -104,7 +107,11 @@ function DeadlineRow({ item, calendarMaps, transactionId, onUpdateContingency, o
 
   const handleSave = async () => {
     if (item.sourceType === "system") {
-      onUpdateTransaction({ [item.key]: editDate });
+      const updates = { [item.key]: editDate };
+      if (item.timeKey && item.editTime !== undefined) {
+        updates[item.timeKey] = item.editTime || null;
+      }
+      onUpdateTransaction(updates);
     } else {
       await onUpdateContingency(item.id, { due_date: editDate });
     }
@@ -159,7 +166,7 @@ function DeadlineRow({ item, calendarMaps, transactionId, onUpdateContingency, o
           </div>
 
           {editing ? (
-            <div className="flex items-center gap-1.5 mt-1">
+            <div className="flex items-center gap-1.5 mt-1 flex-wrap">
               <Input
                 type="date"
                 value={editDate}
@@ -167,10 +174,19 @@ function DeadlineRow({ item, calendarMaps, transactionId, onUpdateContingency, o
                 className="h-7 text-xs py-0 bg-white/80 border-white"
                 autoFocus
               />
+              {item.timeKey && (
+                <Input
+                  type="time"
+                  value={editTime}
+                  onChange={e => setEditTime(e.target.value)}
+                  className="h-7 text-xs py-0 bg-white/80 border-white w-24"
+                  title="Optional time"
+                />
+              )}
               <Button size="icon" variant="ghost" className="h-7 w-7 text-emerald-600 hover:bg-white/40" onClick={handleSave}>
                 <Check className="w-3.5 h-3.5" />
               </Button>
-              <Button size="icon" variant="ghost" className="h-7 w-7 text-red-500 hover:bg-white/40" onClick={() => { setEditing(false); setEditDate(item.date || ""); }}>
+              <Button size="icon" variant="ghost" className="h-7 w-7 text-red-500 hover:bg-white/40" onClick={() => { setEditing(false); setEditDate(item.date || ""); setEditTime(item.time || ""); }}>
                 <X className="w-3.5 h-3.5" />
               </Button>
             </div>
@@ -182,6 +198,9 @@ function DeadlineRow({ item, calendarMaps, transactionId, onUpdateContingency, o
                     <span className="text-sm font-medium text-gray-800">{fmtDate(item.date)}</span>
                   ) : (
                     <span className="text-xs italic text-gray-400">Not set</span>
+                  )}
+                  {item.time && (
+                    <span className="text-xs font-semibold text-blue-600">{formatTime(item.time)}</span>
                   )}
                   {!item.is_all_day && item.due_time && (
                     <span className="text-xs font-semibold text-blue-600">{formatTime(item.due_time)}</span>
@@ -373,6 +392,8 @@ export default function UnifiedDeadlinesPanel({ transaction, onSave }) {
     key: f.key,
     label: f.label,
     date: transaction[f.key] || null,
+    time: f.timeKey ? transaction[f.timeKey] || null : null,
+    timeKey: f.timeKey || null,
     category: f.category,
     sourceType: "system",
     nonActionable: !!f.nonActionable,

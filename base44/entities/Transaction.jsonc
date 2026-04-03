@@ -267,6 +267,10 @@
       "type": "string",
       "format": "date"
     },
+    "closing_time": {
+      "type": "string",
+      "description": "Time for closing (HH:MM format)"
+    },
     "transaction_type": {
       "type": "string",
       "enum": [
@@ -324,9 +328,17 @@
       "type": "string",
       "format": "date"
     },
+    "inspection_time": {
+      "type": "string",
+      "description": "Time for inspection (HH:MM format)"
+    },
     "appraisal_deadline": {
       "type": "string",
       "format": "date"
+    },
+    "appraisal_time": {
+      "type": "string",
+      "description": "Time for appraisal (HH:MM format)"
     },
     "financing_deadline": {
       "type": "string",
