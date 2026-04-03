@@ -531,7 +531,32 @@ export default function TransactionDetail() {
   const overdueTasks = txTasks.filter(t => !t.is_completed && t.due_date && new Date(t.due_date) < now);
   if (overdueTasks.length > 0) attentionItems.push({ type: "task", label: `${overdueTasks.length} overdue task${overdueTasks.length > 1 ? "s" : ""}`, tab: "overview", urgent: true });
 
+  // Fetch compliance reports for badge count
+  const { data: complianceReports = [] } = useQuery({
+    queryKey: ["compliance-reports", id],
+    queryFn: () => base44.entities.ComplianceReport.filter({ transaction_id: id }, "-created_date"),
+    enabled: !!id,
+    staleTime: 60_000,
+  });
+
   const tabs = transaction.transaction_type === "seller" ? LISTING_TABS : TX_TABS;
+
+  // ── Tab badge counts ──────────────────────────────────────────────────────
+  const overdueDeadlineCount = attentionItems.filter(i => i.type === "deadline" && i.urgent).length;
+  const approachingDeadlineCount = attentionItems.filter(i => i.type === "deadline" && !i.urgent).length;
+  const totalDeadlineBadge = overdueDeadlineCount + approachingDeadlineCount;
+  const overdueTaskCount = overdueTasks.length;
+  const missingDocCount = checklistItems.filter(i => i.required && i.status === "missing").length;
+  const complianceBlockerCount = complianceReports.reduce((sum, r) => sum + (r.blockers?.length || 0), 0);
+  const issuesBadgeCount = attentionItems.length + complianceBlockerCount;
+
+  const TAB_BADGES = {
+    issues:          issuesBadgeCount,
+    deadlines:       totalDeadlineBadge,
+    documents:       missingDocCount,
+    compliance:      complianceBlockerCount,
+    overview:        overdueTaskCount,
+  };
 
   return (
     <div className="flex flex-col -mx-4 -mb-4 lg:-mx-5 lg:-mb-5" style={{ height: "calc(100vh - 48px)", overflow: "hidden" }}>
@@ -718,18 +743,32 @@ export default function TransactionDetail() {
 
           {/* Tab Navigation */}
           <div className="flex gap-1 p-1 rounded-xl overflow-x-auto scrollbar-none" style={{ background: "var(--bg-tertiary)" }}>
-            {tabs.map(({ id: tabId, label, icon: TabIcon, info }) => (
-              <button key={tabId} onClick={() => setActiveTab(tabId)}
-                className={`group flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-medium whitespace-nowrap transition-all ${
-                  activeTab === tabId ? "shadow-sm" : ""
-                }`}
-                style={activeTab === tabId
-                  ? { background: "var(--card-bg)", color: "var(--text-primary)" }
-                  : { color: "var(--text-muted)" }}>
-                <TabIcon className="w-3.5 h-3.5" />
-                {label}
-              </button>
-            ))}
+            {tabs.map(({ id: tabId, label, icon: TabIcon, info }) => {
+              const badgeCount = TAB_BADGES[tabId] || 0;
+              return (
+                <button key={tabId} onClick={() => setActiveTab(tabId)}
+                  className={`group relative flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-medium whitespace-nowrap transition-all ${
+                    activeTab === tabId ? "shadow-sm" : ""
+                  }`}
+                  style={activeTab === tabId
+                    ? { background: "var(--card-bg)", color: "var(--text-primary)" }
+                    : { color: "var(--text-muted)" }}>
+                  <TabIcon className="w-3.5 h-3.5" />
+                  {label}
+                  {badgeCount > 0 && (
+                    <span className={`inline-flex items-center justify-center min-w-[16px] h-4 px-1 text-[10px] font-bold rounded-full leading-none ${
+                      tabId === "issues" || tabId === "compliance"
+                        ? "bg-red-500 text-white"
+                        : tabId === "deadlines"
+                        ? "bg-amber-500 text-white"
+                        : "bg-orange-400 text-white"
+                    }`}>
+                      {badgeCount}
+                    </span>
+                  )}
+                </button>
+              );
+            })}
           </div>
 
           {/* ── Tab: Overview ── */}
