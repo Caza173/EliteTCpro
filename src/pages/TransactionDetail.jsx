@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect, useCallback } from "react";
+import React, { useState, useRef, useEffect, useCallback, useMemo } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { base44 } from "@/api/base44Client";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -45,6 +45,7 @@ import ListingIntakeTab from "../components/transactions/ListingIntakeTab";
 import UnifiedDeadlinesPanel from "../components/transactions/UnifiedDeadlinesPanel";
 import ContactsSection from "../components/transactions/ContactsSection";
 import IssueDetectionPanel from "../components/issues/IssueDetectionPanel";
+import { detectIssues } from "../lib/issueDetector";
 import QuickFeedbackButton from "../components/feedback/QuickFeedbackButton";
 import NotesPanel from "../components/transactions/NotesPanel";
 import UnderContractCommsPanel from "../components/comms/UnderContractCommsPanel";
@@ -623,6 +624,14 @@ export default function TransactionDetail() {
   const commsReadyCount = commAutomations.filter(c => c.template_status === "ready").length;
   const commsBlockedCount = commAutomations.filter(c => c.template_status === "blocked").length;
 
+  // Read dismissed issues from localStorage to accurately compute the Issues badge
+  const dismissedIssueIds = useMemo(() => {
+    try {
+      const saved = localStorage.getItem(`dismissed_issues_${id}`);
+      return saved ? new Set(JSON.parse(saved)) : new Set();
+    } catch { return new Set(); }
+  }, [id, activeTab]); // re-read when tab changes
+
   const tabs = transaction.transaction_type === "seller" ? LISTING_TABS : TX_TABS;
 
   // ── Tab badge counts ──────────────────────────────────────────────────────
@@ -632,7 +641,11 @@ export default function TransactionDetail() {
   const overdueTaskCount = overdueTasks.length;
   const missingDocCount = checklistItems.filter(i => i.required && i.status === "missing").length;
   const complianceBlockerCount = complianceReports.reduce((sum, r) => sum + (r.blockers?.length || 0), 0);
-  const issuesBadgeCount = attentionItems.length + complianceBlockerCount;
+  const allDetectedIssues = useMemo(
+    () => detectIssues(transaction, checklistItems, complianceReports, txTasks),
+    [transaction, checklistItems, complianceReports, txTasks]
+  );
+  const issuesBadgeCount = allDetectedIssues.filter(i => !dismissedIssueIds.has(i.id)).length;
 
   const TAB_BADGES = {
     issues:          issuesBadgeCount,
