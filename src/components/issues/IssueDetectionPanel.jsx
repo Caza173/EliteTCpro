@@ -96,7 +96,14 @@ function IssueRow({ issue, transaction, autoSendEnabled, currentUser, onDismiss 
 export default function IssueDetectionPanel({ transaction, currentUser }) {
   const [autoSend, setAutoSend] = useState(false);
   const [filter, setFilter] = useState("all");
-  const [dismissed, setDismissed] = useState(new Set());
+
+  const storageKey = `dismissed_issues_${transaction.id}`;
+  const [dismissed, setDismissed] = useState(() => {
+    try {
+      const saved = localStorage.getItem(storageKey);
+      return saved ? new Set(JSON.parse(saved)) : new Set();
+    } catch { return new Set(); }
+  });
 
   const { data: checklistItems = [], isLoading: loadingChecklist } = useQuery({
     queryKey: ["checklist", transaction.id],
@@ -223,7 +230,11 @@ export default function IssueDetectionPanel({ transaction, currentUser }) {
               transaction={transaction}
               autoSendEnabled={autoSend}
               currentUser={currentUser}
-              onDismiss={(id) => setDismissed(prev => new Set([...prev, id]))}
+              onDismiss={(id) => setDismissed(prev => {
+                const next = new Set([...prev, id]);
+                try { localStorage.setItem(storageKey, JSON.stringify([...next])); } catch {}
+                return next;
+              })}
             />
           ))}
         </div>
