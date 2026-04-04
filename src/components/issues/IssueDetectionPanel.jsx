@@ -8,7 +8,7 @@ import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import {
   AlertTriangle, ShieldX, Clock, ClipboardList,
-  Mail, CheckCircle2, RefreshCw, Filter,
+  Mail, CheckCircle2, X,
 } from "lucide-react";
 import { detectIssues, ISSUE_TYPE_LABELS, SEVERITY_STYLES } from "@/lib/issueDetector";
 import EmailGeneratorModal from "@/components/compliance/EmailGeneratorModal";
@@ -31,7 +31,7 @@ function adaptIssueForEmail(issue) {
   };
 }
 
-function IssueRow({ issue, transaction, autoSendEnabled, currentUser }) {
+function IssueRow({ issue, transaction, autoSendEnabled, currentUser, onDismiss }) {
   const [emailModalOpen, setEmailModalOpen] = useState(false);
   const styles = SEVERITY_STYLES[issue.severity];
 
@@ -70,15 +70,24 @@ function IssueRow({ issue, transaction, autoSendEnabled, currentUser }) {
           )}
         </div>
 
-        <Button
-          size="sm"
-          variant="outline"
-          onClick={() => setEmailModalOpen(true)}
-          className="flex-shrink-0 h-8 text-xs gap-1.5 text-blue-600 border-blue-200 hover:bg-blue-50"
-        >
-          <Mail className="w-3.5 h-3.5" />
-          Email
-        </Button>
+        <div className="flex items-center gap-1.5 flex-shrink-0">
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={() => setEmailModalOpen(true)}
+            className="h-8 text-xs gap-1.5 text-blue-600 border-blue-200 hover:bg-blue-50"
+          >
+            <Mail className="w-3.5 h-3.5" />
+            Email
+          </Button>
+          <button
+            onClick={() => onDismiss(issue.id)}
+            className="h-8 w-8 flex items-center justify-center rounded-lg text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors"
+            title="Dismiss"
+          >
+            <X className="w-3.5 h-3.5" />
+          </button>
+        </div>
       </div>
     </>
   );
@@ -87,6 +96,7 @@ function IssueRow({ issue, transaction, autoSendEnabled, currentUser }) {
 export default function IssueDetectionPanel({ transaction, currentUser }) {
   const [autoSend, setAutoSend] = useState(false);
   const [filter, setFilter] = useState("all");
+  const [dismissed, setDismissed] = useState(new Set());
 
   const { data: checklistItems = [], isLoading: loadingChecklist } = useQuery({
     queryKey: ["checklist", transaction.id],
@@ -116,13 +126,15 @@ export default function IssueDetectionPanel({ transaction, currentUser }) {
     [transaction, checklistItems, complianceReports, txTasks]
   );
 
-  const filteredIssues = filter === "all"
-    ? allIssues
-    : allIssues.filter(i => i.issue_type === filter || i.severity === filter);
+  const visibleIssues = allIssues.filter(i => !dismissed.has(i.id));
 
-  const highCount   = allIssues.filter(i => i.severity === "high").length;
-  const mediumCount = allIssues.filter(i => i.severity === "medium").length;
-  const lowCount    = allIssues.filter(i => i.severity === "low").length;
+  const filteredIssues = (filter === "all"
+    ? visibleIssues
+    : visibleIssues.filter(i => i.issue_type === filter || i.severity === filter));
+
+  const highCount   = visibleIssues.filter(i => i.severity === "high").length;
+  const mediumCount = visibleIssues.filter(i => i.severity === "medium").length;
+  const lowCount    = visibleIssues.filter(i => i.severity === "low").length;
 
   if (isLoading) {
     return <div className="space-y-3">{[1,2,3].map(i => <Skeleton key={i} className="h-16 rounded-xl" />)}</div>;
@@ -151,7 +163,7 @@ export default function IssueDetectionPanel({ transaction, currentUser }) {
               {lowCount} Info
             </span>
           )}
-          {allIssues.length === 0 && (
+          {visibleIssues.length === 0 && (
             <span className="inline-flex items-center gap-1.5 text-xs font-medium px-2.5 py-1 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200">
               <CheckCircle2 className="w-3.5 h-3.5" /> No issues detected
             </span>
@@ -168,7 +180,7 @@ export default function IssueDetectionPanel({ transaction, currentUser }) {
       </div>
 
       {/* Filter tabs */}
-      {allIssues.length > 0 && (
+      {visibleIssues.length > 0 && (
         <div className="flex gap-1 p-1 rounded-lg overflow-x-auto scrollbar-none" style={{ background: "var(--bg-tertiary)" }}>
           {[
             { id: "all", label: "All" },
@@ -185,8 +197,8 @@ export default function IssueDetectionPanel({ transaction, currentUser }) {
               }`}
             >
               {tab.label}
-              {tab.id === "all" && allIssues.length > 0 && (
-                <span className="ml-1.5 px-1.5 py-0.5 rounded-full bg-gray-100 text-gray-600 text-[10px]">{allIssues.length}</span>
+              {tab.id === "all" && visibleIssues.length > 0 && (
+                <span className="ml-1.5 px-1.5 py-0.5 rounded-full bg-gray-100 text-gray-600 text-[10px]">{visibleIssues.length}</span>
               )}
             </button>
           ))}
@@ -211,12 +223,13 @@ export default function IssueDetectionPanel({ transaction, currentUser }) {
               transaction={transaction}
               autoSendEnabled={autoSend}
               currentUser={currentUser}
+              onDismiss={(id) => setDismissed(prev => new Set([...prev, id]))}
             />
           ))}
         </div>
       )}
 
-      {autoSend && allIssues.length > 0 && (
+      {autoSend && visibleIssues.length > 0 && (
         <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-xs text-amber-700">
           ⚡ Auto-send is <strong>ON</strong> — emails will be generated and sent automatically when new critical issues are detected. Manual review is recommended before enabling this in production.
         </div>
