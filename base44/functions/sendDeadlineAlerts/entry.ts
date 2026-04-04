@@ -35,12 +35,14 @@ Deno.serve(async (req) => {
         const days = diffDays(dateStr);
         if (!ALERT_DAYS.includes(days)) continue;
 
-        // Check if we already sent this alert today (same deadline + interval)
+        // Check if an alert already exists for this deadline (any state)
         const existingAlerts = await base44.asServiceRole.entities.InAppNotification.filter({
           transaction_id: tx.id,
           deadline_field: field.key,
-          alert_interval_hours: days * 24,
         });
+
+        // Never recreate dismissed alerts
+        if (existingAlerts.some(a => a.dismissed)) continue;
 
         // Deduplicate: only send if no alert exists created in last 23h
         const alreadySent = existingAlerts.some((a) => {

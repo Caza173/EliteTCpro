@@ -150,10 +150,14 @@ Deno.serve(async (req) => {
           hoursRemaining,
         });
 
-        // ── Deduplication ────────────────────────────────────────────────────
+        // ── Deduplication — permanent dismiss is respected forever ──────────
         const fieldNotifications = existingForTx.filter(n => n.deadline_field === field.key && n.deadline_type === field.type);
+
+        // If ANY notification for this deadline was dismissed, never recreate it
+        const anyDismissed = fieldNotifications.some(n => n.dismissed);
+        if (anyDismissed) continue;
+
         const activeNotifs = fieldNotifications.filter(n => !n.dismissed);
-        const dismissedNotif = fieldNotifications.find(n => n.dismissed);
 
         // If there's an active (non-dismissed) notification, just update severity/title if escalated
         if (activeNotifs.length > 0) {
@@ -165,19 +169,6 @@ Deno.serve(async (req) => {
             });
           }
           continue;
-        }
-
-        // Check if there's a recently dismissed notification (within 24h = snooze window)
-        if (dismissedNotif) {
-          const dismissedAt = dismissedNotif.dismissed_at ? new Date(dismissedNotif.dismissed_at) : null;
-          const hoursSinceDismiss = dismissedAt ? (now.getTime() - dismissedAt.getTime()) / MS_PER_HOUR : 0;
-          if (hoursSinceDismiss < 24) {
-            // Still within snooze window — skip
-            continue;
-          } else {
-            // Snooze expired — delete the old dismissed record so a fresh one gets created
-            try { await base44.asServiceRole.entities.InAppNotification.delete(dismissedNotif.id); } catch {}
-          }
         }
 
         // ── Create new notification ───────────────────────────────────────────
