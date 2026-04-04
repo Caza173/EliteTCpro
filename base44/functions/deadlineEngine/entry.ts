@@ -116,7 +116,7 @@ Deno.serve(async (req) => {
 
         // ── If linked task is completed → resolve all active alerts for this deadline ──
         if (taskCompleted) {
-          const activeNotifs = existingForTx.filter(n => n.deadline_field === field.key && !n.dismissed);
+          const activeNotifs = existingForTx.filter(n => n.deadline_field === field.key && n.dismissed !== true);
           for (const n of activeNotifs) {
             try {
               await base44.asServiceRole.entities.InAppNotification.update(n.id, {
@@ -175,10 +175,8 @@ Deno.serve(async (req) => {
           continue;
         }
 
-        // ── Deduplication ─────────────────────────────────────────────────────
-        const fieldNotifications = existingForTx.filter(
-          n => n.deadline_field === field.key && n.deadline_type === field.type
-        );
+        // ── Deduplication — match on deadline_field only (deadline_type may be unset on old records) ──
+        const fieldNotifications = existingForTx.filter(n => n.deadline_field === field.key);
 
         // If user manually dismissed this alert, respect it permanently
         const userDismissed = fieldNotifications.some(n => n.dismissed);
@@ -189,8 +187,25 @@ Deno.serve(async (req) => {
 
         const activeNotifs = fieldNotifications.filter(n => !n.dismissed);
 
-        // Update severity if escalated
-        if (activeNotifs.length > 0) {
+        // Delete all duplicates beyond the first, then update the survivor
+        if (activeNotifs.length > 1) {
+          const [keep, ...dupes] = activeNotifs;
+          for (const dupe of dupes) {
+            try { await base44.asServiceRole.entities.InAppNotification.delete(dupe.id); } catch {}
+          }
+          console.log(`[deadlineEngine] ${field.key}: deleted ${dupes.length} duplicate notification(s)`);
+          // Update surviving notification if severity changed
+          if (keep.severity !== severity) {
+            await base44.asServiceRole.entities.InAppNotification.update(keep.id, {
+              severity,
+              title: buildMessage(field.label, hoursRemaining),
+            });
+          }
+          continue;
+        }
+
+        // Update severity if escalated on the single existing notification
+        if (activeNotifs.length === 1) {
           const activeNotif = activeNotifs[0];
           if (activeNotif.severity !== severity) {
             await base44.asServiceRole.entities.InAppNotification.update(activeNotif.id, {
