@@ -791,19 +791,7 @@ export default function TransactionDetail() {
             {transaction.sale_price && <span><span className="font-medium" style={{ color: "var(--text-secondary)" }}>Price:</span> ${transaction.sale_price?.toLocaleString()}</span>}
             {transaction.is_cash_transaction && <span className="text-emerald-600 font-semibold">Cash</span>}
           </div>
-          {attentionItems.length > 0 && (
-            <div className="flex items-center gap-1.5 flex-wrap ml-auto">
-              <Zap className="w-3.5 h-3.5 text-amber-500 flex-shrink-0" />
-              {attentionItems.map((item, i) => (
-                <button key={i} onClick={() => setActiveTab(item.tab)}
-                  className={`text-[11px] font-semibold px-2 py-0.5 rounded-full border transition-colors ${
-                    item.urgent ? "bg-red-50 border-red-300 text-red-600" : "bg-amber-50 border-amber-300 text-amber-700"
-                  }`}>
-                  {item.label}
-                </button>
-              ))}
-            </div>
-          )}
+
         </div>
       </div>
 
