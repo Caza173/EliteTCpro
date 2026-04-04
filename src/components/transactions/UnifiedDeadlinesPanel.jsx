@@ -93,12 +93,29 @@ function DeadlineRow({ item, calendarMaps, transactionId, onUpdateContingency, o
   const [editTime, setEditTime] = useState(item.time || "");
   const [syncing, setSyncing] = useState(false);
   const [markingReceived, setMarkingReceived] = useState(false);
+  const [markingComplete, setMarkingComplete] = useState(false);
 
   const colors = CATEGORY_COLORS[item.category] || CATEGORY_COLORS.Other;
   const emdReceived = item.isEMD && item.emdReceived;
+  const isCompleted = item.status === "Completed" || item.isCompleted;
   const daysInfo = getDaysLabel(item.date, { nonActionable: item.nonActionable, emdReceived });
-  // Only show overdue ring for actionable, non-received deadlines
-  const isOverdue = !item.nonActionable && !emdReceived && daysInfo?.cls?.includes("red");
+  // Only show overdue ring for actionable, non-received, non-completed deadlines
+  const isOverdue = !item.nonActionable && !emdReceived && !isCompleted && daysInfo?.cls?.includes("red");
+
+  const handleMarkComplete = async () => {
+    setMarkingComplete(true);
+    try {
+      if (item.sourceType === "system") {
+        const completed = item.completedDeadlines || [];
+        onUpdateTransaction({ completed_deadlines: [...completed, item.key] });
+      } else {
+        await onUpdateContingency(item.id, { status: "Completed", completed_date: new Date().toISOString().split("T")[0] });
+      }
+    } catch (e) {
+      toast.error("Failed to mark complete");
+    }
+    setMarkingComplete(false);
+  };
 
   // Check if this item has a calendar sync
   const calMapKey = item.sourceType === "system" ? item.key : `contingency_${item.id}`;
@@ -206,7 +223,9 @@ function DeadlineRow({ item, calendarMaps, transactionId, onUpdateContingency, o
                     <span className="text-xs font-semibold text-blue-600">{formatTime(item.due_time)}</span>
                   )}
                 </div>
-                {daysInfo && item.date && (
+                {isCompleted && item.date ? (
+                  <span className="ml-2 text-xs text-emerald-600 font-semibold">Completed</span>
+                ) : daysInfo && item.date && (
                   <span className={`ml-2 text-xs ${daysInfo.cls}`}>{daysInfo.label}</span>
                 )}
                 {item.isEMD && emdReceived && item.emdReceivedDate && (
@@ -219,8 +238,27 @@ function DeadlineRow({ item, calendarMaps, transactionId, onUpdateContingency, o
 
               {/* Action buttons */}
               <div className="flex items-center gap-1 flex-shrink-0">
+                {/* Completed badge */}
+                {isCompleted && (
+                  <span className="flex items-center gap-1 text-[10px] font-semibold text-emerald-700 px-2 py-0.5 rounded-full bg-emerald-50 border border-emerald-200">
+                    <CheckCircle2 className="w-3 h-3" /> Done
+                  </span>
+                )}
+                {/* Complete button — show for overdue or today deadlines that aren't already complete */}
+                {!isCompleted && !item.nonActionable && !emdReceived && item.date && (isOverdue || (daysInfo && daysInfo.cls?.includes("orange"))) && (
+                  <Button
+                    size="sm" variant="ghost"
+                    className="h-6 px-2 text-[10px] font-semibold text-emerald-700 hover:bg-emerald-50 gap-1"
+                    disabled={markingComplete}
+                    onClick={handleMarkComplete}
+                    title="Mark as completed"
+                  >
+                    {markingComplete ? <Loader2 className="w-3 h-3 animate-spin" /> : <CheckCircle2 className="w-3 h-3" />}
+                    Complete
+                  </Button>
+                )}
                 {/* EMD: Mark Received button */}
-                {item.isEMD && !emdReceived && item.date && (
+                {item.isEMD && !emdReceived && !isCompleted && item.date && (
                   <Button
                     size="sm" variant="ghost"
                     className="h-6 px-2 text-[10px] font-semibold text-emerald-700 hover:bg-emerald-50 gap-1"
@@ -386,6 +424,8 @@ export default function UnifiedDeadlinesPanel({ transaction, onSave }) {
   };
 
   // ── Build unified deadline list ──────────────────────────────────────────
+  const completedDeadlines = transaction.completed_deadlines || [];
+
   // 1. System fields from Transaction
   const systemItems = SYSTEM_FIELDS.map(f => ({
     id: f.key,
@@ -400,6 +440,8 @@ export default function UnifiedDeadlinesPanel({ transaction, onSave }) {
     isEMD: !!f.isEMD,
     emdReceived: f.isEMD ? !!transaction.earnest_money_received : false,
     emdReceivedDate: f.isEMD ? transaction.earnest_money_received_date : null,
+    isCompleted: completedDeadlines.includes(f.key),
+    completedDeadlines,
     sortOrder: f.key === "contract_date" ? 0 : f.key === "closing_date" ? 999 : 1,
   }));
 
@@ -438,6 +480,7 @@ export default function UnifiedDeadlinesPanel({ transaction, onSave }) {
     i.date &&
     !i.nonActionable &&
     !(i.isEMD && i.emdReceived) &&
+    !i.isCompleted &&
     differenceInDays(parseISO(i.date), today) < 0 &&
     i.status !== "Completed" &&
     i.status !== "Waived"

@@ -295,6 +295,13 @@
         "type": "number"
       }
     },
+    "completed_deadlines": {
+      "type": "array",
+      "description": "List of system deadline field keys that have been manually marked as completed",
+      "items": {
+        "type": "string"
+      }
+    },
     "status": {
       "type": "string",
       "enum": [
