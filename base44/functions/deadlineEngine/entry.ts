@@ -9,21 +9,35 @@ const DEADLINE_FIELDS = [
   { key: "closing_date",           label: "Closing / Transfer of Title", type: "closing" },
 ];
 
-// Task title keywords that, when completed, mark the linked deadline as done
+// Task title keywords — ANY matching completed task resolves the deadline
+// Keywords are intentionally specific to completion-signifying tasks only
 const DEADLINE_TASK_KEYWORDS = {
-  earnest_money_deadline: ["earnest money", "emd", "deposit received"],
-  inspection_deadline:    ["inspection completed", "inspection scheduled", "inspection report", "inspection"],
-  due_diligence_deadline: ["due diligence", "contingency removal"],
+  earnest_money_deadline: ["earnest money received", "emd received", "deposit received", "earnest money deposit received"],
+  inspection_deadline:    ["inspection completed", "inspection report received", "inspection done"],
+  due_diligence_deadline: ["due diligence completed", "due diligence done", "contingency removal"],
+  financing_deadline:     ["clear to close", "financing commitment received", "loan commitment", "ctc received"],
+  appraisal_deadline:     ["appraisal received", "appraisal completed", "appraisal done"],
+  closing_date:           ["closing completed", "closed", "keys delivered", "title transferred"],
 };
 
+// Returns true if ANY linked task is completed (not ALL — one completion signal is enough)
 function isDeadlineCompletedByTask(deadlineKey, txTasks = []) {
   const keywords = DEADLINE_TASK_KEYWORDS[deadlineKey];
   if (!keywords) return false;
+
   const linked = txTasks.filter(t =>
     keywords.some(kw => t.title?.toLowerCase().includes(kw.toLowerCase()))
   );
-  if (linked.length === 0) return false;
-  return linked.every(t => t.is_completed);
+
+  const result = linked.some(t => t.is_completed);
+
+  console.log(`[deadlineEngine] Task check for ${deadlineKey}:`, {
+    keywordsSearched: keywords,
+    matchingTasks: linked.map(t => ({ title: t.title, is_completed: t.is_completed })),
+    resolvedByTask: result,
+  });
+
+  return result;
 }
 
 const MS_PER_HOUR = 1000 * 60 * 60;
@@ -58,9 +72,6 @@ Deno.serve(async (req) => {
   try {
     const base44 = createClientFromRequest(req);
 
-    let user = null;
-    try { user = await base44.auth.me(); } catch {}
-
     let payload = {};
     try { payload = await req.json(); } catch {}
 
@@ -73,13 +84,15 @@ Deno.serve(async (req) => {
       transactions = await base44.asServiceRole.entities.Transaction.filter({ status: "active" });
     }
 
-    const txIds = transactions.map(t => t.id);
+    console.log(`[deadlineEngine] Evaluating ${transactions.length} transaction(s)`);
+
     let allContingencies = [];
-    if (txIds.length > 0) {
+    if (transactions.length > 0) {
       allContingencies = await base44.asServiceRole.entities.Contingency.filter({ is_active: true });
     }
 
     let totalCreated = 0;
+    let totalResolved = 0;
     const now = new Date();
 
     for (const tx of transactions) {
@@ -87,37 +100,51 @@ Deno.serve(async (req) => {
 
       const txContingencies = allContingencies.filter(c => c.transaction_id === tx.id);
 
-      // Fetch all existing notifications and tasks for this transaction once
+      // Fetch tasks and existing notifications fresh from DB for this transaction
       const [existingForTx, txTasks] = await Promise.all([
         base44.asServiceRole.entities.InAppNotification.filter({ transaction_id: tx.id }),
         base44.asServiceRole.entities.TransactionTask.filter({ transaction_id: tx.id }),
       ]);
 
+      console.log(`[deadlineEngine] TX ${tx.id} (${tx.address}): ${txTasks.length} tasks, ${existingForTx.length} existing notifications`);
+
       for (const field of DEADLINE_FIELDS) {
         const originalDate = tx[field.key];
         if (!originalDate) continue;
 
-        // ── Skip if linked tasks are all completed ──────────────────────────
-        if (isDeadlineCompletedByTask(field.key, txTasks)) {
-          // Auto-resolve any active InAppNotifications for this field
+        const taskCompleted = isDeadlineCompletedByTask(field.key, txTasks);
+
+        // ── If linked task is completed → resolve all active alerts for this deadline ──
+        if (taskCompleted) {
           const activeNotifs = existingForTx.filter(n => n.deadline_field === field.key && !n.dismissed);
           for (const n of activeNotifs) {
-            try { await base44.asServiceRole.entities.InAppNotification.update(n.id, { dismissed: true, dismissed_at: new Date().toISOString() }); } catch {}
+            try {
+              await base44.asServiceRole.entities.InAppNotification.update(n.id, {
+                dismissed: true,
+                dismissed_at: new Date().toISOString(),
+              });
+              totalResolved++;
+              console.log(`[deadlineEngine] Resolved alert ${n.id} for ${field.key} on tx ${tx.id} (task completed)`);
+            } catch {}
           }
-          // Auto-resolve any MonitorAlerts for this field
+          // Also resolve MonitorAlerts
           try {
-            const alerts = await base44.asServiceRole.entities.MonitorAlert.filter({
+            const monitorAlerts = await base44.asServiceRole.entities.MonitorAlert.filter({
               transaction_id: tx.id,
               detail_key: field.key,
               status: "open",
             });
-            for (const a of alerts) {
-              await base44.asServiceRole.entities.MonitorAlert.update(a.id, { status: "resolved", resolved_at: new Date().toISOString() });
+            for (const a of monitorAlerts) {
+              await base44.asServiceRole.entities.MonitorAlert.update(a.id, {
+                status: "resolved",
+                resolved_at: new Date().toISOString(),
+              });
             }
           } catch {}
-          continue;
+          continue; // Do NOT create new alerts for this deadline
         }
 
+        // ── Contingency check ─────────────────────────────────────────────────
         const matchingContingency = txContingencies.find(c =>
           c.contingency_type?.toLowerCase().includes(field.type.replace("_", " ")) ||
           c.sub_type?.toLowerCase().includes(field.type.replace("_", " "))
@@ -129,7 +156,7 @@ Deno.serve(async (req) => {
         const contingencyStatus = matchingContingency?.status || null;
         const addendum_override = tx[`${field.key}_addendum_override`] || false;
 
-        if (matchingContingency && matchingContingency.due_date && matchingContingency.due_date !== originalDate) {
+        if (matchingContingency?.due_date && matchingContingency.due_date !== originalDate) {
           extension_exists = true;
           effectiveDate = matchingContingency.due_date;
         }
@@ -140,26 +167,29 @@ Deno.serve(async (req) => {
         const effectiveMs = new Date(effectiveDate + (effectiveDate.includes("T") ? "" : "T23:59:59")).getTime();
         const hoursRemaining = (effectiveMs - now.getTime()) / MS_PER_HOUR;
 
+        console.log(`[deadlineEngine] ${field.key} for tx ${tx.id}: effectiveDate=${effectiveDate}, hoursRemaining=${Math.round(hoursRemaining)}`);
+
         const severity = getSeverity(hoursRemaining);
-        if (!severity) continue;
+        if (!severity) {
+          console.log(`[deadlineEngine] ${field.key}: no alert needed (${Math.round(hoursRemaining)}h remaining)`);
+          continue;
+        }
 
-        const addendumStatus = getAddendumStatus({
-          addendum_override,
-          extension_exists,
-          contingency_active,
-          hoursRemaining,
-        });
+        // ── Deduplication ─────────────────────────────────────────────────────
+        const fieldNotifications = existingForTx.filter(
+          n => n.deadline_field === field.key && n.deadline_type === field.type
+        );
 
-        // ── Deduplication — permanent dismiss is respected forever ──────────
-        const fieldNotifications = existingForTx.filter(n => n.deadline_field === field.key && n.deadline_type === field.type);
-
-        // If ANY notification for this deadline was dismissed, never recreate it
-        const anyDismissed = fieldNotifications.some(n => n.dismissed);
-        if (anyDismissed) continue;
+        // If user manually dismissed this alert, respect it permanently
+        const userDismissed = fieldNotifications.some(n => n.dismissed);
+        if (userDismissed) {
+          console.log(`[deadlineEngine] ${field.key}: skipped — user dismissed`);
+          continue;
+        }
 
         const activeNotifs = fieldNotifications.filter(n => !n.dismissed);
 
-        // If there's an active (non-dismissed) notification, just update severity/title if escalated
+        // Update severity if escalated
         if (activeNotifs.length > 0) {
           const activeNotif = activeNotifs[0];
           if (activeNotif.severity !== severity) {
@@ -167,15 +197,20 @@ Deno.serve(async (req) => {
               severity,
               title: buildMessage(field.label, hoursRemaining),
             });
+            console.log(`[deadlineEngine] ${field.key}: escalated severity to ${severity}`);
           }
           continue;
         }
 
         // ── Create new notification ───────────────────────────────────────────
         const recipients = [tx.agent_email].filter(Boolean);
-        if (!recipients.length) continue;
+        if (!recipients.length) {
+          console.log(`[deadlineEngine] ${field.key}: no recipient email on tx ${tx.id}`);
+          continue;
+        }
 
         const message = buildMessage(field.label, hoursRemaining);
+        const addendumStatus = getAddendumStatus({ addendum_override, extension_exists, contingency_active, hoursRemaining });
 
         for (const email of recipients) {
           try {
@@ -184,7 +219,7 @@ Deno.serve(async (req) => {
               transaction_id: tx.id,
               user_email: email,
               title: message,
-              body: `${tx.address} — Effective date: ${effectiveDate}${extension_exists ? " (Extended)" : ""}`,
+              body: `${tx.address} — Due: ${effectiveDate}${extension_exists ? " (Extended)" : ""}`,
               type: "deadline",
               deadline_field: field.key,
               deadline_type: field.type,
@@ -194,17 +229,23 @@ Deno.serve(async (req) => {
               dismissed: false,
             });
             totalCreated++;
+            console.log(`[deadlineEngine] Created ${severity} alert for ${field.key} on tx ${tx.id} → ${email}`);
           } catch (notifyErr) {
-            console.warn(`[deadlineEngine] InAppNotification failed for tx ${tx.id}:`, notifyErr.message);
+            console.warn(`[deadlineEngine] Failed to create notification for tx ${tx.id}:`, notifyErr.message);
           }
         }
       }
     }
 
-    console.log(`Deadline engine: ${totalCreated} notifications created for ${transactions.length} transactions`);
-    return Response.json({ success: true, notifications_created: totalCreated, transactions_evaluated: transactions.length });
+    console.log(`[deadlineEngine] Done: ${totalCreated} created, ${totalResolved} resolved across ${transactions.length} transaction(s)`);
+    return Response.json({
+      success: true,
+      notifications_created: totalCreated,
+      notifications_resolved: totalResolved,
+      transactions_evaluated: transactions.length,
+    });
   } catch (error) {
-    console.error("deadlineEngine error:", error);
+    console.error("[deadlineEngine] Fatal error:", error);
     return Response.json({ error: error.message }, { status: 500 });
   }
 });
