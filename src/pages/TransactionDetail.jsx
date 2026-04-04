@@ -564,6 +564,20 @@ export default function TransactionDetail() {
     return satisfied;
   };
 
+  // Read dismissed issues from localStorage to accurately compute the Issues badge
+  // (must be before early returns to satisfy Rules of Hooks)
+  const dismissedIssueIds = useMemo(() => {
+    try {
+      const saved = localStorage.getItem(`dismissed_issues_${id}`);
+      return saved ? new Set(JSON.parse(saved)) : new Set();
+    } catch { return new Set(); }
+  }, [id, activeTab]);
+
+  const allDetectedIssues = useMemo(
+    () => detectIssues(transaction || {}, checklistItems, complianceReports, txTasks),
+    [transaction, checklistItems, complianceReports, txTasks]
+  );
+
   const isLoading = isLoadingList || isLoadingById;
 
   if (isLoading) {
@@ -624,14 +638,6 @@ export default function TransactionDetail() {
   const commsReadyCount = commAutomations.filter(c => c.template_status === "ready").length;
   const commsBlockedCount = commAutomations.filter(c => c.template_status === "blocked").length;
 
-  // Read dismissed issues from localStorage to accurately compute the Issues badge
-  const dismissedIssueIds = useMemo(() => {
-    try {
-      const saved = localStorage.getItem(`dismissed_issues_${id}`);
-      return saved ? new Set(JSON.parse(saved)) : new Set();
-    } catch { return new Set(); }
-  }, [id, activeTab]); // re-read when tab changes
-
   const tabs = transaction.transaction_type === "seller" ? LISTING_TABS : TX_TABS;
 
   // ── Tab badge counts ──────────────────────────────────────────────────────
@@ -641,10 +647,6 @@ export default function TransactionDetail() {
   const overdueTaskCount = overdueTasks.length;
   const missingDocCount = checklistItems.filter(i => i.required && i.status === "missing").length;
   const complianceBlockerCount = complianceReports.reduce((sum, r) => sum + (r.blockers?.length || 0), 0);
-  const allDetectedIssues = useMemo(
-    () => detectIssues(transaction, checklistItems, complianceReports, txTasks),
-    [transaction, checklistItems, complianceReports, txTasks]
-  );
   const issuesBadgeCount = allDetectedIssues.filter(i => !dismissedIssueIds.has(i.id)).length;
 
   const TAB_BADGES = {
