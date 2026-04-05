@@ -121,8 +121,8 @@ export default function Dashboard() {
   });
 
   const { data: notifications = [] } = useQuery({
-    queryKey: ["notifications", currentUser?.email],
-    queryFn: () => base44.entities.InAppNotification.filter({ user_email: currentUser.email }),
+    queryKey: ["deadlineNotifications", currentUser?.email],
+    queryFn: () => base44.entities.InAppNotification.filter({ user_email: currentUser.email, type: "deadline" }),
     enabled: !!currentUser,
     staleTime: 30_000,
   });
