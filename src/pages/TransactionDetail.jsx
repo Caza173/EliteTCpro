@@ -780,6 +780,9 @@ export default function TransactionDetail() {
             <QuickFeedbackButton defaultType="bug" label="Report" variant="badge"
               className="border-orange-300 text-orange-500 hover:border-orange-400 hover:bg-orange-50 h-8"
               context={{ transaction_id: transaction?.id, transaction_address: transaction?.address, route_name: "Transaction Page" }} />
+            <Button size="sm" className="h-8 bg-blue-600 hover:bg-blue-700 text-white gap-1.5 ml-auto" onClick={() => setMobileAIOpen(true)}>
+              <Bot className="w-3.5 h-3.5" /> Ask AI
+            </Button>
           </div>
 
         {/* Row 3: Meta strip + attention items */}
@@ -1035,32 +1038,7 @@ export default function TransactionDetail() {
         )}
       </div>
 
-      {/* Floating AI button — portal-style fixed positioning, bottom-left to avoid Notes panel */}
-      <button
-        onClick={() => setMobileAIOpen(true)}
-        title="Ask AI Assistant"
-        style={{
-          position: "fixed",
-          bottom: "24px",
-          right: "24px",
-          zIndex: 9999,
-          background: "#2563eb",
-          color: "#ffffff",
-          border: "none",
-          borderRadius: "9999px",
-          padding: "10px 16px",
-          display: "flex",
-          alignItems: "center",
-          gap: "8px",
-          boxShadow: "0 4px 14px rgba(37,99,235,0.4)",
-          cursor: "pointer",
-          fontWeight: 600,
-          fontSize: "12px",
-        }}
-      >
-        <Bot style={{ width: 16, height: 16 }} />
-        Ask AI
-      </button>
+
     </div>
   );
 }
