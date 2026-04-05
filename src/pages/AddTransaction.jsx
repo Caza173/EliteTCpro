@@ -17,7 +17,14 @@ export default function AddTransaction() {
 
   const { data: brokerages = [] } = useQuery({
     queryKey: ["brokerages"],
-    queryFn: () => base44.entities.Brokerage.list(),
+    queryFn: async () => {
+      try {
+        return await base44.entities.Brokerage.list();
+      } catch (err) {
+        console.error("Error fetching brokerages:", err);
+        return [];
+      }
+    },
     retry: false,
   });
 
@@ -25,7 +32,14 @@ export default function AddTransaction() {
 
   const { data: templates = [] } = useQuery({
     queryKey: ["templates", brokerageId],
-    queryFn: () => base44.entities.WorkflowTemplate.filter({ brokerage_id: brokerageId }),
+    queryFn: async () => {
+      try {
+        return await base44.entities.WorkflowTemplate.filter({ brokerage_id: brokerageId });
+      } catch (err) {
+        console.error("Error fetching templates:", err);
+        return [];
+      }
+    },
     enabled: !!brokerageId,
   });
 
