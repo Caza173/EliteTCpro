@@ -113,60 +113,62 @@ function extractContacts(transactions) {
   return Array.from(map.values()).sort((a, b) => (a.name || "").localeCompare(b.name || ""));
 }
 
-function EditContactModal({ contact, transactions, onClose, onSave }) {
-  const [form, setForm] = useState({
-    name: contact.name || "",
-    email: contact.email || "",
-    phone: contact.phone || "",
-    company: contact.company || "",
-  });
-  const [saving, setSaving] = useState(false);
-  const [error, setError] = useState(null);
+function EditContactModal({ contact, transactions, queryClient, onClose }) {
+   const [form, setForm] = useState({
+     name: contact.name || "",
+     email: contact.email || "",
+     phone: contact.phone || "",
+     company: contact.company || "",
+   });
+   const [saving, setSaving] = useState(false);
+   const [error, setError] = useState(null);
 
-  const fieldMap = ROLE_FIELD_MAP[contact.roles[0]];
+   const fieldMap = ROLE_FIELD_MAP[contact.roles[0]];
 
-  const handleSave = async () => {
-    if (!fieldMap) { onClose(); return; }
-    setSaving(true);
-    setError(null);
-    try {
-      for (const { txId } of contact.transactions) {
-        const tx = transactions.find(t => t.id === txId);
-        if (!tx) continue;
-        const data = {};
+   const handleSave = async () => {
+     if (!fieldMap) { onClose(); return; }
+     setSaving(true);
+     setError(null);
+     try {
+       for (const { txId } of contact.transactions) {
+         const tx = transactions.find(t => t.id === txId);
+         if (!tx) continue;
+         const data = {};
 
-        if (fieldMap.name === "__buyer_array__") {
-          const arr = tx.buyers?.length ? [...tx.buyers] : (tx.buyer ? [tx.buyer] : []);
-          const idx = arr.findIndex(n => n === contact.name);
-          if (idx >= 0) arr[idx] = form.name; else arr.push(form.name);
-          data.buyers = arr;
-          data.buyer = arr[0] || form.name;
-          if (form.email) data.client_email = form.email;
-          if (form.phone) data.client_phone = form.phone;
-        } else if (fieldMap.name === "__seller_array__") {
-          const arr = tx.sellers?.length ? [...tx.sellers] : (tx.seller ? [tx.seller] : []);
-          const idx = arr.findIndex(n => n === contact.name);
-          if (idx >= 0) arr[idx] = form.name; else arr.push(form.name);
-          data.sellers = arr;
-          data.seller = arr[0] || form.name;
-          if (form.email) data.sellerEmail = form.email;
-          if (form.phone) data.sellerPhone = form.phone;
-        } else {
-          if (fieldMap.name) data[fieldMap.name] = form.name;
-          if (fieldMap.email) data[fieldMap.email] = form.email;
-          if (fieldMap.phone && form.phone) data[fieldMap.phone] = form.phone;
-          if (fieldMap.company && form.company) data[fieldMap.company] = form.company;
-        }
+         if (fieldMap.name === "__buyer_array__") {
+           const arr = tx.buyers?.length ? [...tx.buyers] : (tx.buyer ? [tx.buyer] : []);
+           const idx = arr.findIndex(n => n === contact.name);
+           if (idx >= 0) arr[idx] = form.name; else arr.push(form.name);
+           data.buyers = arr;
+           data.buyer = arr[0] || form.name;
+           if (form.email) data.client_email = form.email;
+           if (form.phone) data.client_phone = form.phone;
+         } else if (fieldMap.name === "__seller_array__") {
+           const arr = tx.sellers?.length ? [...tx.sellers] : (tx.seller ? [tx.seller] : []);
+           const idx = arr.findIndex(n => n === contact.name);
+           if (idx >= 0) arr[idx] = form.name; else arr.push(form.name);
+           data.sellers = arr;
+           data.seller = arr[0] || form.name;
+           if (form.email) data.sellerEmail = form.email;
+           if (form.phone) data.sellerPhone = form.phone;
+         } else {
+           if (fieldMap.name) data[fieldMap.name] = form.name;
+           if (fieldMap.email) data[fieldMap.email] = form.email;
+           if (fieldMap.phone && form.phone) data[fieldMap.phone] = form.phone;
+           if (fieldMap.company && form.company) data[fieldMap.company] = form.company;
+         }
 
-        await base44.entities.Transaction.update(txId, data);
-      }
-      await onSave();
-      onClose();
-    } catch (e) {
-      setError(e.message || "Failed to save. Please try again.");
-    }
-    setSaving(false);
-  };
+         await base44.entities.Transaction.update(txId, data);
+       }
+       await queryClient.refetchQueries({ queryKey: ["transactions"] });
+       onClose();
+     } catch (e) {
+       setError(e.message || "Failed to save. Please try again.");
+       setSaving(false);
+       return;
+     }
+     setSaving(false);
+   };
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
@@ -285,13 +287,13 @@ export default function Contacts() {
   return (
     <div className="w-full space-y-5">
       {editingContact && (
-        <EditContactModal
-          contact={editingContact}
-          transactions={transactions}
-          onClose={() => setEditingContact(null)}
-          onSave={() => queryClient.invalidateQueries({ queryKey: ["transactions"] }).then(() => setEditingContact(null))}
-        />
-      )}
+         <EditContactModal
+           contact={editingContact}
+           transactions={transactions}
+           queryClient={queryClient}
+           onClose={() => setEditingContact(null)}
+         />
+       )}
 
       {deletingContact && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
