@@ -200,7 +200,10 @@ SECTION-BY-SECTION EXTRACTION GUIDE:
 
 PAGE 1 — EFFECTIVE DATE: In the box at the top right of Page 1. Format: written date + "EFFECTIVE DATE". Extract as YYYY-MM-DD.
 
-SECTION 1 (Page 1): Parties. Format: "[SELLER NAME] (SELLER) ... and [BUYER NAME] (BUYER)". Seller is listed FIRST before "and".
+SECTION 1 (Page 1): Parties and property address. Format: "[SELLER NAME] (SELLER) of [SELLER ADDRESS] ... and [BUYER NAME] (BUYER) of [BUYER ADDRESS]".
+  - Extract FULL SELLER ADDRESS (street, city, state, zip) from the line after SELLER name
+  - This seller address is the PROPERTY ADDRESS
+  - Buyer address is a different address and should NOT be used for property_address
 
 SECTION 3 (Page 1): Financials & earnest money.
 - SELLING PRICE: dollar value on same line or line after "SELLING PRICE is _____ Dollars $___"
@@ -237,7 +240,7 @@ SECTION 20 (Page 5): Additional Provisions, Concessions, Professional Fee.`,
           buyer_names:               { type: "string",  description: "Buyer name(s) from Section 1. Appears AFTER 'and' keyword." },
           seller_names:              { type: "string",  description: "Seller name(s) from Section 1. Appears BEFORE 'and'." },
           acceptance_date:           { type: "string",  description: "Effective date in YYYY-MM-DD from the box at top right of Page 1. This is the master anchor for all relative deadlines." },
-          property_address:          { type: "string",  description: "Full property address from Section 2." },
+          property_address:          { type: "string",  description: "SELLER'S ADDRESS from Section 1 — this is the PROPERTY ADDRESS. Appears on the line after 'SELLER' name. Format: street address, City/Town, State ZIP. Do NOT use buyer address." },
           property_city:             { type: "string",  description: "City/Town of property from Section 2." },
 
           // ── Section 3 financials
