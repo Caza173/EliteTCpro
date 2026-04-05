@@ -18,7 +18,7 @@ Deno.serve(async (req) => {
     let mime = [
       `MIME-Version: 1.0`,
       `To: ${to}`,
-      `Subject: ${subject}`,
+      `Subject: =?UTF-8?B?${btoa(unescape(encodeURIComponent(subject)))}?=`,
       `Content-Type: multipart/mixed; boundary="${boundary}"`,
       ``,
       `--${boundary}`,
@@ -42,8 +42,10 @@ Deno.serve(async (req) => {
       mime += `\r\n--${boundary}--`;
     }
 
-    // Base64url encode the MIME message
-    const encoded = btoa(unescape(encodeURIComponent(mime)))
+    // Base64url encode the MIME message using TextEncoder to handle UTF-8 correctly
+    const mimeBytes = new TextEncoder().encode(mime);
+    const binaryStr = Array.from(mimeBytes).map(b => String.fromCharCode(b)).join('');
+    const encoded = btoa(binaryStr)
       .replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
 
     const res = await fetch('https://gmail.googleapis.com/gmail/v1/users/me/messages/send', {

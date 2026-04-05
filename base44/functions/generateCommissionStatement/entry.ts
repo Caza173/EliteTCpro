@@ -123,18 +123,24 @@ Deno.serve(async (req) => {
     const valueCol = tableRight - 5;
 
     const row = (lbl, val, isTotal = false, deduction = false) => {
+      const fontSize = isTotal ? 10 : 9;
       if (isTotal) {
         doc.setFillColor(239, 246, 255);
         doc.rect(tableLeft, y - 4, tableRight - tableLeft, 8, "F");
         doc.setFont("helvetica", "bold");
-        doc.setFontSize(10);
+        doc.setFontSize(fontSize);
       } else {
         doc.setFont("helvetica", "normal");
-        doc.setFontSize(9);
+        doc.setFontSize(fontSize);
       }
-      doc.setTextColor(deduction ? 239 : 15, deduction ? 68 : 23, deduction ? 68 : 42);
-      doc.text(lbl, tableLeft + 2, y);
-      doc.setTextColor(deduction ? 239 : 15, deduction ? 68 : 23, deduction ? 68 : 42);
+      // Max label width = total width minus value column width (40mm) minus padding
+      const maxLabelWidth = tableRight - tableLeft - 42;
+      const labelLines = doc.splitTextToSize(lbl, maxLabelWidth);
+      const lineH = fontSize * 0.45;
+      const textColor = [deduction ? 239 : 15, deduction ? 68 : 23, deduction ? 68 : 42];
+      doc.setTextColor(...textColor);
+      doc.text(labelLines[0], tableLeft + 2, y); // only first line to keep single-row layout
+      doc.setTextColor(...textColor);
       doc.text(val, valueCol, y, { align: "right" });
       y += 7;
     };
