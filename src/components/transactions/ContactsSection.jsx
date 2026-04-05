@@ -45,8 +45,13 @@ export default function ContactsSection({ transaction, onUpdate, currentUser }) 
 
   // Direct entity save to avoid RLS/backend-function timing issues
   const save = async (data) => {
-    if (onUpdate) onUpdate(data);
-    await base44.entities.Transaction.update(tx.id, data);
+    try {
+      if (onUpdate) onUpdate(data);
+      await base44.entities.Transaction.update(tx.id, data);
+    } catch (err) {
+      console.error("Failed to save transaction:", err);
+      throw err;
+    }
   };
 
   const additionalContacts = tx.additional_contacts || [];

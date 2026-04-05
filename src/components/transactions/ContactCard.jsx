@@ -38,7 +38,14 @@ export default function ContactCard({
 
   const handleEdit = () => { setDraft({ name, email, phone, company }); setEditing(true); };
   const handleCancel = () => { setDraft({ name, email, phone, company }); setEditing(false); };
-  const handleSave = () => { if (onSave) onSave(draft); setEditing(false); };
+  const handleSave = async () => { 
+    try {
+      if (onSave) await onSave(draft);
+      setEditing(false);
+    } catch (err) {
+      console.error("Failed to save contact:", err);
+    }
+  };
 
   return (
     <div
