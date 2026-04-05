@@ -1,6 +1,8 @@
 import React, { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { ArrowRight, Upload, Zap, CheckCircle2, Mail, Shield, BarChart3, Lock, Menu, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { createPageUrl } from "@/utils";
 
 const TABS = [
   { id: "overview", label: "Overview" },
@@ -11,6 +13,7 @@ const TABS = [
 ];
 
 export default function Landing() {
+  const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState("overview");
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
@@ -78,17 +81,17 @@ export default function Landing() {
 
       {/* Main Content Container */}
       <div className="flex-1 min-h-0 overflow-hidden">
-        {activeTab === "overview" && <OverviewTab />}
+        {activeTab === "overview" && <OverviewTab navigate={navigate} />}
         {activeTab === "features" && <FeaturesTab />}
         {activeTab === "how-it-works" && <HowItWorksTab />}
-        {activeTab === "pricing" && <PricingTab />}
-        {activeTab === "login" && <LoginTab />}
+        {activeTab === "pricing" && <PricingTab navigate={navigate} />}
+        {activeTab === "login" && <LoginTab navigate={navigate} />}
       </div>
     </div>
   );
 }
 
-function OverviewTab() {
+function OverviewTab({ navigate }) {
   return (
     <div className="h-full px-6 py-8 overflow-hidden">
       <div className="max-w-7xl mx-auto h-full flex items-center">
@@ -104,10 +107,10 @@ function OverviewTab() {
               </p>
             </div>
             <div className="flex gap-4">
-              <Button className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg gap-2">
+              <Button onClick={() => navigate(createPageUrl("AddTransaction"))} className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg gap-2">
                 Start Transaction <ArrowRight className="w-4 h-4" />
               </Button>
-              <Button variant="outline" className="border-gray-600 text-gray-300 hover:bg-white/5 px-6 py-2 rounded-lg">
+              <Button onClick={() => navigate(createPageUrl("TCSignIn"))} variant="outline" className="border-gray-600 text-gray-300 hover:bg-white/5 px-6 py-2 rounded-lg">
                 TC Login
               </Button>
             </div>
@@ -245,7 +248,7 @@ function HowItWorksTab() {
   );
 }
 
-function PricingTab() {
+function PricingTab({ navigate }) {
   const plans = [
     {
       name: "Starter",
@@ -254,6 +257,7 @@ function PricingTab() {
       description: "Perfect for new TCs",
       features: ["Up to 5 active transactions", "Document parsing", "Email alerts"],
       cta: "Start Free Trial",
+      action: () => navigate(createPageUrl("AddTransaction")),
     },
     {
       name: "Professional",
@@ -263,6 +267,7 @@ function PricingTab() {
       features: ["Unlimited transactions", "Advanced compliance", "Team collaboration", "Custom templates"],
       cta: "Get Started",
       highlighted: true,
+      action: () => navigate(createPageUrl("AddTransaction")),
     },
     {
       name: "Enterprise",
@@ -271,6 +276,7 @@ function PricingTab() {
       description: "For large operations",
       features: ["Everything in Pro", "Integrations (Dotloop, Skyslope)", "Dedicated support", "SLA guarantee"],
       cta: "Contact Sales",
+      action: () => window.location.href = "mailto:sales@elitetc.com",
     },
   ];
 
@@ -303,7 +309,7 @@ function PricingTab() {
                   </li>
                 ))}
               </ul>
-              <Button className={`w-full ${plan.highlighted ? "bg-blue-600 hover:bg-blue-700" : "bg-gray-700 hover:bg-gray-600"} text-white rounded-lg`}>
+              <Button onClick={plan.action} className={`w-full ${plan.highlighted ? "bg-blue-600 hover:bg-blue-700" : "bg-gray-700 hover:bg-gray-600"} text-white rounded-lg`}>
                 {plan.cta}
               </Button>
             </div>
@@ -314,7 +320,19 @@ function PricingTab() {
   );
 }
 
-function LoginTab() {
+function LoginTab({ navigate }) {
+  const [agentCode, setAgentCode] = React.useState("");
+  
+  const handleAgentAccess = () => {
+    if (agentCode.trim()) {
+      navigate(`/ClientLookup?code=${encodeURIComponent(agentCode)}`);
+    }
+  };
+
+  const handleTCLogin = () => {
+    navigate(createPageUrl("TCSignIn"));
+  };
+
   return (
     <div className="h-full px-6 py-8 flex items-center overflow-hidden">
       <div className="max-w-5xl mx-auto w-full grid grid-cols-1 md:grid-cols-2 gap-8">
@@ -327,10 +345,13 @@ function LoginTab() {
               <input
                 type="text"
                 placeholder="Enter your code"
+                value={agentCode}
+                onChange={(e) => setAgentCode(e.target.value)}
+                onKeyDown={(e) => e.key === "Enter" && handleAgentAccess()}
                 className="w-full px-4 py-2 rounded-lg bg-white/5 border border-gray-700 text-white placeholder:text-gray-500 focus:outline-none focus:border-blue-500"
               />
             </div>
-            <Button className="w-full bg-blue-600 hover:bg-blue-700 text-white rounded-lg">
+            <Button onClick={handleAgentAccess} className="w-full bg-blue-600 hover:bg-blue-700 text-white rounded-lg">
               Access Portal
             </Button>
           </div>
@@ -356,7 +377,7 @@ function LoginTab() {
                 className="w-full px-4 py-2 rounded-lg bg-white/5 border border-gray-700 text-white placeholder:text-gray-500 focus:outline-none focus:border-blue-500"
               />
             </div>
-            <Button className="w-full bg-blue-600 hover:bg-blue-700 text-white rounded-lg">
+            <Button onClick={handleTCLogin} className="w-full bg-blue-600 hover:bg-blue-700 text-white rounded-lg">
               Sign In
             </Button>
           </div>
