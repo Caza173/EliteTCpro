@@ -43,6 +43,7 @@ const TaskRow = memo(function TaskRow({
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState(task.title);
   const [moveOpen, setMoveOpen] = useState(false);
+  const [dropdownPos, setDropdownPos] = useState({ top: 0, right: 0 });
   const isAtRisk = !task.is_completed && task.due_date && new Date(task.due_date) < new Date();
   const phaseNum = phase?.phaseNum || 0;
 
@@ -121,13 +122,24 @@ const TaskRow = memo(function TaskRow({
               </button>
             )}
             <div className="relative">
-              <button onClick={() => setMoveOpen(v => !v)} className="p-0.5 rounded hover:bg-gray-100" title="Move to phase">
+              <button
+                ref={el => { if (el) window.__moveButtonEl = el; }}
+                onClick={(e) => {
+                  setMoveOpen(v => !v);
+                  const rect = e.currentTarget.getBoundingClientRect();
+                  setDropdownPos({ top: rect.bottom + window.scrollY, right: window.innerWidth - rect.right });
+                }}
+                className="p-0.5 rounded hover:bg-gray-100" title="Move to phase"
+              >
                 <ChevronDown className="w-2.5 h-2.5 text-gray-400" />
               </button>
               {moveOpen && (
                 <>
                   <div className="fixed inset-0 z-40" onClick={() => setMoveOpen(false)} />
-                  <div className="absolute right-0 top-5 z-50 bg-white border border-gray-200 rounded-lg shadow-lg py-1 min-w-[150px]">
+                  <div
+                    className="fixed z-50 bg-white border border-gray-200 rounded-lg shadow-lg py-1 min-w-[150px]"
+                    style={{ top: dropdownPos.top, right: dropdownPos.right }}
+                  >
                     <p className="text-[9px] font-semibold text-gray-400 px-2 py-1 uppercase tracking-wider">Move to phase</p>
                     {allPhases.map(p => (
                       <button
