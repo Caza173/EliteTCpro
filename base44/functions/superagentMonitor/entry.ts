@@ -54,6 +54,22 @@ Deno.serve(async (req) => {
       }
     }
 
+    // Back-fill deadline_value on old dismissed/resolved alerts that are missing it,
+    // so they are not incorrectly recreated on subsequent runs.
+    const txMap = new Map(transactions.map(tx => [tx.id, tx]));
+    const alertsNeedingBackfill = existingAlerts.filter(a =>
+      (a.status === "dismissed" || a.status === "resolved") &&
+      !a.deadline_value &&
+      (a.alert_type === "deadline_overdue" || a.alert_type === "deadline_approaching") &&
+      a.detail_key
+    );
+    await Promise.all(alertsNeedingBackfill.map(a => {
+      const tx = txMap.get(a.transaction_id);
+      const deadlineValue = tx?.[a.detail_key];
+      if (!deadlineValue) return Promise.resolve();
+      return base44.asServiceRole.entities.MonitorAlert.update(a.id, { deadline_value: deadlineValue });
+    }));
+
     // ---- Fetch TransactionTasks (separate entity) in one go ----
     const allTransactionTasks = await base44.asServiceRole.entities.TransactionTask.list();
 
@@ -187,9 +203,11 @@ Deno.serve(async (req) => {
 
           // If dismissed/resolved AND deadline hasn't changed, skip permanently
           if (existing && (existing.status === "dismissed" || existing.status === "resolved")) {
+            // Only recreate if the deadline date itself actually changed (extension granted)
+            // If deadline_value was never stored, treat as unchanged — do NOT recreate
             const deadlineChanged = existing.deadline_value && existing.deadline_value !== tx[field];
             if (!deadlineChanged) continue;
-            // Deadline changed (extension) — delete old alert so we can recreate it as active
+            // Deadline genuinely changed (extension) — delete old alert so we can recreate it as active
             await base44.asServiceRole.entities.MonitorAlert.delete(existing.id);
           } else if (existing && existing.status === "open") {
             continue; // already an open alert, no duplicate needed
@@ -213,6 +231,7 @@ Deno.serve(async (req) => {
           const existing = existingAlertMap.get(key);
 
           if (existing && (existing.status === "dismissed" || existing.status === "resolved")) {
+            // Only recreate if deadline date genuinely changed
             const deadlineChanged = existing.deadline_value && existing.deadline_value !== tx[field];
             if (!deadlineChanged) continue;
             await base44.asServiceRole.entities.MonitorAlert.delete(existing.id);
