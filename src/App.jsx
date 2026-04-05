@@ -2,7 +2,7 @@ import { Toaster } from "@/components/ui/toaster"
 import Landing from './pages/Landing'
 import SetupProfile from './pages/SetupProfile'
 import UserManagement from './pages/UserManagement'
-import Contacts from './pages/Contacts'
+
 import DotloopIntegration from './pages/DotloopIntegration'
 import Integrations from './pages/Integrations'
 import GmailSetup from './pages/GmailSetup'
@@ -128,13 +128,7 @@ const AuthenticatedApp = () => {
           </LayoutWrapper>
         </RequireAuth>
       } />
-      <Route path="/Contacts" element={
-        <RequireAuth>
-          <LayoutWrapper currentPageName="Contacts">
-            <Contacts />
-          </LayoutWrapper>
-        </RequireAuth>
-      } />
+
       <Route path="/FuelProrations" element={
         <RequireAuth>
           <LayoutWrapper currentPageName="FuelProrations">
