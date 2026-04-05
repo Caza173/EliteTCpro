@@ -4,7 +4,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { Loader2, Copy } from "lucide-react";
+import { Loader2, Copy, Eye, X as XIcon } from "lucide-react";
 import { toast } from "sonner";
 
 const ZILLOW_LINK = "https://zillow.com/reviews/write/?s=X1-ZU15ev58s7ky03t_4u6i9";
@@ -19,6 +19,7 @@ function interpolate(template, vars) {
 
 export default function ReviewEmailModal({ open, onClose, transaction, currentUser, task, onTaskUpdated }) {
   const [loading, setLoading] = useState(false);
+  const [previewOpen, setPreviewOpen] = useState(false);
   const [subject, setSubject] = useState("Quick favor - would you leave a review?");
   const [body, setBody] = useState(`Hi {{client_name}},
 
@@ -97,7 +98,7 @@ Best,
 
   return (
     <Dialog open={open} onOpenChange={onClose}>
-      <DialogContent className="max-w-2xl">
+      <DialogContent className="max-w-2xl relative overflow-hidden">
         <DialogHeader>
           <DialogTitle>Send Zillow Review Request</DialogTitle>
         </DialogHeader>
@@ -173,11 +174,38 @@ Best,
             >
               {loading ? <Loader2 className="w-3 h-3 mr-1 animate-spin" /> : "Send"}
             </Button>
+            <Button variant="outline" onClick={() => setPreviewOpen(true)} className="text-xs h-8 gap-1.5">
+              <Eye className="w-3.5 h-3.5" /> Preview
+            </Button>
             <Button variant="outline" onClick={onClose} className="text-xs h-8">
               Cancel
             </Button>
           </div>
         </div>
+
+        {/* Email Preview Overlay */}
+        {previewOpen && (
+          <div className="absolute inset-0 z-10 rounded-lg overflow-auto" style={{ background: "rgba(255,255,255,0.98)" }}>
+            <div className="p-6 space-y-4">
+              <div className="flex items-center justify-between">
+                <h3 className="text-sm font-bold text-gray-800">Email Preview</h3>
+                <button onClick={() => setPreviewOpen(false)} className="p-1 rounded hover:bg-gray-100">
+                  <XIcon className="w-4 h-4 text-gray-500" />
+                </button>
+              </div>
+              <div className="border border-gray-200 rounded-lg overflow-hidden text-xs">
+                <div className="bg-gray-50 border-b border-gray-200 px-4 py-2 space-y-1">
+                  <div><span className="font-semibold text-gray-500 w-14 inline-block">To:</span> <span className="text-gray-800">{clientEmails.join(", ")}</span></div>
+                  <div><span className="font-semibold text-gray-500 w-14 inline-block">Subject:</span> <span className="text-gray-800">{subject}</span></div>
+                </div>
+                <div className="p-4 whitespace-pre-wrap text-gray-800 leading-relaxed">{finalBody}</div>
+              </div>
+              <Button size="sm" variant="outline" onClick={() => setPreviewOpen(false)} className="text-xs h-8">
+                Close Preview
+              </Button>
+            </div>
+          </div>
+        )}
       </DialogContent>
     </Dialog>
   );
