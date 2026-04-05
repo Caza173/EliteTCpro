@@ -135,7 +135,7 @@ Best,
               className="text-xs mt-1 h-56 font-mono"
               placeholder="Email body"
             />
-            <p className="text-[10px] text-gray-400 mt-1">Available variables: {{client_name}}, {{property_address}}, {{agent_name}}, {{tc_name}}</p>
+            <p className="text-[10px] text-gray-400 mt-1">{"Available variables: {{client_name}}, {{property_address}}, {{agent_name}}, {{tc_name}}"}</p>
           </div>
 
           {/* Preview */}
