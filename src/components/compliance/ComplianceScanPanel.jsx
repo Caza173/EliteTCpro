@@ -403,8 +403,14 @@ export default function ComplianceScanPanel({ transaction, currentUser }) {
     updateTxMutation.mutate({ tasks: updatedTasks, last_activity_at: new Date().toISOString() });
   };
 
-  const allBlockers = reports.flatMap(r => r.blockers || []);
-  const allWarnings = reports.flatMap(r => r.warnings || []);
+  const allBlockers = reports.flatMap(r => [
+    ...(r.blockers || []),
+    ...(r.all_issues || []).filter(i => i.severity === "critical" || i.severity === "blocker"),
+  ]);
+  const allWarnings = reports.flatMap(r => [
+    ...(r.warnings || []),
+    ...(r.all_issues || []).filter(i => i.severity === "high" || i.severity === "medium" || i.severity === "warning"),
+  ]);
   const avgScore = reports.length > 0
     ? Math.round(reports.reduce((sum, r) => sum + (r.compliance_score || 100), 0) / reports.length)
     : null;
