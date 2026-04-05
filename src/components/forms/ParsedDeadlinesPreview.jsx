@@ -1,5 +1,5 @@
 import React from "react";
-import { format, addDays, parseISO } from "date-fns";
+import { format, addDays, parseISO, isValid } from "date-fns";
 import { Calendar, CheckCircle2, AlertCircle } from "lucide-react";
 
 const TIMELINE_ITEMS = [
@@ -15,13 +15,18 @@ function resolveDate(item, parsed) {
   if (item.type === "date") {
     const val = parsed[item.key];
     if (!val) return null;
-    try { parseISO(val); return val; } catch { return null; }
+    // Handle both ISO strings and numeric timestamps
+    const d = typeof val === "number" ? new Date(val) : parseISO(String(val));
+    return isValid(d) ? (typeof val === "number" ? format(d, "yyyy-MM-dd") : val) : null;
   }
   if (item.type === "offset") {
     const days = parsed[item.key];
     const anchor = parsed[item.anchor];
     if (days != null && anchor) {
-      try { return format(addDays(parseISO(anchor), days), "yyyy-MM-dd"); } catch { return null; }
+      try {
+        const d = addDays(parseISO(anchor), days);
+        return isValid(d) ? format(d, "yyyy-MM-dd") : null;
+      } catch { return null; }
     }
     return null;
   }
@@ -59,7 +64,7 @@ export default function ParsedDeadlinesPreview({ parsed, isCash = false }) {
             </div>
             <span className={`text-xs font-medium ${dateStr ? "text-gray-800" : "text-gray-400 italic"}`}>
               {dateStr
-                ? (() => { try { return format(parseISO(dateStr), "MMM d, yyyy"); } catch { return "Invalid date"; } })()
+                ? (() => { const d = parseISO(dateStr); return isValid(d) ? format(d, "MMM d, yyyy") : "Invalid date"; })()
                 : "Not detected in contract"
               }
             </span>
