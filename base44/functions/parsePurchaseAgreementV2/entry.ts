@@ -1,5 +1,6 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.23';
 
+// Add calendar days to a YYYY-MM-DD date string
 function addDays(isoDate, days) {
   if (!isoDate || days == null || isNaN(Number(days))) return null;
   try {
@@ -9,42 +10,165 @@ function addDays(isoDate, days) {
   } catch { return null; }
 }
 
-/**
- * Regex-based relative date extractor — runs on raw text returned by AI.
- * Handles all "within X days of the effective date" patterns.
- */
-function extractRelativeDates(text, effectiveDate) {
-  if (!text || !effectiveDate) return {};
-  const result = {};
+// Subtract hours from a YYYY-MM-DD date string (returns ISO datetime string)
+function subtractHours(isoDate, hours) {
+  if (!isoDate || hours == null) return null;
+  try {
+    const d = new Date(isoDate + "T23:59:00Z");
+    d.setUTCHours(d.getUTCHours() - Math.round(Number(hours)));
+    return d.toISOString();
+  } catch { return null; }
+}
 
-  // Generic "within N days of the effective date" — used as earnest money fallback
-  const genericMatch = text.match(/deposit[^.]*?within\s+(\d+)\s+(?:banking\s+)?days?\s+of\s+the\s+(?:effective|acceptance)\s+date/i)
-    || text.match(/earnest\s+money[^.]*?within\s+(\d+)\s+(?:banking\s+)?days/i)
-    || text.match(/within\s+(\d+)\s+(?:banking\s+)?days?\s+of\s+the\s+(?:effective|acceptance)\s+date[^.]*?deposit/i);
-  if (genericMatch) result.earnest_money_days = parseInt(genericMatch[1]);
+// Build a confidence-annotated field object
+function field(value, confidence, source_section, note = null) {
+  return { value, confidence, source_section, ...(note ? { note } : {}) };
+}
 
-  // Inspection: find ALL "within X days" near "inspection" — take the MAX per NHAR Section 15
-  const inspMatches = [...text.matchAll(/inspection[^.\n]*?within\s+(\d+)\s+(?:banking\s+)?days/gi)];
-  if (inspMatches.length > 0) {
-    result.inspection_days = Math.max(...inspMatches.map(m => parseInt(m[1])));
+// Apply all relative-date calculations from extracted day-counts + effective date
+function calculateDeadlines(raw, effectiveDate) {
+  const calc = {};
+
+  // Section 3 — Earnest money initial deposit
+  if (raw.earnest_money_days > 0) {
+    calc.earnest_money_initial_deadline = field(
+      addDays(effectiveDate, raw.earnest_money_days),
+      "MEDIUM", "Section 3",
+      `Calculated: effective_date + ${raw.earnest_money_days} days`
+    );
+  } else if (raw.earnest_money_deadline_explicit) {
+    calc.earnest_money_initial_deadline = field(raw.earnest_money_deadline_explicit, "HIGH", "Section 3");
   }
 
-  // Due diligence: Section 16
-  const ddMatch = text.match(/due\s+diligence[^.\n]*?within\s+(\d+)\s+(?:banking\s+)?days/i)
-    || text.match(/within\s+(\d+)\s+(?:banking\s+)?days[^.\n]*?due\s+diligence/i);
-  if (ddMatch) result.due_diligence_days = parseInt(ddMatch[1]);
+  // Section 3 — Additional deposit
+  if (raw.additional_emd_date_explicit) {
+    calc.additional_emd_deadline = field(raw.additional_emd_date_explicit, "HIGH", "Section 3");
+  }
 
-  // Appraisal
-  const apprMatch = text.match(/appraisal[^.\n]*?within\s+(\d+)\s+(?:banking\s+)?days/i);
-  if (apprMatch) result.appraisal_days = parseInt(apprMatch[1]);
+  // Section 15 — Inspection (MAX of all YES inspections)
+  const inspDays = [
+    raw.general_building_days, raw.sewage_days, raw.water_quality_days,
+    raw.radon_air_days, raw.radon_water_days, raw.lead_paint_days,
+    raw.pest_days, raw.hazardous_waste_days,
+    raw.custom_inspection_i_days, raw.custom_inspection_j_days,
+  ].filter(d => d > 0).map(Number);
 
-  // Calculate deadlines from days
-  if (result.earnest_money_days) result.earnest_money_deadline = addDays(effectiveDate, result.earnest_money_days);
-  if (result.inspection_days)    result.inspection_deadline    = addDays(effectiveDate, result.inspection_days);
-  if (result.due_diligence_days) result.due_diligence_deadline = addDays(effectiveDate, result.due_diligence_days);
-  if (result.appraisal_days)     result.appraisal_deadline     = addDays(effectiveDate, result.appraisal_days);
+  if (inspDays.length > 0) {
+    const maxDays = Math.max(...inspDays);
+    calc.inspection_deadline = field(
+      addDays(effectiveDate, maxDays),
+      "MEDIUM", "Section 15",
+      `Calculated: effective_date + ${maxDays} days (MAX across YES inspections)`
+    );
+    calc.inspection_deadline_days = maxDays;
+  } else if (raw.inspection_deadline_explicit) {
+    calc.inspection_deadline = field(raw.inspection_deadline_explicit, "HIGH", "Section 15");
+  }
 
-  return result;
+  // Section 15 — Response periods (event-relative, not effective-date-relative)
+  calc.inspection_seller_response_days = field(raw.inspection_seller_response_days || 5, "HIGH", "Section 15", "Relative to receipt of buyer notification");
+  calc.inspection_buyer_response_days  = field(raw.inspection_buyer_response_days  || 5, "HIGH", "Section 15", "Relative to seller notification");
+
+  // Section 16 — Due diligence
+  if (raw.due_diligence_days > 0) {
+    calc.due_diligence_deadline = field(
+      addDays(effectiveDate, raw.due_diligence_days),
+      "MEDIUM", "Section 16",
+      `Calculated: effective_date + ${raw.due_diligence_days} days`
+    );
+  } else if (raw.due_diligence_deadline_explicit) {
+    calc.due_diligence_deadline = field(raw.due_diligence_deadline_explicit, "HIGH", "Section 16");
+  }
+
+  // Section 9 — Title resolution (event-relative)
+  calc.title_resolution_days = field(raw.title_resolution_days || 30, "HIGH", "Section 9", "Relative to notification of title defect");
+
+  // Section 6 — Final walkthrough window
+  if (raw.walkthrough_hours_prior > 0 && raw.closing_date) {
+    calc.final_walkthrough_latest = field(
+      subtractHours(raw.closing_date, raw.walkthrough_hours_prior),
+      "MEDIUM", "Section 6",
+      `Calculated: closing_date - ${raw.walkthrough_hours_prior} hours`
+    );
+    calc.walkthrough_hours_prior = raw.walkthrough_hours_prior;
+  }
+
+  // Section 19 — Financing
+  if (raw.financing_commitment_date_explicit) {
+    calc.financing_commitment_date = field(raw.financing_commitment_date_explicit, "HIGH", "Section 19");
+  } else if (raw.financing_application_days > 0) {
+    calc.financing_application_deadline = field(
+      addDays(effectiveDate, raw.financing_application_days),
+      "MEDIUM", "Section 19",
+      `Calculated: effective_date + ${raw.financing_application_days} days`
+    );
+  }
+
+  // Optional addendum fields
+  if (raw.appraisal_days > 0) {
+    calc.appraisal_deadline = field(addDays(effectiveDate, raw.appraisal_days), "MEDIUM", "Addendum/Clause", `Calculated: effective_date + ${raw.appraisal_days} days`);
+  } else if (raw.appraisal_deadline_explicit) {
+    calc.appraisal_deadline = field(raw.appraisal_deadline_explicit, "HIGH", "Addendum");
+  }
+
+  if (raw.buyer_home_sale_deadline_explicit) {
+    calc.buyer_home_sale_deadline = field(raw.buyer_home_sale_deadline_explicit, "HIGH", "Addendum");
+  }
+
+  if (raw.hoa_review_days > 0) {
+    calc.hoa_review_deadline = field(addDays(effectiveDate, raw.hoa_review_days), "MEDIUM", "Addendum/Section 16d", `Calculated: effective_date + ${raw.hoa_review_days} days`);
+  }
+
+  if (raw.attorney_review_days > 0) {
+    calc.attorney_review_deadline = field(addDays(effectiveDate, raw.attorney_review_days), "MEDIUM", "Addendum", `Calculated: effective_date + ${raw.attorney_review_days} days`);
+  }
+
+  if (raw.board_approval_days > 0) {
+    calc.board_approval_deadline = field(addDays(effectiveDate, raw.board_approval_days), "MEDIUM", "Addendum", `Calculated: effective_date + ${raw.board_approval_days} days`);
+  }
+
+  if (raw.post_closing_occupancy_start) {
+    calc.post_closing_occupancy_start = field(raw.post_closing_occupancy_start, "HIGH", "Addendum");
+  }
+  if (raw.post_closing_occupancy_end) {
+    calc.post_closing_occupancy_end = field(raw.post_closing_occupancy_end, "HIGH", "Addendum");
+  }
+
+  if (raw.showings_start_date) {
+    calc.showings_start_date = field(raw.showings_start_date, "HIGH", "Addendum");
+  }
+
+  if (raw.offer_expiration_datetime) {
+    calc.offer_expiration_datetime = field(raw.offer_expiration_datetime, "HIGH", "Offer/Cover Sheet");
+  }
+
+  return calc;
+}
+
+// Validate that required deadlines exist given detected sections
+function validateDeadlines(raw, calc, flags) {
+  const errors = [];
+
+  // Section 15 present + any YES inspection → must have inspection deadline
+  const anyInspectionYes = raw.inspection_types_yes && raw.inspection_types_yes.length > 0;
+  if (anyInspectionYes && !calc.inspection_deadline) {
+    errors.push({ field: "inspection_deadline", section: "Section 15", page: 3, message: "Inspection section detected with YES entries but no deadline extracted" });
+    flags.push("INSPECTION_DETECTED_NOT_PARSED");
+  }
+
+  // Deposit present → EMD deadline must exist
+  if ((raw.deposit_amount > 0 || raw.earnest_money_days > 0) && !calc.earnest_money_initial_deadline) {
+    errors.push({ field: "earnest_money_initial_deadline", section: "Section 3", page: 1, message: "Deposit detected but no EMD deadline extracted" });
+    flags.push("EMD_DETECTED_NOT_PARSED");
+  }
+
+  // Due diligence section present → deadline must exist
+  if (raw.due_diligence_section_present && !calc.due_diligence_deadline) {
+    errors.push({ field: "due_diligence_deadline", section: "Section 16", page: 3, message: "Due Diligence section detected but no deadline extracted" });
+    flags.push("DD_DETECTED_NOT_PARSED");
+  }
+
+  return errors;
 }
 
 Deno.serve(async (req) => {
@@ -56,133 +180,221 @@ Deno.serve(async (req) => {
     const { file_url, transaction_id, brokerage_id } = await req.json();
     if (!file_url) return Response.json({ error: "No file_url provided" }, { status: 400 });
 
-    console.log("Pass 1: Primary structured extraction...");
     const debugFlags = [];
+    console.log("NHAR P&S Parse — Pass 1: Full structured extraction");
 
-    // ── PASS 1: Full structured extraction ────────────────────────────────────
+    // ── PASS 1: Full structured extraction ──────────────────────────────────────
     const extraction = await base44.integrations.Core.ExtractDataFromUploadedFile({
       file_url,
       json_schema: {
         type: "object",
-        description: `New Hampshire NHAR Purchase & Sales Agreement parser.
+        description: `NHAR (New Hampshire Association of REALTORS) Purchase & Sales Agreement — 2025 Standard Form (6 pages).
 
-CRITICAL RULES:
-- RELATIVE DATES: The contract uses "within X days of the effective date" — DO NOT ignore these. Extract the integer X for each deadline. Calendar deadlines must be calculated from the effective/acceptance date + X days.
-- Section 1: Parties — format is "between [SELLER] (SELLER) and [BUYER] (BUYER)". Seller is listed FIRST.
-- Section 3: Purchase price and earnest money deposit amount. Deposit due date expressed as "within X days of the effective date" — extract X as earnest_money_days.
-- Section 5: Closing / Transfer of Title date (explicit calendar date).
-- Section 7: Agent names and brokerages.
-- Section 15: Inspection contingencies. Each inspection type (General Building, Sewage/Septic, Water Quality, Radon, etc.) may be checked YES or NO. For each YES row, extract the "within X days" value. Return the MAXIMUM X as inspection_days (the binding deadline is the latest one).
-- Section 16: Due Diligence. Extract "within X days" as due_diligence_days.
-- Section 19: Financing commitment — look for an explicit calendar date OR "within X days".
-- Section 20: Commission/compensation terms.
+KEY CONTRACT RULES (Section 23):
+- ALL "within X days" deadlines are CALENDAR DAYS counted from the EFFECTIVE DATE
+- Day 1 = first day AFTER the effective date
+- Deadline ends at 12:00 midnight Eastern Time on the last day
+- EFFECTIVE DATE = date contract is fully signed AND that fact communicated in writing (top of Page 1)
 
-IMPORTANT: Return day counts (earnest_money_days, inspection_days, due_diligence_days) even if no explicit calendar date is present. These are calculated fields.`,
+SECTION-BY-SECTION EXTRACTION GUIDE:
+
+PAGE 1 — EFFECTIVE DATE: In the box at the top right of Page 1. Format: written date + "EFFECTIVE DATE". Extract as YYYY-MM-DD.
+
+SECTION 1 (Page 1): Parties. Format: "[SELLER NAME] (SELLER) ... and [BUYER NAME] (BUYER)". Seller is listed FIRST before "and".
+
+SECTION 3 (Page 1): Financials & earnest money.
+- SELLING PRICE: dollar value on same line or line after "SELLING PRICE is _____ Dollars $___"
+- DEPOSIT AMOUNT: dollar value after "deposit of earnest money in the amount of $___"  
+- EARNEST MONEY DAYS: integer in "within ___days of the EFFECTIVE DATE" — THIS IS A FILL-IN BLANK, extract the number written in the blank
+- ADDITIONAL DEPOSIT: dollar amount after "additional deposit of earnest money in the amount of $___"
+- ADDITIONAL DEPOSIT DATE: date after "will be delivered on or before ___"
+
+SECTION 5 (Page 1): Transfer of Title / Closing. "On or before [DATE] at [LOCATION]". Extract date as YYYY-MM-DD.
+
+SECTION 6 (Page 1): Walkthrough. "within ___hours prior to time of closing". Extract the hours integer.
+
+SECTION 7 (Page 1): Agent names and roles. Two agents listed with checkboxes for role type.
+
+SECTION 9 (Page 2): Title. "not to exceed thirty (30) days from the date of notification". Always 30 days.
+
+SECTION 15 (Pages 2-3): Inspections table. 10 inspection types (a through j):
+  a. General Building, b. Sewage Disposal, c. Water Quality, d. Radon Air Quality, e. Radon Water Quality,
+  f. Lead Paint, g. Pests, h. Hazardous Waste, i. (custom), j. (custom)
+  Each row has YES checkbox, NO checkbox, and "within ___days" fill-in.
+  ONLY extract day values for rows where YES is checked/marked.
+  Response periods (Section 15 text): "within five (5) days of receipt" for seller, "within five (5) days" for buyer.
+
+SECTION 16 (Page 3): Due Diligence. "BUYER must notify SELLER in writing within ___days from the effective date". Extract the integer from the blank.
+  Also note whether due diligence items (a-g) are checked YES.
+
+SECTION 19 (Page 4): Financing. 
+  - Application days: "within __ calendar days from the effective date, submit a complete and accurate application"
+  - Financing Deadline: explicit date in "If BUYER provides written evidence of inability to obtain financing to SELLER by ___ (Financing Deadline)"
+
+SECTION 20 (Page 5): Additional Provisions, Concessions, Professional Fee.`,
         properties: {
-          buyer_names:               { type: "string",  description: "Buyer name(s) from Section 1. BUYER appears AFTER 'and' keyword." },
-          seller_names:              { type: "string",  description: "Seller name(s) from Section 1. Appears BEFORE 'and' keyword." },
-          acceptance_date:           { type: "string",  description: "Effective/acceptance date in YYYY-MM-DD format. Look for 'effective date', 'acceptance date', or 'date of acceptance'." },
+          // ── Core parties & property
+          buyer_names:               { type: "string",  description: "Buyer name(s) from Section 1. Appears AFTER 'and' keyword." },
+          seller_names:              { type: "string",  description: "Seller name(s) from Section 1. Appears BEFORE 'and'." },
+          acceptance_date:           { type: "string",  description: "Effective date in YYYY-MM-DD from the box at top right of Page 1. This is the master anchor for all relative deadlines." },
           property_address:          { type: "string",  description: "Full property address from Section 2." },
-          purchase_price:            { type: "number",  description: "SELLING PRICE. Dollar value often appears on line AFTER 'SELLING PRICE' label. Return as plain number (540000)." },
-          deposit_amount:            { type: "number",  description: "Earnest money deposit dollar amount. Look for value after 'deposit of earnest money in the amount of'. Return as plain number." },
-          earnest_money_days:        { type: "number",  description: "INTEGER: Number of days from effective date that earnest money deposit is due. Look for 'within X days of the effective date' near 'deposit' or 'earnest money'. This is the most important deadline field — always extract it." },
-          earnest_money_deadline:    { type: "string",  description: "Earnest money due date in YYYY-MM-DD only if an explicit calendar date is written in the contract (rare). Usually left null — calculated from earnest_money_days instead." },
-          closing_date:              { type: "string",  description: "Transfer of Title / Closing date in YYYY-MM-DD from Section 5." },
-          title_company:             { type: "string",  description: "Closing/escrow/title company name." },
-          buyer_agent:               { type: "string",  description: "Buyer agent name from Section 7." },
-          seller_agent:              { type: "string",  description: "Seller/listing agent name from Section 7." },
-          buyer_brokerage:           { type: "string",  description: "Buyer agent's firm/brokerage." },
-          seller_brokerage:          { type: "string",  description: "Seller agent's firm/brokerage." },
-          inspection_days:           { type: "number",  description: "INTEGER: Max days from effective date for inspection contingency (Section 15). For each YES-checked inspection row, extract its 'within X days' value. Return the MAXIMUM X. E.g. if General Building = 10 days and Septic = 15 days, return 15." },
-          inspection_deadline:       { type: "string",  description: "Explicit inspection deadline calendar date YYYY-MM-DD only if written explicitly. Usually null — calculated from inspection_days." },
-          inspection_types_yes:      { type: "string",  description: "Comma-separated list of inspection types checked YES in Section 15 (e.g. 'General Building, Sewage/Septic, Radon')." },
-          sewage_days:               { type: "number",  description: "INTEGER: Days for sewage/septic inspection if checked YES." },
-          water_quality_days:        { type: "number",  description: "INTEGER: Days for water quality inspection if checked YES." },
-          radon_days:                { type: "number",  description: "INTEGER: Days for radon inspection if checked YES." },
-          due_diligence_days:        { type: "number",  description: "INTEGER: Days for due diligence period from Section 16. Look for 'within X days from the effective date' or 'within X days of acceptance'. Always extract this." },
-          due_diligence_deadline:    { type: "string",  description: "Explicit due diligence deadline YYYY-MM-DD only if written explicitly. Usually null — calculated from due_diligence_days." },
-          financing_commitment_date: { type: "string",  description: "Financing commitment deadline YYYY-MM-DD from Section 19. May be explicit date or calculated from days." },
-          financing_days:            { type: "number",  description: "INTEGER: Days from effective date for financing commitment if expressed as relative days (Section 19)." },
-          appraisal_deadline:        { type: "string",  description: "Explicit appraisal deadline YYYY-MM-DD if stated." },
-          appraisal_days:            { type: "number",  description: "INTEGER: Days for appraisal contingency if expressed as relative days." },
-          commission_percent:        { type: "number",  description: "Commission percentage from Section 20." },
-          commission_type:           { type: "string",  description: "'percent' or 'flat'." },
-          seller_concession_amount:  { type: "number",  description: "Seller concession dollar amount." },
-          commission_notes:          { type: "string",  description: "Summary of Section 20 compensation terms." }
+          property_city:             { type: "string",  description: "City/Town of property from Section 2." },
+
+          // ── Section 3 financials
+          purchase_price:            { type: "number",  description: "Selling price dollar amount. May appear after 'SELLING PRICE is' or on next line. No $ or commas." },
+          deposit_amount:            { type: "number",  description: "Initial earnest money deposit amount. After 'deposit of earnest money in the amount of $'. No $ or commas." },
+          earnest_money_days:        { type: "number",  description: "INTEGER in the blank: 'within ___days of the EFFECTIVE DATE' in Section 3. This is the key field — always extract it. E.g. if blank says '3', return 3." },
+          earnest_money_deadline_explicit: { type: "string", description: "Explicit calendar date for earnest money if written as 'on or before [date]'. YYYY-MM-DD. Usually null." },
+          additional_emd_amount:     { type: "number",  description: "Additional earnest money deposit amount from Section 3. No $ or commas." },
+          additional_emd_date_explicit: { type: "string", description: "Date in 'additional deposit ... will be delivered on or before [date]'. YYYY-MM-DD." },
+          remainder_amount:          { type: "number",  description: "Remainder of purchase price (wire/certified check amount) from Section 3." },
+          escrow_agent:              { type: "string",  description: "Escrow agent name from Section 3." },
+
+          // ── Section 5
+          closing_date:              { type: "string",  description: "Transfer of Title date in YYYY-MM-DD from Section 5 'On or before [date]'." },
+          closing_location:          { type: "string",  description: "Location of closing from Section 5." },
+
+          // ── Section 6
+          walkthrough_hours_prior:   { type: "number",  description: "INTEGER hours before closing for walkthrough. From 'within ___hours prior to time of closing' in Section 6." },
+
+          // ── Section 7 agents
+          buyer_agent:               { type: "string",  description: "Buyer agent full name from Section 7." },
+          seller_agent:              { type: "string",  description: "Seller/listing agent full name from Section 7." },
+          buyer_brokerage:           { type: "string",  description: "Buyer agent brokerage/firm name from Section 7." },
+          seller_brokerage:          { type: "string",  description: "Seller agent brokerage/firm name from Section 7." },
+          buyer_agent_role:          { type: "string",  description: "Checked role for buyer agent: 'buyer agent', 'seller agent', 'facilitator', or 'disclosed dual agent'." },
+          seller_agent_role:         { type: "string",  description: "Checked role for seller agent: 'buyer agent', 'seller agent', 'facilitator', or 'disclosed dual agent'." },
+
+          // ── Section 9
+          title_resolution_days:     { type: "number",  description: "Days to resolve title defect. Standard is 30. From Section 9 'not to exceed thirty (30) days'." },
+
+          // ── Section 15 — per-inspection-type day values (only if YES checked)
+          inspection_types_yes:      { type: "string",  description: "Comma-separated list of inspection types with YES checked in Section 15. E.g. 'General Building, Sewage Disposal, Radon Air Quality'." },
+          general_building_days:     { type: "number",  description: "Days for General Building inspection (row a) IF YES is checked. INTEGER from 'within ___days'. 0 if NO or blank." },
+          sewage_days:               { type: "number",  description: "Days for Sewage Disposal inspection (row b) IF YES is checked. 0 if NO or blank." },
+          water_quality_days:        { type: "number",  description: "Days for Water Quality inspection (row c) IF YES is checked. 0 if NO or blank." },
+          radon_air_days:            { type: "number",  description: "Days for Radon Air Quality inspection (row d) IF YES is checked. 0 if NO or blank." },
+          radon_water_days:          { type: "number",  description: "Days for Radon Water Quality inspection (row e) IF YES is checked. 0 if NO or blank." },
+          lead_paint_days:           { type: "number",  description: "Days for Lead Paint inspection (row f) IF YES is checked. 0 if NO or blank." },
+          pest_days:                 { type: "number",  description: "Days for Pests inspection (row g) IF YES is checked. 0 if NO or blank." },
+          hazardous_waste_days:      { type: "number",  description: "Days for Hazardous Waste inspection (row h) IF YES is checked. 0 if NO or blank." },
+          custom_inspection_i_days:  { type: "number",  description: "Days for custom inspection type (row i) IF YES is checked. 0 if NO or blank." },
+          custom_inspection_j_days:  { type: "number",  description: "Days for custom inspection type (row j) IF YES is checked. 0 if NO or blank." },
+          custom_inspection_i_name:  { type: "string",  description: "Name of custom inspection type row i if filled in." },
+          custom_inspection_j_name:  { type: "string",  description: "Name of custom inspection type row j if filled in." },
+          inspection_deadline_explicit: { type: "string", description: "Explicit calendar inspection deadline if written as a date. YYYY-MM-DD. Usually null — typically calculated from days." },
+          inspection_seller_response_days: { type: "number", description: "Days for seller to respond to inspection issues. Standard is 5. From 'within five (5) days of receipt'." },
+          inspection_buyer_response_days:  { type: "number", description: "Days for buyer to respond to seller notification. Standard is 5. From 'within five (5) days'." },
+
+          // ── Section 16 — Due diligence
+          due_diligence_days:        { type: "number",  description: "INTEGER from blank in Section 16: 'BUYER must notify SELLER in writing within ___days from the effective date'. Always extract this." },
+          due_diligence_deadline_explicit: { type: "string", description: "Explicit due diligence deadline as calendar date. YYYY-MM-DD. Usually null." },
+          due_diligence_section_present: { type: "boolean", description: "True if Section 16 Due Diligence section is present/applicable in the contract." },
+
+          // ── Section 19 — Financing
+          financing_contingency:     { type: "boolean", description: "True if financing contingency checkbox IS checked (not 'is not'). Section 19." },
+          financing_amount:          { type: "number",  description: "Loan amount from Section 19 financing terms." },
+          financing_term_years:      { type: "number",  description: "Loan term in years from Section 19." },
+          financing_rate:            { type: "string",  description: "Interest rate from Section 19." },
+          financing_mortgage_type:   { type: "string",  description: "Mortgage type (conventional, FHA, VA, etc.) from Section 19." },
+          financing_application_days:{ type: "number",  description: "INTEGER: Days from effective date to submit mortgage application. From 'within __ calendar days from the effective date, submit a complete and accurate application'." },
+          financing_commitment_date_explicit: { type: "string", description: "Explicit financing deadline date from 'BUYER provides written evidence ... by [DATE] (Financing Deadline)'. YYYY-MM-DD." },
+
+          // ── Section 20
+          seller_concession_amount:  { type: "number",  description: "Seller concession dollar amount from Section 20 CONCESSIONS." },
+          professional_fee:          { type: "string",  description: "Professional fee terms from Section 20 PROFESSIONAL FEE." },
+          addenda_attached:          { type: "boolean", description: "True if addenda attached checkbox is YES in Section 21." },
+
+          // ── Optional addendum fields (detect if present)
+          appraisal_days:            { type: "number",  description: "Days for appraisal contingency if mentioned in addendum. 0 if not present." },
+          appraisal_deadline_explicit: { type: "string", description: "Explicit appraisal deadline if stated. YYYY-MM-DD." },
+          hoa_review_days:           { type: "number",  description: "Days for HOA/condo document review if mentioned. 0 if not present." },
+          attorney_review_days:      { type: "number",  description: "Days for attorney review if mentioned in addendum. 0 if not present." },
+          board_approval_days:       { type: "number",  description: "Days for board approval contingency if mentioned. 0 if not present." },
+          buyer_home_sale_deadline_explicit: { type: "string", description: "Date for buyer's home sale contingency deadline if present. YYYY-MM-DD." },
+          post_closing_occupancy_start: { type: "string", description: "Post-closing occupancy start date if addendum present. YYYY-MM-DD." },
+          post_closing_occupancy_end:   { type: "string", description: "Post-closing occupancy end date if addendum present. YYYY-MM-DD." },
+          showings_start_date:       { type: "string",  description: "Date from which showings are permitted if 'no showings until' clause present. YYYY-MM-DD." },
+          offer_expiration_datetime: { type: "string",  description: "Offer expiration date/time if present on cover or offer page. ISO format." },
+
+          // ── Title company
+          title_company:             { type: "string",  description: "Closing/title/escrow company name." },
         }
       }
     });
 
     if (extraction.status === "error") {
-      console.error("Primary extraction failed:", extraction.details);
+      console.error("Pass 1 extraction failed:", extraction.details);
       return Response.json({ error: extraction.details || "Extraction failed" }, { status: 500 });
     }
 
-    const result = extraction.output || {};
-    console.log("Pass 1 raw output:", {
-      acceptance_date: result.acceptance_date,
-      earnest_money_days: result.earnest_money_days,
-      inspection_days: result.inspection_days,
-      due_diligence_days: result.due_diligence_days,
-      financing_commitment_date: result.financing_commitment_date,
+    let raw = extraction.output || {};
+    console.log("Pass 1 raw:", {
+      acceptance_date: raw.acceptance_date,
+      earnest_money_days: raw.earnest_money_days,
+      general_building_days: raw.general_building_days,
+      sewage_days: raw.sewage_days,
+      due_diligence_days: raw.due_diligence_days,
+      closing_date: raw.closing_date,
+      financing_commitment_date_explicit: raw.financing_commitment_date_explicit,
     });
 
-    // ── PASS 2: Financial fallback ─────────────────────────────────────────────
-    if (!result.purchase_price || !result.deposit_amount) {
-      console.log("Pass 2: Financial field fallback...");
+    // ── PASS 2: Financial fallback (price/deposit multi-line scan) ─────────────
+    if (!raw.purchase_price || !raw.deposit_amount) {
+      console.log("Pass 2: Financial fallback");
       const fb2 = await base44.integrations.Core.ExtractDataFromUploadedFile({
         file_url,
         json_schema: {
           type: "object",
-          description: `NHAR P&S financial field extraction.
-            SELLING PRICE: Find 'SELLING PRICE'. Dollar amount is often on the NEXT line. Extract first $###,### match.
-            EARNEST MONEY: Find 'deposit of earnest money in the amount of'. Dollar amount is often on the NEXT line. Extract first $###,### match.
-            Strip $ and commas, return as plain number.`,
+          description: `NHAR P&S — financial field extraction only.
+SELLING PRICE: Find 'SELLING PRICE is ___ Dollars $___'. Dollar amount may be on next line. Extract first $###,### value after this label.
+DEPOSIT: Find 'deposit of earnest money in the amount of $___'. Dollar amount may be on next line. Extract first $###,### value.
+Strip $ and commas. Return plain numbers.`,
           properties: {
-            purchase_price: { type: "number", description: "Dollar amount on or within 3 lines after 'SELLING PRICE'." },
-            deposit_amount: { type: "number", description: "Dollar amount on or within 3 lines after 'deposit of earnest money in the amount of'." },
+            purchase_price: { type: "number", description: "Dollar amount at or within 3 lines after 'SELLING PRICE'." },
+            deposit_amount: { type: "number", description: "Dollar amount at or within 3 lines after 'deposit of earnest money in the amount of'." },
           }
         }
       });
       if (fb2.status !== "error" && fb2.output) {
-        if (!result.purchase_price && fb2.output.purchase_price) result.purchase_price = fb2.output.purchase_price;
-        if (!result.deposit_amount && fb2.output.deposit_amount) result.deposit_amount = fb2.output.deposit_amount;
+        if (!raw.purchase_price && fb2.output.purchase_price) raw.purchase_price = fb2.output.purchase_price;
+        if (!raw.deposit_amount && fb2.output.deposit_amount) raw.deposit_amount = fb2.output.deposit_amount;
       }
     }
 
-    // ── PASS 3: OCR reinforcement for relative deadline text ──────────────────
-    // Run if any deadline day count is missing
-    const missingDeadlines = !result.earnest_money_days || !result.inspection_days || !result.due_diligence_days;
-    if (missingDeadlines && result.acceptance_date) {
-      console.log("Pass 3: OCR reinforcement pass for relative deadlines...");
+    // ── PASS 3: Relative deadline OCR reinforcement ────────────────────────────
+    // Run if any deadline day count is missing and we have an effective date
+    const missingAnyDeadline = (!raw.earnest_money_days && !raw.earnest_money_deadline_explicit)
+      || (!raw.general_building_days && !raw.inspection_deadline_explicit)
+      || (!raw.due_diligence_days && !raw.due_diligence_deadline_explicit);
+
+    if (missingAnyDeadline && raw.acceptance_date) {
+      console.log("Pass 3: OCR reinforcement for relative deadlines (Sections 3, 15, 16)");
       const fb3 = await base44.integrations.Core.ExtractDataFromUploadedFile({
         file_url,
         json_schema: {
           type: "object",
-          description: `NHAR Purchase & Sales Agreement — RELATIVE DEADLINE EXTRACTION ONLY.
-          
-Your ONLY job: find every "within X days" phrase and identify what it applies to.
+          description: `NHAR P&S — extract ONLY the fill-in-blank day integers from Sections 3, 15, and 16.
 
-EARNEST MONEY (Section 3): The deposit is due "within X days of the effective date". Extract X.
-  Example: "Buyer shall deliver a deposit... within 3 days of the effective date" → earnest_money_days = 3
+SECTION 3 rule: Find the sentence "BUYER has delivered, or will deliver to the ESCROW AGENT's FIRM within ___days of the EFFECTIVE DATE". The blank has a handwritten or typed number. Extract it as earnest_money_days.
 
-INSPECTION (Section 15): Multiple inspection types may be checked YES. Each has "within X days of the acceptance date".
-  Find ALL checked inspection types and their day values. Return the MAXIMUM value as inspection_days.
-  Example: "General Building Inspection: YES, within 10 days" and "Sewage: YES, within 15 days" → inspection_days = 15
+SECTION 15 rule: Look at the inspection table on Page 3. For each row (a through j), check if YES is marked. For every YES row, there is a "within ___days" blank — extract the integer in that blank. Return 0 for NO rows or blank rows.
 
-DUE DILIGENCE (Section 16): "within X days from the effective date" or "within X days of acceptance".
-  Example: "Buyer shall have X days from the effective date to conduct due diligence" → due_diligence_days = X
+SECTION 16 rule: Find "BUYER must notify SELLER in writing within ___days from the effective date of the Agreement". Extract the integer from the blank as due_diligence_days.
 
-Return ONLY integers. If a section exists but no day count is legible, return -1 to flag it as "detected but not parsed".`,
+Return -1 if the section is present but the blank is illegible. Return 0 if the section is absent.`,
           properties: {
-            earnest_money_days:  { type: "number", description: "Days from effective date earnest money is due (Section 3). Return integer. Return -1 if section found but days not readable." },
-            inspection_days:     { type: "number", description: "MAX days across all YES-checked inspections (Section 15). Return integer. Return -1 if section found but days not readable." },
-            inspection_types_yes:{ type: "string", description: "Comma-separated YES inspection types found in Section 15." },
-            sewage_days:         { type: "number", description: "Sewage/septic inspection days if checked YES." },
-            water_quality_days:  { type: "number", description: "Water quality inspection days if checked YES." },
-            radon_days:          { type: "number", description: "Radon inspection days if checked YES." },
-            due_diligence_days:  { type: "number", description: "Days for due diligence period (Section 16). Return integer. Return -1 if section found but days not readable." },
-            raw_deadline_text:   { type: "string", description: "Copy of ALL raw text from Sections 3, 15, and 16 verbatim for debugging." },
+            earnest_money_days:      { type: "number", description: "INTEGER from Section 3 blank 'within ___days of the EFFECTIVE DATE'. Return -1 if section present but blank illegible." },
+            general_building_days:   { type: "number", description: "INTEGER from row (a) General Building IF YES checked. 0 if NO. -1 if illegible." },
+            sewage_days:             { type: "number", description: "INTEGER from row (b) Sewage Disposal IF YES checked. 0 if NO." },
+            water_quality_days:      { type: "number", description: "INTEGER from row (c) Water Quality IF YES checked. 0 if NO." },
+            radon_air_days:          { type: "number", description: "INTEGER from row (d) Radon Air Quality IF YES checked. 0 if NO." },
+            radon_water_days:        { type: "number", description: "INTEGER from row (e) Radon Water Quality IF YES checked. 0 if NO." },
+            lead_paint_days:         { type: "number", description: "INTEGER from row (f) Lead Paint IF YES checked. 0 if NO." },
+            pest_days:               { type: "number", description: "INTEGER from row (g) Pests IF YES checked. 0 if NO." },
+            hazardous_waste_days:    { type: "number", description: "INTEGER from row (h) Hazardous Waste IF YES checked. 0 if NO." },
+            due_diligence_days:      { type: "number", description: "INTEGER from Section 16 blank 'within ___days from the effective date'. Return -1 if section present but blank illegible." },
+            inspection_types_yes:    { type: "string", description: "Comma-separated list of inspection type names that have YES checked." },
           }
         }
       });
@@ -191,137 +403,185 @@ Return ONLY integers. If a section exists but no day count is legible, return -1
         const fb = fb3.output;
         console.log("Pass 3 result:", fb);
 
-        // Apply only positive values (-1 = detected but not parsed)
-        if (!result.earnest_money_days && fb.earnest_money_days > 0) result.earnest_money_days = fb.earnest_money_days;
-        if (!result.inspection_days && fb.inspection_days > 0)       result.inspection_days    = fb.inspection_days;
-        if (!result.due_diligence_days && fb.due_diligence_days > 0) result.due_diligence_days = fb.due_diligence_days;
-        if (!result.sewage_days && fb.sewage_days > 0)               result.sewage_days        = fb.sewage_days;
-        if (!result.water_quality_days && fb.water_quality_days > 0) result.water_quality_days = fb.water_quality_days;
-        if (!result.radon_days && fb.radon_days > 0)                 result.radon_days         = fb.radon_days;
-        if (!result.inspection_types_yes && fb.inspection_types_yes) result.inspection_types_yes = fb.inspection_types_yes;
+        // Apply positive values only (-1 = detected/illegible, 0 = absent)
+        if (!raw.earnest_money_days && fb.earnest_money_days > 0)    raw.earnest_money_days    = fb.earnest_money_days;
+        if (!raw.general_building_days && fb.general_building_days > 0) raw.general_building_days = fb.general_building_days;
+        if (!raw.sewage_days && fb.sewage_days > 0)                   raw.sewage_days           = fb.sewage_days;
+        if (!raw.water_quality_days && fb.water_quality_days > 0)     raw.water_quality_days    = fb.water_quality_days;
+        if (!raw.radon_air_days && fb.radon_air_days > 0)             raw.radon_air_days        = fb.radon_air_days;
+        if (!raw.radon_water_days && fb.radon_water_days > 0)         raw.radon_water_days      = fb.radon_water_days;
+        if (!raw.lead_paint_days && fb.lead_paint_days > 0)           raw.lead_paint_days       = fb.lead_paint_days;
+        if (!raw.pest_days && fb.pest_days > 0)                       raw.pest_days             = fb.pest_days;
+        if (!raw.hazardous_waste_days && fb.hazardous_waste_days > 0) raw.hazardous_waste_days  = fb.hazardous_waste_days;
+        if (!raw.due_diligence_days && fb.due_diligence_days > 0)     raw.due_diligence_days    = fb.due_diligence_days;
+        if (!raw.inspection_types_yes && fb.inspection_types_yes)     raw.inspection_types_yes  = fb.inspection_types_yes;
 
-        // Flag sections detected but not parsed
-        if (fb.earnest_money_days === -1)  debugFlags.push("EMD_DETECTED_NOT_PARSED");
-        if (fb.inspection_days === -1)     debugFlags.push("INSPECTION_DETECTED_NOT_PARSED");
-        if (fb.due_diligence_days === -1)  debugFlags.push("DD_DETECTED_NOT_PARSED");
-
-        // Regex pass on raw text as last resort
-        if (fb.raw_deadline_text) {
-          const regexDates = extractRelativeDates(fb.raw_deadline_text, result.acceptance_date);
-          if (!result.earnest_money_days && regexDates.earnest_money_days) result.earnest_money_days = regexDates.earnest_money_days;
-          if (!result.inspection_days && regexDates.inspection_days)       result.inspection_days    = regexDates.inspection_days;
-          if (!result.due_diligence_days && regexDates.due_diligence_days) result.due_diligence_days = regexDates.due_diligence_days;
-          if (Object.keys(regexDates).length > 0) debugFlags.push("REGEX_FALLBACK_USED");
-        }
+        // Flag illegible sections
+        if (fb.earnest_money_days === -1)  debugFlags.push("EMD_SECTION_ILLEGIBLE");
+        if (fb.due_diligence_days === -1)  debugFlags.push("DD_SECTION_ILLEGIBLE");
       }
     }
 
-    // ── Calculate all deadlines from day offsets + acceptance date ─────────────
-    const acceptanceDate = result.acceptance_date || null;
+    // ── Calculate all deadlines ────────────────────────────────────────────────
+    const effectiveDate = raw.acceptance_date || null;
+    const calc = effectiveDate ? calculateDeadlines(raw, effectiveDate) : {};
 
-    // Inspection: use per-type days if available; overall inspection_days is the max
-    const allInspDays = [result.inspection_days, result.sewage_days, result.water_quality_days, result.radon_days]
-      .filter(d => d && Number(d) > 0).map(Number);
-    if (allInspDays.length > 0 && !result.inspection_days) {
-      result.inspection_days = Math.max(...allInspDays);
-    }
+    // ── Validate ───────────────────────────────────────────────────────────────
+    const validationErrors = validateDeadlines(raw, calc, debugFlags);
 
-    result.earnest_money_deadline  = result.earnest_money_deadline  || addDays(acceptanceDate, result.earnest_money_days);
-    result.inspection_deadline     = result.inspection_deadline     || addDays(acceptanceDate, result.inspection_days);
-    result.due_diligence_deadline  = result.due_diligence_deadline  || addDays(acceptanceDate, result.due_diligence_days);
-    result.appraisal_deadline      = result.appraisal_deadline      || addDays(acceptanceDate, result.appraisal_days);
-    result.sewage_deadline         = addDays(acceptanceDate, result.sewage_days);
-    result.water_quality_deadline  = addDays(acceptanceDate, result.water_quality_days);
-    result.radon_deadline          = addDays(acceptanceDate, result.radon_days);
+    // ── Mark undetected financial fields ──────────────────────────────────────
+    if (!raw.purchase_price)  debugFlags.push("PURCHASE_PRICE_NOT_FOUND");
+    if (!raw.deposit_amount)  debugFlags.push("DEPOSIT_AMOUNT_NOT_FOUND");
+    if (!effectiveDate)       debugFlags.push("EFFECTIVE_DATE_NOT_FOUND");
 
-    // Financing: may be days-based too
-    if (!result.financing_commitment_date && result.financing_days) {
-      result.financing_commitment_date = addDays(acceptanceDate, result.financing_days);
-    }
+    // ── Build final output ─────────────────────────────────────────────────────
+    const output = {
+      // Raw extracted values
+      raw: {
+        buyer_names:                   raw.buyer_names || null,
+        seller_names:                  raw.seller_names || null,
+        acceptance_date:               raw.acceptance_date || null,
+        property_address:              raw.property_address || null,
+        property_city:                 raw.property_city || null,
+        purchase_price:                raw.purchase_price || null,
+        deposit_amount:                raw.deposit_amount || null,
+        additional_emd_amount:         raw.additional_emd_amount || null,
+        additional_emd_date_explicit:  raw.additional_emd_date_explicit || null,
+        closing_date:                  raw.closing_date || null,
+        closing_location:              raw.closing_location || null,
+        escrow_agent:                  raw.escrow_agent || null,
+        title_company:                 raw.title_company || null,
+        buyer_agent:                   raw.buyer_agent || null,
+        seller_agent:                  raw.seller_agent || null,
+        buyer_brokerage:               raw.buyer_brokerage || null,
+        seller_brokerage:              raw.seller_brokerage || null,
+        buyer_agent_role:              raw.buyer_agent_role || null,
+        seller_agent_role:             raw.seller_agent_role || null,
+        financing_contingency:         raw.financing_contingency || false,
+        financing_amount:              raw.financing_amount || null,
+        financing_term_years:          raw.financing_term_years || null,
+        financing_rate:                raw.financing_rate || null,
+        financing_mortgage_type:       raw.financing_mortgage_type || null,
+        seller_concession_amount:      raw.seller_concession_amount || null,
+        professional_fee:              raw.professional_fee || null,
+        addenda_attached:              raw.addenda_attached || false,
+        inspection_types_yes:          raw.inspection_types_yes || null,
+        // Day counts
+        earnest_money_days:            raw.earnest_money_days || null,
+        general_building_days:         raw.general_building_days || null,
+        sewage_days:                   raw.sewage_days || null,
+        water_quality_days:            raw.water_quality_days || null,
+        radon_air_days:                raw.radon_air_days || null,
+        radon_water_days:              raw.radon_water_days || null,
+        lead_paint_days:               raw.lead_paint_days || null,
+        pest_days:                     raw.pest_days || null,
+        hazardous_waste_days:          raw.hazardous_waste_days || null,
+        custom_inspection_i_days:      raw.custom_inspection_i_days || null,
+        custom_inspection_i_name:      raw.custom_inspection_i_name || null,
+        custom_inspection_j_days:      raw.custom_inspection_j_days || null,
+        custom_inspection_j_name:      raw.custom_inspection_j_name || null,
+        due_diligence_days:            raw.due_diligence_days || null,
+        walkthrough_hours_prior:       raw.walkthrough_hours_prior || null,
+        financing_application_days:    raw.financing_application_days || null,
+      },
 
-    // Mark undetected financial fields
-    if (!result.purchase_price) result.purchase_price_undetected = true;
-    if (!result.deposit_amount) result.deposit_amount_undetected = true;
+      // Calculated deadline fields (with confidence scoring)
+      deadlines: calc,
 
-    // ── Debug info ─────────────────────────────────────────────────────────────
-    result._debug = {
-      text_confidence: result.acceptance_date ? "HIGH" : "LOW",
-      flags: debugFlags,
-      deadlines_from_days: {
-        earnest_money_days: result.earnest_money_days || null,
-        inspection_days: result.inspection_days || null,
-        due_diligence_days: result.due_diligence_days || null,
+      // Top-level flattened fields (backward compat with frontend)
+      buyer_names:               raw.buyer_names || null,
+      seller_names:              raw.seller_names || null,
+      acceptance_date:           raw.acceptance_date || null,
+      property_address:          raw.property_address || null,
+      purchase_price:            raw.purchase_price || null,
+      deposit_amount:            raw.deposit_amount || null,
+      closing_date:              raw.closing_date || null,
+      buyer_agent:               raw.buyer_agent || null,
+      seller_agent:              raw.seller_agent || null,
+      buyer_brokerage:           raw.buyer_brokerage || null,
+      seller_brokerage:          raw.seller_brokerage || null,
+      title_company:             raw.title_company || null,
+      financing_contingency:     raw.financing_contingency || false,
+      seller_concession_amount:  raw.seller_concession_amount || null,
+      // Flattened deadline dates for direct use
+      earnest_money_deadline:    calc.earnest_money_initial_deadline?.value || null,
+      inspection_deadline:       calc.inspection_deadline?.value || null,
+      due_diligence_deadline:    calc.due_diligence_deadline?.value || null,
+      financing_commitment_date: calc.financing_commitment_date?.value || calc.financing_application_deadline?.value || raw.financing_commitment_date_explicit || null,
+      appraisal_deadline:        calc.appraisal_deadline?.value || null,
+
+      // Validation & debug
+      validation_errors: validationErrors,
+      _debug: {
+        passes_run: missingAnyDeadline ? 3 : ((!raw.purchase_price || !raw.deposit_amount) ? 2 : 1),
+        effective_date_found: !!effectiveDate,
+        flags: debugFlags,
+        confidence_summary: {
+          effective_date:       effectiveDate ? "HIGH" : "LOW",
+          earnest_money:        calc.earnest_money_initial_deadline?.confidence || "LOW",
+          inspection:           calc.inspection_deadline?.confidence || "LOW",
+          due_diligence:        calc.due_diligence_deadline?.confidence || "LOW",
+          financing:            calc.financing_commitment_date?.confidence || "LOW",
+        }
       }
     };
 
-    console.log("Final extraction result:", {
-      acceptance_date: result.acceptance_date,
-      earnest_money_days: result.earnest_money_days,
-      earnest_money_deadline: result.earnest_money_deadline,
-      inspection_days: result.inspection_days,
-      inspection_deadline: result.inspection_deadline,
-      inspection_types_yes: result.inspection_types_yes,
-      due_diligence_days: result.due_diligence_days,
-      due_diligence_deadline: result.due_diligence_deadline,
-      financing_commitment_date: result.financing_commitment_date,
-      closing_date: result.closing_date,
+    console.log("Final result:", {
+      acceptance_date: output.acceptance_date,
+      earnest_money_deadline: output.earnest_money_deadline,
+      inspection_deadline: output.inspection_deadline,
+      due_diligence_deadline: output.due_diligence_deadline,
+      financing_commitment_date: output.financing_commitment_date,
+      closing_date: output.closing_date,
+      validation_errors: validationErrors.length,
       flags: debugFlags,
     });
 
     // ── Auto-create Contingency records if transaction_id provided ─────────────
-    if (transaction_id) {
+    if (transaction_id && effectiveDate) {
       const contingenciesToCreate = [];
 
-      const inspectionTypes = [
-        { key: "inspection_days",     label: "General Building" },
-        { key: "sewage_days",         label: "Sewage / Septic" },
-        { key: "water_quality_days",  label: "Water Quality" },
-        { key: "radon_days",          label: "Radon" },
+      const inspTypes = [
+        { key: "general_building_days",   label: "General Building" },
+        { key: "sewage_days",             label: "Sewage / Septic" },
+        { key: "water_quality_days",      label: "Water Quality" },
+        { key: "radon_air_days",          label: "Radon Air Quality" },
+        { key: "radon_water_days",        label: "Radon Water Quality" },
+        { key: "lead_paint_days",         label: "Lead Paint" },
+        { key: "pest_days",               label: "Pests" },
+        { key: "hazardous_waste_days",    label: "Hazardous Waste" },
+        { key: "custom_inspection_i_days",label: raw.custom_inspection_i_name || "Custom Inspection (i)" },
+        { key: "custom_inspection_j_days",label: raw.custom_inspection_j_name || "Custom Inspection (j)" },
       ];
 
-      for (const { key, label } of inspectionTypes) {
-        if (result[key] && Number(result[key]) > 0) {
+      for (const { key, label } of inspTypes) {
+        if (raw[key] && Number(raw[key]) > 0) {
           contingenciesToCreate.push({
-            transaction_id,
-            brokerage_id: brokerage_id || null,
-            contingency_type: "Inspection",
-            sub_type: label,
-            days_from_effective: Number(result[key]),
-            due_date: addDays(acceptanceDate, result[key]),
-            is_active: true,
-            is_custom: false,
-            source: "Parsed",
-            status: "Pending",
+            transaction_id, brokerage_id: brokerage_id || null,
+            contingency_type: "Inspection", sub_type: label,
+            days_from_effective: Number(raw[key]),
+            due_date: addDays(effectiveDate, raw[key]),
+            is_active: true, is_custom: false, source: "Parsed", status: "Pending",
           });
         }
       }
 
-      if (result.financing_commitment_date) {
+      if (raw.due_diligence_days > 0) {
         contingenciesToCreate.push({
-          transaction_id,
-          brokerage_id: brokerage_id || null,
-          contingency_type: "Financing",
-          sub_type: "Mortgage Commitment",
-          due_date: result.financing_commitment_date,
-          is_active: true,
-          is_custom: false,
-          source: "Parsed",
-          status: "Pending",
+          transaction_id, brokerage_id: brokerage_id || null,
+          contingency_type: "Due Diligence", sub_type: "Due Diligence Period",
+          days_from_effective: Number(raw.due_diligence_days),
+          due_date: output.due_diligence_deadline,
+          is_active: true, is_custom: false, source: "Parsed", status: "Pending",
         });
       }
 
-      if (result.due_diligence_days && Number(result.due_diligence_days) > 0) {
+      if (raw.financing_contingency && output.financing_commitment_date) {
         contingenciesToCreate.push({
-          transaction_id,
-          brokerage_id: brokerage_id || null,
-          contingency_type: "Due Diligence",
-          sub_type: "Due Diligence Period",
-          days_from_effective: Number(result.due_diligence_days),
-          due_date: result.due_diligence_deadline,
-          is_active: true,
-          is_custom: false,
-          source: "Parsed",
-          status: "Pending",
+          transaction_id, brokerage_id: brokerage_id || null,
+          contingency_type: "Financing", sub_type: "Mortgage Commitment",
+          due_date: output.financing_commitment_date,
+          is_active: true, is_custom: false, source: "Parsed", status: "Pending",
         });
       }
 
@@ -329,12 +589,12 @@ Return ONLY integers. If a section exists but no day count is legible, return -1
         const existing = await base44.asServiceRole.entities.Contingency.filter({ transaction_id, source: "Parsed" });
         await Promise.all(existing.map(e => base44.asServiceRole.entities.Contingency.delete(e.id)));
         await Promise.all(contingenciesToCreate.map(c => base44.asServiceRole.entities.Contingency.create(c)));
-        console.log(`Created ${contingenciesToCreate.length} contingencies for transaction ${transaction_id}`);
-        result._contingencies_created = contingenciesToCreate.length;
+        console.log(`Created ${contingenciesToCreate.length} contingencies`);
+        output._contingencies_created = contingenciesToCreate.length;
       }
     }
 
-    return Response.json(result);
+    return Response.json(output);
   } catch (error) {
     console.error("parsePurchaseAgreementV2 error:", error);
     return Response.json({ error: error.message }, { status: 500 });
