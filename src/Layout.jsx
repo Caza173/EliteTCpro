@@ -31,7 +31,7 @@ import {
   MessageSquarePlus,
   Plug,
 } from "lucide-react";
-import NotificationBell from "./components/dashboard/NotificationBell";
+
 import { InstallButtonHeader, InstallButtonFloat } from "./components/pwa/InstallButton.jsx";
 import { ThemeProvider } from "./components/theme/ThemeContext";
 import ThemeToggle from "./components/theme/ThemeToggle";
@@ -325,7 +325,7 @@ export default function Layout({ children, currentPageName }) {
             <div className="ml-auto flex items-center gap-1.5">
               <InstallButtonHeader />
               <ThemeToggle />
-              <NotificationBell />
+
               <UserMenuDropdown />
             </div>
           </header>
