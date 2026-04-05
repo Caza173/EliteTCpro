@@ -92,7 +92,7 @@ export default function EmailComposerModal({
   };
 
   const [selectedPartyEmails, setSelectedPartyEmails] = useState(initSelectedEmails);
-  const [customRecipients, setCustomRecipients] = useState([""]);
+  const [customRecipients, setCustomRecipients] = useState(["", ""]);
   const [additionalCCs, setAdditionalCCs] = useState([""]);
   const [subject, setSubject] = useState(
     defaultSubject || (transaction ? `Action Required – ${transaction.address}` : "")
@@ -214,25 +214,25 @@ export default function EmailComposerModal({
             )}
 
             {/* Custom / additional recipients */}
-            {customRecipients.map((r, i) => (
-              <div key={i} className="flex items-center gap-2 mb-2">
-                <input
-                  type="email"
-                  className="flex-1 border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-300"
-                  placeholder="other@example.com"
-                  value={r}
-                  onChange={e => updateCustomRecipient(i, e.target.value)}
-                />
-                {customRecipients.length > 1 && (
-                  <button onClick={() => removeCustomRecipient(i)} className="text-gray-400 hover:text-red-500">
-                    <Trash2 className="w-4 h-4" />
-                  </button>
-                )}
-              </div>
-            ))}
-            <button onClick={addCustomRecipient} className="text-xs text-blue-600 hover:underline flex items-center gap-1">
-              <Plus className="w-3 h-3" /> Add other recipient
-            </button>
+             <div className="space-y-2">
+               {customRecipients.map((r, i) => (
+                 <div key={i} className="flex items-center gap-2">
+                   <input
+                     type="email"
+                     className="flex-1 border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-300"
+                     placeholder="another@example.com"
+                     value={r}
+                     onChange={e => updateCustomRecipient(i, e.target.value)}
+                   />
+                   <button onClick={() => removeCustomRecipient(i)} className="text-gray-400 hover:text-red-500 p-1.5 rounded hover:bg-gray-100">
+                     <Trash2 className="w-4 h-4" />
+                   </button>
+                 </div>
+               ))}
+               <button onClick={addCustomRecipient} className="text-xs text-blue-600 hover:underline flex items-center gap-1 mt-1">
+                 <Plus className="w-3 h-3" /> Add recipient
+               </button>
+             </div>
           </div>
 
           {/* CC Field */}
