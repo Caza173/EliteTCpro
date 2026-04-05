@@ -122,25 +122,10 @@ export default function TasksDueToday({ transactions = [], notifications = [] })
   // ── Clear all completed/dismissed/not_needed notifications ────────────────
   const clearCompletedMutation = useMutation({
     mutationFn: async () => {
-      // Fetch ALL deadline notifications for the current user directly from DB
-      const allNotifs = await base44.entities.InAppNotification.filter({
-        user_email: currentUser.email,
-        type: "deadline",
-      });
-      const toClear = allNotifs.filter(n =>
-        n.dismissed ||
-        n.addendum_status === "completed" ||
-        n.addendum_status === "not_needed" ||
-        n.addendum_response === "completed" ||
-        n.addendum_response === "not_needed"
-      );
-      await Promise.all(toClear.map(n =>
-        base44.entities.InAppNotification.update(n.id, {
-          dismissed: true,
-          dismissed_at: new Date().toISOString(),
-        })
-      ));
-      return toClear.length;
+      // Use backend function to batch-process — avoids frontend rate limits
+      const res = await base44.functions.invoke("clearDeadlineNotifications", {});
+      if (res.data?.error) throw new Error(res.data.error);
+      return res.data?.cleared ?? 0;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["inAppNotifications"] });
