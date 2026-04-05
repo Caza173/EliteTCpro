@@ -18,22 +18,9 @@ function interpolate(template, vars) {
 }
 
 export default function ReviewEmailModal({ open, onClose, transaction, currentUser, task, onTaskUpdated }) {
-   const [loading, setLoading] = useState(false);
-
-   if (!transaction) return null;
-
-   const clientEmails = transaction.client_emails?.length ? transaction.client_emails : (transaction.client_email ? [transaction.client_email] : []);
-   const clientName = transaction.buyers?.length ? transaction.buyers[0] : transaction.buyer || "Valued Client";
-  
-  const vars = {
-    client_name: clientName,
-    property_address: transaction.address || "Property",
-    agent_name: transaction.buyers_agent_name || transaction.agent || "Your Agent",
-    tc_name: currentUser?.full_name || currentUser?.email || "TC"
-  };
-
-  const defaultSubject = "Quick favor - would you leave a review?";
-  const defaultBody = `Hi {{client_name}},
+  const [loading, setLoading] = useState(false);
+  const [subject, setSubject] = useState("Quick favor - would you leave a review?");
+  const [body, setBody] = useState(`Hi {{client_name}},
 
 Thank you again for working with us on {{property_address}}. It was a pleasure helping you through the transaction.
 
@@ -45,10 +32,19 @@ Thank you again. We appreciate your trust and support.
 
 Best,
 {{agent_name}}
-{{tc_name}}`;
+{{tc_name}}`);
 
-  const [subject, setSubject] = useState(defaultSubject);
-  const [body, setBody] = useState(defaultBody);
+  if (!transaction) return null;
+
+  const clientEmails = transaction.client_emails?.length ? transaction.client_emails : (transaction.client_email ? [transaction.client_email] : []);
+  const clientName = transaction.buyers?.length ? transaction.buyers[0] : transaction.buyer || "Valued Client";
+
+  const vars = {
+    client_name: clientName,
+    property_address: transaction.address || "Property",
+    agent_name: transaction.buyers_agent_name || transaction.agent || "Your Agent",
+    tc_name: currentUser?.full_name || currentUser?.email || "TC"
+  };
 
   const finalBody = interpolate(body, vars);
 
