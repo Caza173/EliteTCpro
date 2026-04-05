@@ -22,6 +22,7 @@ const EMAIL_TEMPLATES = [
     fields: ["buyer_name", "property_address", "earnest_money_amount", "escrow_holder"],
     critical: false,
     body: "",
+    originalBody: "Dear {buyer_name},\n\nThe earnest money deposit of {earnest_money_amount} for {property_address} has been submitted to {escrow_holder}.\n\nPlease confirm receipt and let us know if you have any questions.\n\nBest regards",
   },
   {
     id: "emd_received",
@@ -32,6 +33,7 @@ const EMAIL_TEMPLATES = [
     fields: ["buyer_name", "earnest_money_amount", "escrow_holder", "date_received", "next_milestone"],
     critical: true,
     body: "",
+    originalBody: "Dear {buyer_name},\n\nWe are pleased to confirm receipt of your earnest money deposit of {earnest_money_amount} on {date_received}.\n\nThe funds are being held by {escrow_holder}. Your next milestone is {next_milestone}.\n\nBest regards",
   },
   {
     id: "inspection_scheduled",
@@ -42,6 +44,7 @@ const EMAIL_TEMPLATES = [
     fields: ["buyer_name", "inspection_date", "inspection_time", "inspector_name"],
     critical: false,
     body: "",
+    originalBody: "Dear {buyer_name},\n\nYour home inspection has been scheduled:\n\nDate: {inspection_date}\nTime: {inspection_time}\nInspector: {inspector_name}\n\nPlease ensure the property is accessible at the scheduled time.\n\nBest regards",
   },
   {
     id: "inspection_completed",
@@ -52,6 +55,7 @@ const EMAIL_TEMPLATES = [
     fields: ["buyer_name", "property_address"],
     critical: true,
     body: "",
+    originalBody: "Dear {buyer_name},\n\nThe inspection for {property_address} has been completed. The inspection report will be delivered within the timeframe specified in your contract.\n\nPlease review the report carefully and contact us with any questions or concerns.\n\nBest regards",
   },
   {
     id: "appraisal_ordered",
@@ -62,6 +66,7 @@ const EMAIL_TEMPLATES = [
     fields: ["buyer_name", "lender_name"],
     critical: false,
     body: "",
+    originalBody: "Dear {buyer_name},\n\nYour lender, {lender_name}, has ordered the appraisal for your property. The appraiser will contact you to schedule an inspection time.\n\nPlease be prepared to provide access to the property as requested.\n\nBest regards",
   },
   {
     id: "appraisal_scheduled",
@@ -72,6 +77,7 @@ const EMAIL_TEMPLATES = [
     fields: ["buyer_name", "appraisal_date"],
     critical: false,
     body: "",
+    originalBody: "Dear {buyer_name},\n\nThe appraisal for your property has been scheduled for {appraisal_date}. Please ensure the property is accessible and in good condition.\n\nIf you need to reschedule, contact the appraiser directly.\n\nBest regards",
   },
 ];
 

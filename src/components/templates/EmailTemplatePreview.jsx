@@ -53,41 +53,58 @@ export default function EmailTemplatePreview({ template, onUpdate }) {
       </button>
 
       {expanded && (
-        <div className="px-4 pb-4 space-y-3" style={{ background: "var(--bg-tertiary)" }}>
-          {editing ? (
+        <div className="px-4 pb-4 space-y-4" style={{ background: "var(--bg-tertiary)" }}>
+          {/* Original Template */}
+          {template.originalBody && (
             <div className="space-y-2">
-              <textarea
-                value={editBody}
-                onChange={(e) => setEditBody(e.target.value)}
-                className="w-full h-48 px-3 py-2 rounded-lg border font-mono text-sm resize-none focus:outline-none focus:ring-2 focus:ring-blue-400"
-                style={{ borderColor: "var(--card-border)", background: "var(--card-bg)" }}
-                placeholder="Enter email body (supports {field_name} placeholders)"
-              />
-              <div className="flex gap-2 justify-end">
-                <Button
-                  size="sm"
-                  variant="outline"
-                  onClick={handleCancel}
-                >
-                  <X className="w-3.5 h-3.5 mr-1" /> Cancel
-                </Button>
-                <Button
-                  size="sm"
-                  onClick={handleSave}
-                  className="bg-blue-600 hover:bg-blue-700"
-                >
-                  <Save className="w-3.5 h-3.5 mr-1" /> Save
-                </Button>
+              <p className="text-xs font-semibold" style={{ color: "var(--text-muted)" }}>Default Template</p>
+              <div
+                className="px-3 py-3 rounded-lg border whitespace-pre-wrap text-sm leading-relaxed"
+                style={{ borderColor: "var(--card-border)", background: "var(--card-bg)", color: "var(--text-primary)" }}
+              >
+                {template.originalBody}
               </div>
             </div>
-          ) : (
-            <div
-              className="px-3 py-3 rounded-lg border whitespace-pre-wrap text-sm leading-relaxed"
-              style={{ borderColor: "var(--card-border)", background: "var(--card-bg)", color: "var(--text-primary)" }}
-            >
-              {editBody || <span style={{ color: "var(--text-muted)" }}>No email body defined. Click Edit to add content.</span>}
-            </div>
           )}
+
+          {/* Custom Body Editor/Display */}
+          <div className="space-y-2">
+            <p className="text-xs font-semibold" style={{ color: "var(--text-muted)" }}>Custom Template</p>
+            {editing ? (
+              <div className="space-y-2">
+                <textarea
+                  value={editBody}
+                  onChange={(e) => setEditBody(e.target.value)}
+                  className="w-full h-48 px-3 py-2 rounded-lg border font-mono text-sm resize-none focus:outline-none focus:ring-2 focus:ring-blue-400"
+                  style={{ borderColor: "var(--card-border)", background: "var(--card-bg)" }}
+                  placeholder="Enter email body (supports {field_name} placeholders)"
+                />
+                <div className="flex gap-2 justify-end">
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={handleCancel}
+                  >
+                    <X className="w-3.5 h-3.5 mr-1" /> Cancel
+                  </Button>
+                  <Button
+                    size="sm"
+                    onClick={handleSave}
+                    className="bg-blue-600 hover:bg-blue-700"
+                  >
+                    <Save className="w-3.5 h-3.5 mr-1" /> Save
+                  </Button>
+                </div>
+              </div>
+            ) : (
+              <div
+                className="px-3 py-3 rounded-lg border whitespace-pre-wrap text-sm leading-relaxed"
+                style={{ borderColor: "var(--card-border)", background: "var(--card-bg)", color: "var(--text-primary)" }}
+              >
+                {editBody || <span style={{ color: "var(--text-muted)" }}>Using default template. Click Edit to customize.</span>}
+              </div>
+            )}
+          </div>
         </div>
       )}
     </div>
