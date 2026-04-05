@@ -22,7 +22,7 @@ import AIActivityLogPanel from "../components/dashboard/AIActivityLogPanel";
 import DeadlineSummaryPanel from "../components/dashboard/DeadlineSummaryPanel";
 import DeadlineCalendarView from "../components/dashboard/DeadlineCalendarView";
 import GlobalAIAssistant from "../components/ai/GlobalAIAssistant";
-import TasksDueToday from "../components/dashboard/TasksDueToday";
+
 import FinanceDashboardMetrics from "../components/finance/FinanceDashboardMetrics";
 import NotesTab from "../components/dashboard/NotesTab";
 
@@ -220,7 +220,6 @@ export default function Dashboard() {
         {[
           { id: "overview", label: "Overview" },
           { id: "transactions", label: "Transactions" },
-          { id: "tasks", label: "Tasks" },
           { id: "deadlines", label: "Deadlines" },
           { id: "documents", label: "Documents" },
           { id: "notes", label: "Notes" },
@@ -319,10 +318,7 @@ export default function Dashboard() {
                       <h4 className="text-xs font-semibold uppercase mb-3" style={{ color: "var(--text-muted)" }}>Transaction Alerts</h4>
                       <TransactionAlertsPanel brokerageId={currentUser?.brokerage_id} />
                     </div>
-                    <div className="border-t pt-6" style={{ borderColor: "var(--border)" }}>
-                      <h4 className="text-xs font-semibold uppercase mb-3" style={{ color: "var(--text-muted)" }}>Upcoming Tasks & Deadlines</h4>
-                      <TasksDueToday transactions={transactions} notifications={notifications} />
-                    </div>
+
                   </div>
                 </div>
               )}
@@ -360,17 +356,7 @@ export default function Dashboard() {
         </div>
       )}
 
-      {/* Tab: Tasks */}
-      {activeTab === "tasks" && !isLoading && (
-        <div className="theme-card overflow-hidden">
-          <div className="px-4 py-3 border-b" style={{ borderColor: "var(--border)" }}>
-            <h3 className="text-sm font-semibold" style={{ color: "var(--text-primary)" }}>Upcoming Tasks & Deadlines</h3>
-          </div>
-          <div className="p-4">
-            <TasksDueToday transactions={transactions} notifications={notifications} />
-          </div>
-        </div>
-      )}
+
 
       {/* Tab: Deadlines */}
       {activeTab === "deadlines" && (
