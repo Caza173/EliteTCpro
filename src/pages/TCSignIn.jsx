@@ -18,12 +18,10 @@ export default function TCSignIn() {
     setLoading(true);
 
     try {
-      // Use base44 auth to sign in
-      await base44.auth.signIn(email, password);
-      navigate("/Dashboard");
+      // Redirect to platform login
+      await base44.auth.redirectToLogin("/Dashboard");
     } catch (err) {
-      setError(err?.message || "Sign in failed. Please check your credentials.");
-    } finally {
+      setError(err?.message || "Sign in failed.");
       setLoading(false);
     }
   };
