@@ -236,12 +236,13 @@ export default function TasksDueToday({ transactions = [], notifications = [] })
     deadline: <AlertTriangle className="w-4 h-4 text-orange-400 flex-shrink-0" />,
   };
 
-  // Count clearable items from the prop (may be a subset, but good enough for display)
+  // Count clearable items — must match exactly what the backend clearDeadlineNotifications does
   const clearableCount = notifications.filter(n =>
     n.dismissed ||
-    n.addendum_status === "completed" || n.addendum_status === "not_needed" ||
-    n.addendum_response === "completed" || n.addendum_response === "not_needed" ||
-    (n.type === "deadline" && n.dismissed)
+    n.addendum_status === "completed" ||
+    n.addendum_status === "not_needed" ||
+    n.addendum_response === "completed" ||
+    n.addendum_response === "not_needed"
   ).length;
 
   if (items.length === 0) {
@@ -257,7 +258,7 @@ export default function TasksDueToday({ transactions = [], notifications = [] })
             disabled={clearCompletedMutation.isPending}
           >
             <Trash2 className="w-3.5 h-3.5" />
-            Clear {clearableCount} completed / not needed
+            Clear completed / not needed
           </Button>
         )}
       </div>
@@ -268,6 +269,7 @@ export default function TasksDueToday({ transactions = [], notifications = [] })
     <div className="space-y-2">
       {/* Clear all button */}
       <div className="flex justify-end">
+        {clearableCount > 0 && (
         <Button
           size="sm" variant="ghost"
           className="h-7 text-xs text-gray-400 hover:text-gray-600 gap-1.5"
@@ -275,8 +277,9 @@ export default function TasksDueToday({ transactions = [], notifications = [] })
           disabled={clearCompletedMutation.isPending || !currentUser?.email}
         >
           <Trash2 className="w-3 h-3" />
-          {clearCompletedMutation.isPending ? "Clearing…" : `Clear ${clearableCount > 0 ? clearableCount + " " : ""}completed / not needed`}
+          {clearCompletedMutation.isPending ? "Clearing…" : "Clear completed / not needed"}
         </Button>
+      )}
       </div>
 
       {items.map((item) => (
