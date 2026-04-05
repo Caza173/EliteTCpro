@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Eye, Send, ChevronDown, ChevronUp, Mail, MessageSquare, CheckCircle2, AlertTriangle, Clock } from "lucide-react";
+import { Eye, Send, ChevronDown, ChevronUp, Mail, MessageSquare, CheckCircle2, AlertTriangle, Clock, X } from "lucide-react";
 import { format } from "date-fns";
 
 const TYPE_LABELS = {
@@ -23,6 +23,7 @@ const STATUS_CONFIG = {
 export default function CommMessageCard({ comm, onSend, onRegenerate, sending }) {
   const [expanded, setExpanded] = useState(false);
   const [previewing, setPreviewing] = useState(false);
+  const [confirmOpen, setConfirmOpen] = useState(false);
 
   const typeCfg = TYPE_LABELS[comm.template_type] || { label: comm.template_type, icon: Mail, color: "bg-gray-50 border-gray-200 text-gray-700" };
   const statusCfg = STATUS_CONFIG[comm.template_status] || STATUS_CONFIG.draft;
@@ -63,7 +64,7 @@ export default function CommMessageCard({ comm, onSend, onRegenerate, sending })
             <Button
               size="sm"
               className="h-7 text-xs gap-1 bg-blue-600 hover:bg-blue-700 text-white"
-              onClick={() => onSend(comm.id)}
+              onClick={() => setConfirmOpen(true)}
               disabled={sending === comm.id}
             >
               <Send className="w-3.5 h-3.5" />
@@ -121,6 +122,82 @@ export default function CommMessageCard({ comm, onSend, onRegenerate, sending })
               </div>
             </div>
           ))}
+        </div>
+      )}
+
+      {/* Send Confirm Modal */}
+      {confirmOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm">
+          <div className="rounded-2xl shadow-2xl w-full max-w-lg mx-4 overflow-hidden" style={{ background: "var(--card-bg)", border: "1px solid var(--card-border)" }}>
+            {/* Header */}
+            <div className="flex items-center justify-between px-5 py-4 border-b" style={{ borderColor: "var(--card-border)" }}>
+              <div className="flex items-center gap-2">
+                <Send className="w-4 h-4 text-blue-500" />
+                <span className="font-semibold text-sm" style={{ color: "var(--text-primary)" }}>Confirm Send</span>
+              </div>
+              <button onClick={() => setConfirmOpen(false)} className="p-1 rounded-lg hover:bg-gray-100 transition-colors" style={{ color: "var(--text-muted)" }}>
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            {/* Recipients */}
+            <div className="px-5 py-4 space-y-3 border-b text-xs" style={{ borderColor: "var(--card-border)" }}>
+              <div className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg border text-xs font-semibold ${typeCfg.color}`}>
+                <Icon className="w-3.5 h-3.5" />
+                {typeCfg.label}
+              </div>
+              {comm.subject && (
+                <div>
+                  <p className="font-semibold mb-0.5" style={{ color: "var(--text-muted)" }}>Subject</p>
+                  <p style={{ color: "var(--text-primary)" }}>{comm.subject}</p>
+                </div>
+              )}
+              {comm.recipients?.length > 0 && (
+                <div>
+                  <p className="font-semibold mb-0.5" style={{ color: "var(--text-muted)" }}>To</p>
+                  <div className="flex flex-wrap gap-1.5">
+                    {comm.recipients.map((r, i) => (
+                      <span key={i} className="px-2 py-0.5 rounded-full bg-blue-50 border border-blue-200 text-blue-700">{r}</span>
+                    ))}
+                  </div>
+                </div>
+              )}
+              {comm.cc_recipients?.filter(Boolean).length > 0 && (
+                <div>
+                  <p className="font-semibold mb-0.5" style={{ color: "var(--text-muted)" }}>CC</p>
+                  <div className="flex flex-wrap gap-1.5">
+                    {comm.cc_recipients.filter(Boolean).map((r, i) => (
+                      <span key={i} className="px-2 py-0.5 rounded-full bg-gray-100 border border-gray-200 text-gray-600">{r}</span>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Preview */}
+            <div className="px-5 py-3 max-h-60 overflow-y-auto border-b" style={{ borderColor: "var(--card-border)", background: "var(--bg-tertiary)" }}>
+              <p className="text-[10px] font-semibold uppercase tracking-wider mb-2" style={{ color: "var(--text-muted)" }}>Message Preview</p>
+              <pre className="text-xs whitespace-pre-wrap font-sans leading-relaxed" style={{ color: "var(--text-primary)" }}>
+                {comm.generated_content || "(no content)"}
+              </pre>
+            </div>
+
+            {/* Actions */}
+            <div className="flex items-center justify-end gap-2 px-5 py-4">
+              <Button variant="outline" size="sm" className="h-8 text-xs" onClick={() => setConfirmOpen(false)}>
+                Cancel
+              </Button>
+              <Button
+                size="sm"
+                className="h-8 text-xs gap-1.5 bg-blue-600 hover:bg-blue-700 text-white"
+                disabled={sending === comm.id}
+                onClick={() => { setConfirmOpen(false); onSend(comm.id); }}
+              >
+                <Send className="w-3.5 h-3.5" />
+                {sending === comm.id ? "Sending…" : "Confirm & Send"}
+              </Button>
+            </div>
+          </div>
         </div>
       )}
     </div>
