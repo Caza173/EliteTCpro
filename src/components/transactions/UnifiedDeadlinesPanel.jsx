@@ -87,7 +87,7 @@ function getDaysLabel(dateStr, opts = {}) {
 }
 
 // ── Single deadline row ──────────────────────────────────────────────────────
-function DeadlineRow({ item, calendarMaps, transactionId, onUpdateContingency, onUpdateTransaction, onAddManual, onRefreshCalendar }) {
+function DeadlineRow({ item, calendarMaps, transactionId, onUpdateContingency, onUpdateTransaction, onAddManual, onRefreshCalendar, completedDeadlines }) {
   const [editing, setEditing] = useState(false);
   const [editDate, setEditDate] = useState(item.date || "");
   const [editTime, setEditTime] = useState(item.time || "");
@@ -106,8 +106,10 @@ function DeadlineRow({ item, calendarMaps, transactionId, onUpdateContingency, o
     setMarkingComplete(true);
     try {
       if (item.sourceType === "system") {
-        const completed = item.completedDeadlines || [];
-        onUpdateTransaction({ completed_deadlines: [...completed, item.key] });
+        const current = completedDeadlines || [];
+        if (!current.includes(item.key)) {
+          onUpdateTransaction({ completed_deadlines: [...current, item.key] });
+        }
       } else {
         await onUpdateContingency(item.id, { status: "Completed", completed_date: new Date().toISOString().split("T")[0] });
       }
@@ -524,6 +526,7 @@ export default function UnifiedDeadlinesPanel({ transaction, onSave }) {
             onUpdateContingency={handleUpdateContingency}
             onUpdateTransaction={onSave}
             onRefreshCalendar={refreshCalendar}
+            completedDeadlines={completedDeadlines}
           />
         ))}
       </div>
