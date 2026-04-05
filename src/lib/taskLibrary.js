@@ -195,20 +195,48 @@ export function generateTasksForPhase(phaseNum, transactionId, transactionType =
   }));
 }
 
+// ─── PHASE RELATIONSHIP MAP ───────────────────────────────────────────────────
+// Due Diligence (phaseNum 2) is a sub-phase of Under Contract (phaseNum 1).
+// Under Contract is NOT complete unless both phase 1 AND phase 2 tasks are done.
+// This applies to buyer_under_contract and dual types.
+export const SUB_PHASE_MAP = {
+  // parent phaseNum → sub-phase phaseNum(s) that must also be complete
+  1: [2], // Under Contract requires Due Diligence to also be complete
+};
+
+/**
+ * Check if a phase is logically complete.
+ * For phase 1 (Under Contract): requires phase 1 AND phase 2 required tasks complete.
+ * For phase 2 (Due Diligence): only its own tasks (it feeds the parent).
+ */
 export function isPhaseComplete(phaseNum, tasks = []) {
-  const phaseTasks = tasks.filter(t => t.phase === phaseNum && t.required);
-  if (phaseTasks.length === 0) return false;
-  return phaseTasks.every(t => t.completed);
+  const ownTasks = tasks.filter(t => t.phase === phaseNum && t.required);
+  if (ownTasks.length === 0) return false;
+  const ownDone = ownTasks.every(t => t.completed || t.is_completed);
+  if (!ownDone) return false;
+
+  // If this phase has sub-phases, they must also be complete
+  const subPhases = SUB_PHASE_MAP[phaseNum] || [];
+  return subPhases.every(subNum => {
+    const subTasks = tasks.filter(t => t.phase === subNum && t.required);
+    if (subTasks.length === 0) return true; // no tasks = not blocking
+    return subTasks.every(t => t.completed || t.is_completed);
+  });
 }
 
 export function getPhaseProgress(phaseNum, tasks = []) {
-  const phaseTasks = tasks.filter(t => t.phase === phaseNum);
-  const required = phaseTasks.filter(t => t.required);
+  // For phase 1, include sub-phase tasks in the progress calculation
+  const subPhases = SUB_PHASE_MAP[phaseNum] || [];
+  const allPhaseNums = [phaseNum, ...subPhases];
+  const phaseTasks = tasks.filter(t => allPhaseNums.includes(t.phase));
+  const required = phaseTasks.filter(t => t.required || t.is_required);
+  const completed = phaseTasks.filter(t => t.completed || t.is_completed);
+  const requiredDone = required.filter(t => t.completed || t.is_completed);
   return {
     total: phaseTasks.length,
-    completed: phaseTasks.filter(t => t.completed).length,
+    completed: completed.length,
     required: required.length,
-    requiredDone: required.filter(t => t.completed).length,
+    requiredDone: requiredDone.length,
   };
 }
 

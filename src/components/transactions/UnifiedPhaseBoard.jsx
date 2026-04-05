@@ -7,28 +7,46 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { base44 } from "@/api/base44Client";
 import { useQueryClient } from "@tanstack/react-query";
-import { getPhasesForType, isTaskIncompatible } from "@/lib/taskLibrary";
+import { getPhasesForType, isTaskIncompatible, SUB_PHASE_MAP } from "@/lib/taskLibrary";
 import TaskLibraryModal from "@/components/tasks/TaskLibraryModal";
 import PhaseCompletionBadge from "./PhaseCompletionBadge";
 import TaskActionToolbar from "@/components/tasks/TaskActionToolbar";
 
 // ── Determine phase status ──────────────────────────────────────────────────
+// For phase 1 (Under Contract): complete only when BOTH phase 1 AND phase 2
+// required tasks are all done (Due Diligence is a sub-phase of Under Contract).
 function getPhaseStatus(phaseNum, tasks, phasesCompleted = []) {
-  const phaseTasks = tasks.filter(t => t.phase === phaseNum);
-  const requiredTasks = phaseTasks.filter(t => t.is_required);
-  const allRequiredDone = requiredTasks.length > 0 && requiredTasks.every(t => t.is_completed);
+  const subPhases = SUB_PHASE_MAP[phaseNum] || [];
+  const allPhaseNums = [phaseNum, ...subPhases];
 
-  // Only treat as complete if required tasks are actually all done
+  const ownTasks = tasks.filter(t => t.phase === phaseNum);
+  const requiredOwn = ownTasks.filter(t => t.is_required);
+
+  // Sub-phase required tasks must also be done for the parent to be complete
+  const subTasks = tasks.filter(t => subPhases.includes(t.phase));
+  const requiredSub = subTasks.filter(t => t.is_required);
+
+  const allRequired = [...requiredOwn, ...requiredSub];
+  const allRequiredDone = allRequired.length > 0 && allRequired.every(t => t.is_completed);
+
   if (allRequiredDone) return "complete";
-  // phasesCompleted flag can also mark complete (e.g. manually advanced), but only if tasks back it up or there are no tasks
-  if (phasesCompleted.includes(phaseNum) && phaseTasks.length === 0) return "complete";
+  if (phasesCompleted.includes(phaseNum) && ownTasks.length === 0) return "complete";
 
-  if (phaseTasks.some(t => t.is_completed)) return "active";
+  // Active if any task in own or sub-phases has been started
+  const anyStarted = tasks.filter(t => allPhaseNums.includes(t.phase)).some(t => t.is_completed);
+  if (anyStarted) return "active";
   return "not_started";
 }
 
+// Due Diligence (phase 2) is a sub-phase — skip it when finding the active top-level phase
+// so the board doesn't advance past Under Contract until BOTH are done.
 function getActivePhaseNum(phases, tasks, phasesCompleted) {
+  // Collect phaseNums that are sub-phases (they don't count as standalone active phase)
+  const allSubPhases = new Set(Object.values(SUB_PHASE_MAP).flat());
+
   for (const p of phases) {
+    // Skip sub-phases in the active-phase search — they roll up to their parent
+    if (allSubPhases.has(p.phaseNum)) continue;
     const status = getPhaseStatus(p.phaseNum, tasks, phasesCompleted);
     if (status !== "complete") return p.phaseNum;
   }
@@ -44,7 +62,10 @@ const TaskRow = memo(function TaskRow({
   const [draft, setDraft] = useState(task.title);
   const [moveOpen, setMoveOpen] = useState(false);
   const [dropdownPos, setDropdownPos] = useState({ top: 0, right: 0 });
-  const isAtRisk = !task.is_completed && task.due_date && new Date(task.due_date) < new Date();
+  // Only show at-risk if task is NOT completed AND deadline has passed
+  // Completed tasks permanently suppress all overdue alerts regardless of date
+  const isAtRisk = !task.is_completed && task.due_date &&
+    new Date(task.due_date + "T23:59:59") < new Date();
   const phaseNum = phase?.phaseNum || 0;
 
   const saveEdit = async () => {
@@ -180,8 +201,11 @@ function PhaseCard({
     .filter(t => t.phase === phase.phaseNum)
     .sort((a, b) => (a.order_index ?? 0) - (b.order_index ?? 0));
 
-  const total = phaseTasks.length;
-  const completed = phaseTasks.filter(t => t.is_completed).length;
+  // For parent phases, include sub-phase tasks in progress calculation
+  const subPhaseNums = SUB_PHASE_MAP[phase.phaseNum] || [];
+  const allProgressTasks = tasks.filter(t => t.phase === phase.phaseNum || subPhaseNums.includes(t.phase));
+  const total = allProgressTasks.length;
+  const completed = allProgressTasks.filter(t => t.is_completed).length;
   const pct = total > 0 ? Math.round((completed / total) * 100) : 0;
 
   const handleAddTask = async () => {
@@ -243,7 +267,7 @@ function PhaseCard({
             <p className={`text-xs font-semibold truncate ${isComplete ? "text-emerald-700 line-through" : isActive ? "text-blue-700" : "text-gray-600"}`}>
               {phase.label}
             </p>
-            <p className="text-[10px] text-gray-400">{completed}/{total} tasks</p>
+            <p className="text-[10px] text-gray-400">{completed}/{total} tasks{subPhaseNums.length > 0 ? " incl. sub-phase" : ""}</p>
           </div>
         </div>
         {transaction && isComplete && (
