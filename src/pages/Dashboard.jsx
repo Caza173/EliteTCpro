@@ -224,7 +224,6 @@ export default function Dashboard() {
           { id: "documents", label: "Documents" },
           { id: "notes", label: "Notes" },
           { id: "alerts", label: "Alerts" },
-          ...((currentUser?.role === "owner" || currentUser?.role === "admin") ? [{ id: "analytics", label: "Analytics" }] : []),
           { id: "finance", label: "Finance" },
           { id: "activity", label: "AI Activity" },
         ].map(tab => (
@@ -392,11 +391,6 @@ export default function Dashboard() {
           </div>
           <div className="p-4"><TransactionAlertsPanel brokerageId={currentUser?.brokerage_id} /></div>
         </div>
-      )}
-
-      {/* Tab: Analytics (owner/admin only) */}
-      {activeTab === "analytics" && !isLoading && (
-        <TCAnalyticsDashboard transactions={transactions} />
       )}
 
       {/* Tab: Finance */}
