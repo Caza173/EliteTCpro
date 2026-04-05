@@ -223,7 +223,6 @@ export default function Dashboard() {
           { id: "deadlines", label: "Deadlines" },
           { id: "documents", label: "Documents" },
           { id: "notes", label: "Notes" },
-          { id: "alerts", label: "Alerts" },
           { id: "finance", label: "Finance" },
           { id: "activity", label: "AI Activity" },
         ].map(tab => (
@@ -380,16 +379,6 @@ export default function Dashboard() {
               : deadlineView === "calendar" ? <DeadlineCalendarView transactions={transactions} />
               : <DeadlineSummaryPanel transactions={transactions} compact={false} />}
           </div>
-        </div>
-      )}
-
-      {/* Tab: Alerts */}
-      {activeTab === "alerts" && (
-        <div className="theme-card overflow-hidden">
-          <div className="px-4 py-3 border-b" style={{ borderColor: "var(--border)" }}>
-            <h3 className="text-sm font-semibold" style={{ color: "var(--text-primary)" }}>Transaction Alerts</h3>
-          </div>
-          <div className="p-4"><TransactionAlertsPanel brokerageId={currentUser?.brokerage_id} /></div>
         </div>
       )}
 
