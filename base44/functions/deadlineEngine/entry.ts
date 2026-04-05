@@ -175,8 +175,18 @@ Deno.serve(async (req) => {
           continue;
         }
 
-        // ── Deduplication — match on deadline_field only (deadline_type may be unset on old records) ──
+        // ── Deduplication — 1 active alert per (transaction_id + deadline_field) ──
         const fieldNotifications = existingForTx.filter(n => n.deadline_field === field.key);
+
+        // If ANY record for this deadline has addendum_status = completed or not_needed → stop permanently
+        const permResolved = fieldNotifications.some(n =>
+          n.addendum_status === "completed" || n.addendum_status === "not_needed" ||
+          n.addendum_response === "completed" || n.addendum_response === "not_needed"
+        );
+        if (permResolved) {
+          console.log(`[deadlineEngine] ${field.key}: skipped — addendum marked completed/not_needed`);
+          continue;
+        }
 
         // If user manually dismissed this alert, respect it permanently
         const userDismissed = fieldNotifications.some(n => n.dismissed);
@@ -194,30 +204,26 @@ Deno.serve(async (req) => {
             try { await base44.asServiceRole.entities.InAppNotification.delete(dupe.id); } catch {}
           }
           console.log(`[deadlineEngine] ${field.key}: deleted ${dupes.length} duplicate notification(s)`);
-          // Update surviving notification if severity changed
-          if (keep.severity !== severity) {
-            await base44.asServiceRole.entities.InAppNotification.update(keep.id, {
-              severity,
-              title: buildMessage(field.label, hoursRemaining),
-            });
-          }
+          // Update surviving notification — only title/severity, never change addendum_status
+          await base44.asServiceRole.entities.InAppNotification.update(keep.id, {
+            severity,
+            title: buildMessage(field.label, hoursRemaining),
+          });
           continue;
         }
 
-        // Update severity if escalated on the single existing notification
+        // Update severity/title if changed on the single existing notification
+        // Never overwrite addendum_status if already set (suggested/completed/not_needed)
         if (activeNotifs.length === 1) {
           const activeNotif = activeNotifs[0];
-          if (activeNotif.severity !== severity) {
-            await base44.asServiceRole.entities.InAppNotification.update(activeNotif.id, {
-              severity,
-              title: buildMessage(field.label, hoursRemaining),
-            });
-            console.log(`[deadlineEngine] ${field.key}: escalated severity to ${severity}`);
-          }
+          const updates = { title: buildMessage(field.label, hoursRemaining) };
+          if (activeNotif.severity !== severity) updates.severity = severity;
+          await base44.asServiceRole.entities.InAppNotification.update(activeNotif.id, updates);
+          console.log(`[deadlineEngine] ${field.key}: updated existing alert`);
           continue;
         }
 
-        // ── Create new notification ───────────────────────────────────────────
+        // ── Create new notification (only if none exists yet) ─────────────────
         const recipients = [tx.agent_email].filter(Boolean);
         if (!recipients.length) {
           console.log(`[deadlineEngine] ${field.key}: no recipient email on tx ${tx.id}`);
@@ -225,7 +231,8 @@ Deno.serve(async (req) => {
         }
 
         const message = buildMessage(field.label, hoursRemaining);
-        const addendumStatus = getAddendumStatus({ addendum_override, extension_exists, contingency_active, hoursRemaining });
+        // addendum_status starts as "suggested" — user must explicitly act to change it
+        const addendumStatus = "suggested";
 
         for (const email of recipients) {
           try {
@@ -240,7 +247,7 @@ Deno.serve(async (req) => {
               deadline_type: field.type,
               severity,
               addendum_status: addendumStatus,
-              addendum_response: addendumStatus === "REQUIRED" ? "pending" : undefined,
+              addendum_response: "pending",
               dismissed: false,
             });
             totalCreated++;
