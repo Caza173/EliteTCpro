@@ -13,7 +13,8 @@
 import React, { useState } from "react";
 import { base44 } from "@/api/base44Client";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { format, parseISO, differenceInDays } from "date-fns";
+import { format, parseISO } from "date-fns";
+import { getTodayLocal, normalizeDeadline, getDaysUntil } from "@/utils/dateUtils";
 import {
   Pencil, Check, X, Calendar, DollarSign, Home,
   CalendarCheck, CalendarPlus, Loader2, AlertTriangle,
@@ -66,24 +67,23 @@ function fmtDate(d) {
 
 function getDaysLabel(dateStr, opts = {}) {
   if (!dateStr) return null;
-  try {
-    const days = differenceInDays(parseISO(dateStr), new Date());
-    // Non-actionable dates (e.g. Effective Date) — never show overdue
-    if (opts.nonActionable) {
-      if (days === 0) return { label: "Today", cls: "text-blue-600 font-semibold" };
-      if (days > 0)   return { label: `${days}d away`, cls: "text-gray-400" };
-      return { label: "Reference Date", cls: "text-gray-400" };
-    }
-    // EMD with received flag
-    if (opts.emdReceived) {
-      return { label: "Received", cls: "text-emerald-600 font-semibold" };
-    }
-    if (days < 0)  return { label: `${Math.abs(days)}d overdue`, cls: "text-red-600 font-semibold" };
-    if (days === 0) return { label: "Today", cls: "text-orange-600 font-semibold" };
-    if (days <= 3)  return { label: `${days}d left`, cls: "text-amber-600 font-semibold" };
-    if (days <= 7)  return { label: `${days}d left`, cls: "text-yellow-600" };
-    return { label: `${days}d away`, cls: "text-gray-400" };
-  } catch { return null; }
+  const days = getDaysUntil(dateStr);
+  if (days === null) return null;
+  // Non-actionable dates (e.g. Effective Date) — never show overdue
+  if (opts.nonActionable) {
+    if (days === 0) return { label: "Today", cls: "text-blue-600 font-semibold" };
+    if (days > 0)   return { label: `${days}d away`, cls: "text-gray-400" };
+    return { label: "Reference Date", cls: "text-gray-400" };
+  }
+  // EMD with received flag
+  if (opts.emdReceived) {
+    return { label: "Received", cls: "text-emerald-600 font-semibold" };
+  }
+  if (days < 0)  return { label: `${Math.abs(days)}d overdue`, cls: "text-red-600 font-semibold" };
+  if (days === 0) return { label: "Today", cls: "text-orange-600 font-semibold" };
+  if (days <= 3)  return { label: `${days}d left`, cls: "text-amber-600 font-semibold" };
+  if (days <= 7)  return { label: `${days}d left`, cls: "text-yellow-600" };
+  return { label: `${days}d away`, cls: "text-gray-400" };
 }
 
 // ── Single deadline row ──────────────────────────────────────────────────────
@@ -476,18 +476,18 @@ export default function UnifiedDeadlinesPanel({ transaction, onSave }) {
     return new Date(a.date) - new Date(b.date);
   });
 
-  // Stats
-  const today = new Date();
-  const overdue = allItems.filter(i =>
-    i.date &&
-    !i.nonActionable &&
-    !(i.isEMD && i.emdReceived) &&
-    !i.isCompleted &&
-    differenceInDays(parseISO(i.date), today) < 0 &&
-    i.status !== "Completed" &&
-    i.status !== "Waived"
-  ).length;
-  const upcoming = allItems.filter(i => i.date && differenceInDays(parseISO(i.date), today) >= 0 && differenceInDays(parseISO(i.date), today) <= 7).length;
+  // Stats — all using timezone-safe getDaysUntil
+  const overdue = allItems.filter(i => {
+    if (!i.date || i.nonActionable || (i.isEMD && i.emdReceived) || i.isCompleted) return false;
+    if (i.status === "Completed" || i.status === "Waived") return false;
+    const days = getDaysUntil(i.date);
+    return days !== null && days < 0;
+  }).length;
+  const upcoming = allItems.filter(i => {
+    if (!i.date) return false;
+    const days = getDaysUntil(i.date);
+    return days !== null && days >= 0 && days <= 7;
+  }).length;
   const allItemKeys = new Set(allItems.map(i => i.sourceType === "system" ? i.key : `contingency_${i.id}`));
   const synced = calendarMaps.filter(m => allItemKeys.has(m.field_key)).length;
 

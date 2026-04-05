@@ -1,42 +1,46 @@
 /**
  * Unified Date Utility — EliteTC
  * All deadline comparisons, normalization, and labeling must route through here.
+ * Uses America/New_York locale normalization to prevent timezone-shift bugs.
  */
-import { startOfDay, differenceInCalendarDays, parseISO, format, isValid } from "date-fns";
+import { format, isValid, parseISO } from "date-fns";
+
+const TZ = "America/New_York";
 
 /**
- * Returns today as start-of-day (local timezone).
+ * Returns today's date as a YYYY-MM-DD string in America/New_York timezone.
  * Use this everywhere instead of `new Date()` for deadline comparisons.
  */
 export function getTodayLocal() {
-  return startOfDay(new Date());
+  return new Date().toLocaleDateString("en-CA", { timeZone: TZ });
 }
 
 /**
- * Parse and normalize a deadline string to start-of-day local date.
- * Accepts YYYY-MM-DD strings or Date objects.
+ * Normalize any date string or Date object to YYYY-MM-DD in America/New_York.
  * Returns null if invalid.
  */
 export function normalizeDeadline(dateStr) {
   if (!dateStr) return null;
   try {
-    // parseISO handles YYYY-MM-DD without timezone shifting
-    const parsed = typeof dateStr === "string" ? parseISO(dateStr) : dateStr;
-    if (!isValid(parsed)) return null;
-    return startOfDay(parsed);
+    const d = typeof dateStr === "string" ? new Date(dateStr + "T12:00:00") : dateStr;
+    if (!isValid(d)) return null;
+    return d.toLocaleDateString("en-CA", { timeZone: TZ });
   } catch {
     return null;
   }
 }
 
 /**
- * Calculate calendar days from today until deadline.
+ * Calculate calendar days from today (NY time) until a deadline date string.
  * Negative = overdue, 0 = today, positive = future.
  */
 export function getDaysUntil(dateStr) {
   const deadline = normalizeDeadline(dateStr);
   if (!deadline) return null;
-  return differenceInCalendarDays(deadline, getTodayLocal());
+  const today = getTodayLocal();
+  const msPerDay = 86400000;
+  const diff = (new Date(deadline) - new Date(today)) / msPerDay;
+  return Math.round(diff);
 }
 
 /**
