@@ -175,6 +175,7 @@ const AuthenticatedApp = () => {
         </RequireAuth>
       } />
       <Route path="/agent-signin" element={<AgentSignIn />} />
+      <Route path="/TCSignIn" element={<TCSignIn />} />
       <Route path="/tc-login" element={<TCSignIn />} />
       <Route path="/agent/submit-transaction" element={<AgentSubmitTransaction />} />
       <Route path="/AgentIntake" element={<AgentIntake />} />
