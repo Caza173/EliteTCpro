@@ -134,6 +134,39 @@ Deno.serve(async (req) => {
     if (!result.purchase_price) result.purchase_price_undetected = true;
     if (!result.deposit_amount) result.deposit_amount_undetected = true;
 
+    // --- Fallback: targeted deadline day extraction ---
+    const needsDeadlineFallback = !result.earnest_money_days && !result.earnest_money_deadline ||
+                                   !result.inspection_days && !result.inspection_deadline ||
+                                   !result.due_diligence_days && !result.due_diligence_deadline;
+
+    if (needsDeadlineFallback && result.acceptance_date) {
+      console.log("Running targeted deadline day fallback extraction...");
+      const deadlineExtraction = await base44.integrations.Core.ExtractDataFromUploadedFile({
+        file_url,
+        json_schema: {
+          type: "object",
+          description: `NHAR Purchase & Sales Agreement deadline extraction.
+            EARNEST MONEY: Find "deposit of earnest money" or "earnest money" section. Look for a number of days (e.g. "within 3 days", "within 5 banking days"). Extract the number.
+            INSPECTION: Find Section 15 or any "inspection" contingency. Look for "within X days" from acceptance/effective date. Extract X.
+            DUE DILIGENCE: Find Section 16 or "due diligence" section. Look for "within X days". Extract X.
+            Return ONLY the number of days as integers.`,
+          properties: {
+            earnest_money_days: { type: "number", description: "Number of days after acceptance date that earnest money deposit is due. Look for phrases like 'within X days of the effective date' near 'earnest money' or 'deposit'." },
+            inspection_days:    { type: "number", description: "Number of days for inspection contingency period from Section 15. e.g. 'within 10 days of the acceptance date'." },
+            due_diligence_days: { type: "number", description: "Number of days for due diligence period from Section 16 or similar. e.g. 'within 15 days'." },
+          }
+        }
+      });
+
+      if (deadlineExtraction.status !== "error" && deadlineExtraction.output) {
+        const fb = deadlineExtraction.output;
+        if (!result.earnest_money_days && fb.earnest_money_days) result.earnest_money_days = fb.earnest_money_days;
+        if (!result.inspection_days && fb.inspection_days) result.inspection_days = fb.inspection_days;
+        if (!result.due_diligence_days && fb.due_diligence_days) result.due_diligence_days = fb.due_diligence_days;
+        console.log("Deadline fallback result:", fb);
+      }
+    }
+
     // Calculate deadline dates from day offsets + acceptance date (fallback if explicit dates not extracted)
     const acceptanceDate = result.acceptance_date || null;
 
@@ -183,6 +216,13 @@ Deno.serve(async (req) => {
       address: result.property_address,
       price: result.purchase_price,
       closing: result.closing_date,
+      earnest_money_days: result.earnest_money_days,
+      earnest_money_deadline: result.earnest_money_deadline,
+      inspection_days: result.inspection_days,
+      inspection_deadline: result.inspection_deadline,
+      due_diligence_days: result.due_diligence_days,
+      due_diligence_deadline: result.due_diligence_deadline,
+      financing_commitment_date: result.financing_commitment_date,
       debug: result._debug,
     });
 
