@@ -225,12 +225,12 @@ export default function StatementDetailModal({ statement: s, onClose, onEdit, on
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={onClose} />
-      <div className="relative bg-white rounded-xl shadow-2xl w-full max-w-2xl max-h-[90vh] flex flex-col overflow-hidden">
+      <div className="relative rounded-xl shadow-2xl w-full max-w-2xl max-h-[90vh] flex flex-col overflow-hidden" style={{ background: "var(--card-bg)", borderColor: "var(--card-border)", border: "1px solid var(--card-border)" }}>
 
         {/* Header */}
-        <div className="flex items-start justify-between px-5 py-4 border-b border-gray-100 flex-shrink-0">
+        <div className="flex items-start justify-between px-5 py-4 flex-shrink-0" style={{ borderBottom: "1px solid var(--card-border)" }}>
           <div>
-            <h2 className="text-base font-semibold text-gray-900">{s.property_address}</h2>
+            <h2 className="text-base font-semibold" style={{ color: "var(--text-primary)" }}>{s.property_address}</h2>
             <span className={`inline-flex items-center text-xs font-medium px-2 py-0.5 rounded-full mt-1.5 ${STATUS_STYLES[s.status] || STATUS_STYLES.draft}`}>
               {STATUS_LABELS[s.status] || "Draft"}
             </span>
@@ -249,62 +249,62 @@ export default function StatementDetailModal({ statement: s, onClose, onEdit, on
         </div>
 
         {/* Body */}
-        <div className="flex-1 overflow-y-auto p-5 space-y-5">
-          <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
-            {[
-              { label: "Agent", value: s.agent_name || "—" },
-              { label: "Agent Email", value: s.agent_email || "—" },
-              { label: "Side", value: s.side ? s.side.charAt(0).toUpperCase() + s.side.slice(1) : "—" },
-              { label: "Closing Date", value: fmtDate(s.closing_date) },
-              { label: "Purchase Price", value: fmt$(s.purchase_price) },
-              { label: "Title Co. Email", value: s.title_company_email || "—" },
-              s.listing_agent_name ? { label: "Listing Agent", value: `${s.listing_agent_name}${s.listing_agent_brokerage ? ` — ${s.listing_agent_brokerage}` : ""}` } : null,
-              s.buyer_agent_name ? { label: "Buyer Agent", value: `${s.buyer_agent_name}${s.buyer_agent_brokerage ? ` — ${s.buyer_agent_brokerage}` : ""}` } : null,
-            ].filter(Boolean).map(item => (
-              <div key={item.label}>
-                <p className="text-xs font-medium text-gray-400">{item.label}</p>
-                <p className="text-sm font-medium text-gray-800 mt-0.5 break-words">{item.value}</p>
-              </div>
-            ))}
-          </div>
+         <div className="flex-1 overflow-y-auto p-5 space-y-5">
+           <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
+             {[
+               { label: "Agent", value: s.agent_name || "—" },
+               { label: "Agent Email", value: s.agent_email || "—" },
+               { label: "Side", value: s.side ? s.side.charAt(0).toUpperCase() + s.side.slice(1) : "—" },
+               { label: "Closing Date", value: fmtDate(s.closing_date) },
+               { label: "Purchase Price", value: fmt$(s.purchase_price) },
+               { label: "Title Co. Email", value: s.title_company_email || "—" },
+               s.listing_agent_name ? { label: "Listing Agent", value: `${s.listing_agent_name}${s.listing_agent_brokerage ? ` — ${s.listing_agent_brokerage}` : ""}` } : null,
+               s.buyer_agent_name ? { label: "Buyer Agent", value: `${s.buyer_agent_name}${s.buyer_agent_brokerage ? ` — ${s.buyer_agent_brokerage}` : ""}` } : null,
+             ].filter(Boolean).map(item => (
+               <div key={item.label}>
+                 <p className="text-xs font-medium" style={{ color: "var(--text-muted)" }}>{item.label}</p>
+                 <p className="text-sm font-medium mt-0.5 break-words" style={{ color: "var(--text-primary)" }}>{item.value}</p>
+               </div>
+             ))}
+           </div>
 
-          {/* Breakdown table */}
-          <div className="rounded-xl border border-gray-100 overflow-hidden">
-            <div className="bg-gray-50 px-4 py-2.5 border-b border-gray-100">
-              <p className="text-xs font-semibold uppercase tracking-wider text-gray-500">Commission Breakdown</p>
-            </div>
-            <div className="divide-y divide-gray-50">
-              {breakdownRows.map((row, i) => (
-                <div key={i} className={`flex items-center justify-between px-4 py-2.5 ${row.bold ? "bg-blue-50/60" : ""}`}>
-                  <span className={`text-sm ${row.bold ? "font-semibold text-gray-900" : "text-gray-600"}`}>{row.label}</span>
-                  <span className={`text-sm font-semibold ${row.negative ? "text-red-600" : row.bold ? "text-blue-700" : "text-gray-800"}`}>{row.value}</span>
-                </div>
-              ))}
-              <div className="flex items-center justify-between px-4 py-3 bg-emerald-50">
-                <span className="text-sm font-bold text-gray-900">Agent Net Commission</span>
-                <span className="text-lg font-bold text-emerald-700">{fmt$(s.agent_net)}</span>
-              </div>
-            </div>
-          </div>
+           {/* Breakdown table */}
+           <div className="rounded-xl border overflow-hidden" style={{ borderColor: "var(--card-border)" }}>
+             <div className="px-4 py-2.5" style={{ borderBottom: `1px solid var(--card-border)`, background: "var(--bg-tertiary)" }}>
+               <p className="text-xs font-semibold uppercase tracking-wider" style={{ color: "var(--text-muted)" }}>Commission Breakdown</p>
+             </div>
+             <div>
+               {breakdownRows.map((row, i) => (
+                 <div key={i} className="flex items-center justify-between px-4 py-2.5" style={{ borderBottom: `1px solid var(--card-border)`, background: row.bold ? "rgba(59, 130, 246, 0.1)" : undefined }}>
+                   <span className={`text-sm ${row.bold ? "font-semibold" : ""}`} style={{ color: row.bold ? "var(--text-primary)" : "var(--text-secondary)" }}>{row.label}</span>
+                   <span className={`text-sm font-semibold ${row.negative ? "" : row.bold ? "" : ""}`} style={{ color: row.negative ? "#EF4444" : row.bold ? "#3B82F6" : "var(--text-primary)" }}>{row.value}</span>
+                 </div>
+               ))}
+               <div className="flex items-center justify-between px-4 py-3" style={{ background: "rgba(34, 197, 94, 0.1)" }}>
+                 <span className="text-sm font-bold" style={{ color: "var(--text-primary)" }}>Agent Net Commission</span>
+                 <span className="text-lg font-bold" style={{ color: "#22C55E" }}>{fmt$(s.agent_net)}</span>
+               </div>
+             </div>
+           </div>
 
-          {s.notes && (
-            <div>
-              <p className="text-xs font-semibold uppercase tracking-wider text-gray-400 mb-1.5">Notes</p>
-              <p className="text-sm text-gray-700 bg-gray-50 rounded-lg p-3">{s.notes}</p>
-            </div>
-          )}
+           {s.notes && (
+             <div>
+               <p className="text-xs font-semibold uppercase tracking-wider mb-1.5" style={{ color: "var(--text-muted)" }}>Notes</p>
+               <p className="text-sm rounded-lg p-3" style={{ color: "var(--text-secondary)", background: "var(--bg-tertiary)" }}>{s.notes}</p>
+             </div>
+           )}
 
-          {s.approved_at && (
-            <p className="text-xs text-emerald-600 flex items-center gap-1.5">
-              <CheckCircle className="w-3.5 h-3.5" /> Approved {fmtDate(s.approved_at)}
-            </p>
-          )}
-          {s.sent_to_title_at && (
-            <p className="text-xs text-purple-600 flex items-center gap-1.5">
-              <Building2 className="w-3.5 h-3.5" /> Sent to Title {fmtDate(s.sent_to_title_at)}
-            </p>
-          )}
-        </div>
+           {s.approved_at && (
+             <p className="text-xs flex items-center gap-1.5" style={{ color: "#22C55E" }}>
+               <CheckCircle className="w-3.5 h-3.5" /> Approved {fmtDate(s.approved_at)}
+             </p>
+           )}
+           {s.sent_to_title_at && (
+             <p className="text-xs flex items-center gap-1.5" style={{ color: "#A78BFA" }}>
+               <Building2 className="w-3.5 h-3.5" /> Sent to Title {fmtDate(s.sent_to_title_at)}
+             </p>
+           )}
+         </div>
 
         {/* Footer actions */}
         <div className="px-5 py-4 border-t flex flex-wrap gap-2 flex-shrink-0" style={{ borderColor: "var(--border)", backgroundColor: "var(--bg-tertiary)" }}>
