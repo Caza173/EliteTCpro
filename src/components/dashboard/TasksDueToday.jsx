@@ -216,14 +216,22 @@ export default function TasksDueToday({ transactions = [], notifications = [] })
   }
 
   // 4 — Approaching deadlines not covered by a notification (within 3 days, not dismissed by tasks)
+  // These are items where the deadlineEngine hasn't created a notification yet
+  // (already-notified ones appear as "addendum" type above)
   const notifDeadlineKeys = new Set(deduplicatedNotifs.map(n => `${n.transaction_id}-${n.deadline_field}`));
+  // Also exclude deadline fields that have a dismissed notification (engine already handled them)
+  const dismissedDeadlineKeys = new Set(
+    notifications.filter(n => n.dismissed && n.deadline_field && n.transaction_id)
+      .map(n => `${n.transaction_id}-${n.deadline_field}`)
+  );
   transactions.forEach((tx) => {
     if (tx.status === "closed" || tx.status === "cancelled") return;
     Object.keys(DEADLINE_LABELS).forEach((field) => {
       const dateStr = tx[field];
       if (!dateStr) return;
-      // Already covered by a notification
+      // Already covered by a notification (active or dismissed)
       if (notifDeadlineKeys.has(`${tx.id}-${field}`)) return;
+      if (dismissedDeadlineKeys.has(`${tx.id}-${field}`)) return;
       const days = getDaysUntil(dateStr);
       if (days === null || days < 0 || days > 3) return;
       const txCompletedTasks = allTxTasks.filter(t => t.transaction_id === tx.id);
@@ -238,6 +246,7 @@ export default function TasksDueToday({ transactions = [], notifications = [] })
         label: `${DEADLINE_LABELS[field]}: ${tx.address}`,
         sub: days === 0 ? "Due Today" : days === 1 ? "Due Tomorrow" : `Due in ${days}d`,
         txId: tx.id,
+        deadlineField: field,
         badge,
         badgeColor,
       });
@@ -359,7 +368,29 @@ export default function TasksDueToday({ transactions = [], notifications = [] })
                 </button>
               )}
               <button
-                onClick={(e) => { e.preventDefault(); e.stopPropagation(); dismissItem(item.key); }}
+                onClick={async (e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  // For deadline items, persist dismissal to DB so engine won't recreate
+                  if (item.type === "deadline" && item.deadlineField && currentUser?.email) {
+                    try {
+                      await base44.entities.InAppNotification.create({
+                        brokerage_id: transactions.find(t => t.id === item.txId)?.brokerage_id,
+                        transaction_id: item.txId,
+                        user_email: currentUser.email,
+                        title: item.label,
+                        type: "deadline",
+                        deadline_field: item.deadlineField,
+                        dismissed: true,
+                        dismissed_at: new Date().toISOString(),
+                        addendum_status: "not_needed",
+                        addendum_response: "not_needed",
+                      });
+                      queryClient.invalidateQueries({ queryKey: ["deadlineNotifications"] });
+                    } catch {}
+                  }
+                  dismissItem(item.key);
+                }}
                 className="px-2 py-0.5 rounded text-[10px] font-semibold bg-white text-gray-400 hover:bg-gray-100 border border-gray-200 transition-colors"
                 title="Dismiss"
               >
