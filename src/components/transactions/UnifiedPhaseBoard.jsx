@@ -79,30 +79,30 @@ const TaskRow = memo(function TaskRow({
     <Draggable draggableId={task.id} index={index}>
       {(drag, snap) => (
         <div
-          ref={drag.innerRef}
-          {...drag.draggableProps}
-          className={`flex items-center gap-2 px-2 py-1.5 rounded-lg border text-sm group transition-all ${
-            snap.isDragging
-              ? "shadow-lg border-blue-300 bg-blue-50 opacity-95"
-              : task.is_completed
-              ? "bg-emerald-50/60 border-emerald-100"
-              : isAtRisk
-              ? "bg-red-50/40 border-red-100"
-              : "border-gray-100 hover:border-gray-200 bg-white"
-          }`}
-          style={drag.draggableProps.style}
-        >
+           ref={drag.innerRef}
+           {...drag.draggableProps}
+           className={`flex items-center gap-2 px-2 py-1.5 rounded-lg border text-sm group transition-all border-l-4 ${
+             snap.isDragging
+               ? "shadow-lg border-blue-300 border-l-blue-400 opacity-95"
+               : task.is_completed
+               ? "border-l-emerald-500"
+               : isAtRisk
+               ? "border-l-red-500 hover:border-l-red-600"
+               : "border-l-gray-500 hover:border-l-gray-600"
+           } border-slate-700 bg-slate-900 hover:bg-slate-800`}
+           style={drag.draggableProps.style}
+         >
           <div {...drag.dragHandleProps} className="cursor-grab flex-shrink-0 opacity-20 hover:opacity-50">
             <GripVertical className="w-3 h-3 text-gray-400" />
           </div>
 
           <button onClick={() => onToggleTask(task.id)} className="flex-shrink-0">
-            {task.is_completed
-              ? <CheckCircle2 className="w-4 h-4 text-emerald-500" />
-              : isAtRisk
-              ? <AlertCircle className="w-4 h-4 text-red-400" />
-              : <Circle className="w-4 h-4 text-gray-300 hover:text-gray-400" />}
-          </button>
+             {task.is_completed
+               ? <CheckCircle2 className="w-4 h-4 text-emerald-400" />
+               : isAtRisk
+               ? <AlertCircle className="w-4 h-4 text-red-400" />
+               : <Circle className="w-4 h-4 text-gray-600 hover:text-gray-500" />}
+           </button>
 
           {editing ? (
             <input
@@ -115,15 +115,15 @@ const TaskRow = memo(function TaskRow({
             />
           ) : (
             <span
-              className={`flex-1 text-xs font-medium leading-tight ${task.is_completed ? "line-through text-gray-400" : "text-gray-700"}`}
-              onDoubleClick={() => { setDraft(task.title); setEditing(true); }}
-            >
-              {task.title}
-            </span>
+               className={`flex-1 text-xs font-medium leading-tight ${task.is_completed ? "line-through text-gray-400 opacity-85" : "text-white"}`}
+               onDoubleClick={() => { setDraft(task.title); setEditing(true); }}
+             >
+               {task.title}
+             </span>
           )}
 
           {task.is_required && !task.is_completed && (
-            <span className="text-[9px] font-semibold px-1 py-0.5 rounded bg-orange-50 text-orange-500 border border-orange-200 flex-shrink-0">REQ</span>
+            <span className="text-[9px] font-semibold px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-400 border border-amber-500/40 flex-shrink-0">REQ</span>
           )}
 
           {/* Task-specific actions toolbar */}
@@ -138,8 +138,8 @@ const TaskRow = memo(function TaskRow({
 
           <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0 relative">
             {!editing && (
-              <button onClick={() => { setDraft(task.title); setEditing(true); }} className="p-0.5 rounded hover:bg-gray-100">
-                <Pencil className="w-2.5 h-2.5 text-gray-400" />
+              <button onClick={() => { setDraft(task.title); setEditing(true); }} className="p-0.5 rounded hover:bg-slate-700">
+                <Pencil className="w-2.5 h-2.5 text-gray-500 hover:text-gray-400" />
               </button>
             )}
             <div className="relative">
@@ -150,15 +150,15 @@ const TaskRow = memo(function TaskRow({
                   const rect = e.currentTarget.getBoundingClientRect();
                   setDropdownPos({ top: rect.bottom + window.scrollY, right: window.innerWidth - rect.right });
                 }}
-                className="p-0.5 rounded hover:bg-gray-100" title="Move to phase"
+                className="p-0.5 rounded hover:bg-slate-700" title="Move to phase"
               >
-                <ChevronDown className="w-2.5 h-2.5 text-gray-400" />
+                <ChevronDown className="w-2.5 h-2.5 text-gray-500 hover:text-gray-400" />
               </button>
               {moveOpen && (
                 <>
                   <div className="fixed inset-0 z-40" onClick={() => setMoveOpen(false)} />
                   <div
-                    className="fixed z-50 bg-white border border-gray-200 rounded-lg shadow-lg py-1 min-w-[150px]"
+                    className="fixed z-50 bg-slate-800 border border-slate-700 rounded-lg shadow-lg py-1 min-w-[150px]"
                     style={{ top: dropdownPos.top, right: dropdownPos.right }}
                   >
                     <p className="text-[9px] font-semibold text-gray-400 px-2 py-1 uppercase tracking-wider">Move to phase</p>
@@ -167,7 +167,7 @@ const TaskRow = memo(function TaskRow({
                         key={p.phaseNum}
                         disabled={p.phaseNum === task.phase}
                         onClick={() => { setMoveOpen(false); onMoveTo(task.id, p.phaseNum); }}
-                        className={`w-full text-left px-2 py-1 text-xs hover:bg-blue-50 transition-colors ${p.phaseNum === task.phase ? "text-gray-300 cursor-default" : "text-gray-700"}`}
+                        className={`w-full text-left px-2 py-1 text-xs hover:bg-slate-700 transition-colors ${p.phaseNum === task.phase ? "text-gray-600 cursor-default" : "text-gray-300 hover:text-gray-100"}`}
                       >
                         {p.phaseNum === task.phase ? "✓ " : ""}{p.label}
                       </button>
@@ -176,8 +176,8 @@ const TaskRow = memo(function TaskRow({
                 </>
               )}
             </div>
-            <button onClick={() => onDelete(task.id)} className="p-0.5 rounded hover:bg-red-50">
-              <Trash2 className="w-2.5 h-2.5 text-red-400" />
+            <button onClick={() => onDelete(task.id)} className="p-0.5 rounded hover:bg-slate-700">
+              <Trash2 className="w-2.5 h-2.5 text-red-400 hover:text-red-300" />
             </button>
           </div>
         </div>
@@ -228,16 +228,16 @@ function PhaseCard({
   };
 
   const borderStyle = isComplete
-    ? "border-emerald-200"
-    : isActive
-    ? "border-blue-400 ring-1 ring-blue-200"
-    : "border-gray-200";
+     ? "border-emerald-500"
+     : isActive
+     ? "border-blue-500 ring-1 ring-blue-400/30"
+     : "border-slate-700";
 
-  const headerStyle = isComplete
-    ? "bg-emerald-50"
-    : isActive
-    ? "bg-blue-50"
-    : "bg-gray-50";
+   const headerStyle = isComplete
+     ? "bg-emerald-500/10"
+     : isActive
+     ? "bg-blue-500/10"
+     : "bg-slate-900";
 
   return (
     <div
@@ -264,11 +264,11 @@ function PhaseCard({
             <div className="w-5 h-5 rounded-full border-2 border-gray-300 flex-shrink-0" />
           )}
           <div className="min-w-0 flex-1">
-            <p className={`text-xs font-semibold truncate ${isComplete ? "text-emerald-700 line-through" : isActive ? "text-blue-700" : "text-gray-600"}`}>
-              {phase.label}
-            </p>
-            <p className="text-[10px] text-gray-400">{completed}/{total} tasks{subPhaseNums.length > 0 ? " incl. sub-phase" : ""}</p>
-          </div>
+              <p className={`text-xs font-semibold truncate ${isComplete ? "text-emerald-400 line-through" : isActive ? "text-blue-400" : "text-gray-500"}`}>
+                {phase.label}
+              </p>
+              <p className="text-[10px] text-gray-500">{completed}/{total} tasks{subPhaseNums.length > 0 ? " incl. sub-phase" : ""}</p>
+            </div>
         </div>
         {transaction && isComplete && (
           <PhaseCompletionBadge transaction={transaction} phaseNumber={phase.phaseNum} />
@@ -279,9 +279,9 @@ function PhaseCard({
       </div>
 
       {/* Progress bar */}
-      <div className="h-1 bg-gray-100">
+      <div className="h-1 bg-slate-800">
         <div
-          className={`h-full transition-all ${isComplete ? "bg-emerald-400" : "bg-blue-400"}`}
+          className={`h-full transition-all ${isComplete ? "bg-emerald-500" : "bg-blue-500"}`}
           style={{ width: `${pct}%` }}
         />
       </div>
@@ -293,10 +293,10 @@ function PhaseCard({
             <div
               ref={provided.innerRef}
               {...provided.droppableProps}
-              className={`flex-1 p-2 space-y-1.5 min-h-[60px] transition-colors ${snapshot.isDraggingOver ? "bg-blue-50/60" : ""}`}
+              className={`flex-1 p-2 space-y-1.5 min-h-[60px] transition-colors ${snapshot.isDraggingOver ? "bg-blue-500/10" : ""}`}
             >
               {phaseTasks.length === 0 && (
-                <p className="text-[10px] text-gray-400 py-1 text-center">
+                <p className="text-[10px] text-gray-500 py-1 text-center">
                   {snapshot.isDraggingOver ? "Drop here →" : "No tasks yet"}
                 </p>
               )}
@@ -328,7 +328,7 @@ function PhaseCard({
             <div className="flex items-center gap-1 mt-1">
               <input
                 autoFocus
-                className="flex-1 text-xs border border-blue-300 rounded px-2 py-1 focus:outline-none focus:ring-1 focus:ring-blue-400"
+                className="flex-1 text-xs border border-slate-600 rounded px-2 py-1 focus:outline-none focus:ring-1 focus:ring-blue-400 bg-slate-800 text-white"
                 placeholder="Task title..."
                 value={newTitle}
                 onChange={e => setNewTitle(e.target.value)}
@@ -338,19 +338,19 @@ function PhaseCard({
                 }}
               />
               <button onClick={handleAddTask} className="text-[10px] font-semibold px-2 py-1 rounded bg-blue-600 text-white hover:bg-blue-700">Add</button>
-              <button onClick={() => { setAddingTask(false); setNewTitle(""); }} className="text-[10px] px-1.5 py-1 rounded text-gray-500 hover:bg-gray-100">✕</button>
+              <button onClick={() => { setAddingTask(false); setNewTitle(""); }} className="text-[10px] px-1.5 py-1 rounded text-gray-400 hover:bg-slate-800">✕</button>
             </div>
           ) : (
             <div className="flex items-center gap-2 mt-1">
               <button
                 onClick={() => setAddingTask(true)}
-                className="flex items-center gap-1 text-[10px] font-medium text-blue-600 hover:text-blue-700 px-1 py-0.5 rounded hover:bg-blue-50"
+                className="flex items-center gap-1 text-[10px] font-medium text-blue-400 hover:text-blue-300 px-1 py-0.5 rounded hover:bg-slate-800"
               >
                 <Plus className="w-3 h-3" /> Add Task
               </button>
               <button
                 onClick={() => setLibraryOpen(true)}
-                className="flex items-center gap-1 text-[10px] font-medium text-purple-600 hover:text-purple-700 px-1 py-0.5 rounded hover:bg-purple-50"
+                className="flex items-center gap-1 text-[10px] font-medium text-purple-400 hover:text-purple-300 px-1 py-0.5 rounded hover:bg-slate-800"
               >
                 <BookOpen className="w-3 h-3" /> Library
               </button>
