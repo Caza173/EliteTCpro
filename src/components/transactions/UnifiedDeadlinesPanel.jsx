@@ -488,7 +488,8 @@ export default function UnifiedDeadlinesPanel({ transaction, onSave }) {
     i.status !== "Waived"
   ).length;
   const upcoming = allItems.filter(i => i.date && differenceInDays(parseISO(i.date), today) >= 0 && differenceInDays(parseISO(i.date), today) <= 7).length;
-  const synced = calendarMaps.length;
+  const allItemKeys = new Set(allItems.map(i => i.sourceType === "system" ? i.key : `contingency_${i.id}`));
+  const synced = calendarMaps.filter(m => allItemKeys.has(m.field_key)).length;
 
   return (
     <div className="space-y-4">
