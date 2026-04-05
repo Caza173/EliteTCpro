@@ -284,21 +284,22 @@ export default function AgentIntake() {
   const handleParsed = (parsed) => {
     setParsedData(parsed);
     const u = {};
-    if (parsed.effectiveDate)        u.contract_date = parsed.effectiveDate;
-    if (parsed.closingDate)          u.closing_date = parsed.closingDate;
-    if (parsed.propertyAddress)      u.address = parsed.propertyAddress;
-    if (parsed.buyerName)            { u.buyer = parsed.buyerName; setBuyers([parsed.buyerName]); }
-    if (parsed.sellerName)           { u.seller = parsed.sellerName; setSellers([parsed.sellerName]); }
-    if (parsed.buyersAgentName)      u.buyers_agent_name = parsed.buyersAgentName;
-    if (parsed.sellersAgentName)     u.sellers_agent_name = parsed.sellersAgentName;
-    if (parsed.buyerBrokerage)       u.buyer_brokerage = parsed.buyerBrokerage;
-    if (parsed.sellerBrokerage)      u.seller_brokerage = parsed.sellerBrokerage;
-    if (parsed.closingTitleCompany)  u.closing_title_company = parsed.closingTitleCompany;
-    if (parsed.financingCommitmentDate) u.financing_deadline = parsed.financingCommitmentDate;
-    if (parsed.inspectionDeadline)   u.inspection_deadline = parsed.inspectionDeadline;
-    if (parsed.earnestMoneyDeadline) u.earnest_money_deadline = parsed.earnestMoneyDeadline;
-    if (parsed.dueDiligenceDeadline) u.due_diligence_deadline = parsed.dueDiligenceDeadline;
-    if (parsed.purchasePrice)        u.sale_price = String(parsed.purchasePrice);
+    // Support both snake_case (backend v2) and camelCase (legacy)
+    if (parsed.acceptance_date || parsed.effectiveDate)           u.contract_date = parsed.acceptance_date || parsed.effectiveDate;
+    if (parsed.closing_date || parsed.closingDate)                u.closing_date = parsed.closing_date || parsed.closingDate;
+    if (parsed.property_address || parsed.propertyAddress)        u.address = parsed.property_address || parsed.propertyAddress;
+    if (parsed.buyer || parsed.buyerName)                         { const n = parsed.buyer || parsed.buyerName; u.buyer = n; setBuyers([n]); }
+    if (parsed.seller || parsed.sellerName)                       { const n = parsed.seller || parsed.sellerName; u.seller = n; setSellers([n]); }
+    if (parsed.buyers_agent_name || parsed.buyersAgentName)       u.buyers_agent_name = parsed.buyers_agent_name || parsed.buyersAgentName;
+    if (parsed.sellers_agent_name || parsed.sellersAgentName)     u.sellers_agent_name = parsed.sellers_agent_name || parsed.sellersAgentName;
+    if (parsed.buyer_brokerage || parsed.buyerBrokerage)          u.buyer_brokerage = parsed.buyer_brokerage || parsed.buyerBrokerage;
+    if (parsed.seller_brokerage || parsed.sellerBrokerage)        u.seller_brokerage = parsed.seller_brokerage || parsed.sellerBrokerage;
+    if (parsed.closing_title_company || parsed.closingTitleCompany) u.closing_title_company = parsed.closing_title_company || parsed.closingTitleCompany;
+    if (parsed.financing_commitment_date || parsed.financingCommitmentDate) u.financing_deadline = parsed.financing_commitment_date || parsed.financingCommitmentDate;
+    if (parsed.inspection_deadline || parsed.inspectionDeadline)  u.inspection_deadline = parsed.inspection_deadline || parsed.inspectionDeadline;
+    if (parsed.earnest_money_deadline || parsed.earnestMoneyDeadline) u.earnest_money_deadline = parsed.earnest_money_deadline || parsed.earnestMoneyDeadline;
+    if (parsed.due_diligence_deadline || parsed.dueDiligenceDeadline) u.due_diligence_deadline = parsed.due_diligence_deadline || parsed.dueDiligenceDeadline;
+    if (parsed.price || parsed.purchasePrice)                     u.sale_price = String(parsed.price || parsed.purchasePrice);
     Object.keys(u).forEach(k => { if (!u[k]) delete u[k]; });
     setForm(p => ({ ...p, ...u }));
   };
