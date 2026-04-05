@@ -43,7 +43,20 @@ const ADDENDUM_STATUS_BADGE = {
 export default function TasksDueToday({ transactions = [], notifications = [] }) {
   const { data: currentUser } = useCurrentUser();
   const queryClient = useQueryClient();
-  const [localDismissed, setLocalDismissed] = useState(new Set());
+  const [localDismissed, setLocalDismissed] = useState(() => {
+    try {
+      const saved = sessionStorage.getItem("dismissedDashboardItems");
+      return saved ? new Set(JSON.parse(saved)) : new Set();
+    } catch { return new Set(); }
+  });
+
+  const dismissItem = (key) => {
+    setLocalDismissed(prev => {
+      const next = new Set([...prev, key]);
+      try { sessionStorage.setItem("dismissedDashboardItems", JSON.stringify([...next])); } catch {}
+      return next;
+    });
+  };
 
   // Fetch completed tasks for deadline resolution check
   const activeIds = transactions.filter(t => t.status !== "closed" && t.status !== "cancelled").map(t => t.id);
@@ -102,7 +115,7 @@ export default function TasksDueToday({ transactions = [], notifications = [] })
       data: { addendum_status: status, addendum_response: status },
     });
     if (status === "not_needed" || status === "completed") {
-      setLocalDismissed(prev => new Set([...prev, `addendum-${notif.id}`]));
+      dismissItem(`addendum-${notif.id}`);
     }
     const tx = transactions.find(t => t.id === notif.transaction_id);
     logAction(notif.transaction_id, notif.title, status, tx?.brokerage_id);
@@ -116,7 +129,7 @@ export default function TasksDueToday({ transactions = [], notifications = [] })
       id: notif.id,
       data: { dismissed: true, dismissed_at: new Date().toISOString() },
     });
-    setLocalDismissed(prev => new Set([...prev, `addendum-${notif.id}`]));
+    dismissItem(`addendum-${notif.id}`);
   };
 
   // ── Clear all completed/dismissed/not_needed notifications ────────────────
@@ -329,7 +342,7 @@ export default function TasksDueToday({ transactions = [], notifications = [] })
           {item.type !== "addendum" && (
             <div className="flex gap-1 flex-shrink-0 opacity-0 group-hover:opacity-100 transition-opacity">
               <button
-                onClick={(e) => { e.preventDefault(); setLocalDismissed(p => new Set([...p, item.key])); }}
+                onClick={(e) => { e.preventDefault(); dismissItem(item.key); }}
                 className="px-2 py-0.5 rounded text-[10px] font-semibold bg-white text-gray-400 hover:bg-gray-100 border border-gray-200 transition-colors"
                 title="Dismiss"
               >
