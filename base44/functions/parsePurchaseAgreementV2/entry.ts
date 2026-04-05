@@ -237,8 +237,8 @@ SECTION 19 (Page 4): Financing.
 SECTION 20 (Page 5): Additional Provisions, Concessions, Professional Fee.`,
         properties: {
           // ── Core parties & property
-          buyer_names:               { type: "string",  description: "Buyer name(s) from Section 1. Appears AFTER 'and' keyword." },
-          seller_names:              { type: "string",  description: "Seller name(s) from Section 1. Appears BEFORE 'and'." },
+           buyer_names:               { type: "string",  description: "Buyer name(s) from Section 1. On the line after 'BUYER' parenthesis. Appears AFTER 'and' keyword. E.g., 'Micheal J Fox and Mary J Fox'." },
+           seller_names:              { type: "string",  description: "Seller name(s) from Section 1. On the first line after 'THIS AGREEMENT made this [date] between'. This is the FIRST name(s) before 'and'. E.g., 'Gordon Ramsey'." },
           acceptance_date:           { type: "string",  description: "Effective date in YYYY-MM-DD from the box at top right of Page 1. This is the master anchor for all relative deadlines." },
           property_address:          { type: "string",  description: "SELLER'S ADDRESS from Section 1 — this is the PROPERTY ADDRESS. Appears on the line after 'SELLER' name. Format: street address, City/Town, State ZIP. Do NOT use buyer address." },
           property_city:             { type: "string",  description: "City/Town of property from Section 2." },
@@ -261,10 +261,10 @@ SECTION 20 (Page 5): Additional Provisions, Concessions, Professional Fee.`,
           walkthrough_hours_prior:   { type: "number",  description: "INTEGER hours before closing for walkthrough. From 'within ___hours prior to time of closing' in Section 6." },
 
           // ── Section 7 agents
-          buyer_agent:               { type: "string",  description: "Buyer agent full name from Section 7." },
-          seller_agent:              { type: "string",  description: "Seller/listing agent full name from Section 7." },
-          buyer_brokerage:           { type: "string",  description: "Buyer agent brokerage/firm name from Section 7." },
-          seller_brokerage:          { type: "string",  description: "Seller agent brokerage/firm name from Section 7." },
+          buyer_agent:               { type: "string",  description: "Buyer agent full name from Section 7 REPRESENTATION. Look for the agent name with 'buyer agent' checkbox CHECKED. E.g., 'Scottie Pippen'." },
+          seller_agent:              { type: "string",  description: "Seller/listing agent full name from Section 7 REPRESENTATION. Look for the agent name with 'seller agent' checkbox CHECKED. E.g., 'Micheal Jordan'." },
+          buyer_brokerage:           { type: "string",  description: "Buyer agent brokerage/firm name from Section 7 REPRESENTATION. The firm name next to the buyer agent name (where buyer agent checkbox is CHECKED). E.g., 'Chicago Bulls Realty'." },
+          seller_brokerage:          { type: "string",  description: "Seller agent brokerage/firm name from Section 7 REPRESENTATION. The firm name next to the seller agent name (where seller agent checkbox is CHECKED). E.g., 'Realty One Group Next Level'." },
           buyer_agent_role:          { type: "string",  description: "Checked role for buyer agent: 'buyer agent', 'seller agent', 'facilitator', or 'disclosed dual agent'." },
           seller_agent_role:         { type: "string",  description: "Checked role for seller agent: 'buyer agent', 'seller agent', 'facilitator', or 'disclosed dual agent'." },
 
