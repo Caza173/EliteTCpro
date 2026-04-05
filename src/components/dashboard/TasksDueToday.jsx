@@ -122,7 +122,12 @@ export default function TasksDueToday({ transactions = [], notifications = [] })
   // ── Clear all completed/dismissed/not_needed notifications ────────────────
   const clearCompletedMutation = useMutation({
     mutationFn: async () => {
-      const toClear = notifications.filter(n =>
+      // Fetch ALL deadline notifications for the current user directly from DB
+      const allNotifs = await base44.entities.InAppNotification.filter({
+        user_email: currentUser.email,
+        type: "deadline",
+      });
+      const toClear = allNotifs.filter(n =>
         n.dismissed ||
         n.addendum_status === "completed" ||
         n.addendum_status === "not_needed" ||
@@ -246,11 +251,12 @@ export default function TasksDueToday({ transactions = [], notifications = [] })
     deadline: <AlertTriangle className="w-4 h-4 text-orange-400 flex-shrink-0" />,
   };
 
-  // Count clearable items
+  // Count clearable items from the prop (may be a subset, but good enough for display)
   const clearableCount = notifications.filter(n =>
     n.dismissed ||
     n.addendum_status === "completed" || n.addendum_status === "not_needed" ||
-    n.addendum_response === "completed" || n.addendum_response === "not_needed"
+    n.addendum_response === "completed" || n.addendum_response === "not_needed" ||
+    (n.type === "deadline" && n.dismissed)
   ).length;
 
   if (items.length === 0) {
@@ -276,19 +282,17 @@ export default function TasksDueToday({ transactions = [], notifications = [] })
   return (
     <div className="space-y-2">
       {/* Clear all button */}
-      {clearableCount > 0 && (
-        <div className="flex justify-end">
-          <Button
-            size="sm" variant="ghost"
-            className="h-7 text-xs text-gray-400 hover:text-gray-600 gap-1.5"
-            onClick={() => clearCompletedMutation.mutate()}
-            disabled={clearCompletedMutation.isPending}
-          >
-            <Trash2 className="w-3 h-3" />
-            Clear {clearableCount} completed / not needed
-          </Button>
-        </div>
-      )}
+      <div className="flex justify-end">
+        <Button
+          size="sm" variant="ghost"
+          className="h-7 text-xs text-gray-400 hover:text-gray-600 gap-1.5"
+          onClick={() => clearCompletedMutation.mutate()}
+          disabled={clearCompletedMutation.isPending || !currentUser?.email}
+        >
+          <Trash2 className="w-3 h-3" />
+          {clearCompletedMutation.isPending ? "Clearing…" : `Clear ${clearableCount > 0 ? clearableCount + " " : ""}completed / not needed`}
+        </Button>
+      </div>
 
       {items.map((item) => (
         <div
