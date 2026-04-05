@@ -755,14 +755,13 @@ export default function TransactionDetail() {
               onValueChange={(v) => updateMutation.mutate({ id: transaction.id, data: { transaction_phase: v, last_activity_at: new Date().toISOString() } })}>
               <SelectTrigger className="h-8 w-38 text-xs"><SelectValue /></SelectTrigger>
               <SelectContent>
-                <SelectItem value="intake">Intake</SelectItem>
+                <SelectItem value="active">Active</SelectItem>
                 <SelectItem value="under_contract">Under Contract</SelectItem>
-                <SelectItem value="inspection">Inspection</SelectItem>
-                <SelectItem value="financing">Financing</SelectItem>
-                <SelectItem value="appraisal">Appraisal</SelectItem>
-                <SelectItem value="clear_to_close">Clear to Close</SelectItem>
-                <SelectItem value="closing">Closing</SelectItem>
+                <SelectItem value="pending">Pending</SelectItem>
                 <SelectItem value="closed">Closed</SelectItem>
+                <SelectItem value="withdrawn">Withdraw</SelectItem>
+                <SelectItem value="expired">Expired</SelectItem>
+                <SelectItem value="terminated">Terminated</SelectItem>
               </SelectContent>
             </Select>
             <Button variant="outline" size="sm" className="h-8 text-blue-600 hover:bg-blue-50 border-blue-200" onClick={() => setEmailModalOpen(true)}>
