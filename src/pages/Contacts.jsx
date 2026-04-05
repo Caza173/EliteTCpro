@@ -4,7 +4,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Search, User, Mail, Phone, Building2, Pencil, X, Check } from "lucide-react";
+import { Search, User, Mail, Phone, Building2, Pencil, X, Check, Trash2 } from "lucide-react";
 
 const CATEGORIES = [
   { id: "all",           label: "All" },
@@ -227,6 +227,7 @@ export default function Contacts() {
   const [search, setSearch] = useState("");
   const [activeTab, setActiveTab] = useState("all");
   const [editingContact, setEditingContact] = useState(null);
+  const [deletingContact, setDeletingContact] = useState(null);
 
   const queryClient = useQueryClient();
   const { data: transactions = [], isLoading } = useQuery({
@@ -235,6 +236,33 @@ export default function Contacts() {
   });
 
   const contacts = useMemo(() => extractContacts(transactions), [transactions]);
+
+  const handleDelete = async (contact) => {
+    const fieldMap = ROLE_FIELD_MAP[contact.roles[0]];
+    if (!fieldMap) return;
+    for (const { txId } of contact.transactions) {
+      const tx = transactions.find(t => t.id === txId);
+      if (!tx) continue;
+      const data = {};
+      if (fieldMap.name === "__buyer_array__") {
+        const arr = (tx.buyers?.length ? tx.buyers : (tx.buyer ? [tx.buyer] : [])).filter(n => n !== contact.name);
+        data.buyers = arr;
+        data.buyer = arr[0] || "";
+      } else if (fieldMap.name === "__seller_array__") {
+        const arr = (tx.sellers?.length ? tx.sellers : (tx.seller ? [tx.seller] : [])).filter(n => n !== contact.name);
+        data.sellers = arr;
+        data.seller = arr[0] || "";
+      } else {
+        if (fieldMap.name) data[fieldMap.name] = "";
+        if (fieldMap.email) data[fieldMap.email] = "";
+        if (fieldMap.phone) data[fieldMap.phone] = "";
+        if (fieldMap.company) data[fieldMap.company] = "";
+      }
+      await base44.entities.Transaction.update(txId, data);
+    }
+    setDeletingContact(null);
+    queryClient.invalidateQueries({ queryKey: ["transactions"] });
+  };
 
   const counts = useMemo(() => {
     const c = { all: contacts.length };
@@ -263,6 +291,21 @@ export default function Contacts() {
           onClose={() => setEditingContact(null)}
           onSave={() => queryClient.invalidateQueries({ queryKey: ["transactions"] })}
         />
+      )}
+
+      {deletingContact && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
+          <div className="w-full max-w-sm rounded-2xl shadow-2xl p-6 space-y-4" style={{ background: "var(--card-bg)", border: "1px solid var(--card-border)" }}>
+            <h3 className="text-base font-semibold" style={{ color: "var(--text-primary)" }}>Delete Contact</h3>
+            <p className="text-sm" style={{ color: "var(--text-secondary)" }}>
+              Remove <strong>{deletingContact.name || deletingContact.email}</strong> from {deletingContact.transactions.length} transaction{deletingContact.transactions.length > 1 ? "s" : ""}? This will clear their info from those transactions.
+            </p>
+            <div className="flex gap-2 justify-end pt-1">
+              <Button variant="outline" size="sm" onClick={() => setDeletingContact(null)}>Cancel</Button>
+              <Button size="sm" className="bg-red-600 hover:bg-red-700 text-white" onClick={() => handleDelete(deletingContact)}>Delete</Button>
+            </div>
+          </div>
+        </div>
       )}
 
       {/* Header */}
@@ -326,7 +369,7 @@ export default function Contacts() {
               <col style={{ width: "28%" }} />
               <col style={{ width: "22%" }} />
               <col style={{ width: "18%" }} />
-              <col style={{ width: "7%" }} />
+              <col style={{ width: "10%" }} />
             </colgroup>
             <thead>
               <tr style={{ borderBottom: "1px solid var(--border)", background: "var(--bg-tertiary)" }}>
@@ -393,13 +436,22 @@ export default function Contacts() {
                     </div>
                   </td>
                   <td className="px-2 py-3">
-                    <button
-                      onClick={() => setEditingContact(contact)}
-                      className="p-1.5 rounded-lg hover:bg-gray-100 transition-colors"
-                      title="Edit contact"
-                    >
-                      <Pencil className="w-3.5 h-3.5" style={{ color: "var(--text-muted)" }} />
-                    </button>
+                   <div className="flex items-center gap-1">
+                     <button
+                       onClick={() => setEditingContact(contact)}
+                       className="p-1.5 rounded-lg hover:bg-gray-100 transition-colors"
+                       title="Edit contact"
+                     >
+                       <Pencil className="w-3.5 h-3.5" style={{ color: "var(--text-muted)" }} />
+                     </button>
+                     <button
+                       onClick={() => setDeletingContact(contact)}
+                       className="p-1.5 rounded-lg hover:bg-red-50 transition-colors"
+                       title="Delete contact"
+                     >
+                       <Trash2 className="w-3.5 h-3.5 text-red-400" />
+                     </button>
+                   </div>
                   </td>
                 </tr>
               ))}
