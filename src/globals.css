@@ -155,6 +155,25 @@
 }
 
 /* ============================================================
+   ANIMATIONS
+   ============================================================ */
+
+@keyframes fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-fade-in {
+  animation: fade-in 0.15s ease-out;
+}
+
+/* ============================================================
    GLOBAL BASE STYLES
    ============================================================ */
 
@@ -175,7 +194,7 @@ body {
   line-height: 1.5;
   overflow-x: hidden;
   max-width: 100vw;
-  transition: background-color 0.2s ease, color 0.2s ease;
+  transition: background-color 0.3s ease, color 0.3s ease;
   margin: 0;
   padding: 0;
 }
@@ -344,4 +363,55 @@ img, video, embed, object, iframe { max-width: 100%; }
   letter-spacing: 0.06em;
   text-transform: uppercase;
   color: var(--text-muted);
+}
+
+/* ============================================================
+   THEME TOGGLE & TRANSITIONS
+   ============================================================ */
+
+/* Smooth theme transitions for all elements */
+* {
+  transition-property: background-color, border-color, color, box-shadow;
+  transition-duration: 0.3s;
+  transition-timing-function: ease;
+}
+
+/* Theme toggle button styling */
+.theme-toggle-btn {
+  background-color: var(--bg-tertiary);
+  color: var(--text-secondary);
+  border: 1px solid var(--border);
+  transition: all 0.2s ease;
+}
+
+.theme-toggle-btn:hover {
+  background-color: var(--bg-hover);
+  color: var(--text-primary);
+  border-color: var(--border-focus);
+}
+
+/* Theme dropdown */
+.theme-dropdown {
+  background-color: var(--card-bg);
+  border-color: var(--card-border);
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.theme-dropdown-item {
+  color: var(--text-secondary);
+  transition: all 0.15s ease;
+}
+
+.theme-dropdown-item:hover {
+  background-color: var(--bg-hover);
+  color: var(--text-primary);
+}
+
+.theme-dropdown-active {
+  background-color: var(--accent-subtle);
+  color: var(--accent);
+}
+
+.theme-accent-dot {
+  background-color: var(--accent);
 }
