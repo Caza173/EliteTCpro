@@ -9,6 +9,7 @@ import { Upload, Plus, FileText, Trash2, Edit2, CheckCircle2, ChevronDown, Chevr
 import { toast } from "sonner";
 import TemplateUploadModal from "@/components/templates/TemplateUploadModal";
 import TemplateEditorPanel from "@/components/templates/TemplateEditorPanel";
+import EmailTemplatePreview from "@/components/templates/EmailTemplatePreview";
 
 // ── Email Templates (task-triggered) ────────────────────────────────────────
 const EMAIL_TEMPLATES = [
@@ -20,6 +21,7 @@ const EMAIL_TEMPLATES = [
     recipients: "Buyer(s)",
     fields: ["buyer_name", "property_address", "earnest_money_amount", "escrow_holder"],
     critical: false,
+    body: "",
   },
   {
     id: "emd_received",
@@ -29,6 +31,7 @@ const EMAIL_TEMPLATES = [
     recipients: "Buyer(s)",
     fields: ["buyer_name", "earnest_money_amount", "escrow_holder", "date_received", "next_milestone"],
     critical: true,
+    body: "",
   },
   {
     id: "inspection_scheduled",
@@ -38,6 +41,7 @@ const EMAIL_TEMPLATES = [
     recipients: "Buyer(s)",
     fields: ["buyer_name", "inspection_date", "inspection_time", "inspector_name"],
     critical: false,
+    body: "",
   },
   {
     id: "inspection_completed",
@@ -47,6 +51,7 @@ const EMAIL_TEMPLATES = [
     recipients: "Buyer(s)",
     fields: ["buyer_name", "property_address"],
     critical: true,
+    body: "",
   },
   {
     id: "appraisal_ordered",
@@ -56,6 +61,7 @@ const EMAIL_TEMPLATES = [
     recipients: "Buyer(s)",
     fields: ["buyer_name", "lender_name"],
     critical: false,
+    body: "",
   },
   {
     id: "appraisal_scheduled",
@@ -65,6 +71,7 @@ const EMAIL_TEMPLATES = [
     recipients: "Buyer(s)",
     fields: ["buyer_name", "appraisal_date"],
     critical: false,
+    body: "",
   },
 ];
 
@@ -210,6 +217,11 @@ export default function TemplateManager() {
 function EmailTemplatesSection() {
   const [expanded, setExpanded] = useState(true);
   const [previewId, setPreviewId] = useState(null);
+  const [templates, setTemplates] = useState(EMAIL_TEMPLATES);
+
+  const handleUpdateTemplate = (updatedTemplate) => {
+    setTemplates(templates.map(t => t.id === updatedTemplate.id ? updatedTemplate : t));
+  };
 
   return (
     <div className="space-y-2">
@@ -230,7 +242,7 @@ function EmailTemplatesSection() {
       {expanded && (
         <div className="theme-card overflow-hidden">
           <div className="divide-y" style={{ borderColor: "var(--card-border)" }}>
-            {EMAIL_TEMPLATES.map(tpl => (
+            {templates.map(tpl => (
               <div key={tpl.id}>
                 <div
                   className="flex items-center gap-3 px-4 py-3 hover:bg-gray-50 transition-colors cursor-pointer"
@@ -261,7 +273,7 @@ function EmailTemplatesSection() {
 
                 {/* Expanded preview */}
                 {previewId === tpl.id && (
-                  <div className="px-4 pb-4 border-t space-y-3" style={{ borderColor: "var(--card-border)", background: "var(--bg-tertiary)" }}>
+                  <div className="px-4 pb-4 space-y-3" style={{ borderColor: "var(--card-border)", background: "var(--bg-tertiary)" }}>
                     <div className="pt-3 grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
                       <div>
                         <p className="font-semibold mb-1" style={{ color: "var(--text-muted)" }}>Subject Line</p>
@@ -281,6 +293,10 @@ function EmailTemplatesSection() {
                     <p className="text-[11px]" style={{ color: "var(--text-muted)" }}>
                       📌 Email is generated automatically when the triggering task is marked complete. Requires manual review before sending.
                     </p>
+                    <EmailTemplatePreview
+                      template={tpl}
+                      onUpdate={handleUpdateTemplate}
+                    />
                   </div>
                 )}
               </div>
