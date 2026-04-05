@@ -98,7 +98,7 @@ Best,
 
   return (
     <Dialog open={open} onOpenChange={onClose}>
-      <DialogContent className="max-w-2xl relative overflow-hidden">
+      <DialogContent className="max-w-2xl">
         <DialogHeader>
           <DialogTitle>Send Zillow Review Request</DialogTitle>
         </DialogHeader>
@@ -183,29 +183,24 @@ Best,
           </div>
         </div>
 
-        {/* Email Preview Overlay */}
-        {previewOpen && (
-          <div className="absolute inset-0 z-10 rounded-lg overflow-auto" style={{ background: "rgba(255,255,255,0.98)" }}>
-            <div className="p-6 space-y-4">
-              <div className="flex items-center justify-between">
-                <h3 className="text-sm font-bold text-gray-800">Email Preview</h3>
-                <button onClick={() => setPreviewOpen(false)} className="p-1 rounded hover:bg-gray-100">
-                  <XIcon className="w-4 h-4 text-gray-500" />
-                </button>
+        {/* Email Preview Dialog */}
+        <Dialog open={previewOpen} onOpenChange={setPreviewOpen}>
+          <DialogContent className="max-w-2xl">
+            <DialogHeader>
+              <DialogTitle>Email Preview</DialogTitle>
+            </DialogHeader>
+            <div className="border border-gray-200 rounded-lg overflow-hidden text-xs">
+              <div className="bg-gray-50 border-b border-gray-200 px-4 py-2 space-y-1">
+                <div><span className="font-semibold text-gray-500 w-14 inline-block">To:</span> <span className="text-gray-800">{clientEmails.join(", ")}</span></div>
+                <div><span className="font-semibold text-gray-500 w-14 inline-block">Subject:</span> <span className="text-gray-800">{subject}</span></div>
               </div>
-              <div className="border border-gray-200 rounded-lg overflow-hidden text-xs">
-                <div className="bg-gray-50 border-b border-gray-200 px-4 py-2 space-y-1">
-                  <div><span className="font-semibold text-gray-500 w-14 inline-block">To:</span> <span className="text-gray-800">{clientEmails.join(", ")}</span></div>
-                  <div><span className="font-semibold text-gray-500 w-14 inline-block">Subject:</span> <span className="text-gray-800">{subject}</span></div>
-                </div>
-                <div className="p-4 whitespace-pre-wrap text-gray-800 leading-relaxed">{finalBody}</div>
-              </div>
-              <Button size="sm" variant="outline" onClick={() => setPreviewOpen(false)} className="text-xs h-8">
-                Close Preview
-              </Button>
+              <div className="p-4 whitespace-pre-wrap text-gray-800 leading-relaxed max-h-96 overflow-y-auto">{finalBody}</div>
             </div>
-          </div>
-        )}
+            <Button size="sm" variant="outline" onClick={() => setPreviewOpen(false)} className="text-xs h-8 w-fit">
+              Close Preview
+            </Button>
+          </DialogContent>
+        </Dialog>
       </DialogContent>
     </Dialog>
   );
