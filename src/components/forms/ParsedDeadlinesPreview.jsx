@@ -3,12 +3,12 @@ import { format, addDays, parseISO } from "date-fns";
 import { Calendar, CheckCircle2, AlertCircle } from "lucide-react";
 
 const TIMELINE_ITEMS = [
-  { key: "effectiveDate",           label: "Effective Date",           type: "date" },
-  { key: "earnestMoneyDeadline",    label: "Earnest Money Due",        type: "date" },
-  { key: "inspectionDeadline",      label: "Inspection Deadline",      type: "date" },
-  { key: "dueDiligenceDeadline",    label: "Due Diligence Deadline",   type: "date" },
-  { key: "financingCommitmentDate", label: "Financing Commitment",     type: "date" },
-  { key: "closingDate",             label: "Closing Date",             type: "date" },
+  { key: "acceptance_date",           label: "Effective Date",         type: "date" },
+  { key: "earnest_money_deadline",    label: "Earnest Money Due",      type: "date" },
+  { key: "inspection_deadline",       label: "Inspection Deadline",    type: "date" },
+  { key: "due_diligence_deadline",    label: "Due Diligence Deadline", type: "date" },
+  { key: "financing_commitment_date", label: "Financing Commitment",   type: "date" },
+  { key: "closing_date",              label: "Closing Date",           type: "date" },
 ];
 
 function resolveDate(item, parsed) {
@@ -34,7 +34,7 @@ export default function ParsedDeadlinesPreview({ parsed, isCash = false }) {
     return null;
   }
   
-  const items = TIMELINE_ITEMS.filter(item => !(item.key === "financingCommitmentDate" && isCash));
+  const items = TIMELINE_ITEMS.filter(item => !(item.key === "financing_commitment_date" && isCash));
 
   return (
     <div className="rounded-xl border border-blue-100 bg-blue-50/40 p-4 space-y-2">
