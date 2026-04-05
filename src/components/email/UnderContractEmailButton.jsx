@@ -190,7 +190,7 @@ export default function UnderContractEmailButton({ transaction, currentUser, doc
     const htmlBody = buildHTML(transaction, contingencies, currentUser);
 
     // Recipients: lender + title
-    const to = [tx.lender_email, tx.title_company_email].filter(Boolean);
+    const to = [transaction.lender_email, transaction.title_company_email].filter(Boolean);
     // Auto-select P&S document
     const psDoc = documents.find(d => d.doc_type === "purchase_and_sale");
 
@@ -211,7 +211,7 @@ export default function UnderContractEmailButton({ transaction, currentUser, doc
     <>
       {/* Validation error banner */}
       {validationErrors.length > 0 && (
-        <div className="fixed top-4 right-4 z-50 max-w-sm bg-white border border-red-200 rounded-xl shadow-lg p-4 space-y-2">
+        <div className="fixed top-16 right-4 z-[9999] max-w-sm bg-white border border-red-200 rounded-xl shadow-lg p-4 space-y-2">
           <div className="flex items-start gap-2">
             <AlertCircle className="w-4 h-4 text-red-500 mt-0.5 flex-shrink-0" />
             <div>
