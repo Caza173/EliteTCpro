@@ -1,340 +1,367 @@
-import React from "react";
-import { Link } from "react-router-dom";
-import { base44 } from "@/api/base44Client";
-import TransactionStatusChecker from "../components/landing/TransactionStatusChecker";
-import { createPageUrl } from "@/utils";
-import {
-  FileText,
-  Calendar,
-  Zap,
-  ShieldCheck,
-  Clock,
-  BarChart3,
-  CheckCircle,
-  AlertTriangle,
-  Users,
-  Building2,
-  ClipboardList,
-} from "lucide-react";
+import React, { useState } from "react";
+import { ArrowRight, Upload, Zap, CheckCircle2, Mail, Shield, BarChart3, Lock, Menu, X } from "lucide-react";
+import { Button } from "@/components/ui/button";
 
-const HOW_IT_WORKS = [
-  {
-    icon: FileText,
-    title: "Upload or Forward the Contract",
-    text: "Drop in the PSA. The system extracts key dates, identifies contingencies, and builds your timeline.",
-  },
-  {
-    icon: Calendar,
-    title: "The System Builds the Transaction",
-    text: "Phases, tasks, and timeline are created automatically and synced to your calendar.",
-  },
-  {
-    icon: Zap,
-    title: "Execution Happens Automatically",
-    text: "Deadlines are monitored, issues flagged, and emails drafted without manual follow-up.",
-  },
-  {
-    icon: ShieldCheck,
-    title: "Compliance Is Always Visible",
-    text: "Missing signatures, documents, and issues are identified before they become problems.",
-  },
-];
-
-const FEATURES = [
-  {
-    icon: Clock,
-    title: "Contract-Based Deadline Enforcement",
-    text: "Deadlines are pulled directly from the contract and tracked automatically. No manual entry. No missed dates.",
-    subPoints: ["Inspection", "Financing", "Appraisal", "Closing"],
-  },
-  {
-    icon: ShieldCheck,
-    title: "Real-Time Compliance Monitoring",
-    text: "The system continuously checks your file for missing signatures, initials, disclosures, and required documents.",
-  },
-  {
-    icon: Zap,
-    title: "Automated Transaction Execution",
-    text: "Issues are detected, emails are generated, and actions are triggered. Review and send.",
-  },
-  {
-    icon: BarChart3,
-    title: "Full Transaction Visibility",
-    text: "Everything in one place: timeline, tasks, documents, and communication.",
-  },
-  {
-    icon: CheckCircle,
-    title: "Audit Trail & Accountability",
-    text: "Every action is logged with timestamps. Know who did what and when.",
-  },
-];
-
-const USE_CASES = [
-  {
-    icon: Users,
-    title: "For Agents",
-    text: "Close more deals without chasing people. Stay ahead of deadlines and keep clients informed.",
-  },
-  {
-    icon: Building2,
-    title: "For Teams & Brokers",
-    text: "Standardize workflows, maintain compliance, and gain full visibility across transactions.",
-  },
-  {
-    icon: ClipboardList,
-    title: "For Transaction Coordinators",
-    text: "Handle more volume with less effort. Clear tasks, fewer errors, no manual tracking.",
-  },
+const TABS = [
+  { id: "overview", label: "Overview" },
+  { id: "features", label: "Features" },
+  { id: "how-it-works", label: "How It Works" },
+  { id: "pricing", label: "Pricing" },
+  { id: "login", label: "Login" },
 ];
 
 export default function Landing() {
+  const [activeTab, setActiveTab] = useState("overview");
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+
   return (
-    <div className="min-h-screen bg-white font-sans overflow-x-hidden">
-
-      {/* ── NAV ── */}
-      <nav className="sticky top-0 z-50 bg-white/90 backdrop-blur-md border-b border-slate-100">
-        <div className="max-w-6xl mx-auto px-6 h-16 flex items-center justify-between">
-          <div className="flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-lg bg-slate-900 flex items-center justify-center">
-              <Building2 className="w-4 h-4 text-white" />
+    <div className="h-screen flex flex-col overflow-hidden" style={{ background: "linear-gradient(135deg, #0a0e27 0%, #1a1f3a 100%)" }}>
+      {/* Top Navigation */}
+      <nav className="flex-shrink-0 px-6 py-4 border-b" style={{ borderColor: "rgba(255,255,255,0.1)", background: "rgba(15,20,40,0.8)", backdropFilter: "blur(10px)" }}>
+        <div className="max-w-7xl mx-auto flex items-center justify-between">
+          {/* Logo */}
+          <div className="flex items-center gap-2">
+            <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-blue-400 to-purple-600 flex items-center justify-center">
+              <span className="text-white font-bold text-sm">TC</span>
             </div>
-            <span className="text-base font-bold text-slate-900 tracking-tight">EliteTC</span>
-          </div>
-          <div className="flex items-center gap-3">
-             <a
-               href="/tc-login"
-               className="hidden sm:inline-flex text-sm font-medium text-slate-600 hover:text-slate-900 transition-colors"
-             >
-               Sign In
-             </a>
-             <Link
-               to="/AgentIntake"
-               className="inline-flex items-center px-4 py-2 rounded-lg bg-slate-900 text-white text-sm font-semibold hover:bg-slate-800 transition-colors"
-             >
-               Start a Transaction
-             </Link>
-           </div>
-        </div>
-      </nav>
-
-      {/* ── HERO ── */}
-      <section className="relative overflow-hidden">
-        {/* Background gradient */}
-        <div className="absolute inset-0 bg-gradient-to-br from-slate-50 via-blue-50/30 to-indigo-50/40 pointer-events-none" />
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[500px] bg-blue-100/40 rounded-full blur-3xl pointer-events-none" />
-
-        <div className="relative max-w-4xl mx-auto px-6 py-24 md:py-36 text-center">
-          <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-blue-50 border border-blue-100 text-blue-700 text-xs font-semibold mb-8 tracking-wide uppercase">
-            Real Estate Transaction Platform
+            <span className="text-white font-semibold hidden sm:inline">EliteTC</span>
           </div>
 
-          <h1 className="text-4xl md:text-6xl lg:text-7xl font-extrabold text-slate-900 leading-[1.1] tracking-tight mb-6">
-            The Transaction System<br className="hidden md:block" /> That Doesn't{" "}
-            <span className="text-blue-600">Miss Deadlines</span>
-          </h1>
-
-          <p className="text-lg md:text-xl text-slate-500 max-w-2xl mx-auto leading-relaxed mb-10">
-            Extracts your contract. Tracks compliance. Executes the process.{" "}
-            No chasing emails. No missed contingencies. No surprises.
-          </p>
-
-          <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
-            <Link
-              to="/AgentIntake"
-              className="w-full sm:w-auto inline-flex items-center justify-center px-7 py-3.5 rounded-xl bg-slate-900 text-white text-base font-semibold hover:bg-slate-800 active:scale-[0.98] transition-all shadow-lg shadow-slate-900/20"
-            >
-              Start a Transaction
-            </Link>
-          </div>
-        </div>
-      </section>
-
-      <TransactionStatusChecker />
-
-      {/* ── PROBLEM / TRUST ── */}
-      <section className="py-16 md:py-24 bg-white">
-        <div className="max-w-2xl mx-auto px-6 text-center">
-          <p className="text-2xl md:text-3xl font-bold text-slate-900 leading-snug mb-10">
-            Most deals don't fall apart because of negotiation.{" "}
-            <span className="text-slate-400">They fall apart because something gets missed.</span>
-          </p>
-
-          <div className="flex flex-col gap-4 text-left max-w-sm mx-auto mb-10">
-            {[
-              { icon: AlertTriangle, text: "Deadlines slip", color: "text-amber-500", bg: "bg-amber-50" },
-              { icon: FileText, text: "Documents are incomplete", color: "text-red-500", bg: "bg-red-50" },
-              { icon: Users, text: "No one knows who's responsible", color: "text-slate-500", bg: "bg-slate-100" },
-            ].map(({ icon: Icon, text, color, bg }) => (
-              <div key={text} className="flex items-center gap-3">
-                <div className={`w-9 h-9 rounded-lg ${bg} flex items-center justify-center flex-shrink-0`}>
-                  <Icon className={`w-4 h-4 ${color}`} />
-                </div>
-                <span className="text-slate-700 font-medium">{text}</span>
-              </div>
+          {/* Desktop Tabs */}
+          <div className="hidden md:flex gap-8">
+            {TABS.map(tab => (
+              <button
+                key={tab.id}
+                onClick={() => setActiveTab(tab.id)}
+                className={`text-sm font-medium transition-colors py-2 px-1 border-b-2 ${
+                  activeTab === tab.id
+                    ? "text-blue-400 border-blue-400"
+                    : "text-gray-400 border-transparent hover:text-gray-300"
+                }`}
+              >
+                {tab.label}
+              </button>
             ))}
           </div>
 
-          <p className="text-lg font-bold text-slate-900">This system removes that risk.</p>
+          {/* Mobile Menu Button */}
+          <button
+            className="md:hidden text-gray-400 hover:text-white"
+            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+          >
+            {mobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
+          </button>
         </div>
-      </section>
 
-      {/* ── HOW IT WORKS ── */}
-      <section className="py-16 md:py-24 bg-slate-50">
-        <div className="max-w-6xl mx-auto px-6">
-          <div className="text-center mb-14">
-            <p className="text-xs font-bold uppercase tracking-widest text-blue-600 mb-3">How It Works</p>
-            <h2 className="text-3xl md:text-4xl font-extrabold text-slate-900 tracking-tight">
-              Four steps. Fully automated.
-            </h2>
+        {/* Mobile Tabs */}
+        {mobileMenuOpen && (
+          <div className="md:hidden mt-4 pb-4 space-y-2">
+            {TABS.map(tab => (
+              <button
+                key={tab.id}
+                onClick={() => {
+                  setActiveTab(tab.id);
+                  setMobileMenuOpen(false);
+                }}
+                className={`block w-full text-left px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                  activeTab === tab.id
+                    ? "bg-blue-600/20 text-blue-400"
+                    : "text-gray-400 hover:bg-white/5 hover:text-gray-300"
+                }`}
+              >
+                {tab.label}
+              </button>
+            ))}
+          </div>
+        )}
+      </nav>
+
+      {/* Main Content Container */}
+      <div className="flex-1 min-h-0 overflow-hidden">
+        {activeTab === "overview" && <OverviewTab />}
+        {activeTab === "features" && <FeaturesTab />}
+        {activeTab === "how-it-works" && <HowItWorksTab />}
+        {activeTab === "pricing" && <PricingTab />}
+        {activeTab === "login" && <LoginTab />}
+      </div>
+    </div>
+  );
+}
+
+function OverviewTab() {
+  return (
+    <div className="h-full px-6 py-8 overflow-hidden">
+      <div className="max-w-7xl mx-auto h-full flex items-center">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-12 w-full h-full items-center">
+          {/* Left Side */}
+          <div className="space-y-6">
+            <div>
+              <h1 className="text-5xl font-bold text-white mb-4">
+                Real Estate Transactions <span className="bg-gradient-to-r from-blue-400 to-purple-600 bg-clip-text text-transparent">Simplified</span>
+              </h1>
+              <p className="text-lg text-gray-300">
+                Automate document parsing, deadline tracking, and compliance monitoring. Focus on closing deals, not admin work.
+              </p>
+            </div>
+            <div className="flex gap-4">
+              <Button className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg gap-2">
+                Start Transaction <ArrowRight className="w-4 h-4" />
+              </Button>
+              <Button variant="outline" className="border-gray-600 text-gray-300 hover:bg-white/5 px-6 py-2 rounded-lg">
+                TC Login
+              </Button>
+            </div>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
-            {HOW_IT_WORKS.map((item, i) => {
-              const Icon = item.icon;
-              return (
-                <div
-                  key={i}
-                  className="bg-white rounded-2xl p-7 border border-slate-100 shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all duration-200"
-                >
-                  <div className="flex items-center gap-3 mb-4">
-                    <div className="w-10 h-10 rounded-xl bg-slate-900 flex items-center justify-center flex-shrink-0">
-                      <Icon className="w-5 h-5 text-white" />
+          {/* Right Side - Dashboard Preview */}
+          <div className="hidden md:flex items-center justify-center">
+            <div className="relative w-full max-w-sm">
+              <div className="absolute inset-0 bg-gradient-to-r from-blue-600/20 to-purple-600/20 rounded-2xl blur-xl" />
+              <div
+                className="relative rounded-2xl p-6 border overflow-hidden"
+                style={{ borderColor: "rgba(255,255,255,0.1)", background: "rgba(15,20,40,0.6)", backdropFilter: "blur(20px)" }}
+              >
+                <div className="space-y-4">
+                  <div className="h-8 bg-gradient-to-r from-blue-400/20 to-purple-400/20 rounded animate-pulse" />
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="h-16 bg-gradient-to-br from-blue-500/10 to-blue-600/10 rounded-lg border border-blue-400/20 flex items-center justify-center">
+                      <span className="text-blue-400 text-xs font-semibold">5 Deadlines</span>
                     </div>
-                    <span className="text-xs font-bold text-slate-400 uppercase tracking-widest">Step {i + 1}</span>
+                    <div className="h-16 bg-gradient-to-br from-emerald-500/10 to-emerald-600/10 rounded-lg border border-emerald-400/20 flex items-center justify-center">
+                      <span className="text-emerald-400 text-xs font-semibold">98% Health</span>
+                    </div>
                   </div>
-                  <h3 className="text-lg font-bold text-slate-900 mb-2">{item.title}</h3>
-                  <p className="text-slate-500 text-sm leading-relaxed">{item.text}</p>
+                  <div className="space-y-2">
+                    <div className="h-3 bg-white/10 rounded-full w-3/4" />
+                    <div className="h-3 bg-white/10 rounded-full w-2/3" />
+                    <div className="h-3 bg-white/10 rounded-full w-4/5" />
+                  </div>
                 </div>
-              );
-            })}
+              </div>
+            </div>
           </div>
         </div>
-      </section>
+      </div>
+    </div>
+  );
+}
 
-      {/* ── CORE FEATURES ── */}
-      <section className="py-16 md:py-24 bg-white">
-        <div className="max-w-6xl mx-auto px-6">
-          <div className="text-center mb-14">
-            <p className="text-xs font-bold uppercase tracking-widest text-blue-600 mb-3">Core Features</p>
-            <h2 className="text-3xl md:text-4xl font-extrabold text-slate-900 tracking-tight">
-              Built to execute, not just remind.
-            </h2>
-          </div>
+function FeaturesTab() {
+  const features = [
+    {
+      icon: Upload,
+      title: "Document Parsing",
+      description: "Upload Purchase & Sales agreements. AI extracts dates, parties, and deadlines automatically.",
+    },
+    {
+      icon: Shield,
+      title: "Compliance Monitoring",
+      description: "Real-time scan for missing signatures, incomplete fields, and regulatory blockers.",
+    },
+    {
+      icon: Zap,
+      title: "Deadline Tracking",
+      description: "Never miss a deadline. Automated alerts and calendar integration for all key dates.",
+    },
+    {
+      icon: Mail,
+      title: "Automated Emails",
+      description: "Generate and send status updates. Customizable templates for every transaction stage.",
+    },
+  ];
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-            {FEATURES.map((f, i) => {
-              const Icon = f.icon;
-              const isWide = i === FEATURES.length - 1 && FEATURES.length % 2 !== 0;
-              return (
-                <div
-                  key={i}
-                  className={`bg-white rounded-2xl p-7 border border-slate-100 shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 ${isWide ? "md:col-span-2" : ""}`}
-                >
-                  <div className="w-10 h-10 rounded-xl bg-blue-50 flex items-center justify-center mb-4">
-                    <Icon className="w-5 h-5 text-blue-600" />
+  return (
+    <div className="h-full px-6 py-8 overflow-y-auto">
+      <div className="max-w-5xl mx-auto">
+        <h2 className="text-3xl font-bold text-white mb-12 text-center">Powerful Features</h2>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+          {features.map((f, i) => {
+            const Icon = f.icon;
+            return (
+              <div
+                key={i}
+                className="rounded-xl p-6 border transition-all hover:border-blue-400/50 hover:bg-white/5"
+                style={{ borderColor: "rgba(255,255,255,0.1)", background: "rgba(30,35,60,0.4)" }}
+              >
+                <Icon className="w-8 h-8 text-blue-400 mb-3" />
+                <h3 className="text-lg font-semibold text-white mb-2">{f.title}</h3>
+                <p className="text-sm text-gray-400">{f.description}</p>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function HowItWorksTab() {
+  const steps = [
+    {
+      number: "1",
+      title: "Upload Documents",
+      description: "Drop your Purchase & Sales agreement or listing documents",
+      icon: Upload,
+    },
+    {
+      number: "2",
+      title: "Extract Data",
+      description: "AI reads contracts and pulls deadlines, parties, and key terms",
+      icon: Zap,
+    },
+    {
+      number: "3",
+      title: "Generate Tasks",
+      description: "Auto-create tasks and set up deadline reminders",
+      icon: CheckCircle2,
+    },
+  ];
+
+  return (
+    <div className="h-full px-6 py-8 flex items-center overflow-hidden">
+      <div className="max-w-6xl mx-auto w-full">
+        <h2 className="text-3xl font-bold text-white mb-12 text-center">How It Works</h2>
+        <div className="flex flex-col md:flex-row items-center justify-center gap-6 md:gap-4">
+          {steps.map((step, i) => {
+            const Icon = step.icon;
+            return (
+              <div key={i} className="flex flex-col items-center flex-1">
+                <div className="relative mb-6">
+                  <div className="w-16 h-16 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center mb-4">
+                    <Icon className="w-8 h-8 text-white" />
                   </div>
-                  <h3 className="text-lg font-bold text-slate-900 mb-2">{f.title}</h3>
-                  <p className="text-slate-500 text-sm leading-relaxed mb-3">{f.text}</p>
-                  {f.subPoints && (
-                    <div className="flex flex-wrap gap-2 mt-3">
-                      {f.subPoints.map((s) => (
-                        <span key={s} className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-slate-100 text-slate-600 text-xs font-semibold">
-                          <CheckCircle className="w-3 h-3 text-emerald-500" />
-                          {s}
-                        </span>
-                      ))}
-                    </div>
+                  {i < steps.length - 1 && (
+                    <div className="hidden md:block absolute left-20 top-8 w-12 h-0.5 bg-gradient-to-r from-blue-500/50 to-transparent" />
                   )}
                 </div>
-              );
-            })}
-          </div>
+                <h3 className="text-lg font-semibold text-white mb-2 text-center">{step.title}</h3>
+                <p className="text-sm text-gray-400 text-center">{step.description}</p>
+              </div>
+            );
+          })}
         </div>
-      </section>
+      </div>
+    </div>
+  );
+}
 
-      {/* ── DIFFERENTIATION ── */}
-      <section className="py-16 md:py-24 bg-gradient-to-br from-slate-900 to-slate-800">
-        <div className="max-w-3xl mx-auto px-6 text-center">
-          <p className="text-xl md:text-2xl text-slate-400 font-medium mb-4">
-            Most tools remind you what to do.
-          </p>
-          <p className="text-3xl md:text-5xl font-extrabold text-white tracking-tight leading-tight">
-            This system makes sure<br className="hidden md:block" /> it gets done.
-          </p>
-        </div>
-      </section>
+function PricingTab() {
+  const plans = [
+    {
+      name: "Starter",
+      price: "$99",
+      period: "/month",
+      description: "Perfect for new TCs",
+      features: ["Up to 5 active transactions", "Document parsing", "Email alerts"],
+      cta: "Start Free Trial",
+    },
+    {
+      name: "Professional",
+      price: "$299",
+      period: "/month",
+      description: "For growing teams",
+      features: ["Unlimited transactions", "Advanced compliance", "Team collaboration", "Custom templates"],
+      cta: "Get Started",
+      highlighted: true,
+    },
+    {
+      name: "Enterprise",
+      price: "Custom",
+      period: "",
+      description: "For large operations",
+      features: ["Everything in Pro", "Integrations (Dotloop, Skyslope)", "Dedicated support", "SLA guarantee"],
+      cta: "Contact Sales",
+    },
+  ];
 
-      {/* ── USE CASES ── */}
-      <section className="py-16 md:py-24 bg-slate-50">
-        <div className="max-w-6xl mx-auto px-6">
-          <div className="text-center mb-14">
-            <p className="text-xs font-bold uppercase tracking-widest text-blue-600 mb-3">Who It's For</p>
-            <h2 className="text-3xl md:text-4xl font-extrabold text-slate-900 tracking-tight">
-              Built for every role in the deal.
-            </h2>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
-            {USE_CASES.map((u) => {
-              const Icon = u.icon;
-              return (
-                <div
-                  key={u.title}
-                  className="bg-white rounded-2xl p-7 border border-slate-100 shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all duration-200"
-                >
-                  <div className="w-10 h-10 rounded-xl bg-indigo-50 flex items-center justify-center mb-4">
-                    <Icon className="w-5 h-5 text-indigo-600" />
-                  </div>
-                  <h3 className="text-lg font-bold text-slate-900 mb-2">{u.title}</h3>
-                  <p className="text-slate-500 text-sm leading-relaxed">{u.text}</p>
-                </div>
-              );
-            })}
-          </div>
-        </div>
-      </section>
-
-      {/* ── CTA ── */}
-      <section className="py-16 md:py-24 bg-white">
-        <div className="max-w-2xl mx-auto px-6 text-center">
-          <h2 className="text-3xl md:text-5xl font-extrabold text-slate-900 tracking-tight leading-tight mb-3">
-            Stop managing transactions manually.
-          </h2>
-          <p className="text-xl text-slate-500 font-medium mb-10">
-            Start running them with a system.
-          </p>
-          <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
-            <Link
-              to="/AgentIntake"
-              className="w-full sm:w-auto inline-flex items-center justify-center px-7 py-3.5 rounded-xl bg-slate-900 text-white text-base font-semibold hover:bg-slate-800 active:scale-[0.98] transition-all shadow-lg shadow-slate-900/20"
+  return (
+    <div className="h-full px-6 py-8 overflow-y-auto">
+      <div className="max-w-5xl mx-auto">
+        <h2 className="text-3xl font-bold text-white mb-3 text-center">Transparent Pricing</h2>
+        <p className="text-gray-400 text-center mb-12">Choose the plan that fits your workflow</p>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          {plans.map((plan, i) => (
+            <div
+              key={i}
+              className={`rounded-xl p-6 border transition-all ${
+                plan.highlighted
+                  ? "border-blue-500/50 bg-gradient-to-br from-blue-600/10 to-purple-600/10 ring-1 ring-blue-500/20 md:scale-105"
+                  : "border-gray-700 bg-gray-900/30 hover:border-gray-600"
+              }`}
             >
-              Start a Transaction
-            </Link>
-          </div>
-        </div>
-      </section>
-
-      {/* ── FOOTER ── */}
-      <footer className="py-10 border-t border-slate-100 bg-white">
-        <div className="max-w-6xl mx-auto px-6 flex flex-col md:flex-row items-center justify-between gap-4">
-          <div className="flex items-center gap-2.5">
-            <div className="w-7 h-7 rounded-lg bg-slate-900 flex items-center justify-center">
-              <Building2 className="w-3.5 h-3.5 text-white" />
+              <h3 className="text-xl font-bold text-white mb-2">{plan.name}</h3>
+              <div className="mb-4">
+                <span className="text-3xl font-bold text-white">{plan.price}</span>
+                {plan.period && <span className="text-gray-400 text-sm">{plan.period}</span>}
+              </div>
+              <p className="text-sm text-gray-400 mb-6">{plan.description}</p>
+              <ul className="space-y-2 mb-6">
+                {plan.features.map((f, j) => (
+                  <li key={j} className="flex items-start gap-2 text-sm text-gray-300">
+                    <CheckCircle2 className="w-4 h-4 text-blue-400 flex-shrink-0 mt-0.5" />
+                    {f}
+                  </li>
+                ))}
+              </ul>
+              <Button className={`w-full ${plan.highlighted ? "bg-blue-600 hover:bg-blue-700" : "bg-gray-700 hover:bg-gray-600"} text-white rounded-lg`}>
+                {plan.cta}
+              </Button>
             </div>
-            <span className="text-sm font-bold text-slate-900">EliteTC</span>
-          </div>
-          <p className="text-sm text-slate-400 text-center">
-            Built for real estate professionals who don't miss details.
-          </p>
-          <a
-            href="/tc-login"
-            className="text-sm text-slate-500 hover:text-slate-900 transition-colors font-medium"
-          >
-            Sign In →
-          </a>
+          ))}
         </div>
-      </footer>
+      </div>
+    </div>
+  );
+}
 
+function LoginTab() {
+  return (
+    <div className="h-full px-6 py-8 flex items-center overflow-hidden">
+      <div className="max-w-5xl mx-auto w-full grid grid-cols-1 md:grid-cols-2 gap-8">
+        {/* Agent Access */}
+        <div className="space-y-6">
+          <h2 className="text-2xl font-bold text-white">Agent Portal</h2>
+          <div className="space-y-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-300 mb-2">Transaction Code</label>
+              <input
+                type="text"
+                placeholder="Enter your code"
+                className="w-full px-4 py-2 rounded-lg bg-white/5 border border-gray-700 text-white placeholder:text-gray-500 focus:outline-none focus:border-blue-500"
+              />
+            </div>
+            <Button className="w-full bg-blue-600 hover:bg-blue-700 text-white rounded-lg">
+              Access Portal
+            </Button>
+          </div>
+        </div>
+
+        {/* TC Login */}
+        <div className="space-y-6">
+          <h2 className="text-2xl font-bold text-white">TC Dashboard</h2>
+          <div className="space-y-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-300 mb-2">Email</label>
+              <input
+                type="email"
+                placeholder="your@email.com"
+                className="w-full px-4 py-2 rounded-lg bg-white/5 border border-gray-700 text-white placeholder:text-gray-500 focus:outline-none focus:border-blue-500"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-300 mb-2">Password</label>
+              <input
+                type="password"
+                placeholder="••••••••"
+                className="w-full px-4 py-2 rounded-lg bg-white/5 border border-gray-700 text-white placeholder:text-gray-500 focus:outline-none focus:border-blue-500"
+              />
+            </div>
+            <Button className="w-full bg-blue-600 hover:bg-blue-700 text-white rounded-lg">
+              Sign In
+            </Button>
+          </div>
+        </div>
+      </div>
     </div>
   );
 }
