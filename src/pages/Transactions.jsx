@@ -90,9 +90,12 @@ export default function Transactions() {
             <SelectContent>
               <SelectItem value="all">All Status</SelectItem>
               <SelectItem value="active">Active</SelectItem>
+              <SelectItem value="under_contract">Under Contract</SelectItem>
               <SelectItem value="pending">Pending</SelectItem>
               <SelectItem value="closed">Closed</SelectItem>
-              <SelectItem value="cancelled">Cancelled</SelectItem>
+              <SelectItem value="withdrawn">Withdraw</SelectItem>
+              <SelectItem value="expired">Expired</SelectItem>
+              <SelectItem value="terminated">Terminated</SelectItem>
             </SelectContent>
           </Select>
           <Select value={phaseFilter} onValueChange={setPhaseFilter}>
