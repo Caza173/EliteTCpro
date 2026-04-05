@@ -160,7 +160,7 @@ function EditContactModal({ contact, transactions, onClose, onSave }) {
 
         await base44.entities.Transaction.update(txId, data);
       }
-      onSave();
+      await onSave();
       onClose();
     } catch (e) {
       setError(e.message || "Failed to save. Please try again.");
@@ -289,7 +289,7 @@ export default function Contacts() {
           contact={editingContact}
           transactions={transactions}
           onClose={() => setEditingContact(null)}
-          onSave={() => queryClient.invalidateQueries({ queryKey: ["transactions"] })}
+          onSave={() => queryClient.invalidateQueries({ queryKey: ["transactions"] }).then(() => setEditingContact(null))}
         />
       )}
 
