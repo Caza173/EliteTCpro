@@ -158,16 +158,18 @@ function EditContactModal({ contact, transactions, queryClient, onClose }) {
            if (fieldMap.company && form.company) data[fieldMap.company] = form.company;
          }
 
+         console.log("Updating transaction", txId, "with data:", data);
          await base44.entities.Transaction.update(txId, data);
        }
+       console.log("Refetching transactions...");
        await queryClient.refetchQueries({ queryKey: ["transactions"] });
+       setSaving(false);
        onClose();
      } catch (e) {
+       console.error("Error saving contact:", e);
        setError(e.message || "Failed to save. Please try again.");
        setSaving(false);
-       return;
      }
-     setSaving(false);
    };
 
   return (
