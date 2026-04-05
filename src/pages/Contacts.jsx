@@ -159,7 +159,8 @@ function EditContactModal({ contact, transactions, queryClient, onClose }) {
          }
 
          console.log("Updating transaction", txId, "with data:", data);
-         await base44.entities.Transaction.update(txId, data);
+         const result = await base44.entities.Transaction.update(txId, data);
+         console.log("Update result:", result);
        }
        console.log("Refetching transactions...");
        await queryClient.refetchQueries({ queryKey: ["transactions"] });
