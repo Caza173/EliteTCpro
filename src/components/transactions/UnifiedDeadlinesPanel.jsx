@@ -38,15 +38,15 @@ const SYSTEM_FIELDS = [
 const NON_ACTIONABLE = new Set(["effective_date", "acceptance_date"]);
 
 const CATEGORY_COLORS = {
-  effective_date:   { bg: "bg-blue-50",   border: "border-blue-200",   text: "text-blue-700",   dot: "bg-blue-400" },
-  earnest_money:    { bg: "bg-indigo-50", border: "border-indigo-200", text: "text-indigo-700", dot: "bg-indigo-400" },
-  closing:          { bg: "bg-rose-50",   border: "border-rose-200",   text: "text-rose-700",   dot: "bg-rose-400" },
-  Inspection:       { bg: "bg-orange-50", border: "border-orange-200", text: "text-orange-700", dot: "bg-orange-400" },
-  Financing:        { bg: "bg-emerald-50",border: "border-emerald-200",text: "text-emerald-700",dot: "bg-emerald-500" },
-  Appraisal:        { bg: "bg-teal-50",   border: "border-teal-200",   text: "text-teal-700",   dot: "bg-teal-500" },
-  Title:            { bg: "bg-purple-50", border: "border-purple-200", text: "text-purple-700", dot: "bg-purple-500" },
-  "Due Diligence":  { bg: "bg-violet-50", border: "border-violet-200", text: "text-violet-700", dot: "bg-violet-500" },
-  Other:            { bg: "bg-gray-50",   border: "border-gray-200",   text: "text-gray-700",   dot: "bg-gray-400" },
+  effective_date:   { leftBorder: "border-l-blue-400",   labelText: "text-white", dot: "bg-blue-400" },
+  earnest_money:    { leftBorder: "border-l-indigo-400", labelText: "text-white", dot: "bg-indigo-400" },
+  closing:          { leftBorder: "border-l-rose-500",   labelText: "text-white", dot: "bg-rose-500" },
+  Inspection:       { leftBorder: "border-l-orange-400", labelText: "text-white", dot: "bg-orange-400" },
+  Financing:        { leftBorder: "border-l-emerald-500",labelText: "text-white", dot: "bg-emerald-500" },
+  Appraisal:        { leftBorder: "border-l-teal-500",   labelText: "text-white", dot: "bg-teal-500" },
+  Title:            { leftBorder: "border-l-purple-500", labelText: "text-white", dot: "bg-purple-500" },
+  "Due Diligence":  { leftBorder: "border-l-violet-500", labelText: "text-white", dot: "bg-violet-500" },
+  Other:            { leftBorder: "border-l-gray-400",   labelText: "text-white", dot: "bg-gray-400" },
 };
 
 function formatTime(t) {
@@ -101,6 +101,24 @@ function DeadlineRow({ item, calendarMaps, transactionId, onUpdateContingency, o
   const daysInfo = getDaysLabel(item.date, { nonActionable: item.nonActionable, emdReceived });
   // Only show overdue ring for actionable, non-received, non-completed deadlines
   const isOverdue = !item.nonActionable && !emdReceived && !isCompleted && daysInfo?.cls?.includes("red");
+  
+  // Determine left border and title color based on state
+  let borderClass = "border-l-transparent";
+  let titleColor = "text-white";
+  
+  if (isCompleted) {
+    borderClass = "border-l-emerald-500";
+    titleColor = "text-white";
+  } else if (isOverdue) {
+    borderClass = "border-l-red-500";
+    titleColor = "text-red-500";
+  } else if (daysInfo?.cls?.includes("amber")) {
+    borderClass = "border-l-amber-500";
+    titleColor = "text-white";
+  } else {
+    borderClass = colors.leftBorder;
+    titleColor = colors.labelText;
+  }
 
   const handleMarkComplete = async () => {
     setMarkingComplete(true);
@@ -163,15 +181,12 @@ function DeadlineRow({ item, calendarMaps, transactionId, onUpdateContingency, o
   };
 
   return (
-    <div className={`rounded-xl border p-3.5 ${colors.bg} ${colors.border} transition-all ${isOverdue ? "ring-1 ring-red-300" : ""}`}>
+    <div className={`rounded-xl border border-l-4 border-slate-700 bg-slate-900 p-3.5 ${borderClass} transition-all`}>
       <div className="flex items-start gap-3">
-        {/* Color dot */}
-        <div className={`w-2.5 h-2.5 rounded-full mt-1.5 flex-shrink-0 ${colors.dot}`} />
-
         <div className="flex-1 min-w-0">
           {/* Label row */}
           <div className="flex items-center gap-1.5 flex-wrap mb-0.5">
-            <span className={`text-sm font-semibold ${colors.text}`}>{item.label}</span>
+            <span className={`text-sm font-semibold ${titleColor}`}>{item.label}</span>
             {item.sourceType === "contingency" && (
               <span className="text-[10px] bg-white/70 border border-current/20 px-1.5 py-0.5 rounded font-medium opacity-70">
                 From Contingency
@@ -214,27 +229,27 @@ function DeadlineRow({ item, calendarMaps, transactionId, onUpdateContingency, o
               <div>
                 <div className="flex items-center gap-1.5">
                   {item.date ? (
-                    <span className="text-sm font-medium text-gray-800">{fmtDate(item.date)}</span>
+                    <span className="text-sm font-medium text-gray-200">{fmtDate(item.date)}</span>
                   ) : (
-                    <span className="text-xs italic text-gray-400">Not set</span>
+                    <span className="text-xs italic text-gray-500">Not set</span>
                   )}
                   {item.time && (
-                    <span className="text-xs font-semibold text-blue-600">{formatTime(item.time)}</span>
+                    <span className="text-xs font-semibold text-blue-400">{formatTime(item.time)}</span>
                   )}
                   {!item.is_all_day && item.due_time && (
-                    <span className="text-xs font-semibold text-blue-600">{formatTime(item.due_time)}</span>
+                    <span className="text-xs font-semibold text-blue-400">{formatTime(item.due_time)}</span>
                   )}
                 </div>
                 {isCompleted && item.date ? (
-                  <span className="ml-2 text-xs text-emerald-600 font-semibold">Completed</span>
+                  <span className="ml-2 text-xs text-emerald-400 font-semibold">Completed</span>
                 ) : daysInfo && item.date && (
                   <span className={`ml-2 text-xs ${daysInfo.cls}`}>{daysInfo.label}</span>
                 )}
                 {item.isEMD && emdReceived && item.emdReceivedDate && (
-                  <span className="ml-2 text-xs text-emerald-600">on {fmtDate(item.emdReceivedDate)}</span>
+                  <span className="ml-2 text-xs text-emerald-400">on {fmtDate(item.emdReceivedDate)}</span>
                 )}
                 {item.daysFromEffective && (
-                  <span className="ml-2 text-xs text-gray-400">{item.daysFromEffective}d from effective</span>
+                  <span className="ml-2 text-xs text-gray-500">{item.daysFromEffective}d from effective</span>
                 )}
               </div>
 
@@ -242,7 +257,7 @@ function DeadlineRow({ item, calendarMaps, transactionId, onUpdateContingency, o
               <div className="flex items-center gap-1 flex-shrink-0">
                 {/* Completed badge */}
                 {isCompleted && (
-                  <span className="flex items-center gap-1 text-[10px] font-semibold text-emerald-700 px-2 py-0.5 rounded-full bg-emerald-50 border border-emerald-200">
+                  <span className="flex items-center gap-1 text-[10px] font-semibold text-emerald-300 px-2 py-0.5 rounded-full bg-emerald-500/20 border border-emerald-500/40">
                     <CheckCircle2 className="w-3 h-3" /> Done
                   </span>
                 )}
@@ -250,7 +265,7 @@ function DeadlineRow({ item, calendarMaps, transactionId, onUpdateContingency, o
                 {!isCompleted && !item.nonActionable && !emdReceived && item.date && (isOverdue || (daysInfo && daysInfo.cls?.includes("orange"))) && (
                   <Button
                     size="sm" variant="ghost"
-                    className="h-6 px-2 text-[10px] font-semibold text-emerald-700 hover:bg-emerald-50 gap-1"
+                    className="h-6 px-2 text-[10px] font-semibold text-emerald-400 hover:bg-emerald-500/20 gap-1"
                     disabled={markingComplete}
                     onClick={handleMarkComplete}
                     title="Mark as completed"
@@ -263,7 +278,7 @@ function DeadlineRow({ item, calendarMaps, transactionId, onUpdateContingency, o
                 {item.isEMD && !emdReceived && !isCompleted && item.date && (
                   <Button
                     size="sm" variant="ghost"
-                    className="h-6 px-2 text-[10px] font-semibold text-emerald-700 hover:bg-emerald-50 gap-1"
+                    className="h-6 px-2 text-[10px] font-semibold text-emerald-400 hover:bg-emerald-500/20 gap-1"
                     disabled={markingReceived}
                     onClick={async () => {
                       setMarkingReceived(true);
@@ -279,7 +294,7 @@ function DeadlineRow({ item, calendarMaps, transactionId, onUpdateContingency, o
                 {item.date && (
                   <Button
                     size="icon" variant="ghost"
-                    className={`h-6 w-6 hover:bg-white/50 transition-colors ${isSynced ? "text-emerald-600" : "text-gray-400 hover:text-gray-600"}`}
+                    className={`h-6 w-6 hover:bg-slate-700 transition-colors ${isSynced ? "text-emerald-400" : "text-gray-500 hover:text-gray-300"}`}
                     onClick={handleSync}
                     disabled={syncing}
                     title={isSynced ? "Update calendar event" : "Sync to Google Calendar"}
@@ -292,7 +307,7 @@ function DeadlineRow({ item, calendarMaps, transactionId, onUpdateContingency, o
                 )}
                 <Button
                   size="icon" variant="ghost"
-                  className="h-6 w-6 text-gray-400 hover:text-gray-700 hover:bg-white/50"
+                  className="h-6 w-6 text-gray-500 hover:text-gray-300 hover:bg-slate-700"
                   onClick={() => { setEditDate(item.date || ""); setEditing(true); }}
                   title="Edit date"
                 >
@@ -303,21 +318,21 @@ function DeadlineRow({ item, calendarMaps, transactionId, onUpdateContingency, o
           )}
 
           {/* Calendar synced label */}
-          {isSynced && !editing && (
-            <p className="text-[10px] text-gray-500 mt-0.5 flex items-center gap-1">
-              <CalendarCheck className="w-2.5 h-2.5 text-emerald-500" /> Synced to calendar
-            </p>
-          )}
+           {isSynced && !editing && (
+             <p className="text-[10px] text-gray-400 mt-0.5 flex items-center gap-1">
+               <CalendarCheck className="w-2.5 h-2.5 text-emerald-400" /> Synced to calendar
+             </p>
+           )}
 
-          {/* Notes if any (contingency records) */}
-          {item.scheduledDate && (
-            <p className="text-xs text-gray-500 mt-0.5">
-              Scheduled: {item.scheduledDate}{item.scheduledTime ? ` at ${formatTime(item.scheduledTime)}` : ""}
-            </p>
-          )}
-          {item.notes && (
-            <p className="text-xs text-gray-500 mt-0.5 italic truncate">{item.notes}</p>
-          )}
+           {/* Notes if any (contingency records) */}
+           {item.scheduledDate && (
+             <p className="text-xs text-gray-400 mt-0.5">
+               Scheduled: {item.scheduledDate}{item.scheduledTime ? ` at ${formatTime(item.scheduledTime)}` : ""}
+             </p>
+           )}
+           {item.notes && (
+             <p className="text-xs text-gray-400 mt-0.5 italic truncate">{item.notes}</p>
+           )}
         </div>
       </div>
     </div>
@@ -348,30 +363,30 @@ function AddCustomDeadlineRow({ transactionId, brokerageId, onAdded, onCancel })
   };
 
   return (
-    <div className="rounded-xl border border-dashed border-blue-300 bg-blue-50/40 p-3.5 space-y-2">
-      <p className="text-xs font-semibold text-blue-700">Add Custom Deadline</p>
+    <div className="rounded-xl border border-dashed border-slate-600 bg-slate-800/50 p-3.5 space-y-2">
+      <p className="text-xs font-semibold text-blue-400">Add Custom Deadline</p>
       <div className="grid grid-cols-1 sm:grid-cols-4 gap-2">
         <Input
           placeholder="Name (e.g. HOA Docs Due)"
           value={form.label}
           onChange={e => setForm(f => ({ ...f, label: e.target.value }))}
-          className="h-7 text-xs sm:col-span-2"
+          className="h-7 text-xs sm:col-span-2 bg-slate-700 border-slate-600 text-white"
           autoFocus
         />
         <Input
           type="date"
           value={form.date}
           onChange={e => setForm(f => ({ ...f, date: e.target.value }))}
-          className="h-7 text-xs"
+          className="h-7 text-xs bg-slate-700 border-slate-600 text-white"
         />
       </div>
       <div className="flex items-center gap-3 mt-2">
-        <label className="flex items-center gap-1.5 text-xs text-gray-600">
+        <label className="flex items-center gap-1.5 text-xs text-gray-400">
           <input
             type="checkbox"
             checked={form.is_all_day}
             onChange={e => setForm(f => ({ ...f, is_all_day: e.target.checked, due_time: e.target.checked ? "" : f.due_time }))}
-            className="rounded border-gray-300 text-blue-600 focus:ring-blue-300"
+            className="rounded border-slate-600 text-blue-500 focus:ring-blue-400"
           />
           All Day Event
         </label>
@@ -380,7 +395,7 @@ function AddCustomDeadlineRow({ transactionId, brokerageId, onAdded, onCancel })
             type="time"
             value={form.due_time}
             onChange={e => setForm(f => ({ ...f, due_time: e.target.value }))}
-            className="h-7 text-xs w-32"
+            className="h-7 text-xs w-32 bg-slate-700 border-slate-600 text-white"
           />
         )}
       </div>
@@ -388,13 +403,13 @@ function AddCustomDeadlineRow({ transactionId, brokerageId, onAdded, onCancel })
         placeholder="Notes (optional)"
         value={form.notes}
         onChange={e => setForm(f => ({ ...f, notes: e.target.value }))}
-        className="h-7 text-xs mt-2"
+        className="h-7 text-xs mt-2 bg-slate-700 border-slate-600 text-white"
       />
       <div className="flex gap-2 pt-1">
-        <Button size="sm" className="h-7 text-xs bg-blue-600 hover:bg-blue-700" onClick={handleSave}>
+        <Button size="sm" className="h-7 text-xs bg-blue-600 hover:bg-blue-700 text-white" onClick={handleSave}>
           <Check className="w-3 h-3 mr-1" /> Save
         </Button>
-        <Button size="sm" variant="outline" className="h-7 text-xs" onClick={onCancel}>Cancel</Button>
+        <Button size="sm" variant="outline" className="h-7 text-xs border-slate-600 text-gray-400 hover:bg-slate-700" onClick={onCancel}>Cancel</Button>
       </div>
     </div>
   );
@@ -544,7 +559,7 @@ export default function UnifiedDeadlinesPanel({ transaction, onSave }) {
         <Button
           variant="outline"
           size="sm"
-          className="h-8 text-xs gap-1.5 text-gray-600 border-dashed"
+          className="h-8 text-xs gap-1.5 text-gray-400 border-dashed border-slate-600 hover:bg-slate-800"
           onClick={() => setAddingCustom(true)}
         >
           <Plus className="w-3.5 h-3.5" /> Add Custom Deadline
