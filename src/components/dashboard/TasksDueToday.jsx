@@ -162,6 +162,8 @@ export default function TasksDueToday({ transactions = [], notifications = [] })
             label: task.name,
             sub: tx.address,
             txId: tx.id,
+            taskId: task.id,
+            allTasks: tx.tasks,
             badge: days === 0 ? "Due Today" : "Due Tomorrow",
             badgeColor: days === 0 ? "bg-red-100 text-red-700" : "bg-amber-100 text-amber-700",
           });
@@ -338,11 +340,26 @@ export default function TasksDueToday({ transactions = [], notifications = [] })
             </div>
           )}
 
-          {/* Simple dismiss for non-addendum items */}
+          {/* Complete + dismiss for task/deadline items */}
           {item.type !== "addendum" && (
             <div className="flex gap-1 flex-shrink-0 opacity-0 group-hover:opacity-100 transition-opacity">
+              {item.type === "task" && item.taskId && (
+                <button
+                  onClick={async (e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    await base44.entities.Transaction.update(item.txId, {
+                      tasks: item.allTasks.map(t => t.id === item.taskId ? { ...t, completed: true } : t)
+                    });
+                    dismissItem(item.key);
+                  }}
+                  className="px-2 py-0.5 rounded text-[10px] font-semibold bg-emerald-100 text-emerald-700 hover:bg-emerald-200 border border-emerald-200 transition-colors whitespace-nowrap"
+                >
+                  ✓ Done
+                </button>
+              )}
               <button
-                onClick={(e) => { e.preventDefault(); dismissItem(item.key); }}
+                onClick={(e) => { e.preventDefault(); e.stopPropagation(); dismissItem(item.key); }}
                 className="px-2 py-0.5 rounded text-[10px] font-semibold bg-white text-gray-400 hover:bg-gray-100 border border-gray-200 transition-colors"
                 title="Dismiss"
               >
