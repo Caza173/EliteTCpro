@@ -93,19 +93,28 @@ export default function Landing() {
 
 function OverviewTab({ navigate }) {
   return (
-    <div className="h-full px-6 py-8 overflow-hidden">
-      <div className="max-w-7xl mx-auto h-full flex items-center">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-12 w-full h-full items-center">
-          {/* Left Side */}
-          <div className="space-y-6">
-            <div>
-              <h1 className="text-5xl font-bold text-white mb-4">
-                Real Estate Transactions <span className="bg-gradient-to-r from-blue-400 to-purple-600 bg-clip-text text-transparent">Simplified</span>
-              </h1>
-              <p className="text-lg text-gray-300">
-                Automate document parsing, deadline tracking, and compliance monitoring. Focus on closing deals, not admin work.
-              </p>
+    <div className="h-full flex flex-col overflow-hidden">
+      {/* Main content area */}
+      <div className="flex-1 px-6 py-6 overflow-hidden">
+        <div className="max-w-7xl mx-auto h-full flex flex-col">
+          {/* Headline + Feature Strip */}
+          <div className="mb-6">
+            <h1 className="text-4xl md:text-5xl font-bold text-white mb-3">
+              Real Estate Transactions <span className="bg-gradient-to-r from-blue-400 to-purple-600 bg-clip-text text-transparent">Simplified</span>
+            </h1>
+            <p className="text-base md:text-lg text-gray-300 mb-6">
+              Automate document parsing, deadline tracking, and compliance monitoring. Focus on closing deals, not admin work.
+            </p>
+
+            {/* Feature Strip - 4 compact items */}
+            <div className="flex flex-wrap gap-4 mb-6">
+              <FeatureItem icon={Upload} label="Extracts Contract Data" />
+              <FeatureItem icon={Zap} label="Builds Timeline Automatically" />
+              <FeatureItem icon={Shield} label="Tracks Compliance" />
+              <FeatureItem icon={Mail} label="Sends Smart Reminders" />
             </div>
+
+            {/* CTA Buttons */}
             <div className="flex gap-4">
               <Button onClick={() => navigate(createPageUrl("AddTransaction"))} className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg gap-2">
                 Start Transaction <ArrowRight className="w-4 h-4" />
@@ -116,35 +125,126 @@ function OverviewTab({ navigate }) {
             </div>
           </div>
 
-          {/* Right Side - Dashboard Preview */}
-          <div className="hidden md:flex items-center justify-center">
-            <div className="relative w-full max-w-sm">
-              <div className="absolute inset-0 bg-gradient-to-r from-blue-600/20 to-purple-600/20 rounded-2xl blur-xl" />
-              <div
-                className="relative rounded-2xl p-6 border overflow-hidden"
-                style={{ borderColor: "rgba(255,255,255,0.1)", background: "rgba(15,20,40,0.6)", backdropFilter: "blur(20px)" }}
-              >
-                <div className="space-y-4">
-                  <div className="h-8 bg-gradient-to-r from-blue-400/20 to-purple-400/20 rounded animate-pulse" />
-                  <div className="grid grid-cols-2 gap-3">
-                    <div className="h-16 bg-gradient-to-br from-blue-500/10 to-blue-600/10 rounded-lg border border-blue-400/20 flex items-center justify-center">
-                      <span className="text-blue-400 text-xs font-semibold">5 Deadlines</span>
-                    </div>
-                    <div className="h-16 bg-gradient-to-br from-emerald-500/10 to-emerald-600/10 rounded-lg border border-emerald-400/20 flex items-center justify-center">
-                      <span className="text-emerald-400 text-xs font-semibold">98% Health</span>
+          {/* Transaction Snapshot + Metrics Grid */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 flex-1 min-h-0">
+            {/* Transaction Snapshot Card */}
+            <div className="md:col-span-2 rounded-xl p-5 border overflow-hidden" style={{ borderColor: "rgba(255,255,255,0.1)", background: "rgba(30,35,60,0.5)" }}>
+              <div className="space-y-4">
+                <div>
+                  <p className="text-xs text-gray-500 font-semibold uppercase tracking-wide mb-1">Property Address</p>
+                  <p className="text-sm md:text-base font-semibold text-white">742 Elm Street, Portland, OR 97214</p>
+                </div>
+
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-xs text-gray-500 font-semibold uppercase tracking-wide mb-1">Status</p>
+                    <div className="flex items-center gap-2">
+                      <span className="w-2 h-2 rounded-full bg-yellow-500" />
+                      <p className="text-sm font-semibold text-yellow-400">Under Contract</p>
                     </div>
                   </div>
+                  <div className="text-right">
+                    <p className="text-xs text-gray-500 font-semibold uppercase tracking-wide mb-1">Days to Close</p>
+                    <p className="text-sm font-bold text-white">18 days</p>
+                  </div>
+                </div>
+
+                <div className="border-t border-gray-700 pt-4">
+                  <p className="text-xs text-gray-500 font-semibold uppercase tracking-wide mb-3">Key Milestones</p>
                   <div className="space-y-2">
-                    <div className="h-3 bg-white/10 rounded-full w-3/4" />
-                    <div className="h-3 bg-white/10 rounded-full w-2/3" />
-                    <div className="h-3 bg-white/10 rounded-full w-4/5" />
+                    <MilestoneRow status="completed" label="Earnest Money Deposit" date="Mar 28" />
+                    <MilestoneRow status="upcoming" label="Inspection Deadline" date="Apr 10" />
+                    <MilestoneRow status="attention" label="Appraisal Not Ordered" date="Apr 12" />
+                    <MilestoneRow status="attention" label="Financing Commitment" date="Apr 18" />
                   </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Alerts & Stats */}
+            <div className="space-y-4 min-h-0 flex flex-col">
+              {/* Alerts */}
+              <div className="rounded-xl p-4 border" style={{ borderColor: "rgba(255,255,255,0.1)", background: "rgba(30,35,60,0.5)" }}>
+                <p className="text-xs text-gray-500 font-semibold uppercase tracking-wide mb-3">Alerts</p>
+                <div className="space-y-2">
+                  <AlertItem icon="⚠️" message="Appraisal not ordered" color="red" />
+                  <AlertItem icon="⚠️" message="Financing commitment pending" color="yellow" />
+                </div>
+              </div>
+
+              {/* Health Score */}
+              <div className="rounded-xl p-4 border flex-1 flex flex-col justify-center" style={{ borderColor: "rgba(255,255,255,0.1)", background: "rgba(30,35,60,0.5)" }}>
+                <p className="text-xs text-gray-500 font-semibold uppercase tracking-wide mb-2">Health Score</p>
+                <div className="flex items-end gap-2">
+                  <span className="text-3xl font-bold bg-gradient-to-r from-emerald-400 to-emerald-500 bg-clip-text text-transparent">94%</span>
+                  <span className="text-xs text-emerald-400 font-semibold">Excellent</span>
                 </div>
               </div>
             </div>
           </div>
         </div>
       </div>
+
+      {/* Bottom Metrics Bar */}
+      <div className="flex-shrink-0 px-6 py-4 border-t" style={{ borderColor: "rgba(255,255,255,0.1)", background: "rgba(15,20,40,0.8)" }}>
+        <div className="max-w-7xl mx-auto grid grid-cols-2 md:grid-cols-4 gap-4">
+          <MetricPill number="12" label="Key Dates Extracted" />
+          <MetricPill number="8" label="Tasks Generated" />
+          <MetricPill number="0" label="Missed Deadlines" />
+          <MetricPill number="100%" label="File Compliance" />
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function FeatureItem({ icon: Icon, label }) {
+  return (
+    <div className="flex items-center gap-2 px-3 py-2 rounded-lg" style={{ background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.1)" }}>
+      <Icon className="w-4 h-4 text-blue-400 flex-shrink-0" />
+      <span className="text-xs md:text-sm font-medium text-gray-300">{label}</span>
+    </div>
+  );
+}
+
+function MilestoneRow({ status, label, date }) {
+  const statusConfig = {
+    completed: { color: "text-emerald-400", dot: "bg-emerald-500", bg: "bg-emerald-500/10" },
+    upcoming: { color: "text-yellow-400", dot: "bg-yellow-500", bg: "bg-yellow-500/10" },
+    attention: { color: "text-red-400", dot: "bg-red-500", bg: "bg-red-500/10" },
+  };
+  const config = statusConfig[status];
+
+  return (
+    <div className={`flex items-center justify-between px-2 py-1.5 rounded text-xs ${config.bg}`}>
+      <div className="flex items-center gap-2 min-w-0">
+        <span className={`w-1.5 h-1.5 rounded-full ${config.dot} flex-shrink-0`} />
+        <span className={`${config.color} font-medium truncate`}>{label}</span>
+      </div>
+      <span className="text-gray-400 text-xs whitespace-nowrap ml-2">{date}</span>
+    </div>
+  );
+}
+
+function AlertItem({ icon, message, color }) {
+  const colorMap = {
+    red: "bg-red-500/10 border-red-500/20 text-red-400",
+    yellow: "bg-yellow-500/10 border-yellow-500/20 text-yellow-400",
+  };
+
+  return (
+    <div className={`flex items-start gap-2 px-2 py-1.5 rounded border text-xs ${colorMap[color]}`}>
+      <span className="text-sm flex-shrink-0">{icon}</span>
+      <span className="font-medium leading-tight">{message}</span>
+    </div>
+  );
+}
+
+function MetricPill({ number, label }) {
+  return (
+    <div className="text-center">
+      <p className="text-lg md:text-xl font-bold text-white">{number}</p>
+      <p className="text-xs text-gray-400 mt-0.5">{label}</p>
     </div>
   );
 }
