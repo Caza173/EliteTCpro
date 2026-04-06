@@ -62,13 +62,13 @@ const TX_TABS = [
 
 const LISTING_TABS = [
   { id: "listing_intake", label: "Listing Intake", icon: ClipboardCheck, info: "Property details, pricing, photos, and listing checklist" },
-  { id: "overview",      label: "Overview",      icon: LayoutDashboard, info: "Phase checklist, tasks, and compliance summary" },
-  { id: "issues",        label: "Issues",        icon: AlertTriangle,   info: "Auto-detected issues: missing docs, signatures, deadlines" },
-  { id: "deadlines",     label: "Deadlines",     icon: Clock,           info: "All key dates — edit inline or sync to Google Calendar" },
-  { id: "documents",     label: "Documents",     icon: FolderOpen,      info: "Upload, classify, and manage transaction documents" },
-  { id: "compliance",    label: "Compliance",    icon: ShieldCheck,     info: "AI-powered scan for missing signatures and blockers" },
-  { id: "communications", label: "Communications", icon: Send,          info: "Atlas under-contract communications and status" },
-  { id: "financial_tools", label: "Financial Tools", icon: Receipt,     info: "Commission statements, fuel prorations, and deal expenses" },
+  { id: "overview",       label: "Overview",       icon: LayoutDashboard, info: "Phase checklist, tasks, and compliance summary" },
+  { id: "issues",         label: "Issues",         icon: AlertTriangle,   info: "Auto-detected issues: missing docs, signatures, deadlines" },
+  { id: "deadlines",      label: "Deadlines",      icon: Clock,           info: "All key dates — edit inline or sync to Google Calendar" },
+  { id: "documents",      label: "Documents",      icon: FolderOpen,      info: "Upload, classify, and manage transaction documents" },
+  { id: "compliance",     label: "Compliance",     icon: ShieldCheck,     info: "AI-powered scan for missing signatures and blockers" },
+  { id: "communications", label: "Communications", icon: Send,            info: "Atlas under-contract communications and status" },
+  { id: "financial_tools", label: "Financial Tools", icon: Receipt,       info: "Commission statements, fuel prorations, and deal expenses" },
 ];
 
 const PHASES = [

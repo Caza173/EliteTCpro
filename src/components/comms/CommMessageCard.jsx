@@ -5,19 +5,19 @@ import { Eye, Send, ChevronDown, ChevronUp, Mail, MessageSquare, CheckCircle2, A
 import { format } from "date-fns";
 
 const TYPE_LABELS = {
-  buyer_under_contract_email: { label: "Buyer Email", icon: Mail, color: "bg-blue-50 border-blue-200 text-blue-700" },
-  seller_under_contract_email: { label: "Seller Email", icon: Mail, color: "bg-emerald-50 border-emerald-200 text-emerald-700" },
-  lender_title_intro_email: { label: "Lender / Title Email", icon: Mail, color: "bg-purple-50 border-purple-200 text-purple-700" },
-  buyer_sms: { label: "Buyer SMS", icon: MessageSquare, color: "bg-sky-50 border-sky-200 text-sky-700" },
-  seller_sms: { label: "Seller SMS", icon: MessageSquare, color: "bg-teal-50 border-teal-200 text-teal-700" },
+  buyer_under_contract_email: { label: "Buyer Email", icon: Mail, color: "bg-blue-500/10 border-blue-500/30 text-blue-400" },
+  seller_under_contract_email: { label: "Seller Email", icon: Mail, color: "bg-emerald-500/10 border-emerald-500/30 text-emerald-400" },
+  lender_title_intro_email: { label: "Lender / Title Email", icon: Mail, color: "bg-purple-500/10 border-purple-500/30 text-purple-400" },
+  buyer_sms: { label: "Buyer SMS", icon: MessageSquare, color: "bg-sky-500/10 border-sky-500/30 text-sky-400" },
+  seller_sms: { label: "Seller SMS", icon: MessageSquare, color: "bg-teal-500/10 border-teal-500/30 text-teal-400" },
 };
 
 const STATUS_CONFIG = {
-  ready:   { label: "Ready to Send", cls: "bg-emerald-100 text-emerald-700", icon: Clock },
-  partial: { label: "Partial",        cls: "bg-amber-100 text-amber-700",   icon: AlertTriangle },
-  blocked: { label: "Blocked",        cls: "bg-red-100 text-red-700",       icon: AlertTriangle },
-  sent:    { label: "Sent",           cls: "bg-gray-100 text-gray-600",     icon: CheckCircle2 },
-  draft:   { label: "Draft",          cls: "bg-gray-100 text-gray-500",     icon: Clock },
+  ready:   { label: "Ready to Send", cls: "bg-emerald-500/15 text-emerald-400", icon: CheckCircle2 },
+  partial: { label: "Partial",        cls: "bg-amber-500/15 text-amber-400",   icon: AlertTriangle },
+  blocked: { label: "Blocked",        cls: "bg-red-500/15 text-red-400",       icon: AlertTriangle },
+  sent:    { label: "Sent",           cls: "bg-slate-500/15 text-slate-400",   icon: CheckCircle2 },
+  draft:   { label: "Draft",          cls: "bg-slate-500/15 text-slate-400",   icon: Clock },
 };
 
 export default function CommMessageCard({ comm, onSend, onRegenerate, sending }) {

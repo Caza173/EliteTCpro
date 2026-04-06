@@ -176,13 +176,14 @@ function AtlasBanner({
   const isPartial = status === "PARTIAL";
   const isBlocked = status === "BLOCKED";
 
-  let bannerCls = "border-slate-200 bg-slate-50";
-  let iconCls = "text-slate-400";
   let BannerIcon = Bot;
+  let bannerStyle = { background: "var(--bg-tertiary)", borderColor: "var(--card-border)" };
+  let iconBg = "rgba(148,163,184,0.15)";
+  let iconCls = "text-slate-400";
 
-  if (isReady) { bannerCls = "border-emerald-200 bg-emerald-50"; iconCls = "text-emerald-500"; BannerIcon = ShieldCheck; }
-  if (isPartial) { bannerCls = "border-amber-200 bg-amber-50"; iconCls = "text-amber-500"; BannerIcon = ShieldAlert; }
-  if (isBlocked) { bannerCls = "border-red-200 bg-red-50"; iconCls = "text-red-500"; BannerIcon = ShieldX; }
+  if (isReady) { BannerIcon = ShieldCheck; bannerStyle = { background: "rgba(22,163,74,0.08)", borderColor: "rgba(22,163,74,0.3)" }; iconBg = "rgba(22,163,74,0.15)"; iconCls = "text-emerald-500"; }
+  if (isPartial) { BannerIcon = ShieldAlert; bannerStyle = { background: "rgba(217,119,6,0.08)", borderColor: "rgba(217,119,6,0.3)" }; iconBg = "rgba(217,119,6,0.15)"; iconCls = "text-amber-500"; }
+  if (isBlocked) { BannerIcon = ShieldX; bannerStyle = { background: "rgba(220,38,38,0.08)", borderColor: "rgba(220,38,38,0.3)" }; iconBg = "rgba(220,38,38,0.15)"; iconCls = "text-red-500"; }
 
   const statusText = {
     READY: "All required contract data found. Communications are ready to send.",
@@ -192,25 +193,22 @@ function AtlasBanner({
   }[status];
 
   return (
-    <div className={`rounded-xl border p-4 ${bannerCls}`}>
+    <div className="rounded-xl border p-4" style={bannerStyle}>
       <div className="flex items-start gap-3">
-        <div className={`w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0 ${isReady ? "bg-emerald-100" : isPartial ? "bg-amber-100" : isBlocked ? "bg-red-100" : "bg-slate-100"}`}>
+        <div className="w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0" style={{ background: iconBg }}>
           <BannerIcon className={`w-5 h-5 ${iconCls}`} />
         </div>
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 flex-wrap">
-            <span className="text-sm font-semibold" style={{ color: "var(--text-primary)" }}>
-              Atlas – Under-Contract Communications
-            </span>
             {status && <CommPreflightBadge status={status} />}
           </div>
           <p className="text-xs mt-1" style={{ color: "var(--text-secondary)" }}>{statusText}</p>
 
           {hasComms && (
-            <div className="flex gap-3 mt-2 text-xs" style={{ color: "var(--text-muted)" }}>
-              {readyCount > 0 && <span className="text-emerald-600 font-semibold">{readyCount} Ready</span>}
-              {sentCount > 0 && <span className="text-gray-500 font-semibold">{sentCount} Sent</span>}
-              {blockedCount > 0 && <span className="text-red-600 font-semibold">{blockedCount} Blocked</span>}
+            <div className="flex gap-3 mt-2 text-xs">
+              {readyCount > 0 && <span className="text-emerald-500 font-semibold">{readyCount} Ready</span>}
+              {sentCount > 0 && <span style={{ color: "var(--text-muted)" }} className="font-semibold">{sentCount} Sent</span>}
+              {blockedCount > 0 && <span className="text-red-500 font-semibold">{blockedCount} Blocked</span>}
             </div>
           )}
         </div>
