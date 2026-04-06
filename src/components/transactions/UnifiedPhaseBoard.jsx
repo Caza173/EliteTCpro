@@ -83,14 +83,14 @@ const TaskRow = memo(function TaskRow({
            {...drag.draggableProps}
            className={`flex items-center gap-2 px-2 py-1.5 rounded-lg border text-sm group transition-all border-l-4 ${
              snap.isDragging
-               ? "shadow-lg border-blue-300 border-l-blue-400 opacity-95"
+               ? "shadow-lg border-l-blue-400 opacity-95"
                : task.is_completed
                ? "border-l-emerald-500"
                : isAtRisk
                ? "border-l-red-500 hover:border-l-red-600"
-               : "border-l-gray-500 hover:border-l-gray-600"
-           } border-slate-700 bg-slate-900 hover:bg-slate-800`}
-           style={drag.draggableProps.style}
+               : "border-l-gray-400 hover:border-l-gray-500"
+           }`}
+           style={{ ...drag.draggableProps.style, background: "var(--bg-secondary)", borderColor: "var(--card-border)" }}
          >
           <div {...drag.dragHandleProps} className="cursor-grab flex-shrink-0 opacity-20 hover:opacity-50">
             <GripVertical className="w-3 h-3 text-gray-400" />
@@ -101,7 +101,7 @@ const TaskRow = memo(function TaskRow({
                ? <CheckCircle2 className="w-4 h-4 text-emerald-400" />
                : isAtRisk
                ? <AlertCircle className="w-4 h-4 text-red-400" />
-               : <Circle className="w-4 h-4 text-gray-600 hover:text-gray-500" />}
+               : <Circle className="w-4 h-4" style={{ color: "var(--text-muted)" }} />}
            </button>
 
           {editing ? (
@@ -115,7 +115,8 @@ const TaskRow = memo(function TaskRow({
             />
           ) : (
             <span
-               className={`flex-1 text-xs font-medium leading-tight ${task.is_completed ? "line-through text-gray-400 opacity-85" : "text-white"}`}
+               className={`flex-1 text-xs font-medium leading-tight ${task.is_completed ? "line-through opacity-50" : ""}`}
+               style={{ color: task.is_completed ? "var(--text-muted)" : "var(--text-primary)" }}
                onDoubleClick={() => { setDraft(task.title); setEditing(true); }}
              >
                {task.title}
@@ -138,9 +139,9 @@ const TaskRow = memo(function TaskRow({
 
           <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0 relative">
             {!editing && (
-              <button onClick={() => { setDraft(task.title); setEditing(true); }} className="p-0.5 rounded hover:bg-slate-700">
-                <Pencil className="w-2.5 h-2.5 text-gray-500 hover:text-gray-400" />
-              </button>
+              <button onClick={() => { setDraft(task.title); setEditing(true); }} className="p-0.5 rounded" style={{ background: "transparent" }}>
+                 <Pencil className="w-2.5 h-2.5" style={{ color: "var(--text-muted)" }} />
+               </button>
             )}
             <div className="relative">
               <button
@@ -150,7 +151,7 @@ const TaskRow = memo(function TaskRow({
                   const rect = e.currentTarget.getBoundingClientRect();
                   setDropdownPos({ top: rect.bottom + window.scrollY, right: window.innerWidth - rect.right });
                 }}
-                className="p-0.5 rounded hover:bg-slate-700" title="Move to phase"
+                className="p-0.5 rounded" title="Move to phase"
               >
                 <ChevronDown className="w-2.5 h-2.5 text-gray-500 hover:text-gray-400" />
               </button>
@@ -158,7 +159,8 @@ const TaskRow = memo(function TaskRow({
                 <>
                   <div className="fixed inset-0 z-40" onClick={() => setMoveOpen(false)} />
                   <div
-                    className="fixed z-50 bg-slate-800 border border-slate-700 rounded-lg shadow-lg py-1 min-w-[150px]"
+                    className="fixed z-50 rounded-lg shadow-lg py-1 min-w-[150px]"
+                    style={{ background: "var(--card-bg)", border: "1px solid var(--card-border)" }}
                     style={{ top: dropdownPos.top, right: dropdownPos.right }}
                   >
                     <p className="text-[9px] font-semibold text-gray-400 px-2 py-1 uppercase tracking-wider">Move to phase</p>
@@ -167,7 +169,8 @@ const TaskRow = memo(function TaskRow({
                         key={p.phaseNum}
                         disabled={p.phaseNum === task.phase}
                         onClick={() => { setMoveOpen(false); onMoveTo(task.id, p.phaseNum); }}
-                        className={`w-full text-left px-2 py-1 text-xs hover:bg-slate-700 transition-colors ${p.phaseNum === task.phase ? "text-gray-600 cursor-default" : "text-gray-300 hover:text-gray-100"}`}
+                        className={`w-full text-left px-2 py-1 text-xs transition-colors ${p.phaseNum === task.phase ? "cursor-default opacity-40" : "hover:opacity-80"}`}
+                        style={{ color: "var(--text-secondary)" }}
                       >
                         {p.phaseNum === task.phase ? "✓ " : ""}{p.label}
                       </button>
@@ -176,7 +179,7 @@ const TaskRow = memo(function TaskRow({
                 </>
               )}
             </div>
-            <button onClick={() => onDelete(task.id)} className="p-0.5 rounded hover:bg-slate-700">
+            <button onClick={() => onDelete(task.id)} className="p-0.5 rounded">
               <Trash2 className="w-2.5 h-2.5 text-red-400 hover:text-red-300" />
             </button>
           </div>
@@ -231,20 +234,20 @@ function PhaseCard({
      ? "border-emerald-500"
      : isActive
      ? "border-blue-500 ring-1 ring-blue-400/30"
-     : "border-slate-700";
+     : "";
 
    const headerStyle = isComplete
      ? "bg-emerald-500/10"
      : isActive
      ? "bg-blue-500/10"
-     : "bg-slate-900";
+     : "";
 
   return (
     <div
       className={`rounded-xl border flex-shrink-0 flex flex-col overflow-hidden transition-all ${borderStyle} ${
         isMobile ? "w-full" : "min-w-[220px] max-w-[280px]"
       }`}
-      style={{ background: "var(--card-bg)" }}
+      style={{ background: "var(--card-bg)", borderColor: borderStyle ? undefined : "var(--card-border)" }}
     >
       {/* Card Header */}
       <div
@@ -279,7 +282,7 @@ function PhaseCard({
       </div>
 
       {/* Progress bar */}
-      <div className="h-1 bg-slate-800">
+      <div className="h-1" style={{ background: "var(--bg-tertiary)" }}>
         <div
           className={`h-full transition-all ${isComplete ? "bg-emerald-500" : "bg-blue-500"}`}
           style={{ width: `${pct}%` }}
@@ -328,7 +331,8 @@ function PhaseCard({
             <div className="flex items-center gap-1 mt-1">
               <input
                 autoFocus
-                className="flex-1 text-xs border border-slate-600 rounded px-2 py-1 focus:outline-none focus:ring-1 focus:ring-blue-400 bg-slate-800 text-white"
+                className="flex-1 text-xs rounded px-2 py-1 focus:outline-none focus:ring-1 focus:ring-blue-400"
+                style={{ border: "1px solid var(--input-border)", background: "var(--input-bg)", color: "var(--text-primary)" }}
                 placeholder="Task title..."
                 value={newTitle}
                 onChange={e => setNewTitle(e.target.value)}
@@ -338,19 +342,19 @@ function PhaseCard({
                 }}
               />
               <button onClick={handleAddTask} className="text-[10px] font-semibold px-2 py-1 rounded bg-blue-600 text-white hover:bg-blue-700">Add</button>
-              <button onClick={() => { setAddingTask(false); setNewTitle(""); }} className="text-[10px] px-1.5 py-1 rounded text-gray-400 hover:bg-slate-800">✕</button>
+              <button onClick={() => { setAddingTask(false); setNewTitle(""); }} className="text-[10px] px-1.5 py-1 rounded" style={{ color: "var(--text-muted)" }}>✕</button>
             </div>
           ) : (
             <div className="flex items-center gap-2 mt-1">
               <button
                 onClick={() => setAddingTask(true)}
-                className="flex items-center gap-1 text-[10px] font-medium text-blue-400 hover:text-blue-300 px-1 py-0.5 rounded hover:bg-slate-800"
+                className="flex items-center gap-1 text-[10px] font-medium text-blue-500 hover:text-blue-400 px-1 py-0.5 rounded"
               >
                 <Plus className="w-3 h-3" /> Add Task
               </button>
               <button
                 onClick={() => setLibraryOpen(true)}
-                className="flex items-center gap-1 text-[10px] font-medium text-purple-400 hover:text-purple-300 px-1 py-0.5 rounded hover:bg-slate-800"
+                className="flex items-center gap-1 text-[10px] font-medium text-purple-500 hover:text-purple-400 px-1 py-0.5 rounded"
               >
                 <BookOpen className="w-3 h-3" /> Library
               </button>
