@@ -179,7 +179,7 @@ function OverviewTab({ navigate }) {
                 Start a Transaction <ArrowRight className="w-4 h-4" />
               </button>
               <button
-                onClick={() => navigate(createPageUrl("TCSignIn"))}
+                onClick={() => base44.auth.redirectToLogin("/Dashboard")}
                 className="flex items-center gap-2 px-5 py-2.5 rounded-lg text-sm font-semibold transition-all"
                 style={{ border: `1px solid ${GOLD_BORDER}`, color: GOLD, background: GOLD_DIM }}
               >
@@ -577,7 +577,7 @@ function LoginTab({ navigate }) {
               <input type="password" placeholder="••••••••" style={inputStyle} />
             </div>
             <button
-              onClick={() => navigate(createPageUrl("TCSignIn"))}
+              onClick={() => base44.auth.redirectToLogin("/Dashboard")}
               className="w-full py-2.5 rounded-lg text-sm font-semibold transition-all hover:brightness-110"
               style={{ background: GOLD, color: NAVY }}
             >
