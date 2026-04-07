@@ -1,147 +1,185 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { ArrowLeft, Mail, Lock, Eye, EyeOff } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { ArrowLeft, FileText, Pen } from "lucide-react";
 import { base44 } from "@/api/base44Client";
+
+const NAVY = "#0D1B2A";
+const GOLD = "#C9A84C";
+const GOLD_DIM = "rgba(201,168,76,0.15)";
+const GOLD_BORDER = "rgba(201,168,76,0.3)";
+const WHITE_BORDER = "rgba(255,255,255,0.12)";
+const WHITE_DIM = "rgba(255,255,255,0.07)";
 
 export default function TCSignIn() {
   const navigate = useNavigate();
+  const [loading, setLoading] = useState(null); // null | "google" | "apple" | "email"
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [showPassword, setShowPassword] = useState(false);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
 
-  const handleSignIn = async (e) => {
+  const handleOAuth = async (provider) => {
+    setLoading(provider);
+    await base44.auth.redirectToLogin("/Dashboard");
+  };
+
+  const handleEmailSignIn = async (e) => {
     e.preventDefault();
-    setError("");
-    setLoading(true);
+    setLoading("email");
+    await base44.auth.redirectToLogin("/Dashboard");
+  };
 
-    try {
-      // Redirect to platform login
-      await base44.auth.redirectToLogin("/Dashboard");
-    } catch (err) {
-      setError(err?.message || "Sign in failed.");
-      setLoading(false);
-    }
+  const inputStyle = {
+    width: "100%",
+    padding: "10px 14px",
+    borderRadius: 8,
+    border: `1px solid ${WHITE_BORDER}`,
+    background: WHITE_DIM,
+    color: "#fff",
+    fontSize: 14,
+    outline: "none",
+    transition: "border-color 0.15s",
   };
 
   return (
-    <div className="min-h-screen flex flex-col" style={{ background: "linear-gradient(135deg, #0a0e27 0%, #1a1f3a 100%)" }}>
+    <div
+      className="min-h-screen flex flex-col"
+      style={{ background: `linear-gradient(160deg, ${NAVY} 0%, #0A1628 60%, #0D1F35 100%)` }}
+    >
       {/* Header */}
-      <div className="px-6 py-4 border-b" style={{ borderColor: "rgba(255,255,255,0.1)", background: "rgba(15,20,40,0.8)", backdropFilter: "blur(10px)" }}>
-        <div className="max-w-md mx-auto flex items-center">
-          <button
-            onClick={() => navigate("/")}
-            className="flex items-center gap-2 text-gray-400 hover:text-gray-300 transition-colors"
-          >
-            <ArrowLeft className="w-4 h-4" />
-            <span className="text-sm font-medium">Back</span>
-          </button>
-          <div className="flex-1 text-center">
-            <h1 className="text-lg font-semibold text-white">TC Dashboard</h1>
-          </div>
-        </div>
-      </div>
+      <nav
+        className="px-6 py-3 border-b flex items-center"
+        style={{ borderColor: GOLD_BORDER, background: "rgba(13,27,42,0.92)", backdropFilter: "blur(12px)" }}
+      >
+        <button
+          onClick={() => navigate("/")}
+          className="flex items-center gap-2 transition-colors"
+          style={{ color: "rgba(255,255,255,0.55)" }}
+          onMouseEnter={e => (e.currentTarget.style.color = "#fff")}
+          onMouseLeave={e => (e.currentTarget.style.color = "rgba(255,255,255,0.55)")}
+        >
+          <ArrowLeft className="w-4 h-4" />
+          <span className="text-sm font-medium">Back</span>
+        </button>
 
-      {/* Main Content */}
+        {/* Logo */}
+        <div className="flex items-center gap-2 mx-auto">
+          <div
+            className="relative flex-shrink-0 flex items-center justify-center rounded-lg"
+            style={{ width: 28, height: 28, border: `2px solid ${GOLD}` }}
+          >
+            <FileText style={{ color: GOLD, width: 15, height: 15 }} />
+            <div className="absolute" style={{ bottom: -3, right: -3, background: NAVY, borderRadius: "50%", padding: 1 }}>
+              <Pen style={{ color: GOLD, width: 9, height: 9 }} />
+            </div>
+          </div>
+          <span className="font-serif font-bold text-lg tracking-tight">
+            <span style={{ color: "#fff" }}>Elite</span>
+            <span style={{ color: GOLD }}>TC</span>
+          </span>
+        </div>
+
+        <div style={{ width: 60 }} /> {/* spacer to balance back button */}
+      </nav>
+
+      {/* Main */}
       <div className="flex-1 flex items-center justify-center px-6 py-12">
         <div className="w-full max-w-sm">
-          {/* Logo */}
-          <div className="flex justify-center mb-8">
-            <div className="w-12 h-12 rounded-lg bg-gradient-to-br from-blue-400 to-purple-600 flex items-center justify-center">
-              <span className="text-white font-bold text-lg">TC</span>
-            </div>
-          </div>
-
-          {/* Form Card */}
+          {/* Card */}
           <div
             className="rounded-2xl p-8 border"
-            style={{ borderColor: "rgba(255,255,255,0.1)", background: "rgba(30,35,60,0.6)" }}
+            style={{ borderColor: GOLD_BORDER, background: "rgba(17,34,54,0.7)" }}
           >
-            <h2 className="text-2xl font-bold text-white mb-2">Sign In</h2>
-            <p className="text-sm text-gray-400 mb-6">Access your transaction dashboard</p>
+            <h2 className="text-2xl font-bold text-white mb-1 font-serif">Sign In</h2>
+            <p className="text-sm mb-6" style={{ color: "rgba(255,255,255,0.45)" }}>
+              Access your EliteTC dashboard
+            </p>
 
-            <form onSubmit={handleSignIn} className="space-y-5">
-              {/* Email Field */}
+            {/* Email / Password form */}
+            <form onSubmit={handleEmailSignIn} className="space-y-4 mb-5">
               <div>
-                <label className="block text-sm font-medium text-gray-300 mb-2">Email Address</label>
-                <div className="relative">
-                  <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-500" />
-                  <input
-                    type="email"
-                    placeholder="you@example.com"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    className="w-full pl-10 pr-4 py-2.5 rounded-lg bg-white/5 border border-gray-700 text-white placeholder:text-gray-600 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500/50 transition-all"
-                    required
-                  />
-                </div>
+                <label className="block text-xs font-semibold uppercase tracking-wide mb-1.5" style={{ color: GOLD }}>
+                  Email
+                </label>
+                <input
+                  type="email"
+                  placeholder="you@example.com"
+                  value={email}
+                  onChange={e => setEmail(e.target.value)}
+                  style={inputStyle}
+                  onFocus={e => (e.target.style.borderColor = GOLD)}
+                  onBlur={e => (e.target.style.borderColor = WHITE_BORDER)}
+                />
               </div>
 
-              {/* Password Field */}
               <div>
-                <label className="block text-sm font-medium text-gray-300 mb-2">Password</label>
-                <div className="relative">
-                  <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-500" />
-                  <input
-                    type={showPassword ? "text" : "password"}
-                    placeholder="••••••••"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    className="w-full pl-10 pr-10 py-2.5 rounded-lg bg-white/5 border border-gray-700 text-white placeholder:text-gray-600 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500/50 transition-all"
-                    required
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-gray-400 transition-colors"
-                  >
-                    {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                  </button>
-                </div>
+                <label className="block text-xs font-semibold uppercase tracking-wide mb-1.5" style={{ color: GOLD }}>
+                  Password
+                </label>
+                <input
+                  type="password"
+                  placeholder="••••••••"
+                  value={password}
+                  onChange={e => setPassword(e.target.value)}
+                  style={inputStyle}
+                  onFocus={e => (e.target.style.borderColor = GOLD)}
+                  onBlur={e => (e.target.style.borderColor = WHITE_BORDER)}
+                />
               </div>
 
-              {/* Error Message */}
-              {error && (
-                <div className="px-4 py-3 rounded-lg bg-red-500/10 border border-red-500/20 text-red-400 text-sm">
-                  {error}
-                </div>
-              )}
-
-              {/* Sign In Button */}
-              <Button
+              <button
                 type="submit"
-                disabled={loading}
-                className="w-full bg-blue-600 hover:bg-blue-700 text-white py-2.5 rounded-lg font-semibold transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                disabled={!!loading}
+                className="w-full py-2.5 rounded-lg text-sm font-semibold transition-all hover:brightness-110 disabled:opacity-60"
+                style={{ background: GOLD, color: NAVY }}
               >
-                {loading ? "Signing in..." : "Sign In"}
-              </Button>
-
-              {/* Forgot Password Link */}
-              <div className="text-center">
-                <button
-                  type="button"
-                  className="text-sm text-gray-400 hover:text-gray-300 transition-colors"
-                >
-                  Forgot your password?
-                </button>
-              </div>
+                {loading === "email" ? "Signing in…" : "Sign In"}
+              </button>
             </form>
 
-            {/* Footer */}
-            <div className="mt-6 pt-6 border-t border-gray-700">
-              <p className="text-xs text-gray-500 text-center">
-                Don't have an account? Contact your brokerage administrator.
-              </p>
+            {/* Divider */}
+            <div className="flex items-center gap-3 mb-5">
+              <div className="flex-1 h-px" style={{ background: WHITE_BORDER }} />
+              <span className="text-xs" style={{ color: "rgba(255,255,255,0.35)" }}>or continue with</span>
+              <div className="flex-1 h-px" style={{ background: WHITE_BORDER }} />
             </div>
-          </div>
 
-          {/* Demo Credentials */}
-          <div className="mt-6 p-4 rounded-lg bg-blue-500/10 border border-blue-500/20 text-blue-400 text-xs">
-            <p className="font-semibold mb-1">Demo Credentials:</p>
-            <p>Email: demo@elitetc.com</p>
-            <p>Password: demo123</p>
+            {/* OAuth Buttons */}
+            <div className="space-y-3">
+              {/* Google */}
+              <button
+                onClick={() => handleOAuth("google")}
+                disabled={!!loading}
+                className="w-full flex items-center justify-center gap-3 py-2.5 rounded-lg text-sm font-semibold transition-all hover:brightness-110 disabled:opacity-60"
+                style={{ background: WHITE_DIM, border: `1px solid ${WHITE_BORDER}`, color: "#fff" }}
+              >
+                {/* Google icon */}
+                <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
+                  <path d="M17.64 9.2c0-.637-.057-1.251-.164-1.84H9v3.481h4.844a4.14 4.14 0 0 1-1.796 2.716v2.259h2.908c1.702-1.567 2.684-3.875 2.684-6.615Z" fill="#4285F4"/>
+                  <path d="M9 18c2.43 0 4.467-.806 5.956-2.18l-2.908-2.259c-.806.54-1.837.86-3.048.86-2.344 0-4.328-1.584-5.036-3.711H.957v2.332A8.997 8.997 0 0 0 9 18Z" fill="#34A853"/>
+                  <path d="M3.964 10.71A5.41 5.41 0 0 1 3.682 9c0-.593.102-1.17.282-1.71V4.958H.957A8.996 8.996 0 0 0 0 9c0 1.452.348 2.827.957 4.042l3.007-2.332Z" fill="#FBBC05"/>
+                  <path d="M9 3.58c1.321 0 2.508.454 3.44 1.345l2.582-2.58C13.463.891 11.426 0 9 0A8.997 8.997 0 0 0 .957 4.958L3.964 7.29C4.672 5.163 6.656 3.58 9 3.58Z" fill="#EA4335"/>
+                </svg>
+                {loading === "google" ? "Redirecting…" : "Continue with Google"}
+              </button>
+
+              {/* Apple */}
+              <button
+                onClick={() => handleOAuth("apple")}
+                disabled={!!loading}
+                className="w-full flex items-center justify-center gap-3 py-2.5 rounded-lg text-sm font-semibold transition-all hover:brightness-110 disabled:opacity-60"
+                style={{ background: WHITE_DIM, border: `1px solid ${WHITE_BORDER}`, color: "#fff" }}
+              >
+                {/* Apple icon */}
+                <svg width="18" height="18" viewBox="0 0 18 18" fill="white">
+                  <path d="M14.236 9.558c-.022-2.293 1.874-3.396 1.96-3.452-1.07-1.565-2.73-1.78-3.322-1.804-1.411-.143-2.76.833-3.474.833-.716 0-1.822-.814-2.994-.793-1.535.023-2.952.895-3.742 2.27C1.076 9.15 2.16 13.4 3.72 15.71c.777 1.13 1.7 2.397 2.913 2.352 1.17-.047 1.613-.758 3.03-.758 1.415 0 1.813.758 3.054.735 1.258-.02 2.05-1.147 2.822-2.28a10.7 10.7 0 0 0 1.284-2.642c-.03-.013-2.56-.983-2.587-3.559ZM11.977 2.943c.63-.776 1.057-1.845.94-2.916-.909.038-2.038.614-2.696 1.374-.58.668-1.1 1.758-.965 2.8 1.022.078 2.073-.526 2.721-1.258Z"/>
+                </svg>
+                {loading === "apple" ? "Redirecting…" : "Continue with Apple"}
+              </button>
+            </div>
+
+            {/* Footer */}
+            <p className="text-xs text-center mt-6" style={{ color: "rgba(255,255,255,0.3)" }}>
+              Don't have an account? Contact your brokerage administrator.
+            </p>
           </div>
         </div>
       </div>
