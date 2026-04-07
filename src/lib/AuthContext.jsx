@@ -114,8 +114,7 @@ export const AuthProvider = ({ children }) => {
     setUser(null);
     setIsAuthenticated(false);
     setIsLoadingAuth(false);
-    // Clear the session and redirect to tc-login
-    await base44.auth.logout('/tc-login');
+    await base44.auth.logout();
   };
 
   return (
