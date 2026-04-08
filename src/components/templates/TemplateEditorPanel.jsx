@@ -9,6 +9,27 @@ const TX_TYPES = ["buyer", "seller", "land", "commercial", "multifamily", "dual"
 const ROLES = ["tc", "agent", "client"];
 const ANCHORS = ["contract_date", "closing_date", "effective_date"];
 
+const PHASE_OPTIONS = [
+  "Pre-Contract",
+  "Offer Drafting",
+  "Offer Accepted / Under Contract",
+  "Escrow Opened",
+  "Due Diligence",
+  "Inspection Period",
+  "Repair Negotiation",
+  "Appraisal Ordered",
+  "Financing / Loan Processing",
+  "Clear to Close",
+  "Final Walkthrough",
+  "Closing",
+  "Post Closing",
+  "Pre-Listing",
+  "Active Listing",
+  "Coming Soon",
+  "Under Contract",
+  "Expired / Withdrawn",
+];
+
 export default function TemplateEditorPanel({ template, onSave, onCancel }) {
   const [tpl, setTpl] = useState(() => JSON.parse(JSON.stringify(template)));
   const [saving, setSaving] = useState(false);
@@ -141,12 +162,17 @@ export default function TemplateEditorPanel({ template, onSave, onCancel }) {
                     <span className="w-5 h-5 rounded-full bg-blue-100 text-blue-700 text-[11px] font-bold flex items-center justify-center flex-shrink-0">
                       {phase.phase_number}
                     </span>
-                    <input
-                      className="flex-1 text-sm font-semibold bg-transparent border-none outline-none"
-                      style={{ color: "var(--text-primary)" }}
+                    <select
+                      className="flex-1 text-sm font-semibold bg-transparent border-none outline-none rounded cursor-pointer"
+                      style={{ color: "var(--text-primary)", background: "transparent" }}
                       value={phase.phase_name}
                       onChange={e => updatePhase(pi, "phase_name", e.target.value)}
-                    />
+                    >
+                      {PHASE_OPTIONS.map(opt => <option key={opt} value={opt}>{opt}</option>)}
+                      {!PHASE_OPTIONS.includes(phase.phase_name) && (
+                        <option value={phase.phase_name}>{phase.phase_name}</option>
+                      )}
+                    </select>
                     <span className="text-xs mr-2" style={{ color: "var(--text-muted)" }}>{phaseTasks.length} task{phaseTasks.length !== 1 ? "s" : ""}</span>
                     <button onClick={() => addTask(phase.phase_number)} className="text-xs text-blue-500 hover:text-blue-700 font-medium px-2 py-0.5 rounded hover:bg-blue-50">
                       + Task
