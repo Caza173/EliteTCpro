@@ -9,6 +9,12 @@ window.onerror = (msg, ...args) => {
   if (typeof msg === 'string' && msg.includes('ResizeObserver')) return true;
   return _origError ? _origError(msg, ...args) : false;
 };
+window.addEventListener('error', (e) => {
+  if (e.message && e.message.includes('ResizeObserver')) {
+    e.stopImmediatePropagation();
+    e.preventDefault();
+  }
+}, true);
 
 ReactDOM.createRoot(document.getElementById('root')).render(
   <App />
