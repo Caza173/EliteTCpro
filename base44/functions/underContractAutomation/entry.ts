@@ -377,18 +377,7 @@ function buildAllComms(data, preflight, transaction, sourceDocId, sourceDocName)
     cc_recipients: [tcEmail].filter(Boolean),
   });
 
-  // D. Buyer SMS
-  const { subject: bsSubj, body: bsBody } = buildBuyerSMS(data);
-  comms.push({
-    ...base,
-    template_type: "buyer_sms",
-    subject: bsSubj,
-    generated_content: bsBody,
-    recipients: buyerEmails,
-    cc_recipients: [],
-  });
-
-  // E. Seller SMS
+  // D. Seller SMS
   const { subject: ssSubj, body: ssBody } = buildSellerSMS(data);
   comms.push({
     ...base,
