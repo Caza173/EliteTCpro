@@ -211,10 +211,12 @@ function runPreflight(data) {
 
   // Core blocking fields
   req("buyer_name", "Buyer Name", "P&S Header / Parties Section", "buyer_email,seller_email,lender_email");
-  req("seller_name", "Seller Name", "P&S Header / Parties Section", "seller_email,lender_email");
   req("property_address", "Property Address", "P&S Header", "all");
-  req("purchase_price", "Purchase Price", "P&S Section 3", "all");
-  req("closing_date", "Closing Date", "P&S Section 5 – Transfer of Title", "all");
+
+  // Warnings — important but shouldn't block all comms
+  warn("seller_name", "Seller Name", "P&S Header / Parties Section", "seller_email,lender_email");
+  warn("purchase_price", "Purchase Price", "P&S Section 3", "all");
+  warn("closing_date", "Closing Date", "P&S Section 5 – Transfer of Title", "all");
 
   // Conditional warnings
   if (data.earnest_money_amount && !data.earnest_money_due_date) {
