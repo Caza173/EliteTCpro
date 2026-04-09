@@ -1,8 +1,10 @@
 import React, { useState } from "react";
+import { base44 } from "@/api/base44Client";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Eye, Send, ChevronDown, ChevronUp, Mail, MessageSquare, CheckCircle2, AlertTriangle, Clock, X } from "lucide-react";
+import { Eye, Send, ChevronDown, ChevronUp, Mail, MessageSquare, CheckCircle2, AlertTriangle, Clock, X, Pencil, Save } from "lucide-react";
 import { format } from "date-fns";
+import { toast } from "sonner";
 
 const TYPE_LABELS = {
   buyer_under_contract_email: { label: "Buyer Email", icon: Mail, color: "bg-blue-500/10 border-blue-500/30 text-blue-400" },
@@ -26,10 +28,26 @@ const STATUS_CONFIG = {
   draft:   { label: "Draft",          cls: "bg-slate-500/15 text-slate-400",   icon: Clock },
 };
 
-export default function CommMessageCard({ comm, onSend, onRegenerate, sending }) {
+export default function CommMessageCard({ comm, onSend, onRegenerate, sending, onUpdated }) {
   const [expanded, setExpanded] = useState(false);
   const [previewing, setPreviewing] = useState(false);
+  const [editing, setEditing] = useState(false);
   const [confirmOpen, setConfirmOpen] = useState(false);
+  const [editSubject, setEditSubject] = useState(comm.subject || "");
+  const [editBody, setEditBody] = useState(comm.generated_content || "");
+  const [saving, setSaving] = useState(false);
+
+  const handleSaveEdit = async () => {
+    setSaving(true);
+    await base44.entities.CommAutomation.update(comm.id, {
+      subject: editSubject,
+      generated_content: editBody,
+    });
+    setSaving(false);
+    setEditing(false);
+    toast.success("Template saved");
+    onUpdated?.();
+  };
 
   const typeCfg = TYPE_LABELS[comm.template_type] || { label: comm.template_type, icon: Mail, color: "bg-gray-50 border-gray-200 text-gray-700" };
   const statusCfg = STATUS_CONFIG[comm.template_status] || STATUS_CONFIG.draft;
@@ -62,10 +80,16 @@ export default function CommMessageCard({ comm, onSend, onRegenerate, sending })
         </div>
 
         <div className="flex items-center gap-1.5 flex-shrink-0">
-          <Button size="sm" variant="ghost" className="h-7 text-xs gap-1" onClick={() => setPreviewing(p => !p)}>
+          <Button size="sm" variant="ghost" className="h-7 text-xs gap-1" onClick={() => { setEditing(false); setPreviewing(p => !p); }}>
             <Eye className="w-3.5 h-3.5" />
             {previewing ? "Hide" : "Preview"}
           </Button>
+          {!isSent && (
+            <Button size="sm" variant="ghost" className="h-7 text-xs gap-1" onClick={() => { setEditSubject(comm.subject || ""); setEditBody(comm.generated_content || ""); setEditing(e => !e); setPreviewing(false); }}>
+              <Pencil className="w-3.5 h-3.5" />
+              Edit
+            </Button>
+          )}
           {canSend && isEmail && (
             <Button
               size="sm"
@@ -108,11 +132,45 @@ export default function CommMessageCard({ comm, onSend, onRegenerate, sending })
       )}
 
       {/* Preview */}
-      {previewing && (
+      {previewing && !editing && (
         <div className="border-t px-4 py-3" style={{ borderColor: "var(--card-border)", background: "var(--bg-tertiary)" }}>
           <pre className="text-xs whitespace-pre-wrap font-sans leading-relaxed" style={{ color: "var(--text-primary)" }}>
             {comm.generated_content || "(no content)"}
           </pre>
+        </div>
+      )}
+
+      {/* Edit mode */}
+      {editing && (
+        <div className="border-t px-4 py-3 space-y-3" style={{ borderColor: "var(--card-border)", background: "var(--bg-tertiary)" }}>
+          <div>
+            <label className="text-[11px] font-semibold uppercase tracking-wide block mb-1" style={{ color: "var(--text-muted)" }}>Subject</label>
+            <input
+              value={editSubject}
+              onChange={e => setEditSubject(e.target.value)}
+              className="w-full text-xs rounded-lg px-3 py-2 outline-none"
+              style={{ background: "var(--input-bg)", border: "1px solid var(--input-border)", color: "var(--text-primary)" }}
+            />
+          </div>
+          <div>
+            <label className="text-[11px] font-semibold uppercase tracking-wide block mb-1" style={{ color: "var(--text-muted)" }}>Body</label>
+            <textarea
+              value={editBody}
+              onChange={e => setEditBody(e.target.value)}
+              rows={10}
+              className="w-full text-xs rounded-lg px-3 py-2 outline-none font-mono resize-y"
+              style={{ background: "var(--input-bg)", border: "1px solid var(--input-border)", color: "var(--text-primary)" }}
+            />
+          </div>
+          <div className="flex gap-2">
+            <Button size="sm" className="h-7 text-xs gap-1 bg-blue-600 hover:bg-blue-700 text-white" onClick={handleSaveEdit} disabled={saving}>
+              <Save className="w-3 h-3" />
+              {saving ? "Saving…" : "Save"}
+            </Button>
+            <Button size="sm" variant="ghost" className="h-7 text-xs" onClick={() => setEditing(false)}>
+              Cancel
+            </Button>
+          </div>
         </div>
       )}
 

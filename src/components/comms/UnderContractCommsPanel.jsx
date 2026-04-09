@@ -163,6 +163,7 @@ export default function UnderContractCommsPanel({ transaction, currentUser }) {
               onSend={handleSend}
               onRegenerate={() => handleGenerate(true)}
               sending={sending}
+              onUpdated={() => queryClient.invalidateQueries({ queryKey: ["comm-automations", transaction.id] })}
             />
           ))}
         </div>
