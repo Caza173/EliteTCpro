@@ -39,6 +39,8 @@ export default function UnderContractCommsPanel({ transaction, currentUser }) {
   const [generating, setGenerating] = useState(false);
   const [sendingAll, setSendingAll] = useState(false);
 
+  const SMS_TYPES = ["buyer_sms", "seller_sms"];
+
   const { data: comms = [], isLoading } = useQuery({
     queryKey: ["comm-automations", transaction.id],
     queryFn: () => base44.entities.CommAutomation.filter({ transaction_id: transaction.id }, "-created_date"),
@@ -46,7 +48,8 @@ export default function UnderContractCommsPanel({ transaction, currentUser }) {
     staleTime: 10_000,
   });
 
-  const sortedComms = sortComms(comms);
+  const filteredComms = comms.filter(c => !SMS_TYPES.includes(c.template_type));
+  const sortedComms = sortComms(filteredComms);
   const latestComm = sortedComms[0];
   const preflightStatus = latestComm?.preflight_status || null;
   const preflightIssues = latestComm?.preflight_issues || [];
@@ -55,9 +58,9 @@ export default function UnderContractCommsPanel({ transaction, currentUser }) {
   const blockingIssues = preflightIssues.filter(i => i.severity === "blocking");
   const warningIssues = preflightIssues.filter(i => i.severity === "warning");
 
-  const readyCount = comms.filter(c => c.template_status === "ready").length;
-  const sentCount = comms.filter(c => c.template_status === "sent").length;
-  const blockedCount = comms.filter(c => c.template_status === "blocked").length;
+  const readyCount = filteredComms.filter(c => c.template_status === "ready").length;
+  const sentCount = filteredComms.filter(c => c.template_status === "sent").length;
+  const blockedCount = filteredComms.filter(c => c.template_status === "blocked").length;
 
   const handleGenerate = async (isRegen = false) => {
     setGenerating(true);
@@ -100,7 +103,7 @@ export default function UnderContractCommsPanel({ transaction, currentUser }) {
   };
 
   // ── Empty state ──────────────────────────────────────────────────────────
-  if (!isLoading && comms.length === 0) {
+  if (!isLoading && filteredComms.length === 0) {
     return (
       <div className="space-y-4">
         <AtlasBanner
