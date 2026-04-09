@@ -5,81 +5,10 @@ import { useCurrentUser } from "@/components/auth/useCurrentUser";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Upload, Plus, FileText, Trash2, Edit2, CheckCircle2, ChevronDown, ChevronRight, Loader2, Star, StarOff, Layers, Mail, Zap } from "lucide-react";
+import { Upload, Plus, FileText, Trash2, Edit2, CheckCircle2, ChevronDown, ChevronRight, Loader2, Star, StarOff, Layers } from "lucide-react";
 import { toast } from "sonner";
 import TemplateUploadModal from "@/components/templates/TemplateUploadModal";
 import TemplateEditorPanel from "@/components/templates/TemplateEditorPanel";
-import EmailTemplatePreview from "@/components/templates/EmailTemplatePreview";
-
-// ── Email Templates (task-triggered) ────────────────────────────────────────
-const EMAIL_TEMPLATES = [
-  {
-    id: "emd_sent",
-    trigger: "Earnest Money Sent",
-    label: "Earnest Money Submitted",
-    subject: "Earnest Money Submitted – {property_address}",
-    recipients: "Buyer(s)",
-    fields: ["buyer_name", "property_address", "earnest_money_amount", "escrow_holder"],
-    critical: false,
-    body: "",
-    originalBody: "Dear {buyer_name},\n\nThe earnest money deposit of {earnest_money_amount} for {property_address} has been submitted to {escrow_holder}.\n\nPlease confirm receipt and let us know if you have any questions.\n\nBest regards",
-  },
-  {
-    id: "emd_received",
-    trigger: "Earnest Money Deposit Received",
-    label: "Earnest Money Confirmed",
-    subject: "Earnest Money Confirmed – {property_address}",
-    recipients: "Buyer(s)",
-    fields: ["buyer_name", "earnest_money_amount", "escrow_holder", "date_received", "next_milestone"],
-    critical: true,
-    body: "",
-    originalBody: "Dear {buyer_name},\n\nWe are pleased to confirm receipt of your earnest money deposit of {earnest_money_amount} on {date_received}.\n\nThe funds are being held by {escrow_holder}. Your next milestone is {next_milestone}.\n\nBest regards",
-  },
-  {
-    id: "inspection_scheduled",
-    trigger: "Inspection Scheduled",
-    label: "Inspection Scheduled",
-    subject: "Inspection Scheduled – {property_address}",
-    recipients: "Buyer(s)",
-    fields: ["buyer_name", "inspection_date", "inspection_time", "inspector_name"],
-    critical: false,
-    body: "",
-    originalBody: "Dear {buyer_name},\n\nYour home inspection has been scheduled:\n\nDate: {inspection_date}\nTime: {inspection_time}\nInspector: {inspector_name}\n\nPlease ensure the property is accessible at the scheduled time.\n\nBest regards",
-  },
-  {
-    id: "inspection_completed",
-    trigger: "Inspection Completed",
-    label: "Inspection Completed – Next Steps",
-    subject: "Inspection Completed – Next Steps – {property_address}",
-    recipients: "Buyer(s)",
-    fields: ["buyer_name", "property_address"],
-    critical: true,
-    body: "",
-    originalBody: "Dear {buyer_name},\n\nThe inspection for {property_address} has been completed. The inspection report will be delivered within the timeframe specified in your contract.\n\nPlease review the report carefully and contact us with any questions or concerns.\n\nBest regards",
-  },
-  {
-    id: "appraisal_ordered",
-    trigger: "Appraisal Ordered",
-    label: "Appraisal Ordered",
-    subject: "Appraisal Ordered – {property_address}",
-    recipients: "Buyer(s)",
-    fields: ["buyer_name", "lender_name"],
-    critical: false,
-    body: "",
-    originalBody: "Dear {buyer_name},\n\nYour lender, {lender_name}, has ordered the appraisal for your property. The appraiser will contact you to schedule an inspection time.\n\nPlease be prepared to provide access to the property as requested.\n\nBest regards",
-  },
-  {
-    id: "appraisal_scheduled",
-    trigger: "Appraisal Scheduled",
-    label: "Appraisal Scheduled",
-    subject: "Appraisal Scheduled – {property_address}",
-    recipients: "Buyer(s)",
-    fields: ["buyer_name", "appraisal_date"],
-    critical: false,
-    body: "",
-    originalBody: "Dear {buyer_name},\n\nThe appraisal for your property has been scheduled for {appraisal_date}. Please ensure the property is accessible and in good condition.\n\nIf you need to reschedule, contact the appraiser directly.\n\nBest regards",
-  },
-];
 
 const TYPE_COLORS = {
   buyer:       "bg-blue-100 text-blue-700",
@@ -202,9 +131,6 @@ export default function TemplateManager() {
         </div>
       )}
 
-      {/* Email Templates Section */}
-      <EmailTemplatesSection />
-
       <TemplateUploadModal
         open={uploadOpen}
         onClose={() => setUploadOpen(false)}
@@ -216,100 +142,6 @@ export default function TemplateManager() {
           toast.success("Template parsed — review and save below.");
         }}
       />
-    </div>
-  );
-}
-
-function EmailTemplatesSection() {
-  const [expanded, setExpanded] = useState(true);
-  const [previewId, setPreviewId] = useState(null);
-  const [templates, setTemplates] = useState(EMAIL_TEMPLATES);
-
-  const handleUpdateTemplate = (updatedTemplate) => {
-    setTemplates(templates.map(t => t.id === updatedTemplate.id ? updatedTemplate : t));
-  };
-
-  return (
-    <div className="space-y-2">
-      <div className="flex items-center justify-between">
-        <div>
-          <h2 className="text-base font-semibold flex items-center gap-2" style={{ color: "var(--text-primary)" }}>
-            <Mail className="w-4 h-4 text-blue-500" /> Email Templates
-          </h2>
-          <p className="text-xs mt-0.5" style={{ color: "var(--text-secondary)" }}>
-            Automatically triggered when specific tasks are completed. Manual review required before sending.
-          </p>
-        </div>
-        <button onClick={() => setExpanded(e => !e)} className="p-1 rounded hover:bg-gray-100 transition-colors" style={{ color: "var(--text-muted)" }}>
-          {expanded ? <ChevronDown className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
-        </button>
-      </div>
-
-      {expanded && (
-        <div className="theme-card overflow-hidden">
-          <div className="divide-y" style={{ borderColor: "var(--card-border)" }}>
-            {templates.map(tpl => (
-              <div key={tpl.id}>
-                <div
-                  className="flex items-center gap-3 px-4 py-3 hover:bg-gray-50 transition-colors cursor-pointer"
-                  onClick={() => setPreviewId(previewId === tpl.id ? null : tpl.id)}
-                >
-                  <Mail className="w-4 h-4 flex-shrink-0 text-blue-400" />
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <span className="text-sm font-medium" style={{ color: "var(--text-primary)" }}>{tpl.label}</span>
-                      {tpl.critical && (
-                        <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded-full bg-red-50 text-red-600 border border-red-200">Critical</span>
-                      )}
-                    </div>
-                    <div className="flex items-center gap-3 mt-0.5 flex-wrap">
-                      <span className="text-xs flex items-center gap-1" style={{ color: "var(--text-muted)" }}>
-                        <Zap className="w-3 h-3 text-amber-400" /> Trigger: <em>{tpl.trigger}</em>
-                      </span>
-                      <span className="text-xs" style={{ color: "var(--text-muted)" }}>→ {tpl.recipients}</span>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-2 flex-shrink-0">
-                    <span className="text-[10px] font-medium px-2 py-0.5 rounded-full bg-blue-50 text-blue-600 border border-blue-100">Auto-Draft</span>
-                    {previewId === tpl.id
-                      ? <ChevronDown className="w-3.5 h-3.5" style={{ color: "var(--text-muted)" }} />
-                      : <ChevronRight className="w-3.5 h-3.5" style={{ color: "var(--text-muted)" }} />}
-                  </div>
-                </div>
-
-                {/* Expanded preview */}
-                {previewId === tpl.id && (
-                  <div className="px-4 pb-4 space-y-3" style={{ borderColor: "var(--card-border)", background: "var(--bg-tertiary)" }}>
-                    <div className="pt-3 grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
-                      <div>
-                        <p className="font-semibold mb-1" style={{ color: "var(--text-muted)" }}>Subject Line</p>
-                        <p className="px-3 py-2 rounded-lg bg-white border font-mono text-blue-700" style={{ borderColor: "var(--card-border)" }}>
-                          {tpl.subject}
-                        </p>
-                      </div>
-                      <div>
-                        <p className="font-semibold mb-1" style={{ color: "var(--text-muted)" }}>Data Fields Used</p>
-                        <div className="flex flex-wrap gap-1">
-                          {tpl.fields.map(f => (
-                            <span key={f} className="px-2 py-0.5 rounded bg-gray-100 text-gray-600 border border-gray-200 font-mono">{`{${f}}`}</span>
-                          ))}
-                        </div>
-                      </div>
-                    </div>
-                    <p className="text-[11px]" style={{ color: "var(--text-muted)" }}>
-                      📌 Email is generated automatically when the triggering task is marked complete. Requires manual review before sending.
-                    </p>
-                    <EmailTemplatePreview
-                      template={tpl}
-                      onUpdate={handleUpdateTemplate}
-                    />
-                  </div>
-                )}
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
     </div>
   );
 }
