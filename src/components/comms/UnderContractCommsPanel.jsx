@@ -143,15 +143,7 @@ export default function UnderContractCommsPanel({ transaction, currentUser }) {
       {/* Contract Data Used */}
       {contractData && <ContractDataSnapshot data={contractData} />}
 
-      {/* Issues */}
-      {preflightIssues.length > 0 && (
-        <div>
-          <p className="text-xs font-semibold uppercase tracking-wide mb-2" style={{ color: "var(--text-muted)" }}>
-            Atlas Preflight Issues ({preflightIssues.length})
-          </p>
-          <CommIssueList issues={preflightIssues} />
-        </div>
-      )}
+
 
       {/* Communication Cards */}
       {sortedComms.length > 0 && (
