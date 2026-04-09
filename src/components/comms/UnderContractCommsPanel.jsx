@@ -18,6 +18,12 @@ const TEMPLATE_ORDER = [
   "lender_title_intro_email",
   "buyer_sms",
   "seller_sms",
+  "earnest_money_submitted_email",
+  "earnest_money_confirmed_email",
+  "inspection_scheduled_email",
+  "inspection_completed_email",
+  "appraisal_ordered_email",
+  "appraisal_scheduled_email",
 ];
 
 function sortComms(comms) {

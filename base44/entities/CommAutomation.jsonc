@@ -19,7 +19,13 @@
         "inspection_issue_email",
         "financing_reminder_email",
         "closing_reminder_email",
-        "extension_addendum_email"
+        "extension_addendum_email",
+        "earnest_money_submitted_email",
+        "earnest_money_confirmed_email",
+        "inspection_scheduled_email",
+        "inspection_completed_email",
+        "appraisal_ordered_email",
+        "appraisal_scheduled_email"
       ]
     },
     "template_status": {

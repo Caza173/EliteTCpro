@@ -259,6 +259,58 @@ function runPreflight(data) {
   return { status, issues, blockingIssues, warningIssues };
 }
 
+// ─── Task-Triggered Template Builders ────────────────────────────────────────
+
+function buildEarnestMoneySubmittedEmail(data) {
+  const { buyer_name, property_address, earnest_money_amount, lender_name } = data;
+  const escrow = lender_name || "the escrow holder";
+  return {
+    subject: `Earnest Money Submitted – ${fmt(property_address)}`,
+    body: `Dear ${fmt(buyer_name, "there")},\n\nThe earnest money deposit${earnest_money_amount ? ` of $${Number(earnest_money_amount).toLocaleString("en-US")}` : ""} for ${fmt(property_address)} has been submitted to ${escrow}.\n\nPlease confirm receipt and let us know if you have any questions.\n\nBest regards`,
+  };
+}
+
+function buildEarnestMoneyConfirmedEmail(data) {
+  const { buyer_name, property_address, earnest_money_amount, earnest_money_due_date, lender_name } = data;
+  const escrow = lender_name || "the escrow holder";
+  return {
+    subject: `Earnest Money Confirmed – ${fmt(property_address)}`,
+    body: `Dear ${fmt(buyer_name, "there")},\n\nWe are pleased to confirm receipt of your earnest money deposit${earnest_money_amount ? ` of $${Number(earnest_money_amount).toLocaleString("en-US")}` : ""}${earnest_money_due_date ? ` on ${fmtDate(earnest_money_due_date)}` : ""}.\n\nThe funds are being held by ${escrow}.\n\nBest regards`,
+  };
+}
+
+function buildInspectionScheduledEmail(data) {
+  const { buyer_name, property_address, inspection_deadline } = data;
+  return {
+    subject: `Inspection Scheduled – ${fmt(property_address)}`,
+    body: `Dear ${fmt(buyer_name, "there")},\n\nYour home inspection has been scheduled for ${fmt(property_address)}.\n\nDeadline: ${fmtDate(inspection_deadline)}\n\nPlease ensure the property is accessible at the scheduled time.\n\nBest regards`,
+  };
+}
+
+function buildInspectionCompletedEmail(data) {
+  const { buyer_name, property_address } = data;
+  return {
+    subject: `Inspection Completed – Next Steps – ${fmt(property_address)}`,
+    body: `Dear ${fmt(buyer_name, "there")},\n\nThe inspection for ${fmt(property_address)} has been completed. The inspection report will be delivered within the timeframe specified in your contract.\n\nPlease review the report carefully and contact us with any questions or concerns.\n\nBest regards`,
+  };
+}
+
+function buildAppraisalOrderedEmail(data) {
+  const { buyer_name, property_address, lender_name } = data;
+  return {
+    subject: `Appraisal Ordered – ${fmt(property_address)}`,
+    body: `Dear ${fmt(buyer_name, "there")},\n\nYour lender, ${fmt(lender_name, "your lender")}, has ordered the appraisal for your property at ${fmt(property_address)}. The appraiser will contact you to schedule an inspection time.\n\nPlease be prepared to provide access to the property as requested.\n\nBest regards`,
+  };
+}
+
+function buildAppraisalScheduledEmail(data) {
+  const { buyer_name, property_address, appraisal_deadline } = data;
+  return {
+    subject: `Appraisal Scheduled – ${fmt(property_address)}`,
+    body: `Dear ${fmt(buyer_name, "there")},\n\nThe appraisal for your property at ${fmt(property_address)} has been scheduled${appraisal_deadline ? ` for ${fmtDate(appraisal_deadline)}` : ""}. Please ensure the property is accessible and in good condition.\n\nIf you need to reschedule, contact the appraiser directly.\n\nBest regards`,
+  };
+}
+
 // ─── Communication Records Builder ──────────────────────────────────────────
 
 function buildAllComms(data, preflight, transaction, sourceDocId, sourceDocName) {
@@ -344,6 +396,30 @@ function buildAllComms(data, preflight, transaction, sourceDocId, sourceDocName)
     recipients: sellerEmails,
     cc_recipients: [],
   });
+
+  // F. Task-triggered: Earnest Money Submitted
+  const { subject: emsSub, body: emsBody } = buildEarnestMoneySubmittedEmail(data);
+  comms.push({ ...base, template_type: "earnest_money_submitted_email", subject: emsSub, generated_content: emsBody, recipients: buyerEmails, cc_recipients: [] });
+
+  // G. Task-triggered: Earnest Money Confirmed
+  const { subject: emcSub, body: emcBody } = buildEarnestMoneyConfirmedEmail(data);
+  comms.push({ ...base, template_type: "earnest_money_confirmed_email", subject: emcSub, generated_content: emcBody, recipients: buyerEmails, cc_recipients: [] });
+
+  // H. Task-triggered: Inspection Scheduled
+  const { subject: insSub, body: insBody } = buildInspectionScheduledEmail(data);
+  comms.push({ ...base, template_type: "inspection_scheduled_email", subject: insSub, generated_content: insBody, recipients: buyerEmails, cc_recipients: [] });
+
+  // I. Task-triggered: Inspection Completed
+  const { subject: incSub, body: incBody } = buildInspectionCompletedEmail(data);
+  comms.push({ ...base, template_type: "inspection_completed_email", subject: incSub, generated_content: incBody, recipients: buyerEmails, cc_recipients: [] });
+
+  // J. Task-triggered: Appraisal Ordered
+  const { subject: apoSub, body: apoBody } = buildAppraisalOrderedEmail(data);
+  comms.push({ ...base, template_type: "appraisal_ordered_email", subject: apoSub, generated_content: apoBody, recipients: buyerEmails, cc_recipients: [] });
+
+  // K. Task-triggered: Appraisal Scheduled
+  const { subject: apsSub, body: apsBody } = buildAppraisalScheduledEmail(data);
+  comms.push({ ...base, template_type: "appraisal_scheduled_email", subject: apsSub, generated_content: apsBody, recipients: buyerEmails, cc_recipients: [] });
 
   return comms;
 }

@@ -10,6 +10,12 @@ const TYPE_LABELS = {
   lender_title_intro_email: { label: "Lender / Title Email", icon: Mail, color: "bg-purple-500/10 border-purple-500/30 text-purple-400" },
   buyer_sms: { label: "Buyer SMS", icon: MessageSquare, color: "bg-sky-500/10 border-sky-500/30 text-sky-400" },
   seller_sms: { label: "Seller SMS", icon: MessageSquare, color: "bg-teal-500/10 border-teal-500/30 text-teal-400" },
+  earnest_money_submitted_email: { label: "Buyer Email", icon: Mail, color: "bg-blue-500/10 border-blue-500/30 text-blue-400" },
+  earnest_money_confirmed_email: { label: "Buyer Email", icon: Mail, color: "bg-blue-500/10 border-blue-500/30 text-blue-400" },
+  inspection_scheduled_email: { label: "Buyer Email", icon: Mail, color: "bg-blue-500/10 border-blue-500/30 text-blue-400" },
+  inspection_completed_email: { label: "Buyer Email", icon: Mail, color: "bg-blue-500/10 border-blue-500/30 text-blue-400" },
+  appraisal_ordered_email: { label: "Buyer Email", icon: Mail, color: "bg-blue-500/10 border-blue-500/30 text-blue-400" },
+  appraisal_scheduled_email: { label: "Buyer Email", icon: Mail, color: "bg-blue-500/10 border-blue-500/30 text-blue-400" },
 };
 
 const STATUS_CONFIG = {
