@@ -37,7 +37,6 @@ export default function UnderContractCommsPanel({ transaction, currentUser }) {
   const queryClient = useQueryClient();
   const [sending, setSending] = useState(null);
   const [generating, setGenerating] = useState(false);
-  const [sendingAll, setSendingAll] = useState(false);
 
   const SMS_TYPES = ["buyer_sms", "seller_sms"];
 
@@ -89,19 +88,6 @@ export default function UnderContractCommsPanel({ transaction, currentUser }) {
     }
   };
 
-  const handleSendAll = async () => {
-    setSendingAll(true);
-    try {
-      await base44.functions.invoke("underContractAutomation", {
-        action: "send_all",
-        transaction_id: transaction.id,
-      });
-      queryClient.invalidateQueries({ queryKey: ["comm-automations", transaction.id] });
-    } finally {
-      setSendingAll(false);
-    }
-  };
-
   // ── Empty state ──────────────────────────────────────────────────────────
   if (!isLoading && filteredComms.length === 0) {
     return (
@@ -129,9 +115,7 @@ export default function UnderContractCommsPanel({ transaction, currentUser }) {
         blockingIssues={blockingIssues}
         warningIssues={warningIssues}
         hasComms={comms.length > 0}
-        onSendAll={handleSendAll}
-        sendingAll={sendingAll}
-        readyToSendAll={readyCount > 0}
+
       />
 
       {isLoading && (
@@ -171,7 +155,6 @@ export default function UnderContractCommsPanel({ transaction, currentUser }) {
 function AtlasBanner({
   status, onGenerate, generating, readyCount = 0, sentCount = 0, blockedCount = 0,
   blockingIssues = [], warningIssues = [], hasComms = false,
-  onSendAll, sendingAll, readyToSendAll, transaction,
 }) {
   const isReady = status === "READY";
   const isPartial = status === "PARTIAL";
@@ -226,29 +209,16 @@ function AtlasBanner({
               {generating ? "Generating…" : "Generate Communications"}
             </Button>
           ) : (
-            <>
-              {readyToSendAll && (
-                <Button
-                  size="sm"
-                  className="h-8 text-xs gap-1.5 bg-blue-600 hover:bg-blue-700 text-white"
-                  onClick={onSendAll}
-                  disabled={sendingAll}
-                >
-                  {sendingAll ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Send className="w-3.5 h-3.5" />}
-                  {sendingAll ? "Sending…" : "Send All Ready"}
-                </Button>
-              )}
-              <Button
-                size="sm"
-                variant="outline"
-                className="h-8 text-xs gap-1.5"
-                onClick={onGenerate}
-                disabled={generating}
-              >
-                {generating ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <RefreshCw className="w-3.5 h-3.5" />}
-                {generating ? "Regenerating…" : "Regenerate"}
-              </Button>
-            </>
+            <Button
+              size="sm"
+              variant="outline"
+              className="h-8 text-xs gap-1.5"
+              onClick={onGenerate}
+              disabled={generating}
+            >
+              {generating ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <RefreshCw className="w-3.5 h-3.5" />}
+              {generating ? "Regenerating…" : "Regenerate"}
+            </Button>
           )}
         </div>
       </div>
