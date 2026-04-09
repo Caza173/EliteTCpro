@@ -397,29 +397,37 @@ function buildAllComms(data, preflight, transaction, sourceDocId, sourceDocName)
     cc_recipients: [],
   });
 
+  // Task-triggered templates always get their own "ready" base — no preflight blocking
+  const taskBase = {
+    ...base,
+    template_status: "ready",
+    preflight_status: "READY",
+    preflight_issues: [],
+  };
+
   // F. Task-triggered: Earnest Money Submitted
   const { subject: emsSub, body: emsBody } = buildEarnestMoneySubmittedEmail(data);
-  comms.push({ ...base, template_type: "earnest_money_submitted_email", subject: emsSub, generated_content: emsBody, recipients: buyerEmails, cc_recipients: [] });
+  comms.push({ ...taskBase, template_type: "earnest_money_submitted_email", subject: emsSub, generated_content: emsBody, recipients: buyerEmails, cc_recipients: [] });
 
   // G. Task-triggered: Earnest Money Confirmed
   const { subject: emcSub, body: emcBody } = buildEarnestMoneyConfirmedEmail(data);
-  comms.push({ ...base, template_type: "earnest_money_confirmed_email", subject: emcSub, generated_content: emcBody, recipients: buyerEmails, cc_recipients: [] });
+  comms.push({ ...taskBase, template_type: "earnest_money_confirmed_email", subject: emcSub, generated_content: emcBody, recipients: buyerEmails, cc_recipients: [] });
 
   // H. Task-triggered: Inspection Scheduled
   const { subject: insSub, body: insBody } = buildInspectionScheduledEmail(data);
-  comms.push({ ...base, template_type: "inspection_scheduled_email", subject: insSub, generated_content: insBody, recipients: buyerEmails, cc_recipients: [] });
+  comms.push({ ...taskBase, template_type: "inspection_scheduled_email", subject: insSub, generated_content: insBody, recipients: buyerEmails, cc_recipients: [] });
 
   // I. Task-triggered: Inspection Completed
   const { subject: incSub, body: incBody } = buildInspectionCompletedEmail(data);
-  comms.push({ ...base, template_type: "inspection_completed_email", subject: incSub, generated_content: incBody, recipients: buyerEmails, cc_recipients: [] });
+  comms.push({ ...taskBase, template_type: "inspection_completed_email", subject: incSub, generated_content: incBody, recipients: buyerEmails, cc_recipients: [] });
 
   // J. Task-triggered: Appraisal Ordered
   const { subject: apoSub, body: apoBody } = buildAppraisalOrderedEmail(data);
-  comms.push({ ...base, template_type: "appraisal_ordered_email", subject: apoSub, generated_content: apoBody, recipients: buyerEmails, cc_recipients: [] });
+  comms.push({ ...taskBase, template_type: "appraisal_ordered_email", subject: apoSub, generated_content: apoBody, recipients: buyerEmails, cc_recipients: [] });
 
   // K. Task-triggered: Appraisal Scheduled
   const { subject: apsSub, body: apsBody } = buildAppraisalScheduledEmail(data);
-  comms.push({ ...base, template_type: "appraisal_scheduled_email", subject: apsSub, generated_content: apsBody, recipients: buyerEmails, cc_recipients: [] });
+  comms.push({ ...taskBase, template_type: "appraisal_scheduled_email", subject: apsSub, generated_content: apsBody, recipients: buyerEmails, cc_recipients: [] });
 
   return comms;
 }
