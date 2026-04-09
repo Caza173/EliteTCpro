@@ -424,10 +424,10 @@ function extractContractData(transaction, parsedFields) {
 
   return {
     buyer_name: pf.buyer_name || buyers.join(" & ") || "",
-    seller_name: pf.seller_name || sellers.join(" & ") || "",
+    seller_name: pf.seller_name || sellers.join(" & ") || tf.sellerName || "",
     property_address: pf.property_address || tf.address || "",
     purchase_price: pf.purchase_price || tf.sale_price || null,
-    earnest_money_amount: pf.earnest_money_amount || null,
+    earnest_money_amount: pf.earnest_money_amount || tf.earnest_money_amount || null,
     earnest_money_due_date: pf.earnest_money_due_date || tf.earnest_money_deadline || null,
     closing_date: pf.closing_date || tf.closing_date || null,
     inspection_deadline: pf.inspection_deadline || tf.inspection_deadline || null,
