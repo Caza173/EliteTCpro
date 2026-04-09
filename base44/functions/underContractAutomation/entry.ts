@@ -377,17 +377,6 @@ function buildAllComms(data, preflight, transaction, sourceDocId, sourceDocName)
     cc_recipients: [tcEmail].filter(Boolean),
   });
 
-  // D. Seller SMS
-  const { subject: ssSubj, body: ssBody } = buildSellerSMS(data);
-  comms.push({
-    ...base,
-    template_type: "seller_sms",
-    subject: ssSubj,
-    generated_content: ssBody,
-    recipients: sellerEmails,
-    cc_recipients: [],
-  });
-
   // Task-triggered templates always get their own "ready" base — no preflight blocking
   const taskBase = {
     ...base,

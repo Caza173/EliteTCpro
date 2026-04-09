@@ -16,7 +16,6 @@ const TEMPLATE_ORDER = [
   "buyer_under_contract_email",
   "seller_under_contract_email",
   "lender_title_intro_email",
-  "seller_sms",
   "earnest_money_submitted_email",
   "earnest_money_confirmed_email",
   "inspection_scheduled_email",
