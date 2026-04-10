@@ -140,16 +140,21 @@ export default function Settings() {
   const roleColors = ROLE_COLORS;
   const [activeTab, setActiveTab] = useState("account");
 
-  const TABS = [
-    { id: "account",    label: "Account",      icon: SettingsIcon },
-    { id: "profile",    label: "Profile",      icon: UserCircle },
-    { id: "team",       label: "Team",         icon: Users,        adminOnly: true },
-    { id: "finance",    label: "Finance",      icon: DollarSign },
+  const isTC = currentUser?.role === "tc" || currentUser?.role === "tc_lead";
 
-    { id: "templates",  label: "Templates",    icon: FileText,     adminOnly: true },
-    { id: "feedback",   label: "Feedback",     icon: MessageSquarePlus },
-    { id: "system",     label: "System",       icon: Activity },
-  ].filter(t => !t.adminOnly || isTCOrAdmin(currentUser));
+  const TABS = [
+    { id: "account",    label: "Account",    icon: SettingsIcon },
+    { id: "profile",    label: "Profile",    icon: UserCircle },
+    { id: "team",       label: "Team",       icon: Users,             adminOnly: true },
+    { id: "finance",    label: "Finance",    icon: DollarSign,        tcHidden: true },
+    { id: "templates",  label: "Templates",  icon: FileText,          adminOnly: true },
+    { id: "feedback",   label: "Feedback",   icon: MessageSquarePlus },
+    { id: "system",     label: "System",     icon: Activity,          tcHidden: true },
+  ].filter(t => {
+    if (t.adminOnly && !isTCOrAdmin(currentUser)) return false;
+    if (t.tcHidden && isTC) return false;
+    return true;
+  });
 
   return (
     <div className="max-w-3xl mx-auto">

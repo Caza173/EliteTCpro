@@ -41,15 +41,13 @@ import LogoutButton from "./components/auth/LogoutButton";
 import { useCurrentUser as useCurrentUserCtx } from "./lib/CurrentUserContext.jsx";
 
 const TC_NAV = [
-  { label: "Dashboard",      page: "Dashboard",      icon: LayoutDashboard },
-  { label: "Transactions",   page: "Transactions",   icon: FileText },
-  { label: "Deal Intake",    page: "AgentIntake",    icon: UserPlus },
-  { label: "User Management",page: "UserManagement", icon: Users },
-  { label: "Addendum Builder",page: "AddendumBuilder", icon: ClipboardList },
-  { label: "Templates",      page: "TemplateManager", icon: Layers },
-  { label: "Integrations",   page: "Integrations", icon: Plug },
+  { label: "Dashboard",       page: "Dashboard",       icon: LayoutDashboard },
+  { label: "Transactions",    page: "Transactions",    icon: FileText },
+  { label: "Deal Intake",     page: "AgentIntake",     icon: UserPlus },
+  { label: "Addendum Builder", page: "AddendumBuilder", icon: ClipboardList },
+  { label: "Templates",       page: "TemplateManager", icon: Layers },
   { label: "Help & Training", page: "help",             icon: HelpCircle, path: "/help" },
-  { label: "Settings",       page: "Settings",         icon: Settings },
+  { label: "Settings",        page: "Settings",         icon: Settings },
 ];
 
 const OWNER_NAV = [
@@ -117,6 +115,12 @@ export default function Layout({ children, currentPageName }) {
     const ONBOARDING_EXEMPT = ["Onboarding", "Landing", "SetupProfile", "AgentSignIn"];
     if (needsOnboarding && !ONBOARDING_EXEMPT.includes(currentPageName)) {
       navigate("/onboarding", { replace: true });
+      return;
+    }
+    // TC restricted pages
+    const TC_RESTRICTED = ["UserManagement", "Integrations", "AuditLog", "Billing"];
+    if (isTCRole && TC_RESTRICTED.includes(currentPageName)) {
+      navigate("/Dashboard", { replace: true });
       return;
     }
     // Enforce profile setup for logged-in users who haven't completed it
