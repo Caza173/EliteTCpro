@@ -19,6 +19,7 @@ import SignDocument from './pages/SignDocument.jsx'
 import SystemDiagnostics from './pages/SystemDiagnostics.jsx'
 import AgentSignIn from './pages/AgentSignIn.jsx'
 import AgentIntake from './pages/AgentIntake'
+import Onboarding from './pages/Onboarding'
 import TemplateManager from './pages/TemplateManager'
 import TCSignIn from './pages/TCSignIn.jsx'
 import AgentSubmitTransaction from './pages/AgentSubmitTransaction.jsx'
@@ -61,9 +62,12 @@ const AuthenticatedApp = () => {
     }
   }
 
+
+
   // Render the main app
   return (
     <Routes>
+      <Route path="/onboarding" element={<Onboarding />} />
       <Route path="/" element={<Landing />} />
       <Route path="/Landing" element={<Landing />} />
       <Route path="/SetupProfile" element={
