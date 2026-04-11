@@ -1,591 +1,377 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { ArrowRight, Upload, Zap, CheckCircle2, Mail, Shield, BarChart3, Lock, Menu, X, FileText, Pen } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { createPageUrl } from "@/utils";
 import { base44 } from "@/api/base44Client";
-
-// Brand colors
-const NAVY = "#0D1B2A";
-const NAVY_MID = "#112236";
-const NAVY_LIGHT = "#1A2F45";
-const GOLD = "#C9A84C";
-const GOLD_LIGHT = "#E2C06E";
-const GOLD_DIM = "rgba(201,168,76,0.15)";
-const GOLD_BORDER = "rgba(201,168,76,0.3)";
-const WHITE_DIM = "rgba(255,255,255,0.07)";
-const WHITE_BORDER = "rgba(255,255,255,0.12)";
+import { createPageUrl } from "@/utils";
+import {
+  LayoutDashboard, FileText, Clock, ShieldCheck, Send, ArrowRight,
+  CheckCircle2, Upload, Zap, Bell, Users, Lock, Building2,
+} from "lucide-react";
 
 const TABS = [
-  { id: "overview", label: "Overview" },
-  { id: "features", label: "Features" },
-  { id: "how-it-works", label: "How It Works" },
-  { id: "pricing", label: "Pricing" },
-  { id: "login", label: "Login" },
+  { id: "overview",     label: "Overview" },
+  { id: "how_it_works", label: "How It Works" },
+  { id: "features",     label: "Features" },
+  { id: "pricing",      label: "Pricing" },
 ];
-
-// ── Logo Component ────────────────────────────────────────────────────────────
-function EliteTCLogo({ size = "md" }) {
-  const iconSize = size === "lg" ? 48 : size === "sm" ? 24 : 32;
-  const textSize = size === "lg" ? "text-3xl" : size === "sm" ? "text-base" : "text-xl";
-
-  return (
-    <div className="flex items-center gap-2.5">
-      {/* Document + pen icon */}
-      <div
-        className="relative flex-shrink-0 flex items-center justify-center rounded-lg"
-        style={{
-          width: iconSize,
-          height: iconSize,
-          background: "transparent",
-          border: `2px solid ${GOLD}`,
-        }}
-      >
-        <FileText style={{ color: GOLD, width: iconSize * 0.55, height: iconSize * 0.55 }} />
-        <div
-          className="absolute"
-          style={{ bottom: -4, right: -4, background: NAVY, borderRadius: "50%", padding: 2 }}
-        >
-          <Pen style={{ color: GOLD, width: iconSize * 0.32, height: iconSize * 0.32 }} />
-        </div>
-      </div>
-      {/* Wordmark */}
-      <span className={`font-serif font-bold tracking-tight ${textSize}`}>
-        <span style={{ color: "#FFFFFF" }}>Elite</span>
-        <span style={{ color: GOLD }}>TC</span>
-      </span>
-    </div>
-  );
-}
 
 export default function Landing() {
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState("overview");
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   return (
     <div
       className="h-screen flex flex-col overflow-hidden"
-      style={{ background: `linear-gradient(160deg, ${NAVY} 0%, #0A1628 60%, #0D1F35 100%)` }}
+      style={{ backgroundColor: "var(--bg-primary)", color: "var(--text-primary)" }}
     >
-      {/* Top Navigation */}
-      <nav
-        className="flex-shrink-0 px-6 py-3 border-b"
-        style={{ borderColor: GOLD_BORDER, background: `rgba(13,27,42,0.92)`, backdropFilter: "blur(12px)" }}
+      {/* ── Top Nav ── */}
+      <header
+        className="flex-shrink-0 flex items-center justify-between px-6 h-12 border-b"
+        style={{ backgroundColor: "var(--bg-secondary)", borderColor: "var(--border)" }}
       >
-        <div className="max-w-7xl mx-auto flex items-center justify-between">
-          <EliteTCLogo size="sm" />
-
-          {/* Desktop Tabs */}
-          <div className="hidden md:flex gap-1">
-            {TABS.map(tab => (
-              <button
-                key={tab.id}
-                onClick={() => setActiveTab(tab.id)}
-                className="text-sm font-medium transition-all px-4 py-1.5 rounded-lg"
-                style={
-                  activeTab === tab.id
-                    ? { color: NAVY, background: GOLD, fontWeight: 600 }
-                    : { color: "rgba(255,255,255,0.6)" }
-                }
-                onMouseEnter={e => { if (activeTab !== tab.id) e.currentTarget.style.color = "#fff"; }}
-                onMouseLeave={e => { if (activeTab !== tab.id) e.currentTarget.style.color = "rgba(255,255,255,0.6)"; }}
-              >
-                {tab.label}
-              </button>
-            ))}
-          </div>
-
-          <button
-            className="md:hidden"
-            style={{ color: "rgba(255,255,255,0.6)" }}
-            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+        <div className="flex items-center gap-2.5">
+          <div
+            className="w-7 h-7 rounded-lg flex items-center justify-center"
+            style={{ backgroundColor: "var(--accent)" }}
           >
-            {mobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
-          </button>
+            <Building2 className="w-4 h-4 text-white" />
+          </div>
+          <span className="text-sm font-semibold" style={{ color: "var(--text-primary)" }}>
+            Elite<span style={{ color: "var(--accent)" }}>TC</span>
+          </span>
         </div>
 
-        {mobileMenuOpen && (
-          <div className="md:hidden mt-3 pb-3 space-y-1">
-            {TABS.map(tab => (
-              <button
-                key={tab.id}
-                onClick={() => { setActiveTab(tab.id); setMobileMenuOpen(false); }}
-                className="block w-full text-left px-4 py-2 rounded-lg text-sm font-medium transition-colors"
-                style={
-                  activeTab === tab.id
-                    ? { color: GOLD, background: GOLD_DIM }
-                    : { color: "rgba(255,255,255,0.55)" }
-                }
-              >
-                {tab.label}
-              </button>
-            ))}
-          </div>
-        )}
-      </nav>
-
-      {/* Main Content */}
-      <div className="flex-1 min-h-0 overflow-hidden">
-        {activeTab === "overview" && <OverviewTab navigate={navigate} />}
-        {activeTab === "features" && <FeaturesTab />}
-        {activeTab === "how-it-works" && <HowItWorksTab />}
-        {activeTab === "pricing" && <PricingTab navigate={navigate} />}
-        {activeTab === "login" && <LoginTab navigate={navigate} />}
-      </div>
-    </div>
-  );
-}
-
-// ── Overview ──────────────────────────────────────────────────────────────────
-function OverviewTab({ navigate }) {
-  return (
-    <div className="h-full flex flex-col overflow-hidden">
-      <div className="flex-1 px-6 py-5 overflow-hidden">
-        <div className="max-w-7xl mx-auto h-full flex flex-col">
-
-          {/* Hero */}
-          <div className="mb-5">
-            <div className="flex items-center gap-2 mb-3">
-              <span
-                className="text-xs font-semibold px-3 py-1 rounded-full tracking-wider uppercase"
-                style={{ background: GOLD_DIM, color: GOLD, border: `1px solid ${GOLD_BORDER}` }}
-              >
-                Real Estate Transaction Management
-              </span>
-            </div>
-            <h1 className="text-4xl md:text-5xl font-bold text-white mb-3 font-serif leading-tight">
-              Transactions Managed
-              <span style={{ color: GOLD }}> With Precision</span>
-            </h1>
-            <p className="text-base text-gray-300 mb-5 max-w-2xl">
-              Automate document parsing, deadline tracking, and compliance monitoring. Close deals faster with EliteTC.
-            </p>
-
-            {/* Feature Strip */}
-            <div className="flex flex-wrap gap-3 mb-5">
-              <FeaturePill icon={Upload} label="AI Contract Parsing" />
-              <FeaturePill icon={Zap} label="Auto Timeline" />
-              <FeaturePill icon={Shield} label="Compliance Tracking" />
-              <FeaturePill icon={Mail} label="Smart Reminders" />
-            </div>
-
-            {/* CTAs */}
-            <div className="flex gap-3">
-              <button
-                onClick={() => navigate(createPageUrl("AddTransaction"))}
-                className="flex items-center gap-2 px-5 py-2.5 rounded-lg text-sm font-semibold transition-all hover:brightness-110"
-                style={{ background: GOLD, color: NAVY }}
-              >
-                Start a Transaction <ArrowRight className="w-4 h-4" />
-              </button>
-              <button
-                onClick={() => base44.auth.redirectToLogin("/Dashboard")}
-                className="flex items-center gap-2 px-5 py-2.5 rounded-lg text-sm font-semibold transition-all"
-                style={{ border: `1px solid ${GOLD_BORDER}`, color: GOLD, background: GOLD_DIM }}
-              >
-                TC Login
-              </button>
-            </div>
-          </div>
-
-          {/* Cards */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 flex-1 min-h-0">
-            {/* Snapshot */}
-            <div
-              className="md:col-span-2 rounded-xl p-5 border overflow-hidden"
-              style={{ borderColor: GOLD_BORDER, background: "rgba(17,34,54,0.7)" }}
+        {/* Tabs */}
+        <nav className="flex gap-1 p-1 rounded-lg" style={{ backgroundColor: "var(--bg-tertiary)" }}>
+          {TABS.map(tab => (
+            <button
+              key={tab.id}
+              onClick={() => setActiveTab(tab.id)}
+              className="px-3 py-1.5 rounded-md text-xs font-medium transition-all"
+              style={
+                activeTab === tab.id
+                  ? { backgroundColor: "var(--card-bg)", color: "var(--text-primary)", boxShadow: "var(--card-shadow)" }
+                  : { color: "var(--text-muted)" }
+              }
             >
-              <div className="space-y-4">
-                <div>
-                  <p className="text-xs font-semibold uppercase tracking-wide mb-1" style={{ color: GOLD }}>Property</p>
-                  <p className="text-sm font-semibold text-white">742 Elm Street, Portland, OR 97214</p>
-                </div>
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-xs font-semibold uppercase tracking-wide mb-1" style={{ color: GOLD }}>Status</p>
-                    <div className="flex items-center gap-2">
-                      <span className="w-2 h-2 rounded-full bg-yellow-400" />
-                      <p className="text-sm font-semibold text-yellow-300">Under Contract</p>
-                    </div>
-                  </div>
-                  <div className="text-right">
-                    <p className="text-xs font-semibold uppercase tracking-wide mb-1" style={{ color: GOLD }}>Days to Close</p>
-                    <p className="text-sm font-bold text-white">18 days</p>
-                  </div>
-                </div>
-                <div className="border-t pt-4" style={{ borderColor: WHITE_BORDER }}>
-                  <p className="text-xs font-semibold uppercase tracking-wide mb-3" style={{ color: GOLD }}>Key Milestones</p>
-                  <div className="space-y-2">
-                    <MilestoneRow status="completed" label="Earnest Money Deposit" date="Mar 28" />
-                    <MilestoneRow status="upcoming" label="Inspection Deadline" date="Apr 10" />
-                    <MilestoneRow status="attention" label="Appraisal Not Ordered" date="Apr 12" />
-                    <MilestoneRow status="attention" label="Financing Commitment" date="Apr 18" />
-                  </div>
-                </div>
-              </div>
-            </div>
+              {tab.label}
+            </button>
+          ))}
+        </nav>
 
-            {/* Right col */}
-            <div className="space-y-4 min-h-0 flex flex-col">
-              <div className="rounded-xl p-4 border" style={{ borderColor: WHITE_BORDER, background: "rgba(17,34,54,0.7)" }}>
-                <p className="text-xs font-semibold uppercase tracking-wide mb-3" style={{ color: GOLD }}>Alerts</p>
-                <div className="space-y-2">
-                  <AlertItem message="Appraisal not ordered" color="red" />
-                  <AlertItem message="Financing commitment pending" color="yellow" />
-                </div>
-              </div>
-              <div
-                className="rounded-xl p-4 border flex-1 flex flex-col justify-center"
-                style={{ borderColor: GOLD_BORDER, background: GOLD_DIM }}
-              >
-                <p className="text-xs font-semibold uppercase tracking-wide mb-2" style={{ color: GOLD }}>Health Score</p>
-                <div className="flex items-end gap-2">
-                  <span className="text-3xl font-bold text-white">94%</span>
-                  <span className="text-xs font-semibold text-emerald-400">Excellent</span>
-                </div>
-              </div>
+        <div className="w-24" /> {/* spacer to center tabs */}
+      </header>
+
+      {/* ── Content Area ── */}
+      <main className="flex-1 min-h-0 overflow-hidden px-6 py-5">
+        {activeTab === "overview"     && <OverviewTab navigate={navigate} />}
+        {activeTab === "how_it_works" && <HowItWorksTab />}
+        {activeTab === "features"     && <FeaturesTab />}
+        {activeTab === "pricing"      && <PricingTab navigate={navigate} />}
+      </main>
+
+      {/* ── Fixed Bottom Action Bar ── */}
+      <footer
+        className="flex-shrink-0 flex items-center justify-center gap-3 px-6 h-14 border-t"
+        style={{ backgroundColor: "var(--bg-secondary)", borderColor: "var(--border)" }}
+      >
+        <button
+          onClick={() => base44.auth.redirectToLogin("/Dashboard")}
+          className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold transition-all"
+          style={{ backgroundColor: "var(--accent)", color: "#fff" }}
+        >
+          <Lock className="w-3.5 h-3.5" /> TC Login
+        </button>
+        <button
+          onClick={() => navigate(createPageUrl("AddTransaction"))}
+          className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all border"
+          style={{ borderColor: "var(--border)", color: "var(--text-secondary)", backgroundColor: "var(--card-bg)" }}
+        >
+          <FileText className="w-3.5 h-3.5" /> Start a Transaction
+        </button>
+        <button
+          onClick={() => navigate("/ClientLookup")}
+          className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all border"
+          style={{ borderColor: "var(--border)", color: "var(--text-secondary)", backgroundColor: "var(--card-bg)" }}
+        >
+          <ArrowRight className="w-3.5 h-3.5" /> Check Transaction Status
+        </button>
+      </footer>
+    </div>
+  );
+}
+
+// ── OVERVIEW ──────────────────────────────────────────────────────────────────
+function OverviewTab() {
+  return (
+    <div className="h-full grid grid-cols-1 lg:grid-cols-2 gap-6 items-center">
+      {/* Left — Headline */}
+      <div className="space-y-5">
+        <div>
+          <p className="text-xs font-semibold uppercase tracking-widest mb-2" style={{ color: "var(--accent)" }}>
+            Transaction Coordination Platform
+          </p>
+          <h1 className="text-3xl font-bold leading-tight" style={{ color: "var(--text-primary)" }}>
+            Manage Every Deal<br />With Precision
+          </h1>
+          <p className="text-sm mt-3 leading-relaxed" style={{ color: "var(--text-secondary)" }}>
+            EliteTC automates document parsing, deadline tracking, and compliance monitoring — so you close faster with fewer errors.
+          </p>
+        </div>
+
+        <div className="grid grid-cols-2 gap-3">
+          {[
+            { icon: Upload,      label: "AI Contract Parsing" },
+            { icon: Clock,       label: "Deadline Tracking" },
+            { icon: ShieldCheck, label: "Compliance Scan" },
+            { icon: Send,        label: "Smart Comms" },
+          ].map(({ icon: Icon, label }) => (
+            <div
+              key={label}
+              className="flex items-center gap-2.5 px-3 py-2.5 rounded-xl border"
+              style={{ backgroundColor: "var(--card-bg)", borderColor: "var(--card-border)" }}
+            >
+              <Icon className="w-4 h-4 flex-shrink-0" style={{ color: "var(--accent)" }} />
+              <span className="text-xs font-medium" style={{ color: "var(--text-primary)" }}>{label}</span>
             </div>
+          ))}
+        </div>
+
+        <div className="flex gap-2 text-xs" style={{ color: "var(--text-muted)" }}>
+          <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500 flex-shrink-0 mt-0.5" />
+          <span>No setup required — upload a P&S and Atlas extracts everything automatically.</span>
+        </div>
+      </div>
+
+      {/* Right — Dashboard Preview */}
+      <div
+        className="rounded-2xl border p-4 space-y-3 h-full max-h-96 overflow-hidden"
+        style={{ backgroundColor: "var(--card-bg)", borderColor: "var(--card-border)", boxShadow: "var(--card-shadow)" }}
+      >
+        {/* Fake header */}
+        <div className="flex items-center justify-between pb-2 border-b" style={{ borderColor: "var(--border)" }}>
+          <div>
+            <p className="text-xs font-semibold" style={{ color: "var(--text-primary)" }}>742 Elm Street, Portland, OR</p>
+            <p className="text-[10px]" style={{ color: "var(--text-muted)" }}>Buyer Transaction · Under Contract</p>
+          </div>
+          <div className="flex gap-1.5">
+            <span className="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-500/10 text-emerald-500">Active</span>
+            <span className="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-blue-500/10 text-blue-500">Score 94%</span>
           </div>
         </div>
-      </div>
 
-      {/* Bottom Metrics Bar */}
-      <div
-        className="flex-shrink-0 px-6 py-3 border-t"
-        style={{ borderColor: GOLD_BORDER, background: "rgba(13,27,42,0.9)" }}
-      >
-        <div className="max-w-7xl mx-auto grid grid-cols-2 md:grid-cols-4 gap-4">
-          <MetricPill number="12" label="Key Dates Extracted" />
-          <MetricPill number="8" label="Tasks Generated" />
-          <MetricPill number="0" label="Missed Deadlines" />
-          <MetricPill number="100%" label="File Compliance" />
+        {/* Key dates strip */}
+        <div className="grid grid-cols-3 gap-2">
+          {[
+            { label: "Contract",  date: "Mar 28", ok: true },
+            { label: "Inspection", date: "Apr 10", ok: false },
+            { label: "Closing",   date: "Apr 30", ok: true },
+          ].map(({ label, date, ok }) => (
+            <div
+              key={label}
+              className="rounded-lg p-2 text-center"
+              style={{ backgroundColor: "var(--bg-tertiary)", border: `1px solid ${ok ? "rgba(34,197,94,0.2)" : "rgba(245,158,11,0.3)"}` }}
+            >
+              <p className="text-[9px] uppercase tracking-wide font-semibold" style={{ color: "var(--text-muted)" }}>{label}</p>
+              <p className="text-xs font-bold mt-0.5" style={{ color: ok ? "var(--success)" : "var(--warning)" }}>{date}</p>
+            </div>
+          ))}
         </div>
-      </div>
-    </div>
-  );
-}
 
-function FeaturePill({ icon: Icon, label }) {
-  return (
-    <div
-      className="flex items-center gap-2 px-3 py-2 rounded-lg"
-      style={{ background: WHITE_DIM, border: `1px solid ${WHITE_BORDER}` }}
-    >
-      <Icon className="w-3.5 h-3.5 flex-shrink-0" style={{ color: GOLD }} />
-      <span className="text-xs font-medium text-gray-300">{label}</span>
-    </div>
-  );
-}
-
-function MilestoneRow({ status, label, date }) {
-  const cfg = {
-    completed: { color: "text-emerald-400", dot: "bg-emerald-500", bg: "bg-emerald-500/10" },
-    upcoming:  { color: "text-yellow-300",  dot: "bg-yellow-400",  bg: "bg-yellow-500/10" },
-    attention: { color: "text-red-400",     dot: "bg-red-500",     bg: "bg-red-500/10" },
-  }[status];
-  return (
-    <div className={`flex items-center justify-between px-2 py-1.5 rounded text-xs ${cfg.bg}`}>
-      <div className="flex items-center gap-2 min-w-0">
-        <span className={`w-1.5 h-1.5 rounded-full ${cfg.dot} flex-shrink-0`} />
-        <span className={`${cfg.color} font-medium truncate`}>{label}</span>
-      </div>
-      <span className="text-gray-500 whitespace-nowrap ml-2">{date}</span>
-    </div>
-  );
-}
-
-function AlertItem({ message, color }) {
-  const cls = color === "red"
-    ? "bg-red-500/10 border-red-500/20 text-red-400"
-    : "bg-yellow-500/10 border-yellow-500/20 text-yellow-400";
-  return (
-    <div className={`flex items-start gap-2 px-2 py-1.5 rounded border text-xs ${cls}`}>
-      <span>⚠️</span>
-      <span className="font-medium leading-tight">{message}</span>
-    </div>
-  );
-}
-
-function MetricPill({ number, label }) {
-  return (
-    <div className="text-center">
-      <p className="text-lg md:text-xl font-bold" style={{ color: GOLD }}>{number}</p>
-      <p className="text-xs text-gray-400 mt-0.5">{label}</p>
-    </div>
-  );
-}
-
-// ── Features ──────────────────────────────────────────────────────────────────
-function FeaturesTab() {
-  const features = [
-    { icon: Upload,       title: "Document Parsing",       description: "Upload Purchase & Sales agreements. AI extracts dates, parties, and deadlines automatically." },
-    { icon: Shield,       title: "Compliance Monitoring",  description: "Real-time scan for missing signatures, incomplete fields, and regulatory blockers." },
-    { icon: Zap,          title: "Deadline Tracking",      description: "Never miss a deadline. Automated alerts and calendar integration for all key dates." },
-    { icon: Mail,         title: "Automated Emails",       description: "Generate and send status updates. Customizable templates for every transaction stage." },
-    { icon: BarChart3,    title: "Analytics Dashboard",    description: "Track pipeline health, closed deals, and team performance at a glance." },
-    { icon: Lock,         title: "Role-Based Access",      description: "Granular permissions for TCs, agents, and clients. Everyone sees only what they need." },
-  ];
-
-  return (
-    <div className="h-full px-6 py-8 overflow-y-auto">
-      <div className="max-w-5xl mx-auto">
-        <h2 className="text-3xl font-bold font-serif text-white mb-2 text-center">
-          Powerful <span style={{ color: GOLD }}>Features</span>
-        </h2>
-        <p className="text-center text-gray-400 mb-10">Everything you need to run a best-in-class TC operation</p>
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
-          {features.map((f, i) => {
-            const Icon = f.icon;
-            return (
+        {/* Tasks */}
+        <div className="space-y-1.5">
+          <p className="text-[10px] uppercase tracking-widest font-semibold" style={{ color: "var(--text-muted)" }}>Tasks</p>
+          {[
+            { label: "Earnest money deposit received",   done: true },
+            { label: "Schedule home inspection",         done: true },
+            { label: "Order appraisal",                  done: false },
+            { label: "Submit financing docs to lender",  done: false },
+          ].map(({ label, done }) => (
+            <div key={label} className="flex items-center gap-2">
               <div
-                key={i}
-                className="rounded-xl p-5 border transition-all hover:scale-[1.02]"
-                style={{ borderColor: WHITE_BORDER, background: "rgba(17,34,54,0.6)", cursor: "default" }}
-                onMouseEnter={e => e.currentTarget.style.borderColor = GOLD_BORDER}
-                onMouseLeave={e => e.currentTarget.style.borderColor = WHITE_BORDER}
+                className="w-3.5 h-3.5 rounded-full border flex-shrink-0 flex items-center justify-center"
+                style={{ borderColor: done ? "var(--success)" : "var(--border)", backgroundColor: done ? "var(--success)" : "transparent" }}
               >
-                <div className="w-9 h-9 rounded-lg flex items-center justify-center mb-3" style={{ background: GOLD_DIM }}>
-                  <Icon className="w-5 h-5" style={{ color: GOLD }} />
-                </div>
-                <h3 className="text-base font-semibold text-white mb-1.5">{f.title}</h3>
-                <p className="text-sm text-gray-400">{f.description}</p>
+                {done && <CheckCircle2 className="w-2.5 h-2.5 text-white" />}
               </div>
-            );
-          })}
+              <span className="text-xs" style={{ color: done ? "var(--text-muted)" : "var(--text-primary)", textDecoration: done ? "line-through" : "none" }}>{label}</span>
+            </div>
+          ))}
+        </div>
+
+        {/* Alerts */}
+        <div
+          className="flex items-start gap-2.5 p-2.5 rounded-xl border"
+          style={{ backgroundColor: "rgba(245,158,11,0.06)", borderColor: "rgba(245,158,11,0.25)" }}
+        >
+          <Bell className="w-3.5 h-3.5 text-amber-500 flex-shrink-0 mt-0.5" />
+          <p className="text-xs" style={{ color: "var(--text-secondary)" }}>
+            <span className="font-semibold text-amber-500">Appraisal not ordered.</span> Financing deadline in 8 days.
+          </p>
         </div>
       </div>
     </div>
   );
 }
 
-// ── How It Works ──────────────────────────────────────────────────────────────
+// ── HOW IT WORKS ──────────────────────────────────────────────────────────────
 function HowItWorksTab() {
   const steps = [
-    { number: "01", title: "Upload Documents", description: "Drop your Purchase & Sales agreement or listing documents", icon: Upload },
-    { number: "02", title: "AI Extracts Data",  description: "AI reads contracts and pulls deadlines, parties, and key terms", icon: Zap },
-    { number: "03", title: "Tasks & Alerts",    description: "Auto-create tasks, set deadline reminders, and notify parties", icon: CheckCircle2 },
+    { num: "01", icon: Upload,        title: "Upload Contract",       desc: "Drop in a Purchase & Sales agreement or listing doc. Atlas reads it instantly." },
+    { num: "02", icon: Zap,           title: "AI Extracts Everything", desc: "Deadlines, parties, contingencies, and key terms are parsed and structured automatically." },
+    { num: "03", icon: Bell,          title: "Tasks & Alerts Created", desc: "A full task checklist and deadline calendar is generated — no manual entry needed." },
+    { num: "04", icon: Send,          title: "Communicate & Close",    desc: "Send under-contract emails, track compliance, and guide the deal to a clean close." },
   ];
 
   return (
-    <div className="h-full px-6 py-8 flex items-center overflow-hidden">
-      <div className="max-w-5xl mx-auto w-full">
-        <h2 className="text-3xl font-bold font-serif text-white mb-2 text-center">
-          How It <span style={{ color: GOLD }}>Works</span>
-        </h2>
-        <p className="text-center text-gray-400 mb-12">From contract upload to close in three steps</p>
-        <div className="flex flex-col md:flex-row items-center justify-center gap-6 md:gap-0">
-          {steps.map((step, i) => {
-            const Icon = step.icon;
-            return (
-              <React.Fragment key={i}>
-                <div className="flex flex-col items-center flex-1 text-center px-4">
-                  <div
-                    className="w-16 h-16 rounded-full flex items-center justify-center mb-4 relative"
-                    style={{ background: GOLD_DIM, border: `2px solid ${GOLD}` }}
-                  >
-                    <Icon className="w-7 h-7" style={{ color: GOLD }} />
-                    <span
-                      className="absolute -top-2 -right-2 w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-bold"
-                      style={{ background: GOLD, color: NAVY }}
-                    >
-                      {step.number}
-                    </span>
-                  </div>
-                  <h3 className="text-base font-semibold text-white mb-2">{step.title}</h3>
-                  <p className="text-sm text-gray-400 max-w-[200px]">{step.description}</p>
-                </div>
-                {i < steps.length - 1 && (
-                  <div
-                    className="hidden md:block h-0.5 w-16 flex-shrink-0"
-                    style={{ background: `linear-gradient(to right, ${GOLD_BORDER}, transparent)` }}
-                  />
-                )}
-              </React.Fragment>
-            );
-          })}
-        </div>
+    <div className="h-full flex items-center">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 w-full">
+        {steps.map(({ num, icon: Icon, title, desc }, i) => (
+          <div
+            key={num}
+            className="rounded-2xl border p-5 space-y-3 relative"
+            style={{ backgroundColor: "var(--card-bg)", borderColor: "var(--card-border)", boxShadow: "var(--card-shadow)" }}
+          >
+            <div className="flex items-center justify-between">
+              <div
+                className="w-9 h-9 rounded-xl flex items-center justify-center"
+                style={{ backgroundColor: "var(--accent-subtle)" }}
+              >
+                <Icon className="w-4.5 h-4.5" style={{ color: "var(--accent)" }} />
+              </div>
+              <span className="text-2xl font-bold" style={{ color: "var(--bg-tertiary)" }}>{num}</span>
+            </div>
+            <div>
+              <p className="text-sm font-semibold mb-1" style={{ color: "var(--text-primary)" }}>{title}</p>
+              <p className="text-xs leading-relaxed" style={{ color: "var(--text-secondary)" }}>{desc}</p>
+            </div>
+            {i < steps.length - 1 && (
+              <div
+                className="hidden lg:block absolute -right-2.5 top-1/2 -translate-y-1/2 w-5 h-px"
+                style={{ backgroundColor: "var(--border)" }}
+              />
+            )}
+          </div>
+        ))}
       </div>
     </div>
   );
 }
 
-// ── Pricing ───────────────────────────────────────────────────────────────────
+// ── FEATURES ──────────────────────────────────────────────────────────────────
+function FeaturesTab() {
+  const features = [
+    { icon: Upload,         label: "AI Document Parsing",    desc: "Extracts deadlines, parties, and terms from any P&S or listing agreement." },
+    { icon: Clock,          label: "Deadline Tracking",      desc: "Never miss a date. Visual countdown with task-aware resolution logic." },
+    { icon: ShieldCheck,    label: "Compliance Engine",      desc: "Real-time scan for missing signatures, fields, and regulatory blockers." },
+    { icon: Send,           label: "Atlas Communications",   desc: "Auto-generate buyer, seller, lender & title emails from parsed contract data." },
+    { icon: LayoutDashboard,label: "Pipeline Dashboard",     desc: "Health scores, risk levels, and overdue alerts across all active deals." },
+    { icon: Users,          label: "Role-Based Access",      desc: "TC, agent, and client views. Each party sees exactly what they need." },
+  ];
+
+  return (
+    <div className="h-full flex items-center">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 w-full">
+        {features.map(({ icon: Icon, label, desc }) => (
+          <div
+            key={label}
+            className="rounded-2xl border p-4 space-y-2"
+            style={{ backgroundColor: "var(--card-bg)", borderColor: "var(--card-border)", boxShadow: "var(--card-shadow)" }}
+          >
+            <div className="flex items-center gap-2.5">
+              <div
+                className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0"
+                style={{ backgroundColor: "var(--accent-subtle)" }}
+              >
+                <Icon className="w-4 h-4" style={{ color: "var(--accent)" }} />
+              </div>
+              <p className="text-sm font-semibold" style={{ color: "var(--text-primary)" }}>{label}</p>
+            </div>
+            <p className="text-xs leading-relaxed" style={{ color: "var(--text-secondary)" }}>{desc}</p>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+// ── PRICING ───────────────────────────────────────────────────────────────────
 function PricingTab({ navigate }) {
   const plans = [
     {
       name: "Starter",
       price: "$99",
-      period: "/month",
-      description: "Perfect for new TCs",
-      features: ["Up to 5 active transactions", "Document parsing", "Email alerts"],
-      cta: "Start Free Trial",
+      period: "/mo",
+      features: ["Up to 5 active transactions", "AI contract parsing", "Email alerts & reminders"],
       action: () => navigate(createPageUrl("AddTransaction")),
+      cta: "Get Started",
     },
     {
       name: "Professional",
       price: "$299",
-      period: "/month",
-      description: "For growing teams",
-      features: ["Unlimited transactions", "Advanced compliance", "Team collaboration", "Custom templates"],
-      cta: "Get Started",
+      period: "/mo",
       highlighted: true,
+      features: ["Unlimited transactions", "Advanced compliance scan", "Team collaboration", "Custom templates"],
       action: () => navigate(createPageUrl("AddTransaction")),
+      cta: "Start Free Trial",
     },
     {
       name: "Enterprise",
       price: "Custom",
       period: "",
-      description: "For large operations",
-      features: ["Everything in Pro", "Dotloop & SkySlope integrations", "Dedicated support", "SLA guarantee"],
+      features: ["Everything in Pro", "Dotloop & SkySlope sync", "Dedicated support", "SLA guarantee"],
+      action: () => { window.location.href = "mailto:sales@elitetc.com"; },
       cta: "Contact Sales",
-      action: () => window.location.href = "mailto:sales@elitetc.com",
     },
   ];
 
   return (
-    <div className="h-full px-6 py-8 overflow-y-auto">
-      <div className="max-w-5xl mx-auto">
-        <h2 className="text-3xl font-bold font-serif text-white mb-2 text-center">
-          Transparent <span style={{ color: GOLD }}>Pricing</span>
-        </h2>
-        <p className="text-gray-400 text-center mb-10">Choose the plan that fits your workflow</p>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          {plans.map((plan, i) => (
-            <div
-              key={i}
-              className="rounded-xl p-6 border transition-all"
-              style={
-                plan.highlighted
-                  ? { borderColor: GOLD, background: GOLD_DIM, transform: "scale(1.03)" }
-                  : { borderColor: WHITE_BORDER, background: "rgba(17,34,54,0.6)" }
-              }
-            >
-              {plan.highlighted && (
-                <div
-                  className="text-xs font-bold px-3 py-1 rounded-full inline-block mb-3"
-                  style={{ background: GOLD, color: NAVY }}
+    <div className="h-full flex items-center">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 w-full">
+        {plans.map(({ name, price, period, features, action, cta, highlighted }) => (
+          <div
+            key={name}
+            className="rounded-2xl border p-5 space-y-4 flex flex-col"
+            style={{
+              backgroundColor: "var(--card-bg)",
+              borderColor: highlighted ? "var(--accent)" : "var(--card-border)",
+              boxShadow: highlighted ? "0 0 0 1px var(--accent)" : "var(--card-shadow)",
+            }}
+          >
+            <div>
+              {highlighted && (
+                <span
+                  className="text-[10px] font-bold px-2 py-0.5 rounded-full mb-2 inline-block"
+                  style={{ backgroundColor: "var(--accent)", color: "#fff" }}
                 >
                   Most Popular
-                </div>
+                </span>
               )}
-              <h3 className="text-xl font-bold text-white mb-2">{plan.name}</h3>
-              <div className="mb-3">
-                <span className="text-3xl font-bold" style={{ color: GOLD }}>{plan.price}</span>
-                {plan.period && <span className="text-gray-400 text-sm">{plan.period}</span>}
-              </div>
-              <p className="text-sm text-gray-400 mb-5">{plan.description}</p>
-              <ul className="space-y-2 mb-6">
-                {plan.features.map((f, j) => (
-                  <li key={j} className="flex items-start gap-2 text-sm text-gray-300">
-                    <CheckCircle2 className="w-4 h-4 flex-shrink-0 mt-0.5" style={{ color: GOLD }} />
-                    {f}
-                  </li>
-                ))}
-              </ul>
-              <button
-                onClick={plan.action}
-                className="w-full py-2.5 rounded-lg text-sm font-semibold transition-all hover:brightness-110"
-                style={
-                  plan.highlighted
-                    ? { background: GOLD, color: NAVY }
-                    : { background: WHITE_DIM, color: "rgba(255,255,255,0.8)", border: `1px solid ${WHITE_BORDER}` }
-                }
-              >
-                {plan.cta}
-              </button>
+              <p className="text-base font-bold" style={{ color: "var(--text-primary)" }}>{name}</p>
+              <p className="text-2xl font-bold mt-1" style={{ color: "var(--accent)" }}>
+                {price}<span className="text-sm font-normal" style={{ color: "var(--text-muted)" }}>{period}</span>
+              </p>
             </div>
-          ))}
-        </div>
-      </div>
-    </div>
-  );
-}
-
-// ── Login ─────────────────────────────────────────────────────────────────────
-function LoginTab({ navigate }) {
-  const [agentCode, setAgentCode] = React.useState("");
-
-  const handleAgentAccess = () => {
-    if (agentCode.trim()) navigate(`/ClientLookup?code=${encodeURIComponent(agentCode)}`);
-  };
-
-  const inputStyle = {
-    width: "100%",
-    padding: "10px 14px",
-    borderRadius: 8,
-    border: `1px solid ${WHITE_BORDER}`,
-    background: WHITE_DIM,
-    color: "#fff",
-    fontSize: 14,
-    outline: "none",
-  };
-
-  return (
-    <div className="h-full px-6 py-8 flex items-center overflow-hidden">
-      <div className="max-w-4xl mx-auto w-full grid grid-cols-1 md:grid-cols-2 gap-8">
-        {/* Agent Portal */}
-        <div
-          className="rounded-xl p-6 border"
-          style={{ borderColor: WHITE_BORDER, background: "rgba(17,34,54,0.6)" }}
-        >
-          <div className="w-10 h-10 rounded-lg flex items-center justify-center mb-4" style={{ background: GOLD_DIM }}>
-            <FileText className="w-5 h-5" style={{ color: GOLD }} />
-          </div>
-          <h2 className="text-xl font-bold font-serif text-white mb-1">Agent Portal</h2>
-          <p className="text-sm text-gray-400 mb-5">Enter your transaction code to view status and deadlines</p>
-          <div className="space-y-4">
-            <div>
-              <label className="block text-xs font-semibold uppercase tracking-wide mb-2" style={{ color: GOLD }}>
-                Transaction Code
-              </label>
-              <input
-                type="text"
-                placeholder="Enter your code"
-                value={agentCode}
-                onChange={e => setAgentCode(e.target.value)}
-                onKeyDown={e => e.key === "Enter" && handleAgentAccess()}
-                style={inputStyle}
-              />
-            </div>
+            <ul className="space-y-1.5 flex-1">
+              {features.map(f => (
+                <li key={f} className="flex items-start gap-2 text-xs" style={{ color: "var(--text-secondary)" }}>
+                  <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500 flex-shrink-0 mt-0.5" />
+                  {f}
+                </li>
+              ))}
+            </ul>
             <button
-              onClick={handleAgentAccess}
-              className="w-full py-2.5 rounded-lg text-sm font-semibold transition-all hover:brightness-110"
-              style={{ background: GOLD, color: NAVY }}
+              onClick={action}
+              className="w-full py-2 rounded-lg text-sm font-semibold transition-all"
+              style={
+                highlighted
+                  ? { backgroundColor: "var(--accent)", color: "#fff" }
+                  : { backgroundColor: "var(--bg-tertiary)", color: "var(--text-primary)", border: "1px solid var(--border)" }
+              }
             >
-              Access Portal
+              {cta}
             </button>
           </div>
-        </div>
-
-        {/* TC Dashboard */}
-        <div
-          className="rounded-xl p-6 border"
-          style={{ borderColor: GOLD_BORDER, background: GOLD_DIM }}
-        >
-          <div className="w-10 h-10 rounded-lg flex items-center justify-center mb-4" style={{ background: "rgba(201,168,76,0.25)" }}>
-            <Lock className="w-5 h-5" style={{ color: GOLD }} />
-          </div>
-          <h2 className="text-xl font-bold font-serif text-white mb-1">TC Dashboard</h2>
-          <p className="text-sm text-gray-400 mb-5">Sign in to manage your transactions and pipeline</p>
-          <div className="space-y-4">
-            <div>
-              <label className="block text-xs font-semibold uppercase tracking-wide mb-2" style={{ color: GOLD }}>Email</label>
-              <input type="email" placeholder="your@email.com" style={inputStyle} />
-            </div>
-            <div>
-              <label className="block text-xs font-semibold uppercase tracking-wide mb-2" style={{ color: GOLD }}>Password</label>
-              <input type="password" placeholder="••••••••" style={inputStyle} />
-            </div>
-            <button
-              onClick={() => base44.auth.redirectToLogin("/Dashboard")}
-              className="w-full py-2.5 rounded-lg text-sm font-semibold transition-all hover:brightness-110"
-              style={{ background: GOLD, color: NAVY }}
-            >
-              Sign In
-            </button>
-          </div>
-        </div>
+        ))}
       </div>
     </div>
   );
