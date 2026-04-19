@@ -325,9 +325,9 @@ export default function ContactsSection({ transaction, onUpdate, currentUser }) 
           )}
 
       {/* Additional Contacts */}
-      {additionalContacts.length > 0 && (
+      {additionalContacts.filter(c => c.role !== "Transaction Coordinator").length > 0 && (
         <SectionGroup title="Additional Contacts">
-          {additionalContacts.map(contact => (
+          {additionalContacts.filter(c => c.role !== "Transaction Coordinator").map(contact => (
             <div key={contact.id} className="relative group">
               <ContactCard
                 name={contact.name}
