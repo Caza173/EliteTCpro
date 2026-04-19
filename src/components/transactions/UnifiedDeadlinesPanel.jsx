@@ -18,7 +18,7 @@ import { getTodayLocal, normalizeDeadline, getDaysUntil } from "@/utils/dateUtil
 import {
   Pencil, Check, X, Calendar, DollarSign, Home,
   CalendarCheck, CalendarPlus, Loader2, AlertTriangle,
-  Plus, Tag, Zap, CheckCircle2,
+  Plus, Tag, Zap, CheckCircle2, Trash2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -87,13 +87,15 @@ function getDaysLabel(dateStr, opts = {}) {
 }
 
 // ── Single deadline row ──────────────────────────────────────────────────────
-function DeadlineRow({ item, calendarMaps, transactionId, onUpdateContingency, onUpdateTransaction, onAddManual, onRefreshCalendar, completedDeadlines }) {
+function DeadlineRow({ item, calendarMaps, transactionId, onUpdateContingency, onUpdateTransaction, onAddManual, onRefreshCalendar, completedDeadlines, onDelete }) {
   const [editing, setEditing] = useState(false);
   const [editDate, setEditDate] = useState(item.date || "");
   const [editTime, setEditTime] = useState(item.time || "");
   const [syncing, setSyncing] = useState(false);
   const [markingReceived, setMarkingReceived] = useState(false);
   const [markingComplete, setMarkingComplete] = useState(false);
+  const [confirmingDelete, setConfirmingDelete] = useState(false);
+  const [deleting, setDeleting] = useState(false);
 
   const colors = CATEGORY_COLORS[item.category] || CATEGORY_COLORS.Other;
   const emdReceived = item.isEMD && item.emdReceived;
@@ -313,6 +315,36 @@ function DeadlineRow({ item, calendarMaps, transactionId, onUpdateContingency, o
                 >
                   <Pencil className="w-3 h-3" />
                 </Button>
+                {/* Delete button */}
+                {confirmingDelete ? (
+                  <div className="flex items-center gap-1">
+                    <Button size="sm" variant="ghost"
+                      className="h-6 px-1.5 text-[10px] text-red-400 hover:bg-red-500/20"
+                      disabled={deleting}
+                      onClick={async () => {
+                        setDeleting(true);
+                        await onDelete(item);
+                        setDeleting(false);
+                        setConfirmingDelete(false);
+                      }}
+                    >
+                      {deleting ? <Loader2 className="w-3 h-3 animate-spin" /> : "Delete"}
+                    </Button>
+                    <Button size="sm" variant="ghost"
+                      className="h-6 px-1 text-[10px] text-gray-400"
+                      onClick={() => setConfirmingDelete(false)}
+                    >✕</Button>
+                  </div>
+                ) : (
+                  <Button
+                    size="icon" variant="ghost"
+                    className="h-6 w-6 text-gray-600 hover:text-red-400 hover:bg-red-500/20"
+                    onClick={() => setConfirmingDelete(true)}
+                    title="Delete deadline"
+                  >
+                    <Trash2 className="w-3 h-3" />
+                  </Button>
+                )}
               </div>
             </div>
           )}
@@ -440,6 +472,19 @@ export default function UnifiedDeadlinesPanel({ transaction, onSave }) {
     refreshContingencies();
   };
 
+  const handleDeleteDeadline = async (item) => {
+    if (item.sourceType === "system") {
+      // Clear the date field on the transaction
+      onSave({ [item.key]: null });
+      toast.success(`${item.label} date cleared`);
+    } else {
+      // Delete the contingency record
+      await base44.entities.Contingency.delete(item.id);
+      refreshContingencies();
+      toast.success(`${item.label} deleted`);
+    }
+  };
+
   // ── Build unified deadline list ──────────────────────────────────────────
   const completedDeadlines = transaction.completed_deadlines || [];
 
@@ -543,6 +588,7 @@ export default function UnifiedDeadlinesPanel({ transaction, onSave }) {
             onUpdateTransaction={onSave}
             onRefreshCalendar={refreshCalendar}
             completedDeadlines={completedDeadlines}
+            onDelete={handleDeleteDeadline}
           />
         ))}
       </div>
