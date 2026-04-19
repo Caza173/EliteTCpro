@@ -163,14 +163,8 @@ export default function Dashboard() {
       </div>
 
       {/* Alert strip */}
-      {!isLoading && (atRiskCount > 0 || missingDocsCount > 0 || pendingApprovalCount > 0) && (
+      {!isLoading && (missingDocsCount > 0 || pendingApprovalCount > 0) && (
         <div className="flex flex-wrap gap-2">
-          {atRiskCount > 0 && (
-            <div className="flex items-center gap-2 px-3 py-2 rounded-lg border text-xs font-medium bg-red-50 border-red-200 text-red-700">
-              <AlertTriangle className="w-3.5 h-3.5" />
-              {atRiskCount} at-risk transaction{atRiskCount > 1 ? "s" : ""}
-            </div>
-          )}
           {missingDocsCount > 0 && (
             <div className="flex items-center gap-2 px-3 py-2 rounded-lg border text-xs font-medium bg-amber-50 border-amber-200 text-amber-700">
               <FileWarning className="w-3.5 h-3.5" />
