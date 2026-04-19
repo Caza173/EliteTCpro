@@ -87,7 +87,7 @@ export function formatDeadlineDisplay(dateStr) {
 export function debugDeadline(label, dateStr) {
   const today = getTodayLocal();
   const deadline = normalizeDeadline(dateStr);
-  const days = deadline !== null ? differenceInCalendarDays(deadline, today) : null;
+  const days = deadline !== null ? Math.round((deadline - today) / (1000 * 60 * 60 * 24)) : null;
   console.debug(`[DateDebug] ${label}`, {
     raw: dateStr,
     normalized: deadline ? format(deadline, "yyyy-MM-dd") : null,

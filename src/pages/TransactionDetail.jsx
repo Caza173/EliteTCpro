@@ -556,14 +556,6 @@ export default function TransactionDetail() {
       )
     );
     
-    if (process.env.NODE_ENV === 'development') {
-      console.log(`[Deadline Resolution] ${deadlineKey}:`, {
-        requiredTasks: requiredTaskNames,
-        satisfied,
-        completedTasks: txTasks.filter(t => t.is_completed).map(t => t.title)
-      });
-    }
-    
     return satisfied;
   };
 

@@ -1,4 +1,5 @@
 import React, { useState, useMemo, useRef, useEffect } from "react";
+import React, { useState, useEffect, useRef, useMemo } from "react";
 import { createPortal } from "react-dom";
 import { base44 } from "@/api/base44Client";
 import {
@@ -120,6 +121,60 @@ function DayHoverPopup({ day, dayEvents, dayRect, onClose }) {
       </div>
     </div>,
     document.body
+  );
+}
+
+// ── Day Cell (extracted to fix hooks-in-callback violation) ──────────────────
+function DayCell({ day, events, selectedDay, hoveredDay, setSelectedDay, setHoveredDay }) {
+  const key = format(day, "yyyy-MM-dd");
+  const dayEvents = events[key] || [];
+  const today = isToday(day);
+  const isSelected = selectedDay && isSameDay(day, selectedDay);
+  const isHovered = hoveredDay && isSameDay(day, hoveredDay);
+  const dayRef = useRef(null);
+  const [dayRect, setDayRect] = useState(null);
+
+  useEffect(() => {
+    if (isHovered && dayRef.current) {
+      setDayRect(dayRef.current.getBoundingClientRect());
+    }
+  }, [isHovered]);
+
+  return (
+    <div
+      ref={dayRef}
+      onClick={() => setSelectedDay(isSelected ? null : day)}
+      onMouseEnter={() => dayEvents.length > 0 && setHoveredDay(day)}
+      onMouseLeave={() => setHoveredDay(null)}
+      className={`h-16 sm:h-20 p-1 flex flex-col cursor-pointer transition-colors relative z-10 overflow-visible ${isSelected ? "ring-2 ring-inset ring-blue-500" : ""} ${today ? "ring-2 ring-inset ring-blue-400" : ""}`}
+      style={{ background: isSelected ? "var(--accent-subtle)" : isHovered ? "var(--bg-hover)" : "var(--card-bg)" }}
+    >
+      <span className={`text-xs font-semibold w-6 h-6 flex items-center justify-center rounded-full mb-0.5 flex-shrink-0 ${today ? "bg-blue-500 text-white" : ""}`}
+        style={{ color: today ? "white" : "var(--text-primary)" }}>
+        {format(day, "d")}
+      </span>
+      <div className="flex flex-col gap-0.5 overflow-hidden">
+        {dayEvents.slice(0, 2).map((ev, i) => (
+          <div key={i} className="flex items-center gap-1 truncate">
+            <span className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${ev.dot}`} />
+            <span className="text-[9px] truncate hidden sm:block" style={{ color: "var(--text-secondary)" }}>
+              {ev.label} · {ev.address?.split(",")[0]}
+            </span>
+          </div>
+        ))}
+        {dayEvents.length > 2 && (
+          <span className="text-[9px]" style={{ color: "var(--accent)" }}>+{dayEvents.length - 2} more</span>
+        )}
+      </div>
+      {isHovered && (
+        <DayHoverPopup
+          day={day}
+          dayEvents={dayEvents}
+          dayRect={dayRect}
+          onClose={() => setHoveredDay(null)}
+        />
+      )}
+    </div>
   );
 }
 
@@ -260,60 +315,17 @@ export default function DeadlineCalendarView({ transactions = [] }) {
           {Array.from({ length: startDay }).map((_, i) => (
             <div key={`e-${i}`} className="h-16 sm:h-20" style={{ background: "var(--bg-tertiary)" }} />
           ))}
-          {days.map((day, idx) => {
-            const key = format(day, "yyyy-MM-dd");
-            const dayEvents = events[key] || [];
-            const today = isToday(day);
-            const isSelected = selectedDay && isSameDay(day, selectedDay);
-            const isHovered = hoveredDay && isSameDay(day, hoveredDay);
-            const dayRef = useRef(null);
-            const [dayRect, setDayRect] = useState(null);
-
-            useEffect(() => {
-              if (isHovered && dayRef.current) {
-                setDayRect(dayRef.current.getBoundingClientRect());
-              }
-            }, [isHovered]);
-
-            return (
-              <div
-                key={key}
-                ref={dayRef}
-                onClick={() => setSelectedDay(isSelected ? null : day)}
-                onMouseEnter={() => dayEvents.length > 0 && setHoveredDay(day)}
-                onMouseLeave={() => setHoveredDay(null)}
-                className={`h-16 sm:h-20 p-1 flex flex-col cursor-pointer transition-colors relative z-10 overflow-visible ${isSelected ? "ring-2 ring-inset ring-blue-500" : ""} ${today ? "ring-2 ring-inset ring-blue-400" : ""}`}
-                style={{ background: isSelected ? "var(--accent-subtle)" : isHovered ? "var(--bg-hover)" : "var(--card-bg)" }}
-              >
-                <span className={`text-xs font-semibold w-6 h-6 flex items-center justify-center rounded-full mb-0.5 flex-shrink-0 ${today ? "bg-blue-500 text-white" : ""}`}
-                  style={{ color: today ? "white" : "var(--text-primary)" }}>
-                  {format(day, "d")}
-                </span>
-                <div className="flex flex-col gap-0.5 overflow-hidden">
-                  {dayEvents.slice(0, 2).map((ev, i) => (
-                    <div key={i} className="flex items-center gap-1 truncate">
-                      <span className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${ev.dot}`} />
-                      <span className="text-[9px] truncate hidden sm:block" style={{ color: "var(--text-secondary)" }}>
-                        {ev.label} · {ev.address?.split(",")[0]}
-                      </span>
-                    </div>
-                  ))}
-                  {dayEvents.length > 2 && (
-                    <span className="text-[9px]" style={{ color: "var(--accent)" }}>+{dayEvents.length - 2} more</span>
-                  )}
-                </div>
-                {/* Portal popup */}
-                {isHovered && (
-                  <DayHoverPopup
-                    day={day}
-                    dayEvents={dayEvents}
-                    dayRect={dayRect}
-                    onClose={() => setHoveredDay(null)}
-                  />
-                )}
-              </div>
-            );
-          })}
+          {days.map((day) => (
+            <DayCell
+              key={format(day, "yyyy-MM-dd")}
+              day={day}
+              events={events}
+              selectedDay={selectedDay}
+              hoveredDay={hoveredDay}
+              setSelectedDay={setSelectedDay}
+              setHoveredDay={setHoveredDay}
+            />
+          ))}
         </div>
         </div>
       </>
