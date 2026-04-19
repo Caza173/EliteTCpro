@@ -131,10 +131,10 @@ const PHASES = [
 ];
 
 const statusStyles = {
-  active: "bg-emerald-50 text-emerald-700 border-emerald-200",
-  pending: "bg-amber-50 text-amber-700 border-amber-200",
-  closed: "bg-slate-100 text-slate-600 border-slate-200",
-  cancelled: "bg-red-50 text-red-700 border-red-200",
+  active: "bg-emerald-900/60 text-emerald-300 border-emerald-700",
+  pending: "bg-amber-900/60 text-amber-300 border-amber-700",
+  closed: "bg-slate-700 text-slate-300 border-slate-600",
+  cancelled: "bg-red-900/60 text-red-300 border-red-700",
 };
 
 export default function TransactionTable({ transactions, sorted = false }) {
@@ -167,13 +167,13 @@ export default function TransactionTable({ transactions, sorted = false }) {
     <div className="overflow-x-auto">
       <Table>
         <TableHeader>
-           <TableRow className="border-gray-200/60">
-             <TableHead className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Property</TableHead>
-             <TableHead className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Client</TableHead>
-             <TableHead className="text-xs font-semibold text-gray-500 uppercase tracking-wider hidden md:table-cell">Agent</TableHead>
-             <TableHead className="text-xs font-semibold text-gray-500 uppercase tracking-wider hidden lg:table-cell">Contract Date</TableHead>
-             <TableHead className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Phase</TableHead>
-             <TableHead className="text-xs font-semibold text-gray-500 uppercase tracking-wider hidden sm:table-cell">Status</TableHead>
+           <TableRow className="border-slate-700">
+             <TableHead className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Property</TableHead>
+             <TableHead className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Client</TableHead>
+             <TableHead className="text-xs font-semibold text-slate-400 uppercase tracking-wider hidden md:table-cell">Agent</TableHead>
+             <TableHead className="text-xs font-semibold text-slate-400 uppercase tracking-wider hidden lg:table-cell">Contract Date</TableHead>
+             <TableHead className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Phase</TableHead>
+             <TableHead className="text-xs font-semibold text-slate-400 uppercase tracking-wider hidden sm:table-cell">Status</TableHead>
            </TableRow>
          </TableHeader>
         <TableBody>
@@ -186,40 +186,43 @@ export default function TransactionTable({ transactions, sorted = false }) {
                  console.log("Clicked transaction ID:", tx.id);
                  navigate(`/transactions/${tx.id}`);
                }}
-               className={`cursor-pointer hover:bg-gray-50 transition-colors border-gray-100 group ${score >= 80 ? "bg-red-50/30" : score >= 40 ? "bg-amber-50/20" : ""}`}
+               className={`cursor-pointer transition-colors border-slate-700/50 group
+                 bg-slate-900 hover:bg-slate-800
+                 ${score >= 80 ? "border-l-2 border-l-red-500" : score >= 40 ? "border-l-2 border-l-amber-500" : ""}
+               `}
              >
                <TableCell>
                  <div className="flex items-center gap-2">
-                   <div className="w-8 h-8 rounded-lg bg-blue-50 flex items-center justify-center flex-shrink-0">
-                     <MapPin className="w-4 h-4 text-blue-500" />
+                   <div className="w-8 h-8 rounded-lg bg-blue-900/40 flex items-center justify-center flex-shrink-0">
+                     <MapPin className="w-4 h-4 text-blue-400" />
                    </div>
-                   <span className="font-medium text-gray-900 text-sm truncate max-w-[120px] sm:max-w-[200px] block">{tx.address}</span>
+                   <span className="font-medium text-slate-200 group-hover:text-white text-sm truncate max-w-[120px] sm:max-w-[200px] block transition-colors">{tx.address}</span>
                  </div>
                </TableCell>
                <TableCell>
-                 <div className="flex items-center gap-1.5 text-sm text-gray-600">
-                   <User className="w-3.5 h-3.5 text-gray-400" />
+                 <div className="flex items-center gap-1.5 text-sm text-slate-400 group-hover:text-slate-200 transition-colors">
+                   <User className="w-3.5 h-3.5 text-slate-500" />
                    {tx.buyers?.length ? tx.buyers[0] : (tx.buyer || "—")}
                  </div>
                </TableCell>
-               <TableCell className="hidden md:table-cell text-sm text-gray-600">{tx.agent}</TableCell>
+               <TableCell className="hidden md:table-cell text-sm text-slate-400 group-hover:text-slate-200 transition-colors">{tx.agent}</TableCell>
                <TableCell className="hidden lg:table-cell">
-                 <div className="flex items-center gap-1.5 text-sm text-gray-500">
+                 <div className="flex items-center gap-1.5 text-sm text-slate-500 group-hover:text-slate-300 transition-colors">
                    <Calendar className="w-3.5 h-3.5" />
                    {tx.contract_date ? format(new Date(tx.contract_date), "MMM d, yyyy") : "—"}
                  </div>
                </TableCell>
                <TableCell>
-                 <span className="text-xs font-medium text-gray-700 bg-gray-100 px-2 py-1 rounded-md">
+                 <span className="text-xs font-medium text-slate-300 bg-slate-700 px-2 py-1 rounded-md whitespace-nowrap">
                    {PHASES[(tx.phase || 1) - 1]}
                  </span>
                </TableCell>
                <TableCell className="hidden sm:table-cell">
-                 <div className="flex items-center justify-between">
+                 <div className="flex items-center justify-between gap-2">
                    <Badge variant="outline" className={`text-xs font-medium capitalize ${statusStyles[tx.status] || statusStyles.active}`}>
                      {tx.status || "active"}
                    </Badge>
-                   <ChevronRight className="w-4 h-4 text-gray-400 group-hover:text-gray-600 group-hover:translate-x-0.5 transition-all opacity-0 group-hover:opacity-100" />
+                   <ChevronRight className="w-4 h-4 text-slate-500 group-hover:text-slate-300 group-hover:translate-x-0.5 transition-all opacity-0 group-hover:opacity-100" />
                  </div>
                </TableCell>
              </TableRow>
