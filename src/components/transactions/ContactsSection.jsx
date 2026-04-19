@@ -91,20 +91,24 @@ export default function ContactsSection({ transaction, onUpdate, currentUser }) 
       )}
 
       {/* Buyers */}
-      {buyers.length > 0 && (
-        <SectionGroup title="Buyers">
-          {buyers.map((name, i) => (
-            <ContactCard
-              key={i}
-              name={name}
-              role="Buyer"
-              email={clientEmails[i] || ""}
-              phone={i === 0 ? (tx.client_phone || "") : ""}
-              accent="#2563EB"
-              canEdit={canEdit}
-              onEmailClick={openEmail}
-              fields={{ name: true, email: true, phone: true, company: false }}
-              onSave={({ name: n, email: e, phone: p }) => {
+       {buyers.length > 0 && (
+         <SectionGroup title="Buyers">
+           {buyers.map((name, i) => {
+             // For additional buyers, get phone from additional_contacts
+             const additionalBuyer = i > 0 ? additionalContacts.find(c => c.role === "Buyer" && c.name === name) : null;
+             const buyerPhone = i === 0 ? (tx.client_phone || "") : (additionalBuyer?.phone || "");
+             return (
+             <ContactCard
+               key={i}
+               name={name}
+               role="Buyer"
+               email={clientEmails[i] || ""}
+               phone={buyerPhone}
+               accent="#2563EB"
+               canEdit={canEdit}
+               onEmailClick={openEmail}
+               fields={{ name: true, email: true, phone: true, company: false }}
+               onSave={({ name: n, email: e, phone: p }) => {
                  const newBuyers = [...buyers];
                  newBuyers[i] = n;
                  const newEmails = [...clientEmails];
@@ -118,22 +122,23 @@ export default function ContactsSection({ transaction, onUpdate, currentUser }) 
                  if (i === 0) {
                    updateData.client_phone = p;
                  } else {
-                   // For additional buyers, store in additional_contacts
+                   // For additional buyers, save to additional_contacts by index
                    const updated = [...additionalContacts];
-                   const idx = updated.findIndex(c => c.name === name);
+                   const idx = updated.findIndex(c => c.role === "Buyer" && buyers.indexOf(c.name) === i);
                    if (idx >= 0) {
-                     updated[idx] = { ...updated[idx], phone: p };
+                     updated[idx] = { ...updated[idx], name: n, email: e, phone: p };
                    } else {
-                     updated.push({ id: `buyer_${Date.now()}`, name: n, role: "Buyer", phone: p, email: e });
+                     updated.push({ id: `buyer_${i}_${Date.now()}`, name: n, role: "Buyer", phone: p, email: e });
                    }
                    updateData.additional_contacts = updated;
                  }
                  save(updateData);
                }}
-            />
-          ))}
-        </SectionGroup>
-      )}
+             />
+             );
+           })}
+         </SectionGroup>
+       )}
 
       {/* Sellers */}
       {sellers.length > 0 && (
