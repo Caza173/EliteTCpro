@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { ChevronDown, ChevronUp, Database } from "lucide-react";
+import { ChevronDown, ChevronUp, Database, Pencil, Check, X } from "lucide-react";
 import { format } from "date-fns";
 
 const FIELD_LABELS = {
@@ -31,13 +31,69 @@ function fmtVal(key, val) {
   return String(val);
 }
 
-export default function ContractDataSnapshot({ data }) {
+function EditableField({ label, value, onSave }) {
+  const [editing, setEditing] = useState(false);
+  const [draft, setDraft] = useState(String(value || ""));
+
+  const handleSave = () => {
+    setEditing(false);
+    if (draft !== String(value || "")) {
+      onSave(draft);
+    }
+  };
+
+  if (editing) {
+    return (
+      <div className="flex gap-1">
+        <input
+          autoFocus
+          type="text"
+          value={draft}
+          onChange={e => setDraft(e.target.value)}
+          onBlur={handleSave}
+          onKeyDown={e => { if (e.key === "Enter") handleSave(); if (e.key === "Escape") setEditing(false); }}
+          className="flex-1 text-sm border rounded px-2 py-1 focus:outline-none focus:ring-1 focus:ring-blue-400"
+          style={{ borderColor: "var(--input-border)", background: "var(--input-bg)", color: "var(--text-primary)" }}
+        />
+        <button onClick={handleSave} className="p-1" style={{ color: "var(--accent)" }}>
+          <Check className="w-3 h-3" />
+        </button>
+        <button onClick={() => setEditing(false)} className="p-1" style={{ color: "var(--text-muted)" }}>
+          <X className="w-3 h-3" />
+        </button>
+      </div>
+    );
+  }
+
+  return (
+    <div className="flex items-center gap-2 group">
+      <p className={`text-sm font-medium ${!value ? "opacity-40" : ""}`} style={{ color: "var(--text-primary)" }}>
+        {fmtVal("", value)}
+      </p>
+      <button
+        onClick={() => setEditing(true)}
+        className="opacity-0 group-hover:opacity-100 transition-opacity p-0.5"
+        style={{ color: "var(--text-muted)" }}
+      >
+        <Pencil className="w-3 h-3" />
+      </button>
+    </div>
+  );
+}
+
+export default function ContractDataSnapshot({ data, onDataChange }) {
   const [open, setOpen] = useState(false);
   if (!data) return null;
 
   const entries = Object.entries(FIELD_LABELS).map(([key, label]) => ({
     key, label, value: data[key],
   }));
+
+  const handleFieldChange = (key, newValue) => {
+    if (onDataChange) {
+      onDataChange({ ...data, [key]: newValue });
+    }
+  };
 
   return (
     <div className="rounded-xl border" style={{ borderColor: "var(--card-border)" }}>
@@ -56,9 +112,7 @@ export default function ContractDataSnapshot({ data }) {
           {entries.map(({ key, label, value }) => (
             <div key={key}>
               <p className="text-[11px] font-semibold uppercase tracking-wide" style={{ color: "var(--text-muted)" }}>{label}</p>
-              <p className={`text-sm font-medium ${!value ? "opacity-40" : ""}`} style={{ color: "var(--text-primary)" }}>
-                {fmtVal(key, value)}
-              </p>
+              <EditableField label={label} value={value} onSave={(newVal) => handleFieldChange(key, newVal)} />
             </div>
           ))}
         </div>
