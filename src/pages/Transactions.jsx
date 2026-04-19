@@ -70,8 +70,52 @@ export default function Transactions() {
           </div>
         </div>
 
-        {/* Deal tabs */}
-        <div className="flex gap-1 p-1 rounded-xl" style={{ background: "var(--bg-tertiary)", width: "fit-content" }}>
+        {/* Deal tabs — mobile scrollable */}
+        <style>{`
+          .tabs-container {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            overflow-x: auto;
+            white-space: nowrap;
+            -webkit-overflow-scrolling: touch;
+            scrollbar-width: none;
+            padding: 4px;
+            border-radius: 12px;
+            background: var(--bg-tertiary);
+            position: relative;
+          }
+          .tabs-container::-webkit-scrollbar {
+            display: none;
+          }
+          .tab {
+            flex: 0 0 auto;
+            padding: 10px 16px;
+            border-radius: 10px;
+            font-size: 14px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-weight: 500;
+            transition: all 0.2s ease;
+            color: var(--text-muted);
+          }
+          .tab.active {
+            background: var(--card-bg);
+            color: var(--text-primary);
+            box-shadow: var(--card-shadow);
+          }
+          @media (max-width: 480px) {
+            .tabs-container {
+              padding: 4px 8px;
+            }
+            .tab {
+              padding: 8px 12px;
+              font-size: 13px;
+            }
+          }
+        `}</style>
+        <div className="tabs-container">
           {[
             { id: "all", label: "All Deals" },
             ...(isSuperAdmin || isTC ? [{ id: "pending", label: `Pending${pendingDeals.length > 0 ? ` (${pendingDeals.length})` : ""}`, icon: Clock }] : []),
@@ -80,11 +124,7 @@ export default function Transactions() {
             <button
               key={tab.id}
               onClick={() => setDealTab(tab.id)}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all"
-              style={dealTab === tab.id
-                ? { background: "var(--card-bg)", color: "var(--text-primary)", boxShadow: "var(--card-shadow)" }
-                : { color: "var(--text-muted)" }
-              }
+              className={`tab ${dealTab === tab.id ? "active" : ""}`}
             >
               {tab.icon && <tab.icon className="w-3 h-3" />}
               {tab.label}
