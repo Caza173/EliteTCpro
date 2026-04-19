@@ -31,14 +31,16 @@ function fmtVal(key, val) {
   return String(val);
 }
 
-function EditableField({ label, value, onSave }) {
+function EditableField({ label, value, onSave, isCurrency = false }) {
   const [editing, setEditing] = useState(false);
-  const [draft, setDraft] = useState(String(value || ""));
+  const [draft, setDraft] = useState(isCurrency && value ? String(value).replace(/[^\d.]/g, "") : String(value || ""));
 
   const handleSave = () => {
     setEditing(false);
-    if (draft !== String(value || "")) {
-      onSave(draft);
+    const trimmedDraft = draft.trim();
+    if (trimmedDraft && trimmedDraft !== String(value || "").replace(/[^\d.]/g, "")) {
+      const numValue = isCurrency ? parseFloat(trimmedDraft) : trimmedDraft;
+      onSave(isNaN(numValue) ? trimmedDraft : numValue);
     }
   };
 
@@ -51,24 +53,27 @@ function EditableField({ label, value, onSave }) {
           value={draft}
           onChange={e => setDraft(e.target.value)}
           onBlur={handleSave}
-          onKeyDown={e => { if (e.key === "Enter") handleSave(); if (e.key === "Escape") setEditing(false); }}
+          onKeyDown={e => { if (e.key === "Enter") handleSave(); if (e.key === "Escape") { setDraft(isCurrency && value ? String(value).replace(/[^\d.]/g, "") : String(value || "")); setEditing(false); } }}
           className="flex-1 text-sm border rounded px-2 py-1 focus:outline-none focus:ring-1 focus:ring-blue-400"
           style={{ borderColor: "var(--input-border)", background: "var(--input-bg)", color: "var(--text-primary)" }}
+          placeholder={isCurrency ? "0.00" : ""}
         />
         <button onClick={handleSave} className="p-1" style={{ color: "var(--accent)" }}>
           <Check className="w-3 h-3" />
         </button>
-        <button onClick={() => setEditing(false)} className="p-1" style={{ color: "var(--text-muted)" }}>
+        <button onClick={() => { setDraft(isCurrency && value ? String(value).replace(/[^\d.]/g, "") : String(value || "")); setEditing(false); }} className="p-1" style={{ color: "var(--text-muted)" }}>
           <X className="w-3 h-3" />
         </button>
       </div>
     );
   }
 
+  const displayValue = isCurrency && value ? `$${parseFloat(value).toLocaleString("en-US", { minimumFractionDigits: 0, maximumFractionDigits: 0 })}` : fmtVal("", value);
+
   return (
     <div className="flex items-center gap-2 group">
       <p className={`text-sm font-medium ${!value ? "opacity-40" : ""}`} style={{ color: "var(--text-primary)" }}>
-        {fmtVal("", value)}
+        {displayValue}
       </p>
       <button
         onClick={() => setEditing(true)}
@@ -109,12 +114,15 @@ export default function ContractDataSnapshot({ data, onDataChange }) {
       </button>
       {open && (
         <div className="border-t px-4 pb-4 pt-3 grid grid-cols-2 gap-x-6 gap-y-2" style={{ borderColor: "var(--card-border)" }}>
-          {entries.map(({ key, label, value }) => (
-            <div key={key}>
-              <p className="text-[11px] font-semibold uppercase tracking-wide" style={{ color: "var(--text-muted)" }}>{label}</p>
-              <EditableField label={label} value={value} onSave={(newVal) => handleFieldChange(key, newVal)} />
-            </div>
-          ))}
+          {entries.map(({ key, label, value }) => {
+            const isCurrency = key.includes("price") || key.includes("amount");
+            return (
+              <div key={key}>
+                <p className="text-[11px] font-semibold uppercase tracking-wide" style={{ color: "var(--text-muted)" }}>{label}</p>
+                <EditableField label={label} value={value} isCurrency={isCurrency} onSave={(newVal) => handleFieldChange(key, newVal)} />
+              </div>
+            );
+          })}
         </div>
       )}
     </div>

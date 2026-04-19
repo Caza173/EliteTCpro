@@ -136,11 +136,24 @@ export default function UnderContractCommsPanel({ transaction, currentUser }) {
           onDataChange={(updatedData) => {
             // Map contract data keys to transaction fields
             const updates = {};
-            if (updatedData.earnest_money_amount) updates.earnest_money_amount = parseFloat(updatedData.earnest_money_amount) || updatedData.earnest_money_amount;
-            if (updatedData.earnest_money_due_date) updates.earnest_money_deadline = updatedData.earnest_money_due_date;
-            if (updatedData.closing_date) updates.closing_date = updatedData.closing_date;
-            if (updatedData.inspection_deadline) updates.inspection_deadline = updatedData.inspection_deadline;
-            if (updatedData.financing_deadline) updates.financing_deadline = updatedData.financing_deadline;
+            if (updatedData.earnest_money_amount !== undefined && updatedData.earnest_money_amount !== contractData.earnest_money_amount) {
+              updates.earnest_money_amount = typeof updatedData.earnest_money_amount === "number" ? updatedData.earnest_money_amount : parseFloat(updatedData.earnest_money_amount);
+            }
+            if (updatedData.purchase_price !== undefined && updatedData.purchase_price !== contractData.purchase_price) {
+              updates.sale_price = typeof updatedData.purchase_price === "number" ? updatedData.purchase_price : parseFloat(updatedData.purchase_price);
+            }
+            if (updatedData.earnest_money_due_date !== undefined && updatedData.earnest_money_due_date !== contractData.earnest_money_due_date) {
+              updates.earnest_money_deadline = updatedData.earnest_money_due_date;
+            }
+            if (updatedData.closing_date !== undefined && updatedData.closing_date !== contractData.closing_date) {
+              updates.closing_date = updatedData.closing_date;
+            }
+            if (updatedData.inspection_deadline !== undefined && updatedData.inspection_deadline !== contractData.inspection_deadline) {
+              updates.inspection_deadline = updatedData.inspection_deadline;
+            }
+            if (updatedData.financing_deadline !== undefined && updatedData.financing_deadline !== contractData.financing_deadline) {
+              updates.financing_deadline = updatedData.financing_deadline;
+            }
             if (Object.keys(updates).length > 0) {
               updateTxMutation.mutate(updates);
             }
