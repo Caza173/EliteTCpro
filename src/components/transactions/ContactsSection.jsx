@@ -118,12 +118,13 @@ export default function ContactsSection({ transaction, onUpdate, currentUser }) 
                  if (i === 0) {
                    updateData.client_phone = p;
                  } else {
-                   // For additional buyers, store phones in additional_contacts
-                   const updated = additionalContacts.map(c =>
-                     c.name === name ? { ...c, phone: p } : c
-                   );
-                   if (!updated.some(c => c.name === name)) {
-                     updated.push({ id: `buyer_${i}`, name: n, role: "Buyer", phone: p });
+                   // For additional buyers, store in additional_contacts
+                   const updated = [...additionalContacts];
+                   const idx = updated.findIndex(c => c.name === name);
+                   if (idx >= 0) {
+                     updated[idx] = { ...updated[idx], phone: p };
+                   } else {
+                     updated.push({ id: `buyer_${Date.now()}`, name: n, role: "Buyer", phone: p, email: e });
                    }
                    updateData.additional_contacts = updated;
                  }
