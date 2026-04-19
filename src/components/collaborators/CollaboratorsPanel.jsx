@@ -52,8 +52,6 @@ export default function CollaboratorsPanel({ transaction, currentUser, onRefresh
   const [menuOpen, setMenuOpen] = useState(null); // collaborator id
   const [busy, setBusy] = useState(null);
 
-  const myCollabRole = collaborators?.find(c => c.user_email === currentUser?.email)?.role;
-
   const { data: collaborators = [], isLoading } = useQuery({
     queryKey: ["collaborators", transaction.id],
     queryFn: () => base44.entities.TransactionCollaborator.filter(
