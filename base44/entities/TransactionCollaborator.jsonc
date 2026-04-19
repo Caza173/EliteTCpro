@@ -1,0 +1,49 @@
+{
+  "name": "TransactionCollaborator",
+  "type": "object",
+  "properties": {
+    "transaction_id": {
+      "type": "string"
+    },
+    "brokerage_id": {
+      "type": "string"
+    },
+    "user_id": {
+      "type": "string"
+    },
+    "user_email": {
+      "type": "string"
+    },
+    "user_name": {
+      "type": "string"
+    },
+    "role": {
+      "type": "string",
+      "enum": [
+        "primary_tc",
+        "secondary_tc",
+        "viewer_tc"
+      ],
+      "default": "secondary_tc"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "active",
+        "removed"
+      ],
+      "default": "active"
+    },
+    "last_activity_at": {
+      "type": "string"
+    },
+    "added_by": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "transaction_id",
+    "user_email",
+    "role"
+  ]
+}

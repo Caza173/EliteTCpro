@@ -447,6 +447,7 @@ export default function UnifiedPhaseBoard({
   brokerageId,
   transactionType,
   transaction,
+  currentUser,
 }) {
   const allPhases = getPhasesForType(transactionType);
   const phasesCompleted = transaction?.phases_completed || [];

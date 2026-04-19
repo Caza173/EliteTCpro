@@ -1,0 +1,63 @@
+{
+  "name": "TransactionTask",
+  "type": "object",
+  "properties": {
+    "transaction_id": {
+      "type": "string"
+    },
+    "brokerage_id": {
+      "type": "string"
+    },
+    "phase": {
+      "type": "number"
+    },
+    "title": {
+      "type": "string"
+    },
+    "order_index": {
+      "type": "number",
+      "default": 0
+    },
+    "is_completed": {
+      "type": "boolean",
+      "default": false
+    },
+    "is_required": {
+      "type": "boolean",
+      "default": true
+    },
+    "is_custom": {
+      "type": "boolean",
+      "default": false
+    },
+    "created_by": {
+      "type": "string"
+    },
+    "assigned_to_user_id": {
+      "type": "string"
+    },
+    "assigned_to_email": {
+      "type": "string"
+    },
+    "assigned_to_name": {
+      "type": "string"
+    },
+    "assigned_by_email": {
+      "type": "string"
+    },
+    "completed_by_email": {
+      "type": "string"
+    },
+    "completed_by_name": {
+      "type": "string"
+    },
+    "last_updated_by_email": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "transaction_id",
+    "phase",
+    "title"
+  ]
+}

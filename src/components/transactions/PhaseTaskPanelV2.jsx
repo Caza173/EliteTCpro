@@ -7,15 +7,16 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { getPhasesForType } from "@/lib/taskLibrary";
 import { base44 } from "@/api/base44Client";
-import { useQueryClient } from "@tanstack/react-query";
+import { useQueryClient, useQuery } from "@tanstack/react-query";
 import TaskLibraryModal from "@/components/tasks/TaskLibraryModal";
 import NotifyClientButton from "@/components/transactions/NotifyClientButton";
 import { isTaskIncompatible } from "@/lib/taskLibrary";
+import TaskAssigneeSelector from "@/components/collaborators/TaskAssigneeSelector";
 
 // ── TaskRow extracted as a proper top-level component (fixes hooks-in-render bug) ──
 function TaskRow({
   task, index, allPhases, editingId, editDraft, onSetEditing, onSaveEdit, onEditDraftChange,
-  onToggleTask, onDelete, onMoveTo, inputRef,
+  onToggleTask, onDelete, onMoveTo, inputRef, collaborators, onAssign,
 }) {
   const [moveMenuOpen, setMoveMenuOpen] = useState(false);
   const isAtRisk = !task.is_completed && task.due_date && new Date(task.due_date) < new Date();
@@ -84,13 +85,20 @@ function TaskRow({
             </span>
           )}
 
-          {/* Badges */}
+          {/* Badges + Assignee */}
           <div className="flex items-center gap-1 flex-shrink-0">
             {task.is_required && !task.is_completed && (
               <Badge variant="outline" className="text-[10px] px-1.5 py-0 bg-orange-50 text-orange-600 border-orange-200">Req</Badge>
             )}
             {task.is_custom && !task.is_completed && (
               <Badge variant="outline" className="text-[10px] px-1.5 py-0 bg-purple-50 text-purple-600 border-purple-200">Custom</Badge>
+            )}
+            {collaborators?.length > 0 && (
+              <TaskAssigneeSelector
+                task={task}
+                collaborators={collaborators}
+                onAssign={(collab) => onAssign(task.id, collab)}
+              />
             )}
           </div>
 
@@ -162,10 +170,26 @@ export default function PhaseTaskPanelV2({
   transactionType,
   transaction,
   onUpdateTransaction,
+  currentUser,
 }) {
   const allPhases = getPhasesForType(transactionType);
   const phaseDef = allPhases.find(p => p.phaseNum === phaseNum);
   const queryClient = useQueryClient();
+
+  const { data: collaborators = [] } = useQuery({
+    queryKey: ["collaborators", transactionId],
+    queryFn: () => base44.entities.TransactionCollaborator.filter({ transaction_id: transactionId, status: "active" }),
+    enabled: !!transactionId,
+    staleTime: 30_000,
+  });
+
+  const handleAssignTask = async (taskId, collab) => {
+    const patch = collab
+      ? { assigned_to_email: collab.user_email, assigned_to_name: collab.user_name || collab.user_email, assigned_by_email: currentUser?.email, last_updated_by_email: currentUser?.email }
+      : { assigned_to_email: null, assigned_to_name: null, assigned_by_email: currentUser?.email, last_updated_by_email: currentUser?.email };
+    await base44.entities.TransactionTask.update(taskId, patch);
+    onTasksChanged?.();
+  };
 
   const [editingId, setEditingId] = useState(null);
   const [editDraft, setEditDraft] = useState("");
@@ -420,6 +444,8 @@ export default function PhaseTaskPanelV2({
                   onDelete={handleDelete}
                   onMoveTo={handleMoveTo}
                   inputRef={inputRef}
+                  collaborators={collaborators}
+                  onAssign={handleAssignTask}
                 />
               ))}
               {provided.placeholder}

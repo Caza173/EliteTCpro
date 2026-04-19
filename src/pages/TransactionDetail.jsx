@@ -49,6 +49,7 @@ import { detectIssues } from "../lib/issueDetector";
 import QuickFeedbackButton from "../components/feedback/QuickFeedbackButton";
 import NotesPanel from "../components/transactions/NotesPanel";
 import UnderContractCommsPanel from "../components/comms/UnderContractCommsPanel";
+import CollaboratorsPanel from "../components/collaborators/CollaboratorsPanel";
 
 const TX_TABS = [
   { id: "overview",      label: "Overview",      icon: LayoutDashboard, info: "Phase checklist, tasks, and compliance summary" },
@@ -58,6 +59,7 @@ const TX_TABS = [
   { id: "compliance",    label: "Compliance",    icon: ShieldCheck,     info: "AI-powered scan for missing signatures and blockers" },
   { id: "communications", label: "Communications", icon: Send,          info: "Atlas under-contract communications and status" },
   { id: "financial_tools", label: "Financial Tools", icon: Receipt,     info: "Commission statements, fuel prorations, and deal expenses" },
+  { id: "team",          label: "Team",          icon: Users,           info: "Manage TC collaborators, roles, and task assignments" },
 ];
 
 const LISTING_TABS = [
@@ -69,6 +71,7 @@ const LISTING_TABS = [
   { id: "compliance",     label: "Compliance",     icon: ShieldCheck,     info: "AI-powered scan for missing signatures and blockers" },
   { id: "communications", label: "Communications", icon: Send,            info: "Atlas under-contract communications and status" },
   { id: "financial_tools", label: "Financial Tools", icon: Receipt,       info: "Commission statements, fuel prorations, and deal expenses" },
+  { id: "team",           label: "Team",           icon: Users,           info: "Manage TC collaborators, roles, and task assignments" },
 ];
 
 const PHASES = [
@@ -883,6 +886,7 @@ export default function TransactionDetail() {
                 brokerageId={transaction.brokerage_id}
                 transactionType={transaction.transaction_type}
                 transaction={transaction}
+                currentUser={currentUser}
               />
               {checklistItems.length > 0 && (
                 <Card className="shadow-sm border-gray-100">
@@ -968,6 +972,16 @@ export default function TransactionDetail() {
               transaction={transaction}
               onSave={(changes) => updateMutation.mutate({ id: transaction.id, data: { ...changes, last_activity_at: new Date().toISOString() } })}
             />
+          )}
+
+          {activeTab === "team" && (
+            <div className="theme-card p-5">
+              <CollaboratorsPanel
+                transaction={transaction}
+                currentUser={currentUser}
+                onRefresh={() => queryClient.invalidateQueries({ queryKey: ["transactions"] })}
+              />
+            </div>
           )}
         </div>
 
