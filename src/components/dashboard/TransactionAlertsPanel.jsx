@@ -34,7 +34,7 @@ export default function TransactionAlertsPanel({ brokerageId }) {
   // Fetch active alerts from database
   const { data: rawAlerts = [], isLoading } = useQuery({
     queryKey: ["monitorAlerts", brokerageId],
-    queryFn: () => base44.entities.MonitorAlert.filter({ brokerage_id: brokerageId, status: "open" }),
+    queryFn: () => base44.entities.MonitorAlert.filter({ brokerage_id: brokerageId, alert_state: "active" }),
     enabled: !!brokerageId,
   });
 
@@ -43,13 +43,13 @@ export default function TransactionAlertsPanel({ brokerageId }) {
     ? rawAlerts.filter(a => accessibleDealIds.has(a.transaction_id))
     : rawAlerts;
 
-  // Update alert status (resolve or dismiss)
+  // Update alert state (resolve or dismiss)
   const updateAlertMutation = useMutation({
-    mutationFn: ({ alertId, status }) =>
+    mutationFn: ({ alertId, alertState }) =>
       base44.entities.MonitorAlert.update(alertId, {
-        status,
-        ...(status === "dismissed" ? { dismissed_at: new Date().toISOString() } : {}),
-        ...(status === "resolved"  ? { resolved_at:  new Date().toISOString() } : {}),
+        alert_state: alertState,
+        ...(alertState === "dismissed" ? { dismissed_at: new Date().toISOString() } : {}),
+        ...(alertState === "resolved"  ? { resolved_at:  new Date().toISOString() } : {}),
       }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["monitorAlerts", brokerageId] });
@@ -59,13 +59,13 @@ export default function TransactionAlertsPanel({ brokerageId }) {
   const handleDismiss = async (e, alert) => {
     e.preventDefault();
     e.stopPropagation();
-    updateAlertMutation.mutate({ alertId: alert.id, status: "dismissed" });
+    updateAlertMutation.mutate({ alertId: alert.id, alertState: "dismissed" });
   };
 
   const handleResolved = async (e, alert) => {
     e.preventDefault();
     e.stopPropagation();
-    updateAlertMutation.mutate({ alertId: alert.id, status: "resolved" });
+    updateAlertMutation.mutate({ alertId: alert.id, alertState: "resolved" });
   };
 
   const filtered = filter === "all" ? dbAlerts : dbAlerts.filter(a => a.priority === filter);
