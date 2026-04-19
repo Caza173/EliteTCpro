@@ -11,6 +11,7 @@ import { getPhasesForType, isTaskIncompatible, SUB_PHASE_MAP } from "@/lib/taskL
 import TaskLibraryModal from "@/components/tasks/TaskLibraryModal";
 import PhaseCompletionBadge from "./PhaseCompletionBadge";
 import TaskActionToolbar from "@/components/tasks/TaskActionToolbar";
+import MovePhasePopover from "./MovePhasePopover";
 
 // ── Determine phase status ──────────────────────────────────────────────────
 // For phase 1 (Under Contract): complete only when BOTH phase 1 AND phase 2
@@ -61,7 +62,8 @@ const TaskRow = memo(function TaskRow({
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState(task.title);
   const [moveOpen, setMoveOpen] = useState(false);
-  const [dropdownPos, setDropdownPos] = useState({ top: 0, right: 0 });
+  const rowRef = useRef(null);
+
   // Only show at-risk if task is NOT completed AND deadline has passed
   // Completed tasks permanently suppress all overdue alerts regardless of date
   const isAtRisk = !task.is_completed && task.due_date &&
@@ -75,21 +77,33 @@ const TaskRow = memo(function TaskRow({
     }
   };
 
+  // Close popover on click-outside
+  useEffect(() => {
+    if (!moveOpen) return;
+    const handleClickOutside = (e) => {
+      if (rowRef.current && !rowRef.current.contains(e.target)) {
+        setMoveOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, [moveOpen]);
+
   return (
     <Draggable draggableId={task.id} index={index}>
       {(drag, snap) => (
         <div
-           ref={drag.innerRef}
+           ref={(el) => { drag.innerRef(el); rowRef.current = el; }}
            {...drag.draggableProps}
-           className={`flex items-center gap-2 px-2 py-1.5 rounded-lg border text-sm group transition-all border-l-4 ${
-             snap.isDragging
-               ? "shadow-lg border-l-blue-400 opacity-95"
-               : task.is_completed
-               ? "border-l-emerald-500"
-               : isAtRisk
-               ? "border-l-red-500 hover:border-l-red-600"
-               : "border-l-gray-400 hover:border-l-gray-500"
-           }`}
+           className={`flex items-center gap-2 px-2 py-1.5 rounded-lg border text-sm group transition-all border-l-4 relative ${
+              snap.isDragging
+                ? "shadow-lg border-l-blue-400 opacity-95"
+                : task.is_completed
+                ? "border-l-emerald-500"
+                : isAtRisk
+                ? "border-l-red-500 hover:border-l-red-600"
+                : "border-l-gray-400 hover:border-l-gray-500"
+            }`}
            style={{ ...drag.draggableProps.style, background: "var(--bg-secondary)", borderColor: "var(--card-border)" }}
          >
           <div {...drag.dragHandleProps} className="cursor-grab flex-shrink-0 opacity-20 hover:opacity-50">
@@ -137,7 +151,7 @@ const TaskRow = memo(function TaskRow({
             />
           )}
 
-          <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0 relative">
+          <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0">
             {!editing && (
               <button onClick={() => { setDraft(task.title); setEditing(true); }} className="p-0.5 rounded" style={{ background: "transparent" }}>
                  <Pencil className="w-2.5 h-2.5" style={{ color: "var(--text-muted)" }} />
@@ -145,38 +159,22 @@ const TaskRow = memo(function TaskRow({
             )}
             <div className="relative">
               <button
-                ref={el => { if (el) window.__moveButtonEl = el; }}
-                onClick={(e) => {
-                  setMoveOpen(v => !v);
-                  const rect = e.currentTarget.getBoundingClientRect();
-                  setDropdownPos({ top: rect.bottom + window.scrollY, right: window.innerWidth - rect.right });
-                }}
+                onClick={() => setMoveOpen(v => !v)}
                 className="p-0.5 rounded" title="Move to phase"
               >
                 <ChevronDown className="w-2.5 h-2.5 text-gray-500 hover:text-gray-400" />
               </button>
-              {moveOpen && (
-                <>
-                  <div className="fixed inset-0 z-40" onClick={() => setMoveOpen(false)} />
-                  <div
-                    className="fixed z-50 rounded-lg shadow-lg py-1 min-w-[150px]"
-                    style={{ background: "var(--card-bg)", border: "1px solid var(--card-border)" }}
-                    style={{ top: dropdownPos.top, right: dropdownPos.right }}
-                  >
-                    <p className="text-[9px] font-semibold text-gray-400 px-2 py-1 uppercase tracking-wider">Move to phase</p>
-                    {allPhases.map(p => (
-                      <button
-                        key={p.phaseNum}
-                        disabled={p.phaseNum === task.phase}
-                        onClick={() => { setMoveOpen(false); onMoveTo(task.id, p.phaseNum); }}
-                        className={`w-full text-left px-2 py-1 text-xs transition-colors ${p.phaseNum === task.phase ? "cursor-default opacity-40" : "hover:opacity-80"}`}
-                        style={{ color: "var(--text-secondary)" }}
-                      >
-                        {p.phaseNum === task.phase ? "✓ " : ""}{p.label}
-                      </button>
-                    ))}
-                  </div>
-                </>
+              {moveOpen && rowRef.current && (
+                <MovePhasePopover
+                  rowEl={rowRef.current}
+                  allPhases={allPhases}
+                  currentPhase={task.phase}
+                  onSelect={(phaseNum) => {
+                    setMoveOpen(false);
+                    onMoveTo(task.id, phaseNum);
+                  }}
+                  onClose={() => setMoveOpen(false)}
+                />
               )}
             </div>
             <button onClick={() => onDelete(task.id)} className="p-0.5 rounded">
