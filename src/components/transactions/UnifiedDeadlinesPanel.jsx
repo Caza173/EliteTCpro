@@ -474,9 +474,16 @@ export default function UnifiedDeadlinesPanel({ transaction, onSave }) {
 
   const handleDeleteDeadline = async (item) => {
     if (item.sourceType === "system") {
-      // Clear the date field on the transaction (use empty string — null can be stripped by SDK)
-      onSave({ [item.key]: "" });
-      toast.success(`${item.label} date cleared`);
+      // Directly update the transaction entity to clear the date field.
+      // We bypass onSave here to avoid SDK null-stripping and ensure the field is truly cleared.
+      try {
+        await base44.entities.Transaction.update(transaction.id, { [item.key]: null });
+        // Also invalidate the transactions query so the UI reflects the change
+        queryClient.invalidateQueries({ queryKey: ["transactions"] });
+        toast.success(`${item.label} date cleared`);
+      } catch (e) {
+        toast.error("Failed to clear: " + (e.message || "unknown error"));
+      }
     } else {
       // Delete the contingency record
       try {
