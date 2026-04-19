@@ -105,19 +105,25 @@ function PriorityBadge({ score, tx }) {
       </div>
       {pos && (
         <div
-          className="fixed z-[9999] w-48 bg-gray-900 text-white text-xs rounded-lg px-3 py-2 shadow-xl pointer-events-none"
-          style={{ top: pos.top - 8, left: pos.left, transform: "translate(-50%, -100%)" }}
+          className="fixed z-[9999] w-48 text-xs rounded-lg px-3 py-2 shadow-xl pointer-events-none"
+          style={{ 
+            top: pos.top - 8, 
+            left: pos.left, 
+            transform: "translate(-50%, -100%)",
+            background: "var(--foreground)",
+            color: "var(--background)"
+          }}
         >
-          <p className="font-semibold mb-1 text-gray-300">Needs attention:</p>
+          <p className="font-semibold mb-1" style={{ color: "var(--muted-foreground)" }}>Needs attention:</p>
           <ul className="space-y-0.5">
             {reasons.map((r, i) => (
               <li key={i} className="flex items-start gap-1.5">
-                <span className="text-red-400 mt-0.5">•</span>
+                <span className="mt-0.5" style={{ color: "var(--destructive)" }}>•</span>
                 <span>{r}</span>
               </li>
             ))}
           </ul>
-          <div className="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-gray-900" />
+          <div className="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent" style={{ borderTopColor: "var(--foreground)" }} />
         </div>
       )}
     </>
@@ -143,11 +149,11 @@ export default function TransactionTable({ transactions, sorted = false }) {
   if (!transactions || transactions.length === 0) {
     return (
       <div className="text-center py-16">
-        <div className="w-16 h-16 rounded-full bg-gray-100 flex items-center justify-center mx-auto mb-4">
-          <MapPin className="w-7 h-7 text-gray-400" />
+        <div className="w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4" style={{ background: "var(--bg-tertiary)" }}>
+          <MapPin className="w-7 h-7" style={{ color: "var(--text-muted)" }} />
         </div>
-        <h3 className="text-lg font-semibold text-gray-900 mb-1">No transactions yet</h3>
-        <p className="text-sm text-gray-500">Create your first transaction to get started.</p>
+        <h3 className="text-lg font-semibold mb-1" style={{ color: "var(--foreground)" }}>No transactions yet</h3>
+        <p className="text-sm" style={{ color: "var(--muted-foreground)" }}>Create your first transaction to get started.</p>
       </div>
     );
   }
@@ -166,15 +172,15 @@ export default function TransactionTable({ transactions, sorted = false }) {
   return (
     <div className="overflow-x-auto">
       <Table>
-        <TableHeader>
-           <TableRow className="border-slate-700">
-             <TableHead className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Property</TableHead>
-             <TableHead className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Client</TableHead>
-             <TableHead className="text-xs font-semibold text-slate-400 uppercase tracking-wider hidden md:table-cell">Agent</TableHead>
-             <TableHead className="text-xs font-semibold text-slate-400 uppercase tracking-wider hidden lg:table-cell">Contract Date</TableHead>
-             <TableHead className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Phase</TableHead>
-             <TableHead className="text-xs font-semibold text-slate-400 uppercase tracking-wider hidden sm:table-cell">Status</TableHead>
-           </TableRow>
+         <TableHeader>
+            <TableRow style={{ borderBottomColor: "var(--border)" }}>
+              <TableHead className="text-xs font-semibold uppercase tracking-wider" style={{ color: "var(--muted-foreground)" }}>Property</TableHead>
+              <TableHead className="text-xs font-semibold uppercase tracking-wider" style={{ color: "var(--muted-foreground)" }}>Client</TableHead>
+              <TableHead className="text-xs font-semibold uppercase tracking-wider hidden md:table-cell" style={{ color: "var(--muted-foreground)" }}>Agent</TableHead>
+              <TableHead className="text-xs font-semibold uppercase tracking-wider hidden lg:table-cell" style={{ color: "var(--muted-foreground)" }}>Contract Date</TableHead>
+              <TableHead className="text-xs font-semibold uppercase tracking-wider" style={{ color: "var(--muted-foreground)" }}>Phase</TableHead>
+              <TableHead className="text-xs font-semibold uppercase tracking-wider hidden sm:table-cell" style={{ color: "var(--muted-foreground)" }}>Status</TableHead>
+            </TableRow>
          </TableHeader>
         <TableBody>
            {rows.map((tx) => {
@@ -186,34 +192,38 @@ export default function TransactionTable({ transactions, sorted = false }) {
                  console.log("Clicked transaction ID:", tx.id);
                  navigate(`/transactions/${tx.id}`);
                }}
-               className={`cursor-pointer transition-colors border-slate-700/50 group
-                 bg-slate-900 hover:bg-slate-800
-                 ${score >= 80 ? "border-l-2 border-l-red-500" : score >= 40 ? "border-l-2 border-l-amber-500" : ""}
-               `}
+               className="cursor-pointer transition-colors group"
+               style={{
+                 background: "var(--card)",
+                 borderBottom: "1px solid var(--border)",
+                 borderLeft: score >= 80 ? "2px solid var(--destructive)" : score >= 40 ? "2px solid var(--warning)" : "2px solid transparent"
+               }}
+               onMouseEnter={(e) => e.currentTarget.style.background = "var(--accent)"}
+               onMouseLeave={(e) => e.currentTarget.style.background = "var(--card)"}
              >
                <TableCell>
                  <div className="flex items-center gap-2">
-                   <div className="w-8 h-8 rounded-lg bg-blue-900/40 flex items-center justify-center flex-shrink-0">
-                     <MapPin className="w-4 h-4 text-blue-400" />
+                   <div className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0" style={{ background: "var(--accent-subtle)" }}>
+                     <MapPin className="w-4 h-4" style={{ color: "var(--accent)" }} />
                    </div>
-                   <span className="font-medium text-slate-200 group-hover:text-white text-sm truncate max-w-[120px] sm:max-w-[200px] block transition-colors">{tx.address}</span>
+                   <span className="font-medium text-sm truncate max-w-[120px] sm:max-w-[200px] block transition-colors" style={{ color: "var(--foreground)", fontWeight: 500 }}>{tx.address}</span>
                  </div>
                </TableCell>
                <TableCell>
-                 <div className="flex items-center gap-1.5 text-sm text-slate-400 group-hover:text-slate-200 transition-colors">
-                   <User className="w-3.5 h-3.5 text-slate-500" />
+                 <div className="flex items-center gap-1.5 text-sm transition-colors" style={{ color: "var(--muted-foreground)" }}>
+                   <User className="w-3.5 h-3.5" />
                    {tx.buyers?.length ? tx.buyers[0] : (tx.buyer || "—")}
                  </div>
                </TableCell>
-               <TableCell className="hidden md:table-cell text-sm text-slate-400 group-hover:text-slate-200 transition-colors">{tx.agent}</TableCell>
+               <TableCell className="hidden md:table-cell text-sm transition-colors" style={{ color: "var(--muted-foreground)" }}>{tx.agent}</TableCell>
                <TableCell className="hidden lg:table-cell">
-                 <div className="flex items-center gap-1.5 text-sm text-slate-500 group-hover:text-slate-300 transition-colors">
+                 <div className="flex items-center gap-1.5 text-sm transition-colors" style={{ color: "var(--muted-foreground)" }}>
                    <Calendar className="w-3.5 h-3.5" />
                    {tx.contract_date ? format(new Date(tx.contract_date), "MMM d, yyyy") : "—"}
                  </div>
                </TableCell>
                <TableCell>
-                 <span className="text-xs font-medium text-slate-300 bg-slate-700 px-2 py-1 rounded-md whitespace-nowrap">
+                 <span className="text-xs font-medium px-2 py-1 rounded-md whitespace-nowrap" style={{ background: "var(--secondary)", color: "var(--secondary-foreground)" }}>
                    {PHASES[(tx.phase || 1) - 1]}
                  </span>
                </TableCell>
@@ -222,7 +232,7 @@ export default function TransactionTable({ transactions, sorted = false }) {
                    <Badge variant="outline" className={`text-xs font-medium capitalize ${statusStyles[tx.status] || statusStyles.active}`}>
                      {tx.status || "active"}
                    </Badge>
-                   <ChevronRight className="w-4 h-4 text-slate-500 group-hover:text-slate-300 group-hover:translate-x-0.5 transition-all opacity-0 group-hover:opacity-100" />
+                   <ChevronRight className="w-4 h-4 transition-all opacity-0 group-hover:opacity-100 group-hover:translate-x-0.5" style={{ color: "var(--muted-foreground)" }} />
                  </div>
                </TableCell>
              </TableRow>
