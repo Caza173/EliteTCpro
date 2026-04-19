@@ -105,18 +105,30 @@ export default function ContactsSection({ transaction, onUpdate, currentUser }) 
               onEmailClick={openEmail}
               fields={{ name: true, email: true, phone: true, company: false }}
               onSave={({ name: n, email: e, phone: p }) => {
-                const newBuyers = [...buyers];
-                newBuyers[i] = n;
-                const newEmails = [...clientEmails];
-                newEmails[i] = e;
-                save({
-                  buyers: newBuyers,
-                  buyer: newBuyers[0] || "",
-                  client_emails: newEmails,
-                  client_email: newEmails[0] || "",
-                  ...(i === 0 && { client_phone: p }),
-                });
-              }}
+                 const newBuyers = [...buyers];
+                 newBuyers[i] = n;
+                 const newEmails = [...clientEmails];
+                 newEmails[i] = e;
+                 const updateData = {
+                   buyers: newBuyers,
+                   buyer: newBuyers[0] || "",
+                   client_emails: newEmails,
+                   client_email: newEmails[0] || "",
+                 };
+                 if (i === 0) {
+                   updateData.client_phone = p;
+                 } else {
+                   // For additional buyers, store phones in additional_contacts
+                   const updated = additionalContacts.map(c =>
+                     c.name === name ? { ...c, phone: p } : c
+                   );
+                   if (!updated.some(c => c.name === name)) {
+                     updated.push({ id: `buyer_${i}`, name: n, role: "Buyer", phone: p });
+                   }
+                   updateData.additional_contacts = updated;
+                 }
+                 save(updateData);
+               }}
             />
           ))}
         </SectionGroup>
