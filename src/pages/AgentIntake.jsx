@@ -293,10 +293,16 @@ export default function AgentIntake() {
     if (parsed.property_address || parsed.propertyAddress)        u.address = parsed.property_address || parsed.propertyAddress;
     if (parsed.buyer || parsed.buyerName)                         { const n = parsed.buyer || parsed.buyerName; u.buyer = n; setBuyers([n]); }
     if (parsed.seller || parsed.sellerName)                       { const n = parsed.seller || parsed.sellerName; u.seller = n; setSellers([n]); }
-    if (parsed.buyers_agent_name || parsed.buyersAgentName)       u.buyers_agent_name = parsed.buyers_agent_name || parsed.buyersAgentName;
-    if (parsed.sellers_agent_name || parsed.sellersAgentName)     u.sellers_agent_name = parsed.sellers_agent_name || parsed.sellersAgentName;
-    if (parsed.buyer_brokerage || parsed.buyerBrokerage)          u.buyer_brokerage = parsed.buyer_brokerage || parsed.buyerBrokerage;
-    if (parsed.seller_brokerage || parsed.sellerBrokerage)        u.seller_brokerage = parsed.seller_brokerage || parsed.sellerBrokerage;
+    // buyer_agent / seller_agent are the field names returned by parsePurchaseAgreementV2
+    if (parsed.buyer_agent || parsed.buyers_agent_name || parsed.buyersAgentName)
+      u.buyers_agent_name = parsed.buyer_agent || parsed.buyers_agent_name || parsed.buyersAgentName;
+    if (parsed.seller_agent || parsed.sellers_agent_name || parsed.sellersAgentName)
+      u.sellers_agent_name = parsed.seller_agent || parsed.sellers_agent_name || parsed.sellersAgentName;
+    // buyer_brokerage goes to buyer side, seller_brokerage goes to seller side (never swapped)
+    if (parsed.buyer_brokerage || parsed.buyerBrokerage)
+      u.buyer_brokerage = parsed.buyer_brokerage || parsed.buyerBrokerage;
+    if (parsed.seller_brokerage || parsed.sellerBrokerage)
+      u.seller_brokerage = parsed.seller_brokerage || parsed.sellerBrokerage;
     if (parsed.closing_title_company || parsed.closingTitleCompany) u.closing_title_company = parsed.closing_title_company || parsed.closingTitleCompany;
     if (parsed.financing_commitment_date || parsed.financingCommitmentDate) u.financing_deadline = parsed.financing_commitment_date || parsed.financingCommitmentDate;
     // inspection_deadline = date only from contract. NEVER set inspection_scheduled here.
