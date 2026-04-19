@@ -6,6 +6,7 @@ import {
   Plus, X, Check, Send,
 } from "lucide-react";
 import { formatDistanceToNow, parseISO } from "date-fns";
+import NoteEmailModal from "./NoteEmailModal";
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -265,6 +266,8 @@ export default function NotesPanel({ transaction, currentUser }) {
   const [noteType, setNoteType] = useState("internal");
   const [visibility, setVisibility] = useState("internal");
   const [adding, setAdding] = useState(false);
+  const [emailModalOpen, setEmailModalOpen] = useState(false);
+  const [selectedNote, setSelectedNote] = useState(null);
 
   const role = currentUser?.role;
   const isTC = ["tc", "tc_lead", "admin", "owner"].includes(role) || currentUser?.email === "nhcazateam@gmail.com";
@@ -346,23 +349,9 @@ export default function NotesPanel({ transaction, currentUser }) {
     }
   };
 
-  const handleSendEmail = async (note) => {
-    try {
-      const to = transaction.agent_email || transaction.client_email || "";
-      if (!to) {
-        alert("No recipient email found for this transaction");
-        return;
-      }
-      await base44.integrations.Core.SendEmail({
-        to,
-        subject: `Note — ${transaction.address}`,
-        body: `<p>${note.message}</p>`,
-      });
-      alert("Email sent successfully");
-    } catch (err) {
-      alert("Failed to send email");
-      console.error(err);
-    }
+  const handleSendEmail = (note) => {
+    setSelectedNote(note);
+    setEmailModalOpen(true);
   };
 
   const visibleNotes = useMemo(() => {
@@ -386,6 +375,16 @@ export default function NotesPanel({ transaction, currentUser }) {
 
   return (
     <div className="flex flex-col h-full overflow-hidden" style={{ background: "var(--card-bg)" }}>
+      {selectedNote && (
+        <NoteEmailModal
+          open={emailModalOpen}
+          note={selectedNote}
+          transaction={transaction}
+          allUsers={allUsers}
+          currentUser={currentUser}
+          onClose={() => { setEmailModalOpen(false); setSelectedNote(null); }}
+        />
+      )}
 
       {/* Header */}
       <div className="flex items-center justify-between px-3 py-2 border-b flex-shrink-0" style={{ borderColor: "var(--card-border)", background: "var(--bg-tertiary)" }}>

@@ -68,6 +68,20 @@
     },
     "created_by_name": {
       "type": "string"
+    },
+    "email_sent": {
+      "type": "boolean",
+      "default": false,
+      "description": "Whether email notification was sent"
+    },
+    "recipient_email": {
+      "type": "string",
+      "description": "Email address the notification was sent to"
+    },
+    "sent_timestamp": {
+      "type": "string",
+      "format": "date-time",
+      "description": "When the email notification was sent"
     }
   },
   "required": [
