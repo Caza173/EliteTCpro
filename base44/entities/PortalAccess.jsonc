@@ -1,0 +1,43 @@
+{
+  "name": "PortalAccess",
+  "type": "object",
+  "properties": {
+    "code": {
+      "type": "string",
+      "description": "Unique portal access code (random, non-sequential)"
+    },
+    "transaction_id": {
+      "type": "string",
+      "description": "Reference to Transaction"
+    },
+    "brokerage_id": {
+      "type": "string"
+    },
+    "enabled": {
+      "type": "boolean",
+      "default": true,
+      "description": "Whether this portal code is active"
+    },
+    "last_reset_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "last_sent_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "When portal access was last sent via email"
+    },
+    "last_sent_to": {
+      "type": "string",
+      "description": "Email address it was last sent to"
+    },
+    "created_by": {
+      "type": "string",
+      "description": "Email of user who created/generated this code"
+    }
+  },
+  "required": [
+    "code",
+    "transaction_id"
+  ]
+}

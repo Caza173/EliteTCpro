@@ -348,7 +348,7 @@ export default function UserManagement() {
                       </td>
 
                       <td className="px-4 py-3 hidden xl:table-cell">
-                        <PortalAccessCell user={u} currentUser={currentUser} />
+                        <span className="text-xs text-gray-400">Manage via Transactions</span>
                       </td>
                       <td className="px-4 py-3">
                         <div className="flex items-center justify-end gap-1">
