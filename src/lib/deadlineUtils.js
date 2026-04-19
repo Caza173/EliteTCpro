@@ -1,111 +1,168 @@
-import { parseISO } from "date-fns";
+// deadlineUtils.js - Centralized Deadline Evaluation Engine
 
-/**
- * Evaluates a deadline and returns its status relative to current time.
- * 
- * @param {string|Date|null} deadline - ISO date string or Date object (date-only or with time)
- * @param {boolean} isCompleted - Whether the associated task is completed
- * @param {string} userTimezone - User's timezone (e.g., "America/New_York"), defaults to browser timezone
- * @returns {Object|null} - { status, daysRemaining, isOverdue, isDueSoon } or null if no alert
- */
-export function evaluateDeadline(deadline, isCompleted = false, userTimezone = null) {
-  // Rule 1: Completed tasks suppress all alerts
-  if (isCompleted) return null;
+const DEFAULT_TIME = "23:59:59";
 
-  // Rule 2: Missing deadline = no alert
-  if (!deadline) return null;
+const RISK_THRESHOLDS = {
+  LOW: 7,
+  MEDIUM: 4,
+  HIGH: 2,
+};
 
-  // Get user timezone (fallback to Intl.DateTimeFormat)
-  const tz = userTimezone || Intl.DateTimeFormat().resolvedOptions().timeZone;
+export function normalizeDate(dateStr) {
+  if (!dateStr) return null;
+  return new Date(`${dateStr}T${DEFAULT_TIME}`);
+}
 
-  // Parse deadline string to Date
-  let deadlineDate;
-  try {
-    deadlineDate = typeof deadline === "string" ? parseISO(deadline) : deadline;
-  } catch {
-    return null; // Invalid date format
-  }
-
-  // If deadline is date-only (no time component), default to 23:59:59
-  const deadlineStr = typeof deadline === "string" ? deadline : deadline.toISOString();
-  const isDateOnly = deadlineStr.match(/^\d{4}-\d{2}-\d{2}$/); // Format: YYYY-MM-DD
-
-  if (isDateOnly) {
-    // Append 23:59:59
-    const dateWithTime = `${deadlineStr}T23:59:59Z`;
-    deadlineDate = new Date(dateWithTime);
-  }
-
-  // Simple UTC-based comparison (browser handles timezone for display)
+export function today() {
   const now = new Date();
-  
-  // Calculate hours until deadline
-  const diffMs = deadlineDate.getTime() - now.getTime();
-  const diffHours = diffMs / (1000 * 60 * 60);
-  const daysRemaining = Math.round((diffHours / 24) * 100) / 100; // Round to 2 decimals
+  return new Date(now.getFullYear(), now.getMonth(), now.getDate());
+}
 
-  // Classify status
-  let status;
-  if (diffHours < 0) {
-    status = "MISSED";
-  } else if (diffHours <= 24) {
-    status = "DUE_24H";
-  } else {
-    status = "UPCOMING";
+export function daysBetween(dateA, dateB) {
+  const ms = dateA - dateB;
+  return Math.ceil(ms / (1000 * 60 * 60 * 24));
+}
+
+export function getDeadlineState({
+  deadlineDate,
+  isCompleted = false,
+  isWaived = false,
+}) {
+  if (!deadlineDate) return null;
+
+  if (isWaived) return "WAIVED";
+  if (isCompleted) return "COMPLETED";
+
+  const now = today();
+  const deadline = normalizeDate(deadlineDate);
+  const days = daysBetween(deadline, now);
+
+  if (days < 0) return "CRITICAL";
+  if (days === 0) return "DUE_TODAY";
+  if (days <= RISK_THRESHOLDS.HIGH) return "HIGH";
+  if (days <= RISK_THRESHOLDS.MEDIUM) return "MEDIUM";
+  if (days <= RISK_THRESHOLDS.LOW) return "LOW";
+
+  return "UPCOMING";
+}
+
+export function getRiskLabel(state) {
+  switch (state) {
+    case "CRITICAL":
+      return "Critical";
+    case "HIGH":
+    case "DUE_TODAY":
+      return "High";
+    case "MEDIUM":
+      return "Medium";
+    default:
+      return "Low";
   }
+}
+
+export function shouldTriggerAlert({
+  state,
+  hasTriggered = false,
+}) {
+  if (!state) return false;
+  if (state === "COMPLETED" || state === "WAIVED") return false;
+  if (hasTriggered) return false;
+
+  return (
+    state === "HIGH" ||
+    state === "CRITICAL" ||
+    state === "DUE_TODAY"
+  );
+}
+
+export function shouldSuggestAddendum({
+  state,
+  isCompleted,
+  isWaived,
+}) {
+  if (isCompleted || isWaived) return false;
+  return state === "HIGH" || state === "CRITICAL";
+}
+
+export function evaluateDeadline(deadline) {
+  const {
+    date,
+    completed,
+    waived,
+    alertSent,
+    type,
+  } = deadline;
+
+  const state = getDeadlineState({
+    deadlineDate: date,
+    isCompleted: completed,
+    isWaived: waived,
+  });
 
   return {
-    status,
-    daysRemaining,
-    isOverdue: status === "MISSED",
-    isDueSoon: status === "DUE_24H",
+    type,
+    date,
+    state,
+    risk: getRiskLabel(state),
+    shouldAlert: shouldTriggerAlert({
+      state,
+      hasTriggered: alertSent,
+    }),
+    suggestAddendum: shouldSuggestAddendum({
+      state,
+      isCompleted: completed,
+      isWaived: waived,
+    }),
   };
 }
 
-/**
- * Determines if an alert should trigger for a deadline.
- * Alerts only trigger for MISSED and DUE_24H statuses.
- */
-export function shouldShowDeadlineAlert(deadline, isCompleted = false, userTimezone = null) {
-  const evaluation = evaluateDeadline(deadline, isCompleted, userTimezone);
-  if (!evaluation) return false;
-  return evaluation.status === "MISSED" || evaluation.status === "DUE_24H";
+export function evaluateTransactionDeadlines(deadlines = []) {
+  return deadlines.map(evaluateDeadline);
 }
 
-/**
- * Formats deadline status for display.
- */
-export function formatDeadlineStatus(evaluation) {
-  if (!evaluation) return null;
-  const { status, daysRemaining } = evaluation;
+export function getNextActiveDeadline(deadlines = []) {
+  const active = deadlines
+    .filter(d => !d.completed && !d.waived)
+    .map(d => ({
+      ...d,
+      normalized: normalizeDate(d.date),
+    }))
+    .sort((a, b) => a.normalized - b.normalized);
 
-  if (status === "MISSED") return "OVERDUE";
-  if (status === "DUE_24H") return `Due in ${Math.ceil(daysRemaining * 24)}h`;
-  return "On track";
+  return active.length ? active[0] : null;
 }
 
-/**
- * Gets all deadlines from a transaction that should trigger alerts.
- */
-export function getAlertableDeadlines(transaction, userTimezone = null) {
+export function getAlertableDeadlines(transaction = {}) {
   if (!transaction) return [];
 
-  const deadlineFields = [
-    { key: "earnest_money_deadline", label: "Earnest Money" },
-    { key: "inspection_deadline", label: "Inspection" },
-    { key: "due_diligence_deadline", label: "Due Diligence" },
-    { key: "appraisal_deadline", label: "Appraisal" },
-    { key: "financing_deadline", label: "Financing" },
-    { key: "closing_date", label: "Closing" },
-  ];
+  const deadlinesList = [
+    { type: "inspection", date: transaction.inspection_deadline, label: "Inspection", completed: transaction.inspection_completed },
+    { type: "appraisal", date: transaction.appraisal_deadline, label: "Appraisal" },
+    { type: "financing", date: transaction.financing_deadline, label: "Financing" },
+    { type: "due_diligence", date: transaction.due_diligence_deadline, label: "Due Diligence" },
+    { type: "earnest_money", date: transaction.earnest_money_deadline, label: "Earnest Money", completed: transaction.earnest_money_received },
+    { type: "closing", date: transaction.closing_date, label: "Closing" },
+  ].filter(d => d.date);
 
-  return deadlineFields
-    .filter(({ key }) => transaction[key])
-    .filter(({ key }) => shouldShowDeadlineAlert(transaction[key], false, userTimezone))
-    .map(({ key, label }) => ({
-      key,
-      label,
-      deadline: transaction[key],
-      evaluation: evaluateDeadline(transaction[key], false, userTimezone),
-    }));
+  return deadlinesList.map(dl => {
+    const state = getDeadlineState({
+      deadlineDate: dl.date,
+      isCompleted: dl.completed,
+      isWaived: false,
+    });
+
+    const now = today();
+    const deadline = normalizeDate(dl.date);
+    const daysRemaining = deadline ? daysBetween(deadline, now) : null;
+
+    return {
+      ...dl,
+      evaluation: {
+        state,
+        isOverdue: state === "CRITICAL",
+        isDueSoon: state === "HIGH" || state === "DUE_TODAY",
+        daysRemaining: daysRemaining >= 0 ? daysRemaining : 0,
+      },
+    };
+  });
 }
