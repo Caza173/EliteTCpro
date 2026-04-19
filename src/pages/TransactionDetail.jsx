@@ -323,6 +323,16 @@ export default function TransactionDetail() {
     refetchTxTasks();
   };
 
+  // ── Deadline → task resolution mapping ───────────────────────────────────────
+  const DEADLINE_RESOLUTION_MAP = {
+    earnest_money_deadline: ["Earnest money deposit received + verified", "earnest_money_received"],
+    inspection_deadline:    ["Inspection completed", "inspection_completed"],
+    due_diligence_deadline: ["Due Diligence completed", "due_diligence_completed"],
+    appraisal_deadline:     ["Appraisal received", "appraisal_received"],
+    financing_deadline:     ["Clear to Close received", "financing_completed"],
+    closing_date:           ["Closing completed", "closing_completed"],
+  };
+
   const handleToggleTxTask = async (taskId) => {
     const task = txTasks.find(t => t.id === taskId);
     if (!task) return;
@@ -581,17 +591,6 @@ export default function TransactionDetail() {
       }
     })();
   }, [transaction?.year_built, transaction?.property_type, transaction?.lead_paint_notified_year]);
-
-  // ── Deadline → task resolution mapping ───────────────────────────────────────
-  // Maps deadlines to specific tasks that satisfy them when completed
-  const DEADLINE_RESOLUTION_MAP = {
-    earnest_money_deadline: ["Earnest money deposit received + verified", "earnest_money_received"],
-    inspection_deadline:    ["Inspection completed", "inspection_completed"],
-    due_diligence_deadline: ["Due Diligence completed", "due_diligence_completed"],
-    appraisal_deadline:     ["Appraisal received", "appraisal_received"],
-    financing_deadline:     ["Clear to Close received", "financing_completed"],
-    closing_date:           ["Closing completed", "closing_completed"],
-  };
 
   // Returns true if the specific task that satisfies this deadline is completed
   const isDeadlineResolvedByTasks = (deadlineKey) => {
