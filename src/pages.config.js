@@ -76,7 +76,6 @@ export const PAGES = {
     "Dashboard": Dashboard,
     "Deadlines": Deadlines,
     "Documents": Documents,
-    "Landing": Landing,
     "PortalSelect": PortalSelect,
     "Settings": Settings,
     "Tasks": Tasks,
@@ -86,7 +85,7 @@ export const PAGES = {
 }
 
 export const pagesConfig = {
-    mainPage: "Landing",
+    mainPage: null,
     Pages: PAGES,
     Layout: __Layout,
 };
