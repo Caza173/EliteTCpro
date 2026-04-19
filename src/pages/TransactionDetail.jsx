@@ -50,6 +50,7 @@ import QuickFeedbackButton from "../components/feedback/QuickFeedbackButton";
 import NotesPanel from "../components/transactions/NotesPanel";
 import UnderContractCommsPanel from "../components/comms/UnderContractCommsPanel";
 import CollaboratorsPanel from "../components/collaborators/CollaboratorsPanel";
+import SendTimelineModal from "../components/transactions/SendTimelineModal";
 
 const TX_TABS = [
   { id: "overview",      label: "Overview",      icon: LayoutDashboard, info: "Phase checklist, tasks, and compliance summary" },
@@ -104,6 +105,7 @@ export default function TransactionDetail() {
   const [selectedPhase, setSelectedPhase] = useState(1);
   const [mobileAIOpen, setMobileAIOpen] = useState(false);
   const [sendingTimeline, setSendingTimeline] = useState(false);
+  const [timelineModalOpen, setTimelineModalOpen] = useState(false);
   const [syncingCalendar, setSyncingCalendar] = useState(false);
   const [emailModalOpen, setEmailModalOpen] = useState(false);
   const [invitingClient, setInvitingClient] = useState(false);
@@ -507,8 +509,8 @@ export default function TransactionDetail() {
     setInvitingClient(false);
   };
 
-  const handleSendTimeline = async () => {
-    if (!transaction) return;
+  const handleSendTimeline = async (recipients) => {
+    if (!transaction || !recipients?.length) return;
     setSendingTimeline(true);
     const deadlines = [
       { label: "Earnest Money Deposit", date: transaction.earnest_money_deadline },
@@ -523,14 +525,13 @@ export default function TransactionDetail() {
       ? deadlines.map((d) => `<tr><td style="padding:6px 12px;border-bottom:1px solid #f0f0f0;">${d.label}</td><td style="padding:6px 12px;border-bottom:1px solid #f0f0f0;font-weight:600;">${formatSafe(d.date)}</td></tr>`).join("")
       : "<tr><td colspan='2' style='padding:8px 12px;color:#999;'>No deadlines set.</td></tr>";
     const body = `<p>Hello,</p><p>Here is the key deadline timeline for <strong>${transaction.address}</strong>:</p><table style="border-collapse:collapse;width:100%;max-width:480px;">${deadlineRows}</table><p>Best regards,<br/>TC Manager</p>`;
-    const recipients = [transaction.client_email, transaction.agent_email].filter(Boolean);
     const results = await Promise.allSettled(recipients.map((to) => base44.integrations.Core.SendEmail({ to, subject: `Key Deadlines — ${transaction.address}`, body })));
     setSendingTimeline(false);
     const sent = recipients.filter((_, i) => results[i].status === "fulfilled");
     setAlertDialog({
       open: true,
       title: sent.length > 0 ? "Timeline Sent" : "No Emails Sent",
-      message: sent.length > 0 ? `Timeline sent to: ${sent.join(", ")}.` : "No recipient emails found on this transaction.",
+      message: sent.length > 0 ? `Timeline sent to: ${sent.join(", ")}.` : "Failed to send to any recipients.",
     });
   };
 
@@ -656,6 +657,13 @@ export default function TransactionDetail() {
   return (
     <div className="flex flex-col -mx-4 -mb-4 lg:-mx-5 lg:-mb-5" style={{ height: "calc(100vh - 48px)", overflow: "hidden" }}>
 
+      {timelineModalOpen && (
+        <SendTimelineModal
+          transaction={transaction}
+          onClose={() => setTimelineModalOpen(false)}
+          onSend={handleSendTimeline}
+        />
+      )}
       <EmailComposerModal
         open={emailModalOpen}
         onClose={() => setEmailModalOpen(false)}
@@ -937,7 +945,7 @@ export default function TransactionDetail() {
                 <div className="flex items-center justify-between">
                   <CardTitle className="text-sm font-semibold">Deadlines</CardTitle>
                   <Button size="sm" variant="outline" className="text-blue-600 hover:bg-blue-50 border-blue-200"
-                    onClick={handleSendTimeline} disabled={sendingTimeline}>
+                    onClick={() => setTimelineModalOpen(true)} disabled={sendingTimeline}>
                     <Send className="w-3.5 h-3.5 mr-1.5" />{sendingTimeline ? "Sending…" : "Send Timeline"}
                   </Button>
                 </div>

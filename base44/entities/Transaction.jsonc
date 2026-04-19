@@ -540,10 +540,5 @@
   "required": [
     "address",
     "agent"
-  ],
-  "rls": {
-    "update": {
-      "data.brokerage_id": "{{user.data.brokerage_id}}"
-    }
-  }
+  ]
 }
