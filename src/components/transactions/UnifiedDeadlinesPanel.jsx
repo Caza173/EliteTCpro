@@ -15,6 +15,7 @@ import { base44 } from "@/api/base44Client";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { format, parseISO } from "date-fns";
 import { getTodayLocal, normalizeDeadline, getDaysUntil } from "@/utils/dateUtils";
+import { evaluateDeadline } from "@/lib/deadlineUtils";
 import {
   Pencil, Check, X, Calendar, DollarSign, Home,
   CalendarCheck, CalendarPlus, Loader2, AlertTriangle,

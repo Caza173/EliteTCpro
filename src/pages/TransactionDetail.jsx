@@ -27,6 +27,7 @@ import DocChecklistPanel from "../components/transactions/DocChecklistPanel";
 import HealthScoreBadge from "../components/dashboard/HealthScoreBadge";
 import { useCurrentUser } from "../components/auth/useCurrentUser";
 import { useDealAccess } from "../lib/useDealAccess";
+import { evaluateDeadline, getAlertableDeadlines } from "../lib/deadlineUtils";
 import { writeAuditLog, computeHealthScore } from "../components/utils/tenantUtils";
 import FinanceTab from "../components/finance/FinanceTab";
 import TransactionActivityFeed from "../components/transactions/TransactionActivityFeed";
@@ -329,14 +330,7 @@ export default function TransactionDetail() {
   };
 
   // ── Deadline → task resolution mapping ───────────────────────────────────────
-  const DEADLINE_RESOLUTION_MAP = {
-    earnest_money_deadline: ["Earnest money deposit received + verified", "earnest_money_received"],
-    inspection_deadline:    ["Inspection completed", "inspection_completed"],
-    due_diligence_deadline: ["Due Diligence completed", "due_diligence_completed"],
-    appraisal_deadline:     ["Appraisal received", "appraisal_received"],
-    financing_deadline:     ["Clear to Close received", "financing_completed"],
-    closing_date:           ["Closing completed", "closing_completed"],
-  };
+
 
   const handleToggleTxTask = async (taskId) => {
     const task = txTasks.find(t => t.id === taskId);
@@ -357,14 +351,9 @@ export default function TransactionDetail() {
       entityId: taskId, description: `Task "${task.title}" toggled`,
     });
     
-    // If completing a task that resolves a deadline, invalidate notifications
+    // Invalidate notifications so deadlineEngine can re-evaluate resolved tasks
     if (isCompleting) {
-      Object.entries(DEADLINE_RESOLUTION_MAP).forEach(([deadlineKey, taskNames]) => {
-        if (taskNames.some(name => task.title?.toLowerCase().includes(name.toLowerCase()))) {
-          console.log(`[Task Resolution] Task "${task.title}" resolves deadline: ${deadlineKey}`);
-          queryClient.invalidateQueries({ queryKey: ["notifications"] });
-        }
-      });
+      queryClient.invalidateQueries({ queryKey: ["notifications"] });
     }
     
     // Auto-complete phase if all required tasks done
@@ -592,19 +581,7 @@ export default function TransactionDetail() {
     })();
   }, [transaction?.year_built, transaction?.property_type, transaction?.lead_paint_notified_year]);
 
-  // Returns true if the specific task that satisfies this deadline is completed
-  const isDeadlineResolvedByTasks = (deadlineKey) => {
-    const requiredTaskNames = DEADLINE_RESOLUTION_MAP[deadlineKey] || [];
-    if (requiredTaskNames.length === 0) return false;
-    
-    const satisfied = txTasks.some(t => 
-      requiredTaskNames.some(name => 
-        t.title?.toLowerCase().includes(name.toLowerCase()) && t.is_completed
-      )
-    );
-    
-    return satisfied;
-  };
+
 
   // Read dismissed issues from localStorage to accurately compute the Issues badge
   // (must be before early returns to satisfy Rules of Hooks)
@@ -659,35 +636,14 @@ export default function TransactionDetail() {
     );
   }
 
-  // Compute attention items — task-aware overdue logic
-  const now = new Date();
+  // Compute attention items — use centralized deadline evaluation
   const attentionItems = [];
-  const deadlineFields = [
-    { key: "inspection_deadline",    label: "Inspection" },
-    { key: "due_diligence_deadline", label: "Due Diligence" },
-    { key: "financing_deadline",     label: "Financing" },
-    { key: "appraisal_deadline",     label: "Appraisal" },
-    { key: "closing_date",           label: "Closing" },
-    { key: "earnest_money_deadline", label: "Earnest Money" },
-  ];
-  deadlineFields.forEach(({ key, label }) => {
-    const d = transaction[key];
-    if (!d) return;
-    
-    // Check if deadline is resolved by task completion
-    const isResolved = isDeadlineResolvedByTasks(key);
-    
-    const date = new Date(d);
-    const diffHrs = (date - now) / 36e5;
-    
-    if (diffHrs < 0) {
-      // Only show OVERDUE if not resolved by task completion
-      if (!isResolved) {
-        attentionItems.push({ type: "deadline", label: `${label} OVERDUE`, tab: "deadlines", urgent: true });
-      }
-    } else if (diffHrs < 48 && !isResolved) {
-      // Only show approaching deadline if not already resolved
-      attentionItems.push({ type: "deadline", label: `${label} in ${Math.round(diffHrs)}h`, tab: "deadlines", urgent: diffHrs < 24 });
+  const alertableDeadlines = getAlertableDeadlines(transaction, currentUser?.timezone);
+  alertableDeadlines.forEach(({ label, evaluation }) => {
+    if (evaluation.isOverdue) {
+      attentionItems.push({ type: "deadline", label: `${label} OVERDUE`, tab: "deadlines", urgent: true });
+    } else if (evaluation.isDueSoon) {
+      attentionItems.push({ type: "deadline", label: `${label} in ${Math.ceil(evaluation.daysRemaining * 24)}h`, tab: "deadlines", urgent: true });
     }
   });
   const overdueTasks = txTasks.filter(t => !t.is_completed && t.due_date && new Date(t.due_date) < now);

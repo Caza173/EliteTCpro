@@ -42,11 +42,31 @@ function isDeadlineCompletedByTask(deadlineKey, txTasks = []) {
 
 const MS_PER_HOUR = 1000 * 60 * 60;
 
-function getSeverity(hoursRemaining) {
-  if (hoursRemaining < 0)   return "critical";
-  if (hoursRemaining <= 12) return "urgent";
-  if (hoursRemaining <= 24) return "warning";
-  if (hoursRemaining <= 48) return "notice";
+/**
+ * Uses centralized deadline evaluation logic.
+ * Only returns a severity if deadline warrants an alert (MISSED or DUE_24H).
+ */
+function evaluateDeadlineStatus(deadline) {
+  if (!deadline) return null;
+
+  const now = new Date();
+  
+  // Parse deadline and append 23:59:59 if date-only
+  const deadlineStr = typeof deadline === "string" ? deadline : deadline.toISOString();
+  const isDateOnly = deadlineStr.match(/^\d{4}-\d{2}-\d{2}$/);
+  const deadlineWithTime = isDateOnly ? `${deadlineStr}T23:59:59` : deadlineStr;
+  
+  const deadlineMs = new Date(deadlineWithTime).getTime();
+  const hoursRemaining = (deadlineMs - now.getTime()) / MS_PER_HOUR;
+
+  // Only alert if MISSED or within 24 hours
+  if (hoursRemaining < 0) {
+    return { status: "MISSED", hoursRemaining, severity: "critical" };
+  } else if (hoursRemaining <= 24) {
+    return { status: "DUE_24H", hoursRemaining, severity: "warning" };
+  }
+  
+  // UPCOMING — no alert
   return null;
 }
 
@@ -164,16 +184,16 @@ Deno.serve(async (req) => {
         if (!contingency_active) continue;
         if (contingencyStatus === "Completed" || contingencyStatus === "Waived") continue;
 
-        const effectiveMs = new Date(effectiveDate + (effectiveDate.includes("T") ? "" : "T23:59:59")).getTime();
-        const hoursRemaining = (effectiveMs - now.getTime()) / MS_PER_HOUR;
+        const evaluation = evaluateDeadlineStatus(effectiveDate);
+        
+        console.log(`[deadlineEngine] ${field.key} for tx ${tx.id}: effectiveDate=${effectiveDate}, evaluation=${evaluation ? evaluation.status : "UPCOMING"}`);
 
-        console.log(`[deadlineEngine] ${field.key} for tx ${tx.id}: effectiveDate=${effectiveDate}, hoursRemaining=${Math.round(hoursRemaining)}`);
-
-        const severity = getSeverity(hoursRemaining);
-        if (!severity) {
-          console.log(`[deadlineEngine] ${field.key}: no alert needed (${Math.round(hoursRemaining)}h remaining)`);
+        if (!evaluation) {
+          console.log(`[deadlineEngine] ${field.key}: no alert needed (UPCOMING)`);
           continue;
         }
+
+        const { severity, hoursRemaining } = evaluation;
 
         // ── Deduplication — 1 active alert per (transaction_id + deadline_field) ──
         const fieldNotifications = existingForTx.filter(n => n.deadline_field === field.key);
