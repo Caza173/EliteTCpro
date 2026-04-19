@@ -64,7 +64,7 @@ export default function IntakePendingReviews({ currentUser }) {
         : dealType === "buyer_agency" ? "intake"
         : "under_contract";
 
-      // Create transaction (active, approved)
+      // Create transaction as "pending" — waiting for a TC to claim it
       const res = await base44.functions.invoke("createTransaction", {
         ...fd,
         buyers: sub.buyers || [],
@@ -78,7 +78,10 @@ export default function IntakePendingReviews({ currentUser }) {
         address: sub.property_address || fd.address || "",
         transaction_type: txType,
         transaction_phase: txPhase,
-        status: "active",
+        status: "pending",
+        assigned_tc_id: null,
+        assigned_tc_email: null,
+        claimed_at: null,
         phase: 1,
         phases_completed: [],
         tasks,

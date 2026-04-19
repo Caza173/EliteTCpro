@@ -8,11 +8,12 @@ import { Input } from "@/components/ui/input";
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
-import { Search, ChevronLeft, ChevronRight } from "lucide-react";
+import { Search, ChevronLeft, ChevronRight, Clock, Star } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import TransactionTable from "../components/transactions/TransactionTable";
 import ContractIntakeModal from "../components/intake/ContractIntakeModal";
 import { useDealAccess } from "../lib/useDealAccess";
+import PendingDealsQueue from "../components/deals/PendingDealsQueue";
 
 const PAGE_SIZE = 25;
 
@@ -29,10 +30,14 @@ export default function Transactions() {
   const [phaseFilter, setPhaseFilter] = useState("all");
   const [page, setPage] = useState(1);
   const [showIntake, setShowIntake] = useState(false);
+  const [dealTab, setDealTab] = useState("all"); // "all" | "pending" | "my"
   // Role-based deal access — filters to only deals the user may see
-  const { transactions, isLoading, currentUser } = useDealAccess();
+  const { transactions, pendingDeals, myDeals, isLoading, currentUser, isSuperAdmin, isTC } = useDealAccess();
 
-  const filtered = useMemo(() => transactions.filter((tx) => {
+  // The base list for the "all" tab respects access control
+  const baseList = dealTab === "my" ? myDeals : transactions;
+
+  const filtered = useMemo(() => baseList.filter((tx) => {
     const q = search.toLowerCase();
     const matchesSearch =
       !search ||
@@ -49,7 +54,7 @@ export default function Transactions() {
   const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
   const paginated = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
 
-  useEffect(() => { setPage(1); }, [search, statusFilter, phaseFilter, transactions]);
+  useEffect(() => { setPage(1); }, [search, statusFilter, phaseFilter, transactions, dealTab]);
 
   return (
     <div className="flex flex-col w-full min-w-0" style={{ height: "calc(100vh - 48px)", overflow: "hidden" }}>
@@ -58,11 +63,33 @@ export default function Transactions() {
       <div className="flex-shrink-0 space-y-4 pb-3">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
           <div>
-            <h1 className="text-2xl font-bold tracking-tight" style={{ color: "var(--text-primary)" }}>All Transactions</h1>
+            <h1 className="text-2xl font-bold tracking-tight" style={{ color: "var(--text-primary)" }}>Transactions</h1>
             <p className="text-sm mt-0.5" style={{ color: "var(--text-muted)" }}>
-              {filtered.length} of {transactions.length} transactions
+              {dealTab === "pending" ? `${pendingDeals.length} pending deals` : `${filtered.length} of ${baseList.length} transactions`}
             </p>
           </div>
+        </div>
+
+        {/* Deal tabs */}
+        <div className="flex gap-1 p-1 rounded-xl" style={{ background: "var(--bg-tertiary)", width: "fit-content" }}>
+          {[
+            { id: "all", label: "All Deals" },
+            ...(isSuperAdmin || isTC ? [{ id: "pending", label: `Pending${pendingDeals.length > 0 ? ` (${pendingDeals.length})` : ""}`, icon: Clock }] : []),
+            { id: "my", label: "My Deals", icon: Star },
+          ].map(tab => (
+            <button
+              key={tab.id}
+              onClick={() => setDealTab(tab.id)}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all"
+              style={dealTab === tab.id
+                ? { background: "var(--card-bg)", color: "var(--text-primary)", boxShadow: "var(--card-shadow)" }
+                : { color: "var(--text-muted)" }
+              }
+            >
+              {tab.icon && <tab.icon className="w-3 h-3" />}
+              {tab.label}
+            </button>
+          ))}
         </div>
 
         <div className="flex flex-col sm:flex-row gap-3">
@@ -100,8 +127,15 @@ export default function Transactions() {
         </div>
       </div>
 
-      {/* Scrollable table */}
+      {/* Scrollable table / queue */}
       <div className="flex-1 overflow-y-auto min-h-0" style={{ scrollbarWidth: "thin", scrollbarColor: "#cbd5e1 transparent" }}>
+        {dealTab === "pending" ? (
+          <PendingDealsQueue
+            currentUser={currentUser}
+            pendingDeals={pendingDeals}
+            isLoading={isLoading}
+          />
+        ) : (
         <Card className="shadow-sm border-gray-100">
           <CardContent className="px-0 pb-0 pt-0">
             {isLoading ? (
@@ -114,7 +148,7 @@ export default function Transactions() {
           </CardContent>
         </Card>
 
-        {totalPages > 1 && (
+        {totalPages > 1 && dealTab !== "pending" && (
           <div className="flex items-center justify-between px-2 py-3">
             <p className="text-sm text-gray-500">
               Page {page} of {totalPages} · {filtered.length} results
@@ -145,6 +179,7 @@ export default function Transactions() {
               </Button>
             </div>
           </div>
+        )}
         )}
       </div>
 

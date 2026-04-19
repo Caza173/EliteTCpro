@@ -21,6 +21,18 @@
       "type": "string",
       "description": "Unique agent portal code (random, non-sequential)"
     },
+    "assigned_tc_id": {
+      "type": "string",
+      "description": "User ID of the TC assigned to this deal. Null = unassigned/pending claim."
+    },
+    "assigned_tc_email": {
+      "type": "string",
+      "description": "Denormalized email of the assigned TC for fast lookup."
+    },
+    "claimed_at": {
+      "type": "string",
+      "description": "ISO timestamp when the deal was claimed by a TC."
+    },
     "property_type": {
       "type": "string",
       "enum": [
@@ -317,12 +329,12 @@
     "status": {
       "type": "string",
       "enum": [
-        "active",
         "pending",
+        "active",
         "closed",
         "cancelled"
       ],
-      "default": "active"
+      "default": "pending"
     },
     "pipeline_stage": {
       "type": "string"

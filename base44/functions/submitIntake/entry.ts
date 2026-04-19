@@ -88,38 +88,38 @@ Deno.serve(async (req) => {
       submitted_at: new Date().toISOString(),
     });
 
-    // ── Notify TC by email ──────────────────────────────────────────────────
+    // ── Notify ALL TCs and admins about the new submission ──────────────────
     try {
       const allUsers = await base44.asServiceRole.entities.User.list();
-      const tcUsers = allUsers.filter(u => ['tc', 'tc_lead', 'admin', 'owner'].includes(u.role));
-      if (tcUsers.length > 0) {
-        const genericWarning = isGenericEmail(agent_email)
-          ? `<div style="background:#fef3c7;border:1px solid #f59e0b;border-radius:8px;padding:10px 14px;margin-bottom:16px;font-size:13px;color:#92400e;">
-              ⚠️ <strong>Unverified Agent Email</strong> — This submission used a generic email domain (${agent_email.split('@')[1]}). Review carefully.
-            </div>`
-          : '';
-
-        await base44.asServiceRole.integrations.Core.SendEmail({
-          to: tcUsers[0].email,
+      const notifyUsers = allUsers.filter(u => ['tc', 'tc_lead', 'admin', 'owner'].includes(u.role));
+      const genericWarning = isGenericEmail(agent_email)
+        ? `<div style="background:#fef3c7;border:1px solid #f59e0b;border-radius:8px;padding:10px 14px;margin-bottom:16px;font-size:13px;color:#92400e;">
+            ⚠️ <strong>Unverified Agent Email</strong> — This submission used a generic email domain (${agent_email.split('@')[1]}). Review carefully.
+          </div>`
+        : '';
+      const emailBody = `
+        <div style="font-family:-apple-system,sans-serif;max-width:560px;margin:0 auto;padding:24px;">
+          <h2 style="color:#0f172a;margin:0 0 16px;">New Deal Intake Submission</h2>
+          ${genericWarning}
+          <table style="width:100%;border-collapse:collapse;font-size:14px;">
+            <tr><td style="padding:6px 12px 6px 0;color:#64748b;width:40%;">Deal Type</td><td style="color:#0f172a;font-weight:600;">${deal_type}</td></tr>
+            <tr><td style="padding:6px 12px 6px 0;color:#64748b;">Agent</td><td style="color:#0f172a;font-weight:600;">${agent_name || '—'}</td></tr>
+            <tr><td style="padding:6px 12px 6px 0;color:#64748b;">Agent Email</td><td style="color:#0f172a;">${agent_email}</td></tr>
+            <tr><td style="padding:6px 12px 6px 0;color:#64748b;">Phone</td><td style="color:#0f172a;">${agent_phone}</td></tr>
+            <tr><td style="padding:6px 12px 6px 0;color:#64748b;">Property</td><td style="color:#0f172a;font-weight:600;">${property_address || '—'}</td></tr>
+            <tr><td style="padding:6px 12px 6px 0;color:#64748b;">Document</td><td style="color:#0f172a;">${document_url ? `<a href="${document_url}">View Document</a>` : 'None'}</td></tr>
+          </table>
+          <p style="margin:20px 0 0;font-size:13px;color:#94a3b8;">Log in to EliteTC to review, approve, and claim this deal.</p>
+        </div>
+      `;
+      await Promise.allSettled(notifyUsers.map(u =>
+        base44.asServiceRole.integrations.Core.SendEmail({
+          to: u.email,
           from_name: 'EliteTC Intake',
-          subject: `New Deal Submission — Pending Review${isGenericEmail(agent_email) ? ' ⚠️ Unverified Email' : ''}`,
-          body: `
-            <div style="font-family:-apple-system,sans-serif;max-width:560px;margin:0 auto;padding:24px;">
-              <h2 style="color:#0f172a;margin:0 0 16px;">New Deal Intake Submission</h2>
-              ${genericWarning}
-              <table style="width:100%;border-collapse:collapse;font-size:14px;">
-                <tr><td style="padding:6px 12px 6px 0;color:#64748b;width:40%;">Deal Type</td><td style="color:#0f172a;font-weight:600;">${deal_type}</td></tr>
-                <tr><td style="padding:6px 12px 6px 0;color:#64748b;">Agent</td><td style="color:#0f172a;font-weight:600;">${agent_name || '—'}</td></tr>
-                <tr><td style="padding:6px 12px 6px 0;color:#64748b;">Agent Email</td><td style="color:#0f172a;">${agent_email}</td></tr>
-                <tr><td style="padding:6px 12px 6px 0;color:#64748b;">Phone</td><td style="color:#0f172a;">${agent_phone}</td></tr>
-                <tr><td style="padding:6px 12px 6px 0;color:#64748b;">Property</td><td style="color:#0f172a;font-weight:600;">${property_address || '—'}</td></tr>
-                <tr><td style="padding:6px 12px 6px 0;color:#64748b;">Document</td><td style="color:#0f172a;">${document_url ? `<a href="${document_url}">View Document</a>` : 'None'}</td></tr>
-              </table>
-              <p style="margin:20px 0 0;font-size:13px;color:#94a3b8;">Log in to EliteTC to review and approve this submission.</p>
-            </div>
-          `,
-        });
-      }
+          subject: `New Deal Submission — ${property_address || 'Pending Review'}${isGenericEmail(agent_email) ? ' ⚠️' : ''}`,
+          body: emailBody,
+        })
+      ));
     } catch (_) {}
 
     return Response.json({ success: true, submission_id: submission.id });
