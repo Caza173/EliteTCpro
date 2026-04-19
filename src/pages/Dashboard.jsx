@@ -13,7 +13,8 @@ import {
 } from "lucide-react";
 import { format, differenceInDays, parseISO } from "date-fns";
 
-import { useCurrentUser, isOwnerOrAdmin } from "../components/auth/useCurrentUser";
+import { useCurrentUser } from "../components/auth/useCurrentUser";
+import { useDealAccess } from "../lib/useDealAccess";
 import { computeHealthScore } from "../components/utils/tenantUtils";
 import AddendumAlertChecker from "../components/dashboard/AddendumAlertChecker";
 import TCAnalyticsDashboard from "../components/dashboard/TCAnalyticsDashboard";
@@ -101,17 +102,9 @@ export default function Dashboard() {
   const [activeTab, setActiveTab] = useState("overview");
   const [aiOpen, setAiOpen] = useState(false);
   const [aiPanelCollapsed, setAiPanelCollapsed] = useState(false);
-  const { data: currentUser } = useCurrentUser();
 
-  const { data: rawTransactions = [], isLoading } = useQuery({
-    queryKey: ["transactions", currentUser?.email, currentUser?.role],
-    queryFn: () => {
-      if (isOwnerOrAdmin(currentUser)) return base44.entities.Transaction.list("-created_date");
-      return base44.entities.Transaction.filter({ agent_email: currentUser.email }, "-created_date");
-    },
-    enabled: !!currentUser,
-    staleTime: 30_000,
-  });
+  // Role-based deal access — only shows deals the user is authorized to see
+  const { transactions, isLoading, currentUser } = useDealAccess();
 
   const { data: checklistItems = [] } = useQuery({
     queryKey: ["allChecklist"],
@@ -126,8 +119,6 @@ export default function Dashboard() {
     enabled: !!currentUser,
     staleTime: 30_000,
   });
-
-  const transactions = rawTransactions;
 
   const active = transactions.filter(t => t.status === "active");
   const pending = transactions.filter(t => t.status === "pending");

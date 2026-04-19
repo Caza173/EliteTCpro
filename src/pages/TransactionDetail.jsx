@@ -26,6 +26,7 @@ import { generateTasksForPhase, isPhaseComplete, getPhasesForType, normalizeTran
 import DocChecklistPanel from "../components/transactions/DocChecklistPanel";
 import HealthScoreBadge from "../components/dashboard/HealthScoreBadge";
 import { useCurrentUser } from "../components/auth/useCurrentUser";
+import { useDealAccess } from "../lib/useDealAccess";
 import { writeAuditLog, computeHealthScore } from "../components/utils/tenantUtils";
 import FinanceTab from "../components/finance/FinanceTab";
 import TransactionActivityFeed from "../components/transactions/TransactionActivityFeed";
@@ -95,6 +96,7 @@ export default function TransactionDetail() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const { data: currentUser } = useCurrentUser();
+  const { canAccess, isLoading: accessLoading } = useDealAccess();
 
   const urlSearch = new URLSearchParams(window.location.search);
   const urlTab = urlSearch.get("tab");
@@ -634,6 +636,22 @@ export default function TransactionDetail() {
     return (
       <div className="max-w-5xl mx-auto text-center py-20 w-full min-w-0">
         <p className="text-gray-500 mb-4">Transaction not found (ID: {id}).</p>
+        <Link to={createPageUrl("Transactions")}>
+          <Button variant="outline"><ArrowLeft className="w-4 h-4 mr-2" /> Back to Transactions</Button>
+        </Link>
+      </div>
+    );
+  }
+
+  // Access control gate — deny if user is not authorized for this deal
+  if (!accessLoading && transaction && !canAccess(transaction.id)) {
+    return (
+      <div className="max-w-5xl mx-auto text-center py-20 w-full min-w-0">
+        <div className="w-16 h-16 rounded-full bg-red-50 flex items-center justify-center mx-auto mb-4">
+          <ShieldCheck className="w-8 h-8 text-red-400" />
+        </div>
+        <h2 className="text-xl font-bold text-gray-900 mb-2">Access Denied</h2>
+        <p className="text-gray-500 mb-6">You do not have permission to view this transaction.</p>
         <Link to={createPageUrl("Transactions")}>
           <Button variant="outline"><ArrowLeft className="w-4 h-4 mr-2" /> Back to Transactions</Button>
         </Link>

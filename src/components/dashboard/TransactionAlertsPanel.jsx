@@ -8,6 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { base44 } from "@/api/base44Client";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useCurrentUser } from "../auth/useCurrentUser";
+import { useAccessibleDealIds } from "../../lib/useDealAccess";
 
 const ALERT_CONFIG = {
   deadline_overdue:     { icon: AlertTriangle, iconColor: "var(--danger)",   bgStyle: { backgroundColor: "var(--danger-bg)" },  borderColor: "var(--danger)",   label: "Overdue" },
@@ -28,13 +29,19 @@ export default function TransactionAlertsPanel({ brokerageId }) {
   const [filter, setFilter] = useState("all");
   const queryClient = useQueryClient();
   const { data: currentUser } = useCurrentUser();
+  const { accessibleDealIds } = useAccessibleDealIds();
 
   // Fetch active alerts from database
-  const { data: dbAlerts = [], isLoading } = useQuery({
+  const { data: rawAlerts = [], isLoading } = useQuery({
     queryKey: ["monitorAlerts", brokerageId],
     queryFn: () => base44.entities.MonitorAlert.filter({ brokerage_id: brokerageId, status: "open" }),
     enabled: !!brokerageId,
   });
+
+  // Filter alerts to only deals the current user can access
+  const dbAlerts = accessibleDealIds.size > 0
+    ? rawAlerts.filter(a => accessibleDealIds.has(a.transaction_id))
+    : rawAlerts;
 
   // Update alert status (resolve or dismiss)
   const updateAlertMutation = useMutation({

@@ -1,0 +1,38 @@
+{
+  "name": "DealCollaborator",
+  "type": "object",
+  "properties": {
+    "deal_id": {
+      "type": "string",
+      "description": "Reference to Transaction.id"
+    },
+    "user_id": {
+      "type": "string",
+      "description": "Reference to User.id"
+    },
+    "user_email": {
+      "type": "string",
+      "description": "Denormalized email for fast lookup"
+    },
+    "role": {
+      "type": "string",
+      "enum": [
+        "viewer",
+        "editor"
+      ],
+      "default": "viewer",
+      "description": "Access level for this collaborator"
+    },
+    "added_by": {
+      "type": "string",
+      "description": "Email of the user who added this collaborator"
+    },
+    "brokerage_id": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "deal_id",
+    "user_email"
+  ]
+}

@@ -1,7 +1,6 @@
 import React, { useState, useMemo, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { base44 } from "@/api/base44Client";
-import { useQuery } from "@tanstack/react-query";
 import { createPageUrl } from "@/utils";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -13,7 +12,7 @@ import { Search, ChevronLeft, ChevronRight } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import TransactionTable from "../components/transactions/TransactionTable";
 import ContractIntakeModal from "../components/intake/ContractIntakeModal";
-import { useCurrentUser, isOwnerOrAdmin } from "../components/auth/useCurrentUser";
+import { useDealAccess } from "../lib/useDealAccess";
 
 const PAGE_SIZE = 25;
 
@@ -30,17 +29,8 @@ export default function Transactions() {
   const [phaseFilter, setPhaseFilter] = useState("all");
   const [page, setPage] = useState(1);
   const [showIntake, setShowIntake] = useState(false);
-  const { data: currentUser } = useCurrentUser();
-
-  const { data: transactions = [], isLoading } = useQuery({
-    queryKey: ["transactions", currentUser?.email, currentUser?.role],
-    queryFn: () => {
-      if (!currentUser) return [];
-      if (isOwnerOrAdmin(currentUser)) return base44.entities.Transaction.list("-created_date");
-      return base44.entities.Transaction.list("-created_date");
-    },
-    enabled: !!currentUser,
-  });
+  // Role-based deal access — filters to only deals the user may see
+  const { transactions, isLoading, currentUser } = useDealAccess();
 
   const filtered = useMemo(() => transactions.filter((tx) => {
     const q = search.toLowerCase();
