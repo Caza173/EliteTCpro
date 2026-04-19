@@ -597,6 +597,8 @@ export default function FeedbackCenter() {
     return list;
   }, [items, quickFilter, statusFilter, search, sortBy]);
 
+  const clusters = useMemo(() => groupByCluster ? buildClusters(filtered) : [], [filtered, groupByCluster]);
+
   if (!isOwnerOrAdmin(currentUser)) {
     return (
       <div className="flex items-center justify-center h-64">
@@ -604,8 +606,6 @@ export default function FeedbackCenter() {
       </div>
     );
   }
-
-  const clusters = useMemo(() => groupByCluster ? buildClusters(filtered) : [], [filtered, groupByCluster]);
 
   return (
     <div className="flex flex-col gap-4 h-full" style={{ height: "calc(100vh - 57px)", overflow: "hidden" }}>
