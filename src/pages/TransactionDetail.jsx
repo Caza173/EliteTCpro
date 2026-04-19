@@ -51,6 +51,7 @@ import NotesPanel from "../components/transactions/NotesPanel";
 import UnderContractCommsPanel from "../components/comms/UnderContractCommsPanel";
 import CollaboratorsPanel from "../components/collaborators/CollaboratorsPanel";
 import SendTimelineModal from "../components/transactions/SendTimelineModal";
+import InspectionPanel from "../components/transactions/InspectionPanel";
 
 const TX_TABS = [
   { id: "overview",      label: "Overview",      icon: LayoutDashboard, info: "Phase checklist, tasks, and compliance summary" },
@@ -992,23 +993,29 @@ export default function TransactionDetail() {
 
           {/* ── Tab: Deadlines ── */}
           {activeTab === "deadlines" && (
-            <Card className="shadow-sm border-gray-100">
-              <CardHeader className="pb-2">
-                <div className="flex items-center justify-between">
-                  <CardTitle className="text-sm font-semibold">Deadlines</CardTitle>
-                  <Button size="sm" variant="outline" className="text-blue-600 hover:bg-blue-50 border-blue-200"
-                    onClick={() => setTimelineModalOpen(true)} disabled={sendingTimeline}>
-                    <Send className="w-3.5 h-3.5 mr-1.5" />{sendingTimeline ? "Sending…" : "Send Timeline"}
-                  </Button>
-                </div>
-              </CardHeader>
-              <CardContent>
-                <UnifiedDeadlinesPanel
-                  transaction={transaction}
-                  onSave={(changes) => updateMutation.mutate({ id: transaction.id, data: { ...changes, last_activity_at: new Date().toISOString() } })}
-                />
-              </CardContent>
-            </Card>
+            <div className="space-y-4">
+              <Card className="shadow-sm border-gray-100">
+                <CardHeader className="pb-2">
+                  <div className="flex items-center justify-between">
+                    <CardTitle className="text-sm font-semibold">Deadlines</CardTitle>
+                    <Button size="sm" variant="outline" className="text-blue-600 hover:bg-blue-50 border-blue-200"
+                      onClick={() => setTimelineModalOpen(true)} disabled={sendingTimeline}>
+                      <Send className="w-3.5 h-3.5 mr-1.5" />{sendingTimeline ? "Sending…" : "Send Timeline"}
+                    </Button>
+                  </div>
+                </CardHeader>
+                <CardContent>
+                  <UnifiedDeadlinesPanel
+                    transaction={transaction}
+                    onSave={(changes) => updateMutation.mutate({ id: transaction.id, data: { ...changes, last_activity_at: new Date().toISOString() } })}
+                  />
+                </CardContent>
+              </Card>
+              <InspectionPanel
+                transaction={transaction}
+                onSave={(changes) => updateMutation.mutate({ id: transaction.id, data: { ...changes, last_activity_at: new Date().toISOString() } })}
+              />
+            </div>
           )}
 
           {activeTab === "documents" && <TransactionDocumentsTab transaction={transaction} currentUser={currentUser} />}

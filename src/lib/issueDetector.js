@@ -43,6 +43,10 @@ export function detectIssues(transaction, checklistItems = [], complianceReports
   for (const { key, label } of DEADLINE_FIELDS) {
     const dateStr = transaction[key];
     if (!dateStr) continue;
+
+    // Inspection deadline: suppress all alerts if inspection_completed is set
+    if (key === "inspection_deadline" && transaction.inspection_completed) continue;
+
     const hours = hoursUntil(dateStr);
 
     if (hours < 0) {
@@ -83,6 +87,42 @@ export function detectIssues(transaction, checklistItems = [], complianceReports
         description: `${label} is due within 24 hours (${new Date(dateStr).toLocaleDateString()}).`,
         deadline: dateStr,
         deadline_label: label,
+        document_reference: null,
+      });
+    }
+  }
+
+  // ── 1b. INSPECTION-SPECIFIC CHECKS ────────────────────────────────────────
+  const inspDeadline = transaction.inspection_deadline;
+  const inspScheduled = transaction.inspection_scheduled;
+  const inspCompleted = transaction.inspection_completed;
+
+  if (inspDeadline && !inspCompleted) {
+    // Flag: scheduled is after the contractual deadline date
+    if (inspScheduled) {
+      const scheduledDay = new Date(new Date(inspScheduled).toDateString());
+      const deadlineDay = new Date(new Date(inspDeadline).toDateString());
+      if (scheduledDay > deadlineDay) {
+        add({
+          key: "inspection_scheduled_after_deadline",
+          issue_type: "deadline_warning",
+          severity: "high",
+          description: `Inspection is scheduled (${new Date(inspScheduled).toLocaleDateString()}) after the contractual deadline (${new Date(inspDeadline).toLocaleDateString()}).`,
+          deadline: inspDeadline,
+          deadline_label: "Inspection Deadline",
+          document_reference: null,
+        });
+      }
+    }
+    // Flag: scheduled time has passed but not marked completed
+    if (inspScheduled && new Date(inspScheduled) < new Date()) {
+      add({
+        key: "inspection_scheduled_passed_not_complete",
+        issue_type: "workflow_incomplete",
+        severity: "medium",
+        description: `Inspection was scheduled for ${new Date(inspScheduled).toLocaleString()} but has not been marked completed.`,
+        deadline: inspDeadline,
+        deadline_label: "Inspection",
         document_reference: null,
       });
     }

@@ -297,7 +297,8 @@ export default function AgentIntake() {
     if (parsed.seller_brokerage || parsed.sellerBrokerage)        u.seller_brokerage = parsed.seller_brokerage || parsed.sellerBrokerage;
     if (parsed.closing_title_company || parsed.closingTitleCompany) u.closing_title_company = parsed.closing_title_company || parsed.closingTitleCompany;
     if (parsed.financing_commitment_date || parsed.financingCommitmentDate) u.financing_deadline = parsed.financing_commitment_date || parsed.financingCommitmentDate;
-    if (parsed.inspection_deadline || parsed.inspectionDeadline)  u.inspection_deadline = parsed.inspection_deadline || parsed.inspectionDeadline;
+    // inspection_deadline = date only from contract. NEVER set inspection_scheduled here.
+    if (parsed.inspection_deadline || parsed.inspectionDeadline)  u.inspection_deadline = (parsed.inspection_deadline || parsed.inspectionDeadline || "").split("T")[0];
     if (parsed.earnest_money_deadline || parsed.earnestMoneyDeadline) u.earnest_money_deadline = parsed.earnest_money_deadline || parsed.earnestMoneyDeadline;
     if (parsed.due_diligence_deadline || parsed.dueDiligenceDeadline) u.due_diligence_deadline = parsed.due_diligence_deadline || parsed.dueDiligenceDeadline;
     if (parsed.price || parsed.purchasePrice)                     u.sale_price = String(parsed.price || parsed.purchasePrice);

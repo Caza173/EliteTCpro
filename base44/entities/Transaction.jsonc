@@ -33,6 +33,10 @@
       ],
       "default": "residential"
     },
+    "year_built": {
+      "type": "number",
+      "description": "Year the property was built (4-digit year). Used to trigger lead-based paint disclosure for pre-1978 structures."
+    },
     "transaction_phase": {
       "type": "string",
       "enum": [
@@ -333,11 +337,22 @@
     },
     "inspection_deadline": {
       "type": "string",
-      "format": "date"
+      "format": "date",
+      "description": "Contractual inspection deadline (date only, parsed from contract). Never auto-populated from scheduling."
+    },
+    "inspection_scheduled": {
+      "type": "string",
+      "format": "date-time",
+      "description": "Manually entered datetime when inspection is scheduled to occur. Never auto-populated from contract parsing."
+    },
+    "inspection_completed": {
+      "type": "string",
+      "format": "date-time",
+      "description": "Datetime when inspection was actually completed. When set, deadline alerts are suppressed."
     },
     "inspection_time": {
       "type": "string",
-      "description": "Time for inspection (HH:MM format)"
+      "description": "Legacy: Time for inspection (HH:MM format) \u2014 use inspection_scheduled instead."
     },
     "appraisal_deadline": {
       "type": "string",
@@ -535,6 +550,15 @@
           "type": "string"
         }
       }
+    },
+    "lead_paint_flag": {
+      "type": "boolean",
+      "default": false,
+      "description": "True if lead-based paint disclosure has been flagged for this transaction (year_built <= 1978)"
+    },
+    "lead_paint_notified_year": {
+      "type": "number",
+      "description": "The year_built value that was active when the lead-paint notification was last triggered. Used to avoid re-notifying for the same value."
     }
   },
   "required": [
