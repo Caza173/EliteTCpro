@@ -19,6 +19,7 @@ import PurchaseAgreementUpload from "../components/forms/PurchaseAgreementUpload
 import ParsedDeadlinesPreview from "../components/forms/ParsedDeadlinesPreview";
 import { generateTasksForPhase } from "../lib/taskLibrary";
 import IntakePendingReviews from "../components/intake/IntakePendingReviews";
+import InspectionContingencySection from "../components/intake/InspectionContingencySection";
 
 // ── Deal Type Config ──────────────────────────────────────────────────────────
 
@@ -360,6 +361,18 @@ export default function AgentIntake() {
           ...form,
           sale_price: form.sale_price ? Number(form.sale_price) : undefined,
           is_cash_transaction: form.is_cash_transaction || false,
+          inspections_waived: form.inspections_waived || false,
+          inspection_waiver_type: form.inspections_waived ? (form.inspection_waiver_type || null) : null,
+          inspection_waiver_notes: form.inspections_waived ? (form.inspection_waiver_notes || "") : "",
+          // Clear inspection dates if waived
+          inspection_deadline: form.inspections_waived ? null : form.inspection_deadline,
+          general_inspection_date: form.inspections_waived ? null : form.general_inspection_date,
+          septic_inspection_date: form.inspections_waived ? null : form.septic_inspection_date,
+          water_test_date: form.inspections_waived ? null : form.water_test_date,
+          radon_air_date: form.inspections_waived ? null : form.radon_air_date,
+          radon_water_date: form.inspections_waived ? null : form.radon_water_date,
+          custom_inspection_label: form.inspections_waived ? null : form.custom_inspection_label,
+          custom_inspection_date: form.inspections_waived ? null : form.custom_inspection_date,
         },
         buyers: buyerList,
         sellers: sellerList,
@@ -766,13 +779,17 @@ export default function AgentIntake() {
                         <F label="Contract / Effective Date" id="contract_date"><Input id="contract_date" type="date" value={form.contract_date || ""} onChange={e => set("contract_date", e.target.value)} className="mt-1.5" /></F>
                         <F label="Closing / Transfer of Title Date" id="closing_date"><Input id="closing_date" type="date" value={form.closing_date || ""} onChange={e => set("closing_date", e.target.value)} className="mt-1.5" /></F>
                         <F label="Earnest Money Deadline" id="earnest_money_deadline"><Input id="earnest_money_deadline" type="date" value={form.earnest_money_deadline || ""} onChange={e => set("earnest_money_deadline", e.target.value)} className="mt-1.5" /></F>
-                        <F label="Inspection Deadline" id="inspection_deadline"><Input id="inspection_deadline" type="date" value={form.inspection_deadline || ""} onChange={e => set("inspection_deadline", e.target.value)} className="mt-1.5" /></F>
+                        {!form.inspections_waived && (
+                          <F label="Inspection Deadline" id="inspection_deadline"><Input id="inspection_deadline" type="date" value={form.inspection_deadline || ""} onChange={e => set("inspection_deadline", e.target.value)} className="mt-1.5" /></F>
+                        )}
                         <F label="Due Diligence Deadline" id="due_diligence_deadline"><Input id="due_diligence_deadline" type="date" value={form.due_diligence_deadline || ""} onChange={e => set("due_diligence_deadline", e.target.value)} className="mt-1.5" /></F>
                         {!form.is_cash_transaction && (
                           <F label="Financing Commitment Date" id="financing_deadline"><Input id="financing_deadline" type="date" value={form.financing_deadline || ""} onChange={e => set("financing_deadline", e.target.value)} className="mt-1.5" /></F>
                         )}
                       </div>
                     </Section>
+                    <Separator />
+                    <InspectionContingencySection form={form} set={set} />
                   </>
                 )}
               </>
