@@ -40,7 +40,7 @@ import ConfirmDialog from "../components/ui/ConfirmDialog";
 import SkySlopeSyncBadge from "../components/skyslope/SkySlopeSyncBadge";
 import EmailComposerModal from "../components/email/EmailComposerModal";
 import UnderContractEmailButton from "../components/email/UnderContractEmailButton";
-import ConvertToTransactionButton from "../components/transactions/ConvertToTransactionButton";
+import MarkUnderContractButton from "../components/transactions/MarkUnderContractButton";
 import ListingIntakeTab from "../components/transactions/ListingIntakeTab";
 import UnifiedDeadlinesPanel from "../components/transactions/UnifiedDeadlinesPanel";
 import ContactsSection from "../components/transactions/ContactsSection";
@@ -781,13 +781,27 @@ export default function TransactionDetail() {
             <Badge variant="outline" className={`text-xs capitalize flex-shrink-0 ${statusStyles[transaction.status] || statusStyles.active}`}>
               {transaction.status || "active"}
             </Badge>
-            <Badge variant="outline" className={`text-xs font-semibold capitalize flex-shrink-0 ${
-              (transaction.transaction_type === "seller" || transaction.transaction_type === "listing")
-                ? "bg-emerald-50 text-emerald-700 border-emerald-300"
-                : "bg-blue-50 text-blue-700 border-blue-300"
-            }`}>
-              {(transaction.transaction_type === "seller" || transaction.transaction_type === "listing") ? "🟢 Listing" : "🔵 Buyer"}
-            </Badge>
+            {/* Deal origin / type badge */}
+            {(() => {
+              const isBuyer = transaction.deal_origin === "buyer" || (transaction.transaction_type === "buyer" && transaction.deal_origin !== "listing");
+              const isListingUC = (transaction.deal_origin === "listing" || transaction.transaction_type === "seller") && transaction.transaction_phase === "under_contract";
+              const isListing = (transaction.deal_origin === "listing" || transaction.transaction_type === "seller") && !isListingUC;
+              if (isBuyer) return (
+                <Badge variant="outline" className="text-xs font-semibold flex-shrink-0 bg-blue-50 text-blue-700 border-blue-300">
+                  🔵 Buyer Transaction
+                </Badge>
+              );
+              if (isListingUC) return (
+                <Badge variant="outline" className="text-xs font-semibold flex-shrink-0 bg-purple-50 text-purple-700 border-purple-300">
+                  🟣 Listing → Under Contract
+                </Badge>
+              );
+              return (
+                <Badge variant="outline" className="text-xs font-semibold flex-shrink-0 bg-emerald-50 text-emerald-700 border-emerald-300">
+                  🟢 Listing
+                </Badge>
+              );
+            })()}
             <HealthScoreBadge
               healthScore={transaction.health_score ?? computeHealthScore(transaction, checklistItems).health_score}
               riskLevel={transaction.risk_level ?? computeHealthScore(transaction, checklistItems).risk_level}
@@ -821,9 +835,7 @@ export default function TransactionDetail() {
             <Button variant="outline" size="sm" className="h-8 text-indigo-600 hover:bg-indigo-50 border-indigo-200" onClick={handleInviteClient} disabled={invitingClient}>
               <UserPlus className="w-3.5 h-3.5 mr-1" />{invitingClient ? "Sending…" : "Invite"}
             </Button>
-            {(transaction.transaction_type === "seller" || transaction.phase <= 2) && (
-              <ConvertToTransactionButton transaction={transaction} onConverted={() => queryClient.invalidateQueries({ queryKey: ["transactions"] })} />
-            )}
+            <MarkUnderContractButton transaction={transaction} onConverted={() => queryClient.invalidateQueries({ queryKey: ["transactions"] })} />
             <Button variant="outline" size="sm" className="h-8 text-red-600 hover:bg-red-50 border-red-200" onClick={() => setConfirmDelete(true)}>
               <Trash2 className="w-3.5 h-3.5" />
             </Button>

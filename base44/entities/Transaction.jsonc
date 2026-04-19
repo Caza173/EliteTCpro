@@ -37,6 +37,14 @@
       "type": "number",
       "description": "Year the property was built (4-digit year). Used to trigger lead-based paint disclosure for pre-1978 structures."
     },
+    "deal_origin": {
+      "type": "string",
+      "enum": [
+        "buyer",
+        "listing"
+      ],
+      "description": "Origin of the deal: 'buyer' = already a live transaction from intake (no conversion step), 'listing' = started as a listing and may be marked under contract later."
+    },
     "transaction_phase": {
       "type": "string",
       "enum": [
