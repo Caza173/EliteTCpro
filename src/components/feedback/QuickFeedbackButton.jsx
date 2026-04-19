@@ -26,7 +26,6 @@ export default function QuickFeedbackButton({
       <button
         onClick={() => setOpen(true)}
         className={baseStyle}
-        style={{ color: "var(--text-muted)", background: "transparent" }}
         title="Send Feedback"
       >
         <MessageSquarePlus className="w-3.5 h-3.5 flex-shrink-0" />
