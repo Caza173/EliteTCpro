@@ -58,7 +58,13 @@ export default function Landing() {
           ))}
         </nav>
 
-        <div className="w-24" /> {/* spacer to center tabs */}
+        <button
+          onClick={() => base44.auth.redirectToLogin("/Dashboard")}
+          className="flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all"
+          style={{ backgroundColor: "var(--accent)", color: "#fff" }}
+        >
+          <Lock className="w-3 h-3" /> TC Login
+        </button>
       </header>
 
       {/* ── Content Area ── */}
@@ -75,14 +81,7 @@ export default function Landing() {
         style={{ backgroundColor: "var(--bg-secondary)", borderColor: "var(--border)" }}
       >
         <button
-          onClick={() => base44.auth.redirectToLogin("/Dashboard")}
-          className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold transition-all"
-          style={{ backgroundColor: "var(--accent)", color: "#fff" }}
-        >
-          <Lock className="w-3.5 h-3.5" /> TC Login
-        </button>
-        <button
-          onClick={() => navigate(createPageUrl("AddTransaction"))}
+          onClick={() => navigate("/AgentIntake")}
           className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all border"
           style={{ borderColor: "var(--border)", color: "var(--text-secondary)", backgroundColor: "var(--card-bg)" }}
         >
