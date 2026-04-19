@@ -134,7 +134,7 @@ export default function AuditLogPage() {
           <h1 className="text-2xl font-bold text-gray-900 tracking-tight flex items-center gap-2">
             <Shield className="w-6 h-6 text-blue-500" /> Audit Log
           </h1>
-          <p className="text-sm text-gray-500 mt-0.5">All brokerage-level activity and change history.</p>
+          <p className="text-sm text-gray-500 mt-0.5">Per transaction activity and change history.</p>
         </div>
         <div className="flex flex-wrap gap-2">
           <div className="relative">
