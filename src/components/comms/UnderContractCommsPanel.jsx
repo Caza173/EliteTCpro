@@ -47,6 +47,11 @@ export default function UnderContractCommsPanel({ transaction, currentUser }) {
     staleTime: 10_000,
   });
 
+  const updateTxMutation = useMutation({
+    mutationFn: (data) => base44.functions.invoke("updateTransaction", { transaction_id: transaction.id, data }),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["transactions"] }),
+  });
+
   const filteredComms = comms.filter(c => !SMS_TYPES.includes(c.template_type));
   const sortedComms = sortComms(filteredComms);
   const latestComm = sortedComms[0];
@@ -125,7 +130,23 @@ export default function UnderContractCommsPanel({ transaction, currentUser }) {
       )}
 
       {/* Contract Data Used */}
-      {contractData && <ContractDataSnapshot data={contractData} />}
+      {contractData && (
+        <ContractDataSnapshot
+          data={contractData}
+          onDataChange={(updatedData) => {
+            // Map contract data keys to transaction fields
+            const updates = {};
+            if (updatedData.earnest_money_amount) updates.earnest_money_amount = parseFloat(updatedData.earnest_money_amount) || updatedData.earnest_money_amount;
+            if (updatedData.earnest_money_due_date) updates.earnest_money_deadline = updatedData.earnest_money_due_date;
+            if (updatedData.closing_date) updates.closing_date = updatedData.closing_date;
+            if (updatedData.inspection_deadline) updates.inspection_deadline = updatedData.inspection_deadline;
+            if (updatedData.financing_deadline) updates.financing_deadline = updatedData.financing_deadline;
+            if (Object.keys(updates).length > 0) {
+              updateTxMutation.mutate(updates);
+            }
+          }}
+        />
+      )}
 
 
 
