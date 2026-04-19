@@ -474,14 +474,18 @@ export default function UnifiedDeadlinesPanel({ transaction, onSave }) {
 
   const handleDeleteDeadline = async (item) => {
     if (item.sourceType === "system") {
-      // Clear the date field on the transaction
-      onSave({ [item.key]: null });
+      // Clear the date field on the transaction (use empty string — null can be stripped by SDK)
+      onSave({ [item.key]: "" });
       toast.success(`${item.label} date cleared`);
     } else {
       // Delete the contingency record
-      await base44.entities.Contingency.delete(item.id);
-      refreshContingencies();
-      toast.success(`${item.label} deleted`);
+      try {
+        await base44.entities.Contingency.delete(item.id);
+        refreshContingencies();
+        toast.success(`${item.label} deleted`);
+      } catch (e) {
+        toast.error("Failed to delete: " + (e.message || "unknown error"));
+      }
     }
   };
 
