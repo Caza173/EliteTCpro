@@ -535,6 +535,53 @@ export default function TransactionDetail() {
     });
   };
 
+  // ── Lead-based paint notification (one-time, idempotent) ─────────────────────
+  const leadPaintTriggeredRef = useRef(false);
+  useEffect(() => {
+    if (!transaction || !currentUser) return;
+    const propType = (transaction.property_type || "").toLowerCase();
+    const yearBuilt = transaction.year_built ? Number(transaction.year_built) : null;
+    const isLand = propType === "land";
+    const shouldFlag = !isLand && yearBuilt && yearBuilt <= 1978;
+
+    if (!shouldFlag) {
+      // If it was previously flagged and year changed to non-triggering, clear the flag
+      if (transaction.lead_paint_flag && yearBuilt && yearBuilt > 1978) {
+        updateMutation.mutate({ id: transaction.id, data: { lead_paint_flag: false, lead_paint_notified_year: null } });
+      }
+      return;
+    }
+
+    // Only fire if the notification year hasn't been set for this exact year_built value
+    if (transaction.lead_paint_notified_year === yearBuilt) return;
+    if (leadPaintTriggeredRef.current) return;
+    leadPaintTriggeredRef.current = true;
+
+    (async () => {
+      try {
+        // Create the in-app notification
+        await base44.entities.InAppNotification.create({
+          brokerage_id: transaction.brokerage_id || null,
+          user_id: currentUser.id || null,
+          user_email: currentUser.email,
+          transaction_id: transaction.id,
+          title: "Lead Based Paint Disclosure Required",
+          body: `Lead Based Paint Disclosure required. Property was built in ${yearBuilt} (1978 or earlier).`,
+          type: "system",
+          severity: "warning",
+        });
+        // Mark the transaction so we don't re-notify for the same year
+        updateMutation.mutate({
+          id: transaction.id,
+          data: { lead_paint_flag: true, lead_paint_notified_year: yearBuilt },
+        });
+      } catch (e) {
+        leadPaintTriggeredRef.current = false; // allow retry on next render
+        console.error("Lead paint notification failed:", e);
+      }
+    })();
+  }, [transaction?.year_built, transaction?.property_type, transaction?.lead_paint_notified_year]);
+
   // ── Deadline → task resolution mapping ───────────────────────────────────────
   // Maps deadlines to specific tasks that satisfy them when completed
   const DEADLINE_RESOLUTION_MAP = {
@@ -790,12 +837,18 @@ export default function TransactionDetail() {
 
         {/* Row 3: Meta strip + attention items */}
         <div className="flex flex-wrap items-center gap-4">
-          <div className="flex flex-wrap items-center gap-3 text-xs" style={{ color: "var(--text-muted)" }}>
-            {transaction.contract_date && <span><span className="font-medium" style={{ color: "var(--text-secondary)" }}>Contract:</span> {transaction.contract_date}</span>}
-            {transaction.closing_date && <span><span className="font-medium" style={{ color: "var(--text-secondary)" }}>Closing:</span> {transaction.closing_date}</span>}
-            {transaction.sale_price && <span><span className="font-medium" style={{ color: "var(--text-secondary)" }}>Price:</span> ${transaction.sale_price?.toLocaleString()}</span>}
-            {transaction.is_cash_transaction && <span className="text-emerald-600 font-semibold">Cash</span>}
-          </div>
+        <div className="flex flex-wrap items-center gap-3 text-xs" style={{ color: "var(--text-muted)" }}>
+          {transaction.contract_date && <span><span className="font-medium" style={{ color: "var(--text-secondary)" }}>Contract:</span> {transaction.contract_date}</span>}
+          {transaction.closing_date && <span><span className="font-medium" style={{ color: "var(--text-secondary)" }}>Closing:</span> {transaction.closing_date}</span>}
+          {transaction.sale_price && <span><span className="font-medium" style={{ color: "var(--text-secondary)" }}>Price:</span> ${transaction.sale_price?.toLocaleString()}</span>}
+          {transaction.is_cash_transaction && <span className="text-emerald-600 font-semibold">Cash</span>}
+          {(transaction.property_type || "residential") !== "land" && (
+            <YearBuiltBadge
+              value={transaction.year_built}
+              onSave={v => updateMutation.mutate({ id: transaction.id, data: { year_built: v, last_activity_at: new Date().toISOString() } })}
+            />
+          )}
+        </div>
 
         </div>
       </div>
@@ -1164,6 +1217,57 @@ function ClientEmailsField({ emails, onSave }) {
         </div>
       </div>
     </div>
+  );
+}
+
+function YearBuiltBadge({ value, onSave }) {
+  const [editing, setEditing] = useState(false);
+  const [draft, setDraft] = useState(value || "");
+  const yr = value ? Number(value) : null;
+  const isPreLead = yr && yr <= 1978;
+
+  const handleSave = () => {
+    setEditing(false);
+    const num = draft ? parseInt(draft, 10) : null;
+    if (num !== value) onSave(num);
+  };
+
+  if (editing) {
+    return (
+      <span className="flex items-center gap-1">
+        <span className="font-medium" style={{ color: "var(--text-secondary)" }}>Year Built:</span>
+        <input
+          type="number"
+          min="1600"
+          max={new Date().getFullYear()}
+          value={draft}
+          onChange={e => setDraft(e.target.value)}
+          onBlur={handleSave}
+          onKeyDown={e => { if (e.key === "Enter") handleSave(); if (e.key === "Escape") setEditing(false); }}
+          className="w-20 h-5 text-xs border border-blue-300 rounded px-1 focus:outline-none focus:ring-1 focus:ring-blue-400"
+          autoFocus
+        />
+      </span>
+    );
+  }
+
+  return (
+    <span
+      className={`flex items-center gap-1 cursor-pointer group ${isPreLead ? "text-amber-600 font-semibold" : ""}`}
+      onClick={() => { setDraft(value || ""); setEditing(true); }}
+      title="Click to edit Year Built"
+    >
+      <span className="font-medium" style={{ color: "var(--text-secondary)" }}>Year Built:</span>
+      {yr ? (
+        <>
+          {yr}
+          {isPreLead && <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-amber-100 border border-amber-300 text-amber-700 font-bold ml-1">⚠ Lead Paint</span>}
+        </>
+      ) : (
+        <span className="italic opacity-60">Add year</span>
+      )}
+      <Pencil className="w-2.5 h-2.5 opacity-0 group-hover:opacity-60 transition-opacity ml-0.5" />
+    </span>
   );
 }
 

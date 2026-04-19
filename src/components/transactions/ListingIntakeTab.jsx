@@ -108,6 +108,7 @@ export default function ListingIntakeTab({ transaction, onSave }) {
     zip: existing.zip || "",
     property_type: existing.property_type || transaction.property_type || "residential",
     list_price: existing.list_price || transaction.sale_price || "",
+    year_built: existing.year_built || transaction.year_built || "",
     list_date: existing.list_date || transaction.contract_date || "",
     expiration_date: existing.expiration_date || transaction.closing_date || "",
     seller_names: existing.seller_names || (transaction.sellers?.join(", ") || transaction.seller || ""),
@@ -141,6 +142,7 @@ export default function ListingIntakeTab({ transaction, onSave }) {
     const coreSync = {
       address: form.address,
       sale_price: form.list_price ? Number(form.list_price) : undefined,
+      year_built: form.year_built ? Number(form.year_built) : undefined,
       contract_date: form.list_date,
       closing_date: form.expiration_date,
       seller: form.seller_names,
@@ -224,6 +226,24 @@ export default function ListingIntakeTab({ transaction, onSave }) {
           <Field label="Expiration Date">
             <TextInput value={form.expiration_date} onChange={set("expiration_date")} type="date" />
           </Field>
+          {(form.property_type || "residential") !== "land" && (
+            <Field label="Year Built">
+              <Input
+                type="number"
+                min="1600"
+                max={new Date().getFullYear()}
+                value={form.year_built || ""}
+                onChange={e => set("year_built")(e.target.value ? parseInt(e.target.value, 10) : "")}
+                placeholder="e.g. 1985"
+                className="text-sm"
+              />
+              {form.year_built && Number(form.year_built) <= 1978 && (
+                <p className="mt-1.5 text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-2 py-1.5">
+                  ⚠ Lead Based Paint Disclosure required (pre-1978 build).
+                </p>
+              )}
+            </Field>
+          )}
           <div className="sm:col-span-2">
             <Field label="Seller Name(s)" required>
               <TextInput value={form.seller_names} onChange={set("seller_names")} placeholder="John & Jane Smith" required />

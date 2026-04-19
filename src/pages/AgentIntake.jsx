@@ -692,6 +692,25 @@ export default function AgentIntake() {
                     <F label="MLS Number" id="mls_number"><Input id="mls_number" value={form.mls_number || ""} onChange={e => set("mls_number", e.target.value)} placeholder="MLS#" className="mt-1.5" /></F>
                     <F label={isListing ? "List Price" : "Sale Price"} id="sale_price"><Input id="sale_price" type="number" value={form.sale_price || ""} onChange={e => set("sale_price", e.target.value)} placeholder="e.g. 600000" className="mt-1.5" /></F>
                     <F label="Commission" id="commission"><Input id="commission" value={form.commission || ""} onChange={e => set("commission", e.target.value)} placeholder="5% or $15,000" className="mt-1.5" /></F>
+                    {(form.property_type || "residential") !== "land" && (
+                      <F label="Year Built" id="year_built">
+                        <Input
+                          id="year_built"
+                          type="number"
+                          min="1600"
+                          max={new Date().getFullYear()}
+                          value={form.year_built || ""}
+                          onChange={e => set("year_built", e.target.value ? parseInt(e.target.value, 10) : "")}
+                          placeholder="e.g. 1985"
+                          className="mt-1.5"
+                        />
+                        {form.year_built && Number(form.year_built) <= 1978 && (
+                          <p className="mt-1.5 text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-2 py-1.5 flex items-center gap-1.5">
+                            ⚠ Lead Based Paint Disclosure will be required (built {form.year_built} — pre-1978).
+                          </p>
+                        )}
+                      </F>
+                    )}
                   </div>
                 </Section>
                 <Separator />

@@ -150,7 +150,23 @@ export function detectIssues(transaction, checklistItems = [], complianceReports
     }
   }
 
-  // ── 4. WORKFLOW INCOMPLETE ─────────────────────────────────────────────────
+  // ── 4. LEAD-BASED PAINT DISCLOSURE ───────────────────────────────────────
+  const propType = (transaction.property_type || "").toLowerCase();
+  const yearBuilt = transaction.year_built ? Number(transaction.year_built) : null;
+  const isLand = propType === "land";
+  if (!isLand && yearBuilt && yearBuilt <= 1978) {
+    add({
+      key: "lead_paint_disclosure_required",
+      issue_type: "compliance_issue",
+      severity: "high",
+      description: `Lead Based Paint Disclosure required. Property was built in ${yearBuilt} (1978 or earlier).`,
+      deadline: null,
+      deadline_label: null,
+      document_reference: "Lead Based Paint Disclosure",
+    });
+  }
+
+  // ── 6. WORKFLOW INCOMPLETE ─────────────────────────────────────────────────
   const currentPhaseTasks = txTasks.filter(t => t.phase === phase && t.is_required && !t.is_completed);
   if (currentPhaseTasks.length > 0) {
     add({
