@@ -299,11 +299,16 @@ export default function ComplianceScanPanel({ transaction, currentUser }) {
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["transactions"] }),
   });
 
-  // Check for an in-progress job on mount
+  // Check for an in-progress job on mount; stop polling on unmount or tab switch
   useEffect(() => {
     checkJobStatus(true);
     return () => stopPolling();
   }, [transaction.id]);
+
+  // Stop polling if component unmounts (e.g., tab switch)
+  useEffect(() => {
+    return () => stopPolling();
+  }, []);
 
   const stopPolling = () => {
     if (pollRef.current) { clearInterval(pollRef.current); pollRef.current = null; }
