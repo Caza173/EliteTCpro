@@ -66,17 +66,33 @@ function EditableDate({ value, onSave, label, placeholder = "Set date", readOnly
 
 function EditableDateTime({ value, onSave, label, placeholder = "Set date & time" }) {
   const [editing, setEditing] = useState(false);
+  const [draft, setDraft] = useState("");
+
   // datetime-local input needs "YYYY-MM-DDTHH:MM" format
   const toInputVal = (v) => {
     if (!v) return "";
     try { return format(new Date(v), "yyyy-MM-dd'T'HH:mm"); } catch { return ""; }
   };
-  const [draft, setDraft] = useState(toInputVal(value));
+
+  const startEdit = () => {
+    setDraft(toInputVal(value));
+    setEditing(true);
+  };
 
   const handleSave = () => {
     setEditing(false);
-    const out = draft ? new Date(draft).toISOString() : null;
-    if (out !== value) onSave(out);
+    if (!draft) {
+      onSave(null);
+      return;
+    }
+    // draft is "YYYY-MM-DDTHH:MM" — convert to ISO string
+    const out = new Date(draft).toISOString();
+    onSave(out);
+  };
+
+  const handleCancel = () => {
+    setEditing(false);
+    setDraft("");
   };
 
   return (
@@ -92,10 +108,10 @@ function EditableDateTime({ value, onSave, label, placeholder = "Set date & time
             autoFocus
           />
           <Button size="icon" variant="ghost" className="h-7 w-7 text-emerald-600" onClick={handleSave}><Check className="w-3.5 h-3.5" /></Button>
-          <Button size="icon" variant="ghost" className="h-7 w-7 text-gray-400" onClick={() => { setEditing(false); setDraft(toInputVal(value)); }}><X className="w-3.5 h-3.5" /></Button>
+          <Button size="icon" variant="ghost" className="h-7 w-7 text-gray-400" onClick={handleCancel}><X className="w-3.5 h-3.5" /></Button>
         </div>
       ) : (
-        <div className="flex items-center gap-1.5 group cursor-pointer" onClick={() => { setDraft(toInputVal(value)); setEditing(true); }}>
+        <div className="flex items-center gap-1.5 group cursor-pointer" onClick={startEdit}>
           <span className="text-sm font-medium" style={{ color: value ? "var(--text-primary)" : "var(--text-muted)" }}>
             {value ? fmtDateTime(value) : <span className="italic">{placeholder}</span>}
           </span>
