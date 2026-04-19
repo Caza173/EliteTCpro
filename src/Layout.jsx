@@ -54,7 +54,6 @@ const OWNER_NAV = [
   { label: "Dashboard",      page: "Dashboard",      icon: LayoutDashboard },
   { label: "Transactions",   page: "Transactions",   icon: FileText },
   { label: "Deal Intake",    page: "AgentIntake",    icon: UserPlus },
-  { label: "User Management",page: "UserManagement", icon: Users },
   { label: "Addendum Builder",page: "AddendumBuilder",  icon: ClipboardList },
   { label: "Templates",      page: "TemplateManager", icon: Layers },
   { label: "Billing",          page: "Billing",          icon: CreditCard },
@@ -118,7 +117,7 @@ export default function Layout({ children, currentPageName }) {
       return;
     }
     // TC restricted pages
-    const TC_RESTRICTED = ["UserManagement", "Integrations", "AuditLog", "Billing"];
+    const TC_RESTRICTED = ["Integrations", "AuditLog", "Billing"];
     if (isTCRole && TC_RESTRICTED.includes(currentPageName)) {
       navigate("/Dashboard", { replace: true });
       return;
