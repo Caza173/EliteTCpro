@@ -646,7 +646,7 @@ export default function TransactionDetail() {
       attentionItems.push({ type: "deadline", label: `${label} in ${Math.ceil(evaluation.daysRemaining * 24)}h`, tab: "deadlines", urgent: true });
     }
   });
-  const overdueTasks = txTasks.filter(t => !t.is_completed && t.due_date && new Date(t.due_date) < now);
+  const overdueTasks = txTasks.filter(t => !t.is_completed && t.due_date && new Date(t.due_date) < new Date());
   if (overdueTasks.length > 0) attentionItems.push({ type: "task", label: `${overdueTasks.length} overdue task${overdueTasks.length > 1 ? "s" : ""}`, tab: "overview", urgent: true });
 
   const commsReadyCount = commAutomations.filter(c => c.template_status === "ready").length;
