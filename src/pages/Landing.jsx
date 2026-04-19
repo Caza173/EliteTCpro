@@ -60,10 +60,10 @@ export default function Landing() {
 
         <button
           onClick={() => base44.auth.redirectToLogin("/Dashboard")}
-          className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold transition-all shadow-sm"
-          style={{ backgroundColor: "var(--accent)", color: "#fff" }}
+          className="flex items-center gap-2 px-5 py-2.5 rounded-lg text-sm font-bold transition-all shadow-md border-2"
+          style={{ backgroundColor: "#2563EB", color: "#fff", borderColor: "#1D4ED8", boxShadow: "0 4px 14px rgba(37,99,235,0.4)" }}
         >
-          <Lock className="w-3.5 h-3.5" /> Sign In
+          <Lock className="w-4 h-4" /> Sign In
         </button>
       </header>
 
