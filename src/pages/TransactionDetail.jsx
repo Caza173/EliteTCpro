@@ -52,6 +52,7 @@ import UnderContractCommsPanel from "../components/comms/UnderContractCommsPanel
 import CollaboratorsPanel from "../components/collaborators/CollaboratorsPanel";
 import SendTimelineModal from "../components/transactions/SendTimelineModal";
 import InspectionPanel from "../components/transactions/InspectionPanel";
+import InviteClientModal from "../components/transactions/InviteClientModal";
 
 const TX_TABS = [
   { id: "overview",      label: "Overview",      icon: LayoutDashboard, info: "Phase checklist, tasks, and compliance summary" },
@@ -110,6 +111,7 @@ export default function TransactionDetail() {
   const [syncingCalendar, setSyncingCalendar] = useState(false);
   const [emailModalOpen, setEmailModalOpen] = useState(false);
   const [invitingClient, setInvitingClient] = useState(false);
+  const [inviteModalOpen, setInviteModalOpen] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [alertDialog, setAlertDialog] = useState({ open: false, title: "", message: "" });
   const [contactsExpanded, setContactsExpanded] = useState(false);
@@ -447,15 +449,10 @@ export default function TransactionDetail() {
     updateMutation.mutate({ id: transaction.id, data: { status: newStatus, last_activity_at: new Date().toISOString() } });
   };
 
-  const handleInviteClient = async () => {
-    const emails = transaction?.client_emails?.length
-      ? transaction.client_emails
-      : transaction?.client_email ? [transaction.client_email] : [];
-    if (!emails.length) {
-      setAlertDialog({ open: true, title: "No Client Email", message: "No client email on this transaction." });
-      return;
-    }
+  const handleInviteClient = async (selectedEmails) => {
+    if (!selectedEmails?.length) return;
     setInvitingClient(true);
+    setInviteModalOpen(false);
 
     // Generate / retrieve both codes
     const codesRes = await base44.functions.invoke("portalLookup", {
@@ -479,7 +476,7 @@ export default function TransactionDetail() {
 <p style="color:#666;font-size:13px;">Keep this code handy — you'll use it each time you check your status.</p>
 <p>Best regards,<br/>TC Manager</p>`;
 
-    await Promise.allSettled(emails.map(to =>
+    await Promise.allSettled(selectedEmails.map(to =>
       base44.functions.invoke("sendGmailEmail", {
         to: [to],
         subject: `Your Transaction Portal Access — ${transaction.address}`,
@@ -511,7 +508,7 @@ export default function TransactionDetail() {
       }).catch(() => {});
     }
 
-    const sentTo = [...emails, ...(agentCode && agentEmail ? [agentEmail] : [])];
+    const sentTo = [...selectedEmails, ...(agentCode && agentEmail && !selectedEmails.includes(agentEmail) ? [agentEmail] : [])];
     setAlertDialog({
       open: true,
       title: "Portal Invites Sent!",
@@ -711,6 +708,14 @@ export default function TransactionDetail() {
           onSend={handleSendTimeline}
         />
       )}
+      {inviteModalOpen && (
+        <InviteClientModal
+          transaction={transaction}
+          sending={invitingClient}
+          onConfirm={handleInviteClient}
+          onCancel={() => setInviteModalOpen(false)}
+        />
+      )}
       <EmailComposerModal
         open={emailModalOpen}
         onClose={() => setEmailModalOpen(false)}
@@ -832,7 +837,7 @@ export default function TransactionDetail() {
               <MailIcon className="w-3.5 h-3.5 mr-1" /> Email
             </Button>
             <UnderContractEmailButton transaction={transaction} currentUser={currentUser} documents={documents} />
-            <Button variant="outline" size="sm" className="h-8 text-indigo-600 hover:bg-indigo-50 border-indigo-200" onClick={handleInviteClient} disabled={invitingClient}>
+            <Button variant="outline" size="sm" className="h-8 text-indigo-600 hover:bg-indigo-50 border-indigo-200" onClick={() => setInviteModalOpen(true)} disabled={invitingClient}>
               <UserPlus className="w-3.5 h-3.5 mr-1" />{invitingClient ? "Sending…" : "Invite"}
             </Button>
             <MarkUnderContractButton transaction={transaction} onConverted={() => queryClient.invalidateQueries({ queryKey: ["transactions"] })} />
