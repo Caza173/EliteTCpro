@@ -6,7 +6,7 @@ import {
   Plus, X, Check, Send,
 } from "lucide-react";
 import { formatDistanceToNow, parseISO } from "date-fns";
-import NoteEmailModal from "./NoteEmailModal";
+import NoteEmailModal from "./NoteEmailModal.jsx";
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
