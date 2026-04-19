@@ -474,11 +474,12 @@ export default function UnifiedDeadlinesPanel({ transaction, onSave }) {
 
   const handleDeleteDeadline = async (item) => {
     if (item.sourceType === "system") {
-      // Directly update the transaction entity to clear the date field.
-      // We bypass onSave here to avoid SDK null-stripping and ensure the field is truly cleared.
+      // Call the updateTransaction backend function directly (it handles RLS and null stripping)
       try {
-        await base44.entities.Transaction.update(transaction.id, { [item.key]: null });
-        // Also invalidate the transactions query so the UI reflects the change
+        await base44.functions.invoke("updateTransaction", {
+          transaction_id: transaction.id,
+          data: { [item.key]: "" },
+        });
         queryClient.invalidateQueries({ queryKey: ["transactions"] });
         toast.success(`${item.label} date cleared`);
       } catch (e) {

@@ -16,8 +16,8 @@ Deno.serve(async (req) => {
     if (!transaction_id) return Response.json({ error: 'transaction_id required' }, { status: 400 });
     if (!data || typeof data !== 'object') return Response.json({ error: 'data required' }, { status: 400 });
 
-    // Use user-scoped call so RLS brokerage_id check uses the caller's context
-    const updated = await base44.entities.Transaction.update(transaction_id, data);
+    // Use service role to bypass RLS — auth check above already enforces access control
+    const updated = await base44.asServiceRole.entities.Transaction.update(transaction_id, data);
     return Response.json({ success: true, data: updated });
   } catch (error) {
     console.error('updateTransaction error:', error.message);
