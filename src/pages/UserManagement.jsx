@@ -17,6 +17,7 @@ import AgentCodePanel from "../components/agents/AgentCodePanel";
 import { Switch } from "@/components/ui/switch";
 import { useCurrentUser, hasFullAccess, canDeleteRecords } from "../components/auth/useCurrentUser";
 import { ROLE_COLORS, writeAuditLog } from "../components/utils/tenantUtils";
+import PortalAccessCell from "../components/user/PortalAccessCell";
 
 const ROLES = ["admin", "owner", "tc_lead", "tc", "agent", "client"];
 const ROLE_LABELS = {
@@ -304,9 +305,8 @@ export default function UserManagement() {
                     <th className="px-4 py-2.5 text-left font-medium">Role</th>
                     <th className="px-4 py-2.5 text-left font-medium hidden sm:table-cell">Transactions</th>
                     <th className="px-4 py-2.5 text-left font-medium hidden md:table-cell">Joined</th>
-                    <th className="px-4 py-2.5 text-left font-medium hidden lg:table-cell">Weekly Updates</th>
-                    <th className="px-4 py-2.5 text-left font-medium hidden xl:table-cell">Portal Code</th>
-                    <th className="px-4 py-2.5 text-right font-medium">Actions</th>
+                    <th className="px-4 py-2.5 text-left font-medium hidden xl:table-cell">Portal Access</th>
+                     <th className="px-4 py-2.5 text-right font-medium">Actions</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-50">
@@ -346,25 +346,9 @@ export default function UserManagement() {
                       <td className="px-4 py-3 text-gray-500 text-xs hidden md:table-cell">
                         {u.created_date ? new Date(u.created_date).toLocaleDateString() : "—"}
                       </td>
-                      <td className="px-4 py-3 hidden lg:table-cell">
-                       {u.role === "agent" ? (
-                         <AgentCodePanel agentUser={u} transactions={transactions} inline />
-                       ) : (
-                         <span className="text-xs text-gray-300">—</span>
-                       )}
-                      </td>
-                      <td className="px-4 py-3 hidden lg:table-cell">
-                       {(u.role === "agent" || u.role === "tc" || u.role === "tc_lead") ? (
-                          <div className="flex items-center gap-2">
-                            <Switch
-                              checked={u.weekly_transaction_updates !== false}
-                              onCheckedChange={(v) => toggleWeeklyUpdatesMutation.mutate({ id: u.id, value: v })}
-                            />
-                            <span className="text-xs text-gray-400">{u.weekly_transaction_updates !== false ? "On" : "Off"}</span>
-                          </div>
-                        ) : (
-                          <span className="text-xs text-gray-300">—</span>
-                        )}
+
+                      <td className="px-4 py-3 hidden xl:table-cell">
+                        <PortalAccessCell user={u} currentUser={currentUser} />
                       </td>
                       <td className="px-4 py-3">
                         <div className="flex items-center justify-end gap-1">
