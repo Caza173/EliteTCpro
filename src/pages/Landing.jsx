@@ -81,7 +81,7 @@ export default function Landing() {
         style={{ backgroundColor: "var(--bg-secondary)", borderColor: "var(--border)" }}
       >
         <button
-          onClick={() => navigate("/AgentIntake")}
+          onClick={() => navigate("/AgentIntake?agent=1")}
           className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all border"
           style={{ borderColor: "var(--border)", color: "var(--text-secondary)", backgroundColor: "var(--card-bg)" }}
         >

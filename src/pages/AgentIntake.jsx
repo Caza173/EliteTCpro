@@ -234,8 +234,10 @@ function F({ label, id, children }) {
 export default function AgentIntake() {
   const { data: currentUser } = useQuery({ queryKey: ["currentUser"], queryFn: () => base44.auth.me(), retry: false });
 
+  // Hide TC features when accessed via the public agent intake link (?agent=1)
+  const isAgentPublicFlow = new URLSearchParams(window.location.search).get("agent") === "1";
   // Internal TC view — show pending reviews
-  const isTC = currentUser && ["tc", "tc_lead", "admin", "owner"].includes(currentUser.role);
+  const isTC = !isAgentPublicFlow && currentUser && ["tc", "tc_lead", "admin", "owner"].includes(currentUser.role);
 
   const [activeTab, setActiveTab] = useState("submit"); // "submit" | "review"
   const [dealType, setDealType] = useState(null);
