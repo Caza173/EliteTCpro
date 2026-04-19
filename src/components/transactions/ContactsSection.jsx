@@ -202,23 +202,7 @@ export default function ContactsSection({ transaction, onUpdate, currentUser }) 
               })}
             />
           )}
-          {tx.agent && (
-            <ContactCard
-              name={tx.agent}
-              role="Transaction Coordinator"
-              email={tx.agent_email}
-              company={tx.agent_company}
-              accent="#0891b2"
-              canEdit={canEdit}
-              onEmailClick={openEmail}
-              fields={{ name: true, email: true, phone: false, company: true }}
-              onSave={({ name, email, company }) => save({
-                agent: name,
-                agent_email: email,
-                agent_company: company,
-              })}
-            />
-          )}
+
         </SectionGroup>
       )}
 
@@ -320,8 +304,25 @@ export default function ContactsSection({ transaction, onUpdate, currentUser }) 
               })}
             />
           )}
-        </SectionGroup>
-      )}
+          {tx.agent && (
+            <ContactCard
+              name={tx.agent}
+              role="Transaction Coordinator"
+              email={tx.agent_email}
+              company={tx.agent_company}
+              accent="#0891b2"
+              canEdit={canEdit}
+              onEmailClick={openEmail}
+              fields={{ name: true, email: true, phone: false, company: true }}
+              onSave={({ name, email, company }) => save({
+                agent: name,
+                agent_email: email,
+                agent_company: company,
+              })}
+            />
+          )}
+          </SectionGroup>
+          )}
 
       {/* Additional Contacts */}
       {additionalContacts.length > 0 && (
