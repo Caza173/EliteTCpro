@@ -1,5 +1,4 @@
-import { format, parseISO } from "date-fns";
-import { utcToZonedTime, zonedTimeToUtc } from "date-fns-tz";
+import { parseISO } from "date-fns";
 
 /**
  * Evaluates a deadline and returns its status relative to current time.
@@ -32,17 +31,16 @@ export function evaluateDeadline(deadline, isCompleted = false, userTimezone = n
   const isDateOnly = deadlineStr.match(/^\d{4}-\d{2}-\d{2}$/); // Format: YYYY-MM-DD
 
   if (isDateOnly) {
-    // Append 23:59:59 and convert to user's timezone
-    const dateWithTime = `${deadlineStr}T23:59:59`;
+    // Append 23:59:59
+    const dateWithTime = `${deadlineStr}T23:59:59Z`;
     deadlineDate = new Date(dateWithTime);
   }
 
-  // Convert deadline to user's timezone
-  const deadlineDateInTz = utcToZonedTime(deadlineDate, tz);
-  const nowInTz = utcToZonedTime(new Date(), tz);
-
+  // Simple UTC-based comparison (browser handles timezone for display)
+  const now = new Date();
+  
   // Calculate hours until deadline
-  const diffMs = deadlineDateInTz - nowInTz;
+  const diffMs = deadlineDate.getTime() - now.getTime();
   const diffHours = diffMs / (1000 * 60 * 60);
   const daysRemaining = Math.round((diffHours / 24) * 100) / 100; // Round to 2 decimals
 

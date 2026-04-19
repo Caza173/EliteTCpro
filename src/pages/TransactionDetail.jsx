@@ -39,7 +39,7 @@ import ComplianceMonitorWidget from "../components/compliance/ComplianceMonitorW
 import TransactionFinancialTools from "../components/transactions/TransactionFinancialTools";
 import TCAIAssistant from "../components/ai/TCAIAssistant";
 import ConfirmDialog from "../components/ui/ConfirmDialog";
-import SkySlopeSyncBadge from "../components/skyslope/SkySlopeSyncBadge";
+
 import EmailComposerModal from "../components/email/EmailComposerModal";
 import UnderContractEmailButton from "../components/email/UnderContractEmailButton";
 import MarkUnderContractButton from "../components/transactions/MarkUnderContractButton";
@@ -785,10 +785,7 @@ export default function TransactionDetail() {
               healthScore={transaction.health_score ?? computeHealthScore(transaction, checklistItems).health_score}
               riskLevel={transaction.risk_level ?? computeHealthScore(transaction, checklistItems).risk_level}
             />
-            <SkySlopeSyncBadge
-              transaction={transaction}
-              onSynced={() => queryClient.invalidateQueries({ queryKey: ["transactions"] })}
-            />
+
           </div>
         </div>
 
