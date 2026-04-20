@@ -108,20 +108,15 @@ function DeadlineRow({ item, calendarMaps, transactionId, onUpdateContingency, o
   
   // Determine left border and title color based on state
   let borderClass = "border-l-transparent";
-  let titleColor = "text-white";
   
   if (isCompleted) {
     borderClass = "border-l-emerald-500";
-    titleColor = "text-white";
   } else if (isOverdue) {
     borderClass = "border-l-red-500";
-    titleColor = "text-red-500";
   } else if (daysInfo?.cls?.includes("amber")) {
     borderClass = "border-l-amber-500";
-    titleColor = "text-white";
   } else {
     borderClass = colors.leftBorder;
-    titleColor = colors.labelText;
   }
 
   const handleMarkComplete = async () => {
@@ -195,7 +190,7 @@ function DeadlineRow({ item, calendarMaps, transactionId, onUpdateContingency, o
         <div className="flex-1 min-w-0">
           {/* Label row */}
           <div className="flex items-center gap-1.5 flex-wrap mb-0.5">
-            <span className={`text-sm font-semibold ${titleColor}`}>{item.label}</span>
+            <span className={`text-sm font-semibold ${isOverdue ? "text-red-500" : ""}`} style={!isOverdue ? { color: "var(--text-primary)" } : {}}>{item.label}</span>
             {item.sourceType === "contingency" && (
               <span className="text-[10px] bg-white/70 border border-current/20 px-1.5 py-0.5 rounded font-medium opacity-70">
                 From Contingency
