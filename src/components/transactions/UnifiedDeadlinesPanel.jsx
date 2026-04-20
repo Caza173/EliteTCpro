@@ -92,6 +92,7 @@ function DeadlineRow({ item, calendarMaps, transactionId, onUpdateContingency, o
   const [editing, setEditing] = useState(false);
   const [editDate, setEditDate] = useState(item.date || "");
   const [editTime, setEditTime] = useState(item.time || "");
+  const [editLabel, setEditLabel] = useState(item.label || "");
   const [syncing, setSyncing] = useState(false);
   const [markingReceived, setMarkingReceived] = useState(false);
   const [markingComplete, setMarkingComplete] = useState(false);
@@ -153,7 +154,12 @@ function DeadlineRow({ item, calendarMaps, transactionId, onUpdateContingency, o
       }
       onUpdateTransaction(updates);
     } else {
-      await onUpdateContingency(item.id, { due_date: editDate });
+      const updates = { due_date: editDate };
+      // For custom/manual deadlines, also save the label (stored as sub_type)
+      if (item.sourceType === "manual" && editLabel.trim() && editLabel.trim() !== item.label) {
+        updates.sub_type = editLabel.trim();
+      }
+      await onUpdateContingency(item.id, updates);
     }
     setEditing(false);
   };
@@ -203,13 +209,23 @@ function DeadlineRow({ item, calendarMaps, transactionId, onUpdateContingency, o
           </div>
 
           {editing ? (
-            <div className="flex items-center gap-1.5 mt-1 flex-wrap">
+            <div className="flex flex-col gap-1.5 mt-1">
+              {item.sourceType === "manual" && (
+                <Input
+                  placeholder="Deadline name"
+                  value={editLabel}
+                  onChange={e => setEditLabel(e.target.value)}
+                  className="h-7 text-xs py-0 bg-white/80 border-white"
+                  autoFocus
+                />
+              )}
+              <div className="flex items-center gap-1.5 flex-wrap">
               <Input
                 type="date"
                 value={editDate}
                 onChange={e => setEditDate(e.target.value)}
                 className="h-7 text-xs py-0 bg-white/80 border-white"
-                autoFocus
+                autoFocus={item.sourceType !== "manual"}
               />
               {item.timeKey && (
                 <Input
@@ -223,9 +239,10 @@ function DeadlineRow({ item, calendarMaps, transactionId, onUpdateContingency, o
               <Button size="icon" variant="ghost" className="h-7 w-7 text-emerald-600 hover:bg-white/40" onClick={handleSave}>
                 <Check className="w-3.5 h-3.5" />
               </Button>
-              <Button size="icon" variant="ghost" className="h-7 w-7 text-red-500 hover:bg-white/40" onClick={() => { setEditing(false); setEditDate(item.date || ""); setEditTime(item.time || ""); }}>
+              <Button size="icon" variant="ghost" className="h-7 w-7 text-red-500 hover:bg-white/40" onClick={() => { setEditing(false); setEditDate(item.date || ""); setEditTime(item.time || ""); setEditLabel(item.label || ""); }}>
                 <X className="w-3.5 h-3.5" />
               </Button>
+            </div>
             </div>
           ) : (
             <div className="flex items-center justify-between gap-2">
@@ -311,8 +328,8 @@ function DeadlineRow({ item, calendarMaps, transactionId, onUpdateContingency, o
                 <Button
                   size="icon" variant="ghost"
                   className="h-6 w-6 text-gray-500 hover:text-gray-300 hover:bg-slate-700"
-                  onClick={() => { setEditDate(item.date || ""); setEditing(true); }}
-                  title="Edit date"
+                  onClick={() => { setEditDate(item.date || ""); setEditLabel(item.label || ""); setEditing(true); }}
+                  title={item.sourceType === "manual" ? "Edit deadline" : "Edit date"}
                 >
                   <Pencil className="w-3 h-3" />
                 </Button>
