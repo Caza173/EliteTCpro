@@ -136,6 +136,28 @@ const PHASES = [
   "Loan Processing", "Clear to Close", "Final Walkthrough", "Closing", "Post Closing"
 ];
 
+const TX_PHASE_LABELS = {
+  intake: "Intake",
+  under_contract: "Under Contract",
+  inspection: "Inspection",
+  financing: "Financing",
+  appraisal: "Appraisal",
+  clear_to_close: "Clear to Close",
+  closing: "Closing",
+  closed: "Closed",
+};
+
+const TX_PHASE_STYLES = {
+  intake:         "bg-gray-100 text-gray-600",
+  under_contract: "bg-blue-50 text-blue-700",
+  inspection:     "bg-amber-50 text-amber-700",
+  financing:      "bg-violet-50 text-violet-700",
+  appraisal:      "bg-orange-50 text-orange-700",
+  clear_to_close: "bg-emerald-50 text-emerald-700",
+  closing:        "bg-teal-50 text-teal-700",
+  closed:         "bg-slate-100 text-slate-500",
+};
+
 const statusStyles = {
   active: "bg-emerald-900/60 text-emerald-300 border-emerald-700",
   pending: "bg-amber-900/60 text-amber-300 border-amber-700",
@@ -178,7 +200,7 @@ export default function TransactionTable({ transactions, sorted = false }) {
               <TableHead className="text-xs font-semibold uppercase tracking-wider" style={{ color: "var(--muted-foreground)" }}>Client</TableHead>
               <TableHead className="text-xs font-semibold uppercase tracking-wider hidden md:table-cell" style={{ color: "var(--muted-foreground)" }}>Agent</TableHead>
               <TableHead className="text-xs font-semibold uppercase tracking-wider hidden lg:table-cell" style={{ color: "var(--muted-foreground)" }}>Contract Date</TableHead>
-              <TableHead className="text-xs font-semibold uppercase tracking-wider" style={{ color: "var(--muted-foreground)" }}>Phase</TableHead>
+              <TableHead className="text-xs font-semibold uppercase tracking-wider" style={{ color: "var(--muted-foreground)" }}>Transaction Phase</TableHead>
               <TableHead className="text-xs font-semibold uppercase tracking-wider hidden sm:table-cell" style={{ color: "var(--muted-foreground)" }}>Status</TableHead>
             </TableRow>
          </TableHeader>
@@ -237,10 +259,10 @@ export default function TransactionTable({ transactions, sorted = false }) {
                  </div>
                </TableCell>
                <TableCell>
-                 <span className="text-xs font-medium px-2 py-1 rounded-md whitespace-nowrap" style={{ background: "var(--secondary)", color: "var(--secondary-foreground)" }}>
-                   {PHASES[(tx.phase || 1) - 1]}
-                 </span>
-               </TableCell>
+                  <span className={`text-xs font-medium px-2 py-1 rounded-md whitespace-nowrap ${TX_PHASE_STYLES[tx.transaction_phase] || TX_PHASE_STYLES.intake}`}>
+                    {TX_PHASE_LABELS[tx.transaction_phase] || "Under Contract"}
+                  </span>
+                </TableCell>
                <TableCell className="hidden sm:table-cell">
                  <div className="flex items-center justify-between gap-2">
                    <Badge variant="outline" className={`text-xs font-medium capitalize ${statusStyles[tx.status] || statusStyles.active}`}>
