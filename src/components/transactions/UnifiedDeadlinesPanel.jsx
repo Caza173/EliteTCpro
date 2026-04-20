@@ -92,9 +92,8 @@ function DeadlineRow({ item, calendarMaps, transactionId, onUpdateContingency, o
   const [editing, setEditing] = useState(false);
   const [editDate, setEditDate] = useState(item.date || "");
   const [editTime, setEditTime] = useState(item.time || "");
-  // For contingency/manual: label is built as "type – sub_type", editable part is sub_type only
-  const editableLabelInitial = item.sourceType === "system" ? item.label : (item.subType || item.label || "");
-  const [editLabel, setEditLabel] = useState(editableLabelInitial);
+  // For contingency/manual: editable part is sub_type; for system labels are fixed
+  const [editLabel, setEditLabel] = useState(item.sourceType === "system" ? item.label : (item.subType || item.label || ""));
   const [syncing, setSyncing] = useState(false);
   const [markingReceived, setMarkingReceived] = useState(false);
   const [markingComplete, setMarkingComplete] = useState(false);
@@ -207,7 +206,7 @@ function DeadlineRow({ item, calendarMaps, transactionId, onUpdateContingency, o
                 className={`text-sm font-semibold cursor-pointer hover:underline decoration-dotted underline-offset-2 ${isOverdue ? "text-red-500" : ""}`}
                 style={!isOverdue ? { color: "var(--text-primary)" } : {}}
                 onClick={() => { setEditLabel(item.subType || item.label || ""); setEditDate(item.date || ""); setEditing(true); }}
-                title="Click to edit"
+                title="Click to edit label or date"
               >{item.label}</span>
             )}
             {item.sourceType !== "system" && editing && (
@@ -239,7 +238,7 @@ function DeadlineRow({ item, calendarMaps, transactionId, onUpdateContingency, o
                 value={editDate}
                 onChange={e => setEditDate(e.target.value)}
                 className="h-7 text-xs py-0 bg-white/80 border-white"
-                autoFocus={item.sourceType !== "manual"}
+                autoFocus={item.sourceType === "system"}
               />
               {item.timeKey && (
                 <Input
