@@ -92,7 +92,9 @@ function DeadlineRow({ item, calendarMaps, transactionId, onUpdateContingency, o
   const [editing, setEditing] = useState(false);
   const [editDate, setEditDate] = useState(item.date || "");
   const [editTime, setEditTime] = useState(item.time || "");
-  const [editLabel, setEditLabel] = useState(item.label || "");
+  // For contingency/manual: label is built as "type – sub_type", editable part is sub_type only
+  const editableLabelInitial = item.sourceType === "system" ? item.label : (item.subType || item.label || "");
+  const [editLabel, setEditLabel] = useState(editableLabelInitial);
   const [syncing, setSyncing] = useState(false);
   const [markingReceived, setMarkingReceived] = useState(false);
   const [markingComplete, setMarkingComplete] = useState(false);
@@ -150,8 +152,8 @@ function DeadlineRow({ item, calendarMaps, transactionId, onUpdateContingency, o
       onUpdateTransaction(updates);
     } else {
       const updates = { due_date: editDate };
-      // Save label (sub_type) for contingency and manual types
-      if (editLabel.trim() && editLabel.trim() !== item.label) {
+      // Save the editable label as sub_type (always update so user changes are persisted)
+      if (editLabel.trim()) {
         updates.sub_type = editLabel.trim();
       }
       await onUpdateContingency(item.id, updates);
@@ -194,7 +196,7 @@ function DeadlineRow({ item, calendarMaps, transactionId, onUpdateContingency, o
               <span
                 className={`text-sm font-semibold cursor-pointer hover:underline decoration-dotted underline-offset-2 ${isOverdue ? "text-red-500" : ""}`}
                 style={!isOverdue ? { color: "var(--text-primary)" } : {}}
-                onClick={() => { setEditLabel(item.label || ""); setEditDate(item.date || ""); setEditing(true); }}
+                onClick={() => { setEditLabel(item.subType || ""); setEditDate(item.date || ""); setEditing(true); }}
                 title="Click to edit"
               >{item.label}</span>
             )}
@@ -210,8 +212,8 @@ function DeadlineRow({ item, calendarMaps, transactionId, onUpdateContingency, o
             )}
           </div>
 
-          {/* Inline label editor (shown at top of edit block for all types) */}
-          {editing && (
+          {/* Inline label editor — only for contingency/manual (system labels are fixed) */}
+          {editing && item.sourceType !== "system" && (
             <Input
               placeholder="Deadline name"
               value={editLabel}
@@ -243,7 +245,7 @@ function DeadlineRow({ item, calendarMaps, transactionId, onUpdateContingency, o
               <Button size="icon" variant="ghost" className="h-7 w-7 text-emerald-600 hover:bg-white/40" onClick={handleSave}>
                 <Check className="w-3.5 h-3.5" />
               </Button>
-              <Button size="icon" variant="ghost" className="h-7 w-7 text-red-500 hover:bg-white/40" onClick={() => { setEditing(false); setEditDate(item.date || ""); setEditTime(item.time || ""); setEditLabel(item.label || ""); }}>
+              <Button size="icon" variant="ghost" className="h-7 w-7 text-red-500 hover:bg-white/40" onClick={() => { setEditing(false); setEditDate(item.date || ""); setEditTime(item.time || ""); setEditLabel(item.subType || ""); }}>
                 <X className="w-3.5 h-3.5" />
               </Button>
             </div>
@@ -332,7 +334,7 @@ function DeadlineRow({ item, calendarMaps, transactionId, onUpdateContingency, o
                 <Button
                   size="icon" variant="ghost"
                   className="h-6 w-6 text-gray-400 hover:text-gray-600 hover:bg-gray-100"
-                  onClick={() => { setEditDate(item.date || ""); setEditLabel(item.label || ""); setEditing(true); }}
+                  onClick={() => { setEditDate(item.date || ""); setEditLabel(item.subType || ""); setEditing(true); }}
                   title={item.sourceType === "manual" ? "Edit deadline" : "Edit date"}
                 >
                   <Pencil className="w-3 h-3" />
@@ -548,6 +550,7 @@ export default function UnifiedDeadlinesPanel({ transaction, onSave }) {
       id: c.id,
       key: `contingency_${c.id}`,
       label: [c.contingency_type, c.sub_type].filter(Boolean).join(" – "),
+      subType: c.sub_type || "",
       date: c.due_date || null,
       due_time: c.due_time || null,
       is_all_day: c.is_all_day ?? true,
