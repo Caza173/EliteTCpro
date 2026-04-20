@@ -1,384 +1,376 @@
-import React, { useState } from "react";
+import React from "react";
 import { useNavigate } from "react-router-dom";
 import { base44 } from "@/api/base44Client";
-import { createPageUrl } from "@/utils";
 import {
-  LayoutDashboard, FileText, Clock, ShieldCheck, Send, ArrowRight,
-  CheckCircle2, Upload, Zap, Bell, Users, Lock, Building2,
+  Building2, ArrowRight, Upload, Clock, ShieldCheck, Send,
+  Users, LayoutDashboard, CheckCircle2, Bell, AlertTriangle,
+  ClipboardCheck, Zap, Lock, FileText,
 } from "lucide-react";
-
-const TABS = [
-  { id: "overview",     label: "Overview" },
-  { id: "how_it_works", label: "How It Works" },
-  { id: "features",     label: "Features" },
-  { id: "pricing",      label: "Pricing" },
-];
 
 export default function Landing() {
   const navigate = useNavigate();
-  const [activeTab, setActiveTab] = useState("overview");
+
+  const scrollTo = (id) => {
+    document.getElementById(id)?.scrollIntoView({ behavior: "smooth" });
+  };
 
   return (
-    <div
-      className="h-screen flex flex-col overflow-hidden"
-      style={{ backgroundColor: "var(--bg-primary)", color: "var(--text-primary)" }}
-    >
-      {/* ── Top Nav ── */}
-      <header
-        className="flex-shrink-0 flex items-center justify-between px-6 h-12 border-b"
-        style={{ backgroundColor: "var(--bg-secondary)", borderColor: "var(--border)" }}
-      >
-        <div className="flex items-center gap-2.5">
-          <div
-            className="w-7 h-7 rounded-lg flex items-center justify-center"
-            style={{ backgroundColor: "var(--accent)" }}
-          >
+    <div className="min-h-screen flex flex-col bg-white text-gray-900 overflow-x-hidden">
+
+      {/* ── Sticky Nav ── */}
+      <header className="sticky top-0 z-50 flex items-center justify-between px-8 h-14 bg-white border-b border-gray-100">
+        <div className="flex items-center gap-2">
+          <div className="w-7 h-7 rounded-lg flex items-center justify-center bg-blue-600">
             <Building2 className="w-4 h-4 text-white" />
           </div>
-          <span className="text-sm font-semibold" style={{ color: "var(--text-primary)" }}>
-            Elite<span style={{ color: "var(--accent)" }}>TC</span>
+          <span className="text-sm font-bold text-gray-900">
+            Elite<span className="text-blue-600">TC</span>
           </span>
         </div>
 
-        {/* Tabs */}
-        <nav className="flex gap-1 p-1 rounded-lg" style={{ backgroundColor: "var(--bg-tertiary)" }}>
-          {TABS.map(tab => (
-            <button
-              key={tab.id}
-              onClick={() => setActiveTab(tab.id)}
-              className="px-3 py-1.5 rounded-md text-xs font-medium transition-all"
-              style={
-                activeTab === tab.id
-                  ? { backgroundColor: "var(--card-bg)", color: "var(--text-primary)", boxShadow: "var(--card-shadow)" }
-                  : { color: "var(--text-muted)" }
-              }
-            >
-              {tab.label}
-            </button>
-          ))}
+        <nav className="hidden md:flex items-center gap-6">
+          <button onClick={() => scrollTo("features")} className="text-sm text-gray-500 hover:text-gray-900 transition-colors">Features</button>
+          <button onClick={() => scrollTo("how-it-works")} className="text-sm text-gray-500 hover:text-gray-900 transition-colors">How It Works</button>
+          <button onClick={() => scrollTo("pricing")} className="text-sm text-gray-500 hover:text-gray-900 transition-colors">Pricing</button>
         </nav>
 
-        <button
-          onClick={() => base44.auth.redirectToLogin("/Dashboard")}
-          className="flex items-center gap-2 px-5 py-2.5 rounded-lg text-sm font-bold transition-all shadow-md border-2"
-          style={{ backgroundColor: "#2563EB", color: "#fff", borderColor: "#1D4ED8", boxShadow: "0 4px 14px rgba(37,99,235,0.4)" }}
-        >
-          <Lock className="w-4 h-4" /> Sign In
-        </button>
+        <div className="flex items-center gap-3">
+          <button
+            onClick={() => base44.auth.redirectToLogin("/Dashboard")}
+            className="text-sm text-gray-600 hover:text-gray-900 font-medium transition-colors"
+          >
+            Log in
+          </button>
+          <button
+            onClick={() => navigate("/AgentIntake?agent=1")}
+            className="flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-semibold text-white bg-blue-600 hover:bg-blue-700 transition-colors"
+          >
+            Get started <ArrowRight className="w-3.5 h-3.5" />
+          </button>
+        </div>
       </header>
 
-      {/* ── Content Area ── */}
-      <main className="flex-1 min-h-0 overflow-hidden px-6 py-5">
-        {activeTab === "overview"     && <OverviewTab navigate={navigate} />}
-        {activeTab === "how_it_works" && <HowItWorksTab />}
-        {activeTab === "features"     && <FeaturesTab />}
-        {activeTab === "pricing"      && <PricingTab navigate={navigate} />}
-      </main>
-
-      {/* ── Fixed Bottom Action Bar ── */}
-      <footer
-        className="flex-shrink-0 flex items-center justify-center gap-3 px-6 h-14 border-t"
-        style={{ backgroundColor: "var(--bg-secondary)", borderColor: "var(--border)" }}
-      >
-        <button
-          onClick={() => base44.auth.redirectToLogin("/Dashboard")}
-          className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold transition-all"
-          style={{ backgroundColor: "var(--accent)", color: "#fff" }}
-        >
-          <Lock className="w-3.5 h-3.5" /> TC / Staff Login
-        </button>
-        <button
-          onClick={() => navigate("/AgentIntake?agent=1")}
-          className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all border"
-          style={{ borderColor: "var(--border)", color: "var(--text-secondary)", backgroundColor: "var(--card-bg)" }}
-        >
-          <FileText className="w-3.5 h-3.5" /> Start a Transaction
-        </button>
-        <button
-          onClick={() => navigate("/ClientLookup")}
-          className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all border"
-          style={{ borderColor: "var(--border)", color: "var(--text-secondary)", backgroundColor: "var(--card-bg)" }}
-        >
-          <ArrowRight className="w-3.5 h-3.5" /> Check Transaction Status
-        </button>
-      </footer>
-    </div>
-  );
-}
-
-// ── OVERVIEW ──────────────────────────────────────────────────────────────────
-function OverviewTab() {
-  return (
-    <div className="h-full grid grid-cols-1 lg:grid-cols-2 gap-6 items-center">
-      {/* Left — Headline */}
-      <div className="space-y-5">
-        <div>
-          <p className="text-xs font-semibold uppercase tracking-widest mb-2" style={{ color: "var(--accent)" }}>
-            Transaction Coordination Platform
-          </p>
-          <h1 className="text-3xl font-bold leading-tight" style={{ color: "var(--text-primary)" }}>
-            Manage Every Deal<br />With Precision
-          </h1>
-          <p className="text-sm mt-3 leading-relaxed" style={{ color: "var(--text-secondary)" }}>
-            EliteTC automates document parsing, deadline tracking, and compliance monitoring — so you close faster with fewer errors.
-          </p>
-        </div>
-
-        <div className="grid grid-cols-2 gap-3">
-          {[
-            { icon: Upload,      label: "AI Contract Parsing" },
-            { icon: Clock,       label: "Deadline Tracking" },
-            { icon: ShieldCheck, label: "Compliance Scan" },
-            { icon: Send,        label: "Smart Comms" },
-          ].map(({ icon: Icon, label }) => (
-            <div
-              key={label}
-              className="flex items-center gap-2.5 px-3 py-2.5 rounded-xl border"
-              style={{ backgroundColor: "var(--card-bg)", borderColor: "var(--card-border)" }}
-            >
-              <Icon className="w-4 h-4 flex-shrink-0" style={{ color: "var(--accent)" }} />
-              <span className="text-xs font-medium" style={{ color: "var(--text-primary)" }}>{label}</span>
-            </div>
-          ))}
-        </div>
-
-        <div className="flex gap-2 text-xs" style={{ color: "var(--text-muted)" }}>
-          <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500 flex-shrink-0 mt-0.5" />
-          <span>No setup required — upload a P&S and Atlas extracts everything automatically.</span>
-        </div>
-      </div>
-
-      {/* Right — Dashboard Preview */}
-      <div
-        className="rounded-2xl border p-4 space-y-3 h-full max-h-96 overflow-hidden"
-        style={{ backgroundColor: "var(--card-bg)", borderColor: "var(--card-border)", boxShadow: "var(--card-shadow)" }}
-      >
-        {/* Fake header */}
-        <div className="flex items-center justify-between pb-2 border-b" style={{ borderColor: "var(--border)" }}>
-          <div>
-            <p className="text-xs font-semibold" style={{ color: "var(--text-primary)" }}>742 Elm Street, Portland, OR</p>
-            <p className="text-[10px]" style={{ color: "var(--text-muted)" }}>Buyer Transaction · Under Contract</p>
-          </div>
-          <div className="flex gap-1.5">
-            <span className="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-500/10 text-emerald-500">Active</span>
-            <span className="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-blue-500/10 text-blue-500">Score 94%</span>
-          </div>
-        </div>
-
-        {/* Key dates strip */}
-        <div className="grid grid-cols-3 gap-2">
-          {[
-            { label: "Contract",  date: "Mar 28", ok: true },
-            { label: "Inspection", date: "Apr 10", ok: false },
-            { label: "Closing",   date: "Apr 30", ok: true },
-          ].map(({ label, date, ok }) => (
-            <div
-              key={label}
-              className="rounded-lg p-2 text-center"
-              style={{ backgroundColor: "var(--bg-tertiary)", border: `1px solid ${ok ? "rgba(34,197,94,0.2)" : "rgba(245,158,11,0.3)"}` }}
-            >
-              <p className="text-[9px] uppercase tracking-wide font-semibold" style={{ color: "var(--text-muted)" }}>{label}</p>
-              <p className="text-xs font-bold mt-0.5" style={{ color: ok ? "var(--success)" : "var(--warning)" }}>{date}</p>
-            </div>
-          ))}
-        </div>
-
-        {/* Tasks */}
-        <div className="space-y-1.5">
-          <p className="text-[10px] uppercase tracking-widest font-semibold" style={{ color: "var(--text-muted)" }}>Tasks</p>
-          {[
-            { label: "Earnest money deposit received",   done: true },
-            { label: "Schedule home inspection",         done: true },
-            { label: "Order appraisal",                  done: false },
-            { label: "Submit financing docs to lender",  done: false },
-          ].map(({ label, done }) => (
-            <div key={label} className="flex items-center gap-2">
-              <div
-                className="w-3.5 h-3.5 rounded-full border flex-shrink-0 flex items-center justify-center"
-                style={{ borderColor: done ? "var(--success)" : "var(--border)", backgroundColor: done ? "var(--success)" : "transparent" }}
-              >
-                {done && <CheckCircle2 className="w-2.5 h-2.5 text-white" />}
-              </div>
-              <span className="text-xs" style={{ color: done ? "var(--text-muted)" : "var(--text-primary)", textDecoration: done ? "line-through" : "none" }}>{label}</span>
-            </div>
-          ))}
-        </div>
-
-        {/* Alerts */}
+      {/* ── HERO ── */}
+      <section className="relative flex flex-col items-center justify-center text-center px-6 py-28 overflow-hidden min-h-[88vh]">
+        {/* Background image with dark overlay */}
         <div
-          className="flex items-start gap-2.5 p-2.5 rounded-xl border"
-          style={{ backgroundColor: "rgba(245,158,11,0.06)", borderColor: "rgba(245,158,11,0.25)" }}
-        >
-          <Bell className="w-3.5 h-3.5 text-amber-500 flex-shrink-0 mt-0.5" />
-          <p className="text-xs" style={{ color: "var(--text-secondary)" }}>
-            <span className="font-semibold text-amber-500">Appraisal not ordered.</span> Financing deadline in 8 days.
+          className="absolute inset-0 bg-cover bg-center"
+          style={{ backgroundImage: "url('https://images.unsplash.com/photo-1560518883-ce09059eeffa?w=1600&q=80')" }}
+        />
+        <div className="absolute inset-0 bg-gradient-to-b from-gray-950/85 via-gray-900/80 to-gray-950/90" />
+
+        {/* Content */}
+        <div className="relative z-10 max-w-3xl mx-auto">
+          <div className="flex items-center justify-center gap-2 mb-6">
+            <div className="w-8 h-8 rounded-lg flex items-center justify-center bg-blue-600">
+              <Building2 className="w-4.5 h-4.5 text-white" />
+            </div>
+            <span className="text-white font-semibold text-base">EliteTC</span>
+          </div>
+
+          <h1 className="text-4xl md:text-6xl font-bold text-white leading-tight mb-6">
+            Every Deadline. Every Document.<br />
+            <span className="text-blue-400">Automatically Managed.</span>
+          </h1>
+
+          <p className="text-lg text-gray-300 max-w-2xl mx-auto mb-10 leading-relaxed">
+            EliteTC replaces spreadsheets, Dotloop, and manual TC processes with one automated system — from contract upload to close.
           </p>
-        </div>
-      </div>
-    </div>
-  );
-}
 
-// ── HOW IT WORKS ──────────────────────────────────────────────────────────────
-function HowItWorksTab() {
-  const steps = [
-    { num: "01", icon: Upload,        title: "Upload Contract",       desc: "Drop in a Purchase & Sales agreement or listing doc. Atlas reads it instantly." },
-    { num: "02", icon: Zap,           title: "AI Extracts Everything", desc: "Deadlines, parties, contingencies, and key terms are parsed and structured automatically." },
-    { num: "03", icon: Bell,          title: "Tasks & Alerts Created", desc: "A full task checklist and deadline calendar is generated — no manual entry needed." },
-    { num: "04", icon: Send,          title: "Communicate & Close",    desc: "Send under-contract emails, track compliance, and guide the deal to a clean close." },
-  ];
-
-  return (
-    <div className="h-full flex items-center">
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 w-full">
-        {steps.map(({ num, icon: Icon, title, desc }, i) => (
-          <div
-            key={num}
-            className="rounded-2xl border p-5 space-y-3 relative"
-            style={{ backgroundColor: "var(--card-bg)", borderColor: "var(--card-border)", boxShadow: "var(--card-shadow)" }}
-          >
-            <div className="flex items-center justify-between">
-              <div
-                className="w-9 h-9 rounded-xl flex items-center justify-center"
-                style={{ backgroundColor: "var(--accent-subtle)" }}
-              >
-                <Icon className="w-4.5 h-4.5" style={{ color: "var(--accent)" }} />
-              </div>
-              <span className="text-2xl font-bold" style={{ color: "var(--bg-tertiary)" }}>{num}</span>
-            </div>
-            <div>
-              <p className="text-sm font-semibold mb-1" style={{ color: "var(--text-primary)" }}>{title}</p>
-              <p className="text-xs leading-relaxed" style={{ color: "var(--text-secondary)" }}>{desc}</p>
-            </div>
-            {i < steps.length - 1 && (
-              <div
-                className="hidden lg:block absolute -right-2.5 top-1/2 -translate-y-1/2 w-5 h-px"
-                style={{ backgroundColor: "var(--border)" }}
-              />
-            )}
-          </div>
-        ))}
-      </div>
-    </div>
-  );
-}
-
-// ── FEATURES ──────────────────────────────────────────────────────────────────
-function FeaturesTab() {
-  const features = [
-    { icon: Upload,         label: "AI Document Parsing",    desc: "Extracts deadlines, parties, and terms from any P&S or listing agreement." },
-    { icon: Clock,          label: "Deadline Tracking",      desc: "Never miss a date. Visual countdown with task-aware resolution logic." },
-    { icon: ShieldCheck,    label: "Compliance Engine",      desc: "Real-time scan for missing signatures, fields, and regulatory blockers." },
-    { icon: Send,           label: "Atlas Communications",   desc: "Auto-generate buyer, seller, lender & title emails from parsed contract data." },
-    { icon: LayoutDashboard,label: "Pipeline Dashboard",     desc: "Health scores, risk levels, and overdue alerts across all active deals." },
-    { icon: Users,          label: "Role-Based Access",      desc: "TC, agent, and client views. Each party sees exactly what they need." },
-  ];
-
-  return (
-    <div className="h-full flex items-center">
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 w-full">
-        {features.map(({ icon: Icon, label, desc }) => (
-          <div
-            key={label}
-            className="rounded-2xl border p-4 space-y-2"
-            style={{ backgroundColor: "var(--card-bg)", borderColor: "var(--card-border)", boxShadow: "var(--card-shadow)" }}
-          >
-            <div className="flex items-center gap-2.5">
-              <div
-                className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0"
-                style={{ backgroundColor: "var(--accent-subtle)" }}
-              >
-                <Icon className="w-4 h-4" style={{ color: "var(--accent)" }} />
-              </div>
-              <p className="text-sm font-semibold" style={{ color: "var(--text-primary)" }}>{label}</p>
-            </div>
-            <p className="text-xs leading-relaxed" style={{ color: "var(--text-secondary)" }}>{desc}</p>
-          </div>
-        ))}
-      </div>
-    </div>
-  );
-}
-
-// ── PRICING ───────────────────────────────────────────────────────────────────
-function PricingTab({ navigate }) {
-  const plans = [
-    {
-      name: "Starter",
-      price: "$99",
-      period: "/mo",
-      features: ["Up to 5 active transactions", "AI contract parsing", "Email alerts & reminders"],
-      action: () => navigate(createPageUrl("AddTransaction")),
-      cta: "Get Started",
-    },
-    {
-      name: "Professional",
-      price: "$299",
-      period: "/mo",
-      highlighted: true,
-      features: ["Unlimited transactions", "Advanced compliance scan", "Team collaboration", "Custom templates"],
-      action: () => navigate(createPageUrl("AddTransaction")),
-      cta: "Start Free Trial",
-    },
-    {
-      name: "Enterprise",
-      price: "Custom",
-      period: "",
-      features: ["Everything in Pro", "Dotloop & SkySlope sync", "Dedicated support", "SLA guarantee"],
-      action: () => { window.location.href = "mailto:sales@elitetc.com"; },
-      cta: "Contact Sales",
-    },
-  ];
-
-  return (
-    <div className="h-full flex items-center">
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 w-full">
-        {plans.map(({ name, price, period, features, action, cta, highlighted }) => (
-          <div
-            key={name}
-            className="rounded-2xl border p-5 space-y-4 flex flex-col"
-            style={{
-              backgroundColor: "var(--card-bg)",
-              borderColor: highlighted ? "var(--accent)" : "var(--card-border)",
-              boxShadow: highlighted ? "0 0 0 1px var(--accent)" : "var(--card-shadow)",
-            }}
-          >
-            <div>
-              {highlighted && (
-                <span
-                  className="text-[10px] font-bold px-2 py-0.5 rounded-full mb-2 inline-block"
-                  style={{ backgroundColor: "var(--accent)", color: "#fff" }}
-                >
-                  Most Popular
-                </span>
-              )}
-              <p className="text-base font-bold" style={{ color: "var(--text-primary)" }}>{name}</p>
-              <p className="text-2xl font-bold mt-1" style={{ color: "var(--accent)" }}>
-                {price}<span className="text-sm font-normal" style={{ color: "var(--text-muted)" }}>{period}</span>
-              </p>
-            </div>
-            <ul className="space-y-1.5 flex-1">
-              {features.map(f => (
-                <li key={f} className="flex items-start gap-2 text-xs" style={{ color: "var(--text-secondary)" }}>
-                  <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500 flex-shrink-0 mt-0.5" />
-                  {f}
-                </li>
-              ))}
-            </ul>
+          <div className="flex flex-wrap items-center justify-center gap-4 mb-12">
             <button
-              onClick={action}
-              className="w-full py-2 rounded-lg text-sm font-semibold transition-all"
-              style={
-                highlighted
-                  ? { backgroundColor: "var(--accent)", color: "#fff" }
-                  : { backgroundColor: "var(--bg-tertiary)", color: "var(--text-primary)", border: "1px solid var(--border)" }
-              }
+              onClick={() => navigate("/AgentIntake?agent=1")}
+              className="flex items-center gap-2 px-6 py-3 rounded-lg text-sm font-bold text-gray-900 bg-white hover:bg-gray-100 transition-colors"
             >
-              {cta}
+              Start a Transaction <ArrowRight className="w-4 h-4" />
+            </button>
+            <button
+              onClick={() => navigate("/ClientLookup")}
+              className="flex items-center gap-2 px-6 py-3 rounded-lg text-sm font-semibold text-white border border-white/40 hover:border-white/80 hover:bg-white/10 transition-colors"
+            >
+              Check Transaction Status
             </button>
           </div>
-        ))}
-      </div>
+
+          {/* Trust strip */}
+          <div className="flex flex-wrap items-center justify-center gap-6 text-sm text-gray-400">
+            {[
+              { icon: Zap, label: "Auto contract parsing" },
+              { icon: ShieldCheck, label: "Built-in compliance engine" },
+              { icon: Clock, label: "Real-time deadline tracking" },
+            ].map(({ icon: Icon, label }) => (
+              <div key={label} className="flex items-center gap-1.5">
+                <Icon className="w-4 h-4 text-blue-400" />
+                <span>{label}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Floating dashboard preview */}
+        <div className="relative z-10 mt-16 w-full max-w-4xl mx-auto">
+          <div className="rounded-2xl border border-gray-200 bg-white shadow-2xl overflow-hidden">
+            {/* Browser chrome */}
+            <div className="flex items-center gap-2 px-4 py-3 bg-gray-50 border-b border-gray-200">
+              <div className="w-3 h-3 rounded-full bg-red-400" />
+              <div className="w-3 h-3 rounded-full bg-yellow-400" />
+              <div className="w-3 h-3 rounded-full bg-green-400" />
+              <span className="ml-2 text-xs text-gray-400 font-mono">app.elitetc.io/transactions/742-elm-street</span>
+            </div>
+            {/* Dashboard content */}
+            <div className="p-5 bg-white">
+              {/* Header row */}
+              <div className="flex items-center justify-between mb-4">
+                <div>
+                  <p className="text-sm font-bold text-gray-900">742 Elm Street, Portland, OR</p>
+                  <p className="text-xs text-gray-400">Buyer Transaction · Under Contract</p>
+                </div>
+                <div className="flex gap-2">
+                  <span className="px-2.5 py-1 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-600 border border-emerald-200">Active</span>
+                  <span className="px-2.5 py-1 rounded-full text-xs font-semibold bg-red-50 text-red-600 border border-red-200">At Risk</span>
+                  <span className="px-2.5 py-1 rounded-full text-xs font-semibold bg-blue-50 text-blue-600 border border-blue-200">Score 82%</span>
+                </div>
+              </div>
+
+              {/* Stats row */}
+              <div className="grid grid-cols-4 gap-3 mb-4">
+                {[
+                  { label: "Sale Price", val: "$415,000", note: "Buyer" },
+                  { label: "Inspection", val: "Apr 10", note: "3 days left", urgent: true },
+                  { label: "Financing", val: "Apr 22", note: "15 days left" },
+                  { label: "Closing", val: "Apr 30", note: "23 days left" },
+                ].map(({ label, val, note, urgent }) => (
+                  <div key={label} className={`rounded-xl p-3 border ${urgent ? "border-red-200 bg-red-50" : "border-gray-100 bg-gray-50"}`}>
+                    <p className="text-[10px] font-semibold uppercase tracking-wide text-gray-400 mb-1">{label}</p>
+                    <p className={`text-sm font-bold ${urgent ? "text-red-600" : "text-gray-900"}`}>{val}</p>
+                    <p className={`text-[10px] mt-0.5 ${urgent ? "text-red-500" : "text-gray-400"}`}>{note}</p>
+                  </div>
+                ))}
+              </div>
+
+              {/* Alerts + tasks */}
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-2">
+                  <div className="flex items-start gap-2 px-3 py-2 rounded-lg bg-red-50 border border-red-200">
+                    <AlertTriangle className="w-3.5 h-3.5 text-red-500 flex-shrink-0 mt-0.5" />
+                    <p className="text-xs text-gray-700"><span className="font-semibold text-red-600">Missing document:</span> Signed inspection report</p>
+                  </div>
+                  <div className="flex items-start gap-2 px-3 py-2 rounded-lg bg-amber-50 border border-amber-200">
+                    <Bell className="w-3.5 h-3.5 text-amber-500 flex-shrink-0 mt-0.5" />
+                    <p className="text-xs text-gray-700"><span className="font-semibold text-amber-600">Addendum likely needed</span> — inspection in 3 days</p>
+                  </div>
+                </div>
+                <div className="space-y-1.5">
+                  {[
+                    { t: "Earnest money confirmed", done: true },
+                    { t: "Inspection scheduled", done: true },
+                    { t: "Order appraisal", done: false },
+                    { t: "Submit financing docs", done: false },
+                  ].map(({ t, done }) => (
+                    <div key={t} className="flex items-center gap-2">
+                      <div className={`w-3.5 h-3.5 rounded-full flex-shrink-0 border flex items-center justify-center ${done ? "bg-emerald-500 border-emerald-500" : "border-gray-300"}`}>
+                        {done && <CheckCircle2 className="w-2.5 h-2.5 text-white" />}
+                      </div>
+                      <span className={`text-xs ${done ? "line-through text-gray-400" : "text-gray-700"}`}>{t}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* ── FEATURES ── */}
+      <section id="features" className="py-24 px-6 bg-gray-50">
+        <div className="max-w-5xl mx-auto">
+          <div className="text-center mb-14">
+            <p className="text-xs font-bold uppercase tracking-widest text-blue-600 mb-3">Features</p>
+            <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">Built for how TCs actually work</h2>
+            <p className="text-gray-500 max-w-xl mx-auto text-base">
+              No more spreadsheets and fragmented tools. EliteTC handles the entire transaction so you can focus on closing.
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {[
+              {
+                icon: Upload,
+                label: "Contract Data Extraction",
+                desc: "Upload a Purchase & Sales agreement and EliteTC automatically pulls out buyer, seller, deadlines, deposits, and contingencies — no manual entry.",
+              },
+              {
+                icon: Clock,
+                label: "Deadline & Contingency Tracking",
+                desc: "Every deadline is tracked with real-time countdowns and automatic alerts. Overdue items surface immediately so nothing slips through.",
+              },
+              {
+                icon: ShieldCheck,
+                label: "Compliance & Risk Detection",
+                desc: "Continuously scans for missing signatures, expired contingencies, incomplete disclosures, and required documents before they become blockers.",
+              },
+              {
+                icon: Send,
+                label: "Automated Transaction Emails",
+                desc: "Generates under-contract emails to buyers, sellers, lenders, and title companies directly from contract data — reviewed and sent in one click.",
+              },
+              {
+                icon: LayoutDashboard,
+                label: "Transaction Pipeline Dashboard",
+                desc: "Health scores, risk flags, and overdue alerts across every active deal. Know where every transaction stands at a glance.",
+              },
+              {
+                icon: Users,
+                label: "Role-Based Access & Portals",
+                desc: "TCs, agents, and clients each get a tailored view. Clients track their deal status with a simple code — no login required.",
+              },
+            ].map(({ icon: Icon, label, desc }) => (
+              <div key={label} className="flex gap-4 p-6 rounded-2xl bg-white border border-gray-200 hover:border-blue-200 hover:shadow-sm transition-all">
+                <div className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 bg-blue-50">
+                  <Icon className="w-5 h-5 text-blue-600" />
+                </div>
+                <div>
+                  <p className="text-sm font-bold text-gray-900 mb-1">{label}</p>
+                  <p className="text-sm text-gray-500 leading-relaxed">{desc}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ── HOW IT WORKS ── */}
+      <section id="how-it-works" className="py-24 px-6 bg-white">
+        <div className="max-w-5xl mx-auto">
+          <div className="text-center mb-14">
+            <p className="text-xs font-bold uppercase tracking-widest text-blue-600 mb-3">How It Works</p>
+            <h2 className="text-3xl md:text-4xl font-bold text-gray-900">From upload to close — in six steps</h2>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            {[
+              { num: "01", color: "bg-blue-600",   icon: Upload,         title: "Upload Agreement",          desc: "Upload a Purchase & Sales or listing agreement in any format." },
+              { num: "02", color: "bg-violet-600",  icon: Zap,            title: "Extract Key Data",          desc: "System identifies parties, deadlines, deposits, contingencies, and key terms automatically." },
+              { num: "03", color: "bg-amber-500",   icon: ClipboardCheck, title: "Generate Timeline & Tasks", desc: "Builds a full transaction timeline with every required action and task assigned." },
+              { num: "04", color: "bg-red-500",     icon: Bell,           title: "Monitor & Alert",           desc: "Tracks every deadline in real time and flags risks before they become problems." },
+              { num: "05", color: "bg-emerald-600", icon: Send,           title: "Automate Communication",    desc: "Generates emails to buyers, sellers, lenders, and title — auto-populated from contract data." },
+              { num: "06", color: "bg-blue-600",    icon: ShieldCheck,    title: "Close with Confidence",     desc: "All documents, deadlines, and compliance requirements verified before closing day." },
+            ].map(({ num, color, icon: Icon, title, desc }) => (
+              <div key={num} className="rounded-2xl border border-gray-200 bg-gray-50 p-6 flex flex-col gap-4">
+                <div className={`w-12 h-12 rounded-xl flex items-center justify-center text-white font-bold text-sm ${color}`}>
+                  {num}
+                </div>
+                <div>
+                  <p className="text-sm font-bold text-gray-900 mb-1">{title}</p>
+                  <p className="text-sm text-gray-500 leading-relaxed">{desc}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ── PRICING ── */}
+      <section id="pricing" className="py-24 px-6 bg-gray-50">
+        <div className="max-w-5xl mx-auto">
+          <div className="text-center mb-14">
+            <p className="text-xs font-bold uppercase tracking-widest text-blue-600 mb-3">Pricing</p>
+            <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">Simple, transparent pricing</h2>
+            <p className="text-gray-500">Replace multiple disconnected tools with one system.</p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            {[
+              {
+                name: "Starter", price: "$99", period: "/mo",
+                subtitle: "For individual agents managing a limited number of deals",
+                features: ["Up to 5 active transactions", "Contract data extraction", "Email alerts & deadline tracking", "Client status portal"],
+                cta: "Get Started", highlighted: false,
+              },
+              {
+                name: "Professional", price: "$299", period: "/mo",
+                subtitle: "For active agents and TCs managing multiple transactions",
+                features: ["Unlimited transactions", "Full compliance scan engine", "Team collaboration & role-based access", "Automated communications", "Custom workflow templates"],
+                cta: "Start Free Trial", highlighted: true,
+              },
+              {
+                name: "Enterprise", price: "Custom", period: "",
+                subtitle: "For teams and brokerages requiring scale and integrations",
+                features: ["Everything in Professional", "Dotloop & SkySlope sync", "Custom integrations & API", "Dedicated support & SLA", "Brokerage-wide audit trail"],
+                cta: "Contact Sales", highlighted: false,
+              },
+            ].map(({ name, price, period, subtitle, features, cta, highlighted }) => (
+              <div
+                key={name}
+                className={`rounded-2xl border p-6 flex flex-col gap-5 ${highlighted ? "border-blue-500 bg-white shadow-lg shadow-blue-100" : "border-gray-200 bg-white"}`}
+              >
+                {highlighted && (
+                  <span className="inline-block text-[11px] font-bold px-3 py-1 rounded-full bg-blue-600 text-white w-fit">Most Popular</span>
+                )}
+                <div>
+                  <p className="text-base font-bold text-gray-900">{name}</p>
+                  <p className="text-3xl font-bold text-blue-600 mt-1">
+                    {price}<span className="text-sm font-normal text-gray-400">{period}</span>
+                  </p>
+                  <p className="text-xs text-gray-500 mt-2 leading-snug">{subtitle}</p>
+                </div>
+                <ul className="space-y-2 flex-1">
+                  {features.map(f => (
+                    <li key={f} className="flex items-start gap-2 text-sm text-gray-600">
+                      <CheckCircle2 className="w-4 h-4 text-emerald-500 flex-shrink-0 mt-0.5" />
+                      {f}
+                    </li>
+                  ))}
+                </ul>
+                <button
+                  onClick={() => highlighted ? navigate("/AgentIntake?agent=1") : window.location.href = "mailto:sales@elitetc.com"}
+                  className={`w-full py-2.5 rounded-lg text-sm font-semibold transition-colors ${highlighted ? "bg-blue-600 text-white hover:bg-blue-700" : "bg-gray-100 text-gray-800 hover:bg-gray-200 border border-gray-200"}`}
+                >
+                  {cta}
+                </button>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ── CTA FOOTER ── */}
+      <section className="py-24 px-6 bg-gray-950 text-center">
+        <div className="max-w-xl mx-auto">
+          <div className="w-12 h-12 rounded-xl bg-blue-600 flex items-center justify-center mx-auto mb-6">
+            <ShieldCheck className="w-6 h-6 text-white" />
+          </div>
+          <h2 className="text-3xl font-bold text-white mb-4">Ready to replace your current process?</h2>
+          <p className="text-gray-400 mb-8 leading-relaxed">
+            One system. Every deadline tracked. Every document managed. Every communication automated — from contract to close.
+          </p>
+          <div className="flex flex-wrap items-center justify-center gap-4">
+            <button
+              onClick={() => navigate("/AgentIntake?agent=1")}
+              className="flex items-center gap-2 px-6 py-3 rounded-lg text-sm font-bold bg-white text-gray-900 hover:bg-gray-100 transition-colors"
+            >
+              Start a Transaction <ArrowRight className="w-4 h-4" />
+            </button>
+            <button
+              onClick={() => base44.auth.redirectToLogin("/Dashboard")}
+              className="flex items-center gap-2 px-6 py-3 rounded-lg text-sm font-semibold text-white border border-white/30 hover:border-white/60 hover:bg-white/10 transition-colors"
+            >
+              <Lock className="w-4 h-4" /> TC / Staff Login
+            </button>
+          </div>
+        </div>
+      </section>
+
+      {/* ── Footer ── */}
+      <footer className="py-6 px-8 bg-gray-950 border-t border-gray-800 flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <div className="w-6 h-6 rounded-md flex items-center justify-center bg-blue-600">
+            <Building2 className="w-3.5 h-3.5 text-white" />
+          </div>
+          <span className="text-sm font-bold text-white">Elite<span className="text-blue-400">TC</span></span>
+        </div>
+        <p className="text-xs text-gray-500">© 2026 EliteTC. All rights reserved.</p>
+      </footer>
     </div>
   );
 }
