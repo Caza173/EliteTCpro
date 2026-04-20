@@ -190,7 +190,7 @@ function DeadlineRow({ item, calendarMaps, transactionId, onUpdateContingency, o
   };
 
   return (
-    <div className={`rounded-xl border border-l-4 border-slate-700 bg-slate-900 p-3.5 ${borderClass} transition-all`}>
+    <div className={`rounded-xl border border-l-4 p-3.5 ${borderClass} transition-all`} style={{ background: "var(--card-bg)", borderColor: "var(--card-border)" }}>
       <div className="flex items-start gap-3">
         <div className="flex-1 min-w-0">
           {/* Label row */}
@@ -249,7 +249,7 @@ function DeadlineRow({ item, calendarMaps, transactionId, onUpdateContingency, o
               <div>
                 <div className="flex items-center gap-1.5">
                   {item.date ? (
-                    <span className="text-sm font-medium text-gray-200">{fmtDate(item.date)}</span>
+                    <span className="text-sm font-medium" style={{ color: "var(--text-primary)" }}>{fmtDate(item.date)}</span>
                   ) : (
                     <span className="text-xs italic text-gray-500">Not set</span>
                   )}
@@ -314,7 +314,7 @@ function DeadlineRow({ item, calendarMaps, transactionId, onUpdateContingency, o
                 {item.date && (
                   <Button
                     size="icon" variant="ghost"
-                    className={`h-6 w-6 hover:bg-slate-700 transition-colors ${isSynced ? "text-emerald-400" : "text-gray-500 hover:text-gray-300"}`}
+                    className={`h-6 w-6 transition-colors ${isSynced ? "text-emerald-500" : "text-gray-400 hover:text-gray-600"}`}
                     onClick={handleSync}
                     disabled={syncing}
                     title={isSynced ? "Update calendar event" : "Sync to Google Calendar"}
@@ -327,7 +327,7 @@ function DeadlineRow({ item, calendarMaps, transactionId, onUpdateContingency, o
                 )}
                 <Button
                   size="icon" variant="ghost"
-                  className="h-6 w-6 text-gray-500 hover:text-gray-300 hover:bg-slate-700"
+                  className="h-6 w-6 text-gray-400 hover:text-gray-600 hover:bg-gray-100"
                   onClick={() => { setEditDate(item.date || ""); setEditLabel(item.label || ""); setEditing(true); }}
                   title={item.sourceType === "manual" ? "Edit deadline" : "Edit date"}
                 >
@@ -413,21 +413,21 @@ function AddCustomDeadlineRow({ transactionId, brokerageId, onAdded, onCancel })
   };
 
   return (
-    <div className="rounded-xl border border-dashed border-slate-600 bg-slate-800/50 p-3.5 space-y-2">
+    <div className="rounded-xl border border-dashed p-3.5 space-y-2" style={{ background: "var(--bg-tertiary)", borderColor: "var(--border)" }}>
       <p className="text-xs font-semibold text-blue-400">Add Custom Deadline</p>
       <div className="grid grid-cols-1 sm:grid-cols-4 gap-2">
         <Input
           placeholder="Name (e.g. HOA Docs Due)"
           value={form.label}
           onChange={e => setForm(f => ({ ...f, label: e.target.value }))}
-          className="h-7 text-xs sm:col-span-2 bg-slate-700 border-slate-600 text-white"
+          className="h-7 text-xs sm:col-span-2"
           autoFocus
         />
         <Input
           type="date"
           value={form.date}
           onChange={e => setForm(f => ({ ...f, date: e.target.value }))}
-          className="h-7 text-xs bg-slate-700 border-slate-600 text-white"
+          className="h-7 text-xs"
         />
       </div>
       <div className="flex items-center gap-3 mt-2">
@@ -436,7 +436,7 @@ function AddCustomDeadlineRow({ transactionId, brokerageId, onAdded, onCancel })
             type="checkbox"
             checked={form.is_all_day}
             onChange={e => setForm(f => ({ ...f, is_all_day: e.target.checked, due_time: e.target.checked ? "" : f.due_time }))}
-            className="rounded border-slate-600 text-blue-500 focus:ring-blue-400"
+            className="rounded text-blue-500 focus:ring-blue-400"
           />
           All Day Event
         </label>
@@ -445,7 +445,7 @@ function AddCustomDeadlineRow({ transactionId, brokerageId, onAdded, onCancel })
             type="time"
             value={form.due_time}
             onChange={e => setForm(f => ({ ...f, due_time: e.target.value }))}
-            className="h-7 text-xs w-32 bg-slate-700 border-slate-600 text-white"
+            className="h-7 text-xs w-32"
           />
         )}
       </div>
@@ -453,13 +453,13 @@ function AddCustomDeadlineRow({ transactionId, brokerageId, onAdded, onCancel })
         placeholder="Notes (optional)"
         value={form.notes}
         onChange={e => setForm(f => ({ ...f, notes: e.target.value }))}
-        className="h-7 text-xs mt-2 bg-slate-700 border-slate-600 text-white"
+        className="h-7 text-xs mt-2"
       />
       <div className="flex gap-2 pt-1">
         <Button size="sm" className="h-7 text-xs bg-blue-600 hover:bg-blue-700 text-white" onClick={handleSave}>
           <Check className="w-3 h-3 mr-1" /> Save
         </Button>
-        <Button size="sm" variant="outline" className="h-7 text-xs border-slate-600 text-gray-400 hover:bg-slate-700" onClick={onCancel}>Cancel</Button>
+        <Button size="sm" variant="outline" className="h-7 text-xs" onClick={onCancel}>Cancel</Button>
       </div>
     </div>
   );
@@ -635,7 +635,7 @@ export default function UnifiedDeadlinesPanel({ transaction, onSave }) {
         <Button
           variant="outline"
           size="sm"
-          className="h-8 text-xs gap-1.5 text-gray-400 border-dashed border-slate-600 hover:bg-slate-800"
+          className="h-8 text-xs gap-1.5 border-dashed"
           onClick={() => setAddingCustom(true)}
         >
           <Plus className="w-3.5 h-3.5" /> Add Custom Deadline
