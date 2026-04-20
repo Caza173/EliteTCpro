@@ -190,7 +190,16 @@ function DeadlineRow({ item, calendarMaps, transactionId, onUpdateContingency, o
         <div className="flex-1 min-w-0">
           {/* Label row */}
           <div className="flex items-center gap-1.5 flex-wrap mb-0.5">
-            <span className={`text-sm font-semibold ${isOverdue ? "text-red-500" : ""}`} style={!isOverdue ? { color: "var(--text-primary)" } : {}}>{item.label}</span>
+            {editing && item.sourceType !== "manual" ? (
+              <span className={`text-sm font-semibold ${isOverdue ? "text-red-500" : ""}`} style={!isOverdue ? { color: "var(--text-primary)" } : {}}>{item.label}</span>
+            ) : editing ? null : (
+              <span
+                className={`text-sm font-semibold cursor-pointer hover:underline decoration-dotted underline-offset-2 ${isOverdue ? "text-red-500" : ""}`}
+                style={!isOverdue ? { color: "var(--text-primary)" } : {}}
+                onClick={() => { setEditLabel(item.label || ""); setEditDate(item.date || ""); setEditing(true); }}
+                title="Click to edit"
+              >{item.label}</span>
+            )}
             {item.sourceType === "contingency" && (
               <span className="text-[10px] bg-white/70 border border-current/20 px-1.5 py-0.5 rounded font-medium opacity-70">
                 From Contingency
@@ -203,17 +212,19 @@ function DeadlineRow({ item, calendarMaps, transactionId, onUpdateContingency, o
             )}
           </div>
 
+          {/* Inline label editor for manual deadlines (shown at top of edit block) */}
+          {editing && item.sourceType === "manual" && (
+            <Input
+              placeholder="Deadline name"
+              value={editLabel}
+              onChange={e => setEditLabel(e.target.value)}
+              className="h-7 text-xs py-0 mb-1.5"
+              autoFocus
+            />
+          )}
+
           {editing ? (
             <div className="flex flex-col gap-1.5 mt-1">
-              {item.sourceType === "manual" && (
-                <Input
-                  placeholder="Deadline name"
-                  value={editLabel}
-                  onChange={e => setEditLabel(e.target.value)}
-                  className="h-7 text-xs py-0 bg-white/80 border-white"
-                  autoFocus
-                />
-              )}
               <div className="flex items-center gap-1.5 flex-wrap">
               <Input
                 type="date"
