@@ -549,7 +549,9 @@ export default function UnifiedDeadlinesPanel({ transaction, onSave }) {
     .map(c => ({
       id: c.id,
       key: `contingency_${c.id}`,
-      label: [c.contingency_type, c.sub_type].filter(Boolean).join(" – "),
+      label: (c.source === "Manual" && c.is_custom)
+        ? (c.sub_type || c.contingency_type)
+        : [c.contingency_type, c.sub_type].filter(Boolean).join(" – "),
       subType: c.sub_type || "",
       date: c.due_date || null,
       due_time: c.due_time || null,
