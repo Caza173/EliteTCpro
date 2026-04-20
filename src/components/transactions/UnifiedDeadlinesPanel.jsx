@@ -144,14 +144,14 @@ function DeadlineRow({ item, calendarMaps, transactionId, onUpdateContingency, o
   const handleSave = async () => {
     if (item.sourceType === "system") {
       const updates = { [item.key]: editDate };
-      if (item.timeKey && item.editTime !== undefined) {
-        updates[item.timeKey] = item.editTime || null;
+      if (item.timeKey && editTime !== undefined) {
+        updates[item.timeKey] = editTime || null;
       }
       onUpdateTransaction(updates);
     } else {
       const updates = { due_date: editDate };
-      // For custom/manual deadlines, also save the label (stored as sub_type)
-      if (item.sourceType === "manual" && editLabel.trim() && editLabel.trim() !== item.label) {
+      // Save label (sub_type) for contingency and manual types
+      if (editLabel.trim() && editLabel.trim() !== item.label) {
         updates.sub_type = editLabel.trim();
       }
       await onUpdateContingency(item.id, updates);
@@ -190,9 +190,7 @@ function DeadlineRow({ item, calendarMaps, transactionId, onUpdateContingency, o
         <div className="flex-1 min-w-0">
           {/* Label row */}
           <div className="flex items-center gap-1.5 flex-wrap mb-0.5">
-            {editing && item.sourceType !== "manual" ? (
-              <span className={`text-sm font-semibold ${isOverdue ? "text-red-500" : ""}`} style={!isOverdue ? { color: "var(--text-primary)" } : {}}>{item.label}</span>
-            ) : editing ? null : (
+            {editing ? null : (
               <span
                 className={`text-sm font-semibold cursor-pointer hover:underline decoration-dotted underline-offset-2 ${isOverdue ? "text-red-500" : ""}`}
                 style={!isOverdue ? { color: "var(--text-primary)" } : {}}
@@ -212,8 +210,8 @@ function DeadlineRow({ item, calendarMaps, transactionId, onUpdateContingency, o
             )}
           </div>
 
-          {/* Inline label editor for manual deadlines (shown at top of edit block) */}
-          {editing && item.sourceType === "manual" && (
+          {/* Inline label editor (shown at top of edit block for all types) */}
+          {editing && (
             <Input
               placeholder="Deadline name"
               value={editLabel}
