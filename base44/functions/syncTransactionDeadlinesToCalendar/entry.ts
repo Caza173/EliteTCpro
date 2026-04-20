@@ -119,7 +119,7 @@ async function syncTransaction(base44, transaction, fieldKey, contingencyId, con
   } else if (fieldKey) {
     const fieldDef = DEADLINE_FIELDS.find(f => f.field === fieldKey);
     const dateStr = transaction[fieldKey];
-    if (fieldDef && dateStr) await syncOne(fieldKey, fieldDef.title, dateStr, null, true);
+    if (fieldDef && dateStr) await syncOne(fieldKey, fieldDef.title, dateStr, dueTime || null, isAllDay ?? !dueTime);
   } else {
     for (const { field, title } of DEADLINE_FIELDS) {
       const dateStr = transaction[field];

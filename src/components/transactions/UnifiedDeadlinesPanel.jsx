@@ -169,7 +169,12 @@ function DeadlineRow({ item, calendarMaps, transactionId, onUpdateContingency, o
     setSyncing(true);
     try {
       const payload = item.sourceType === "system"
-        ? { transaction_id: transactionId, field_key: item.key }
+        ? { 
+            transaction_id: transactionId, 
+            field_key: item.key,
+            due_time: item.time || null,
+            is_all_day: !item.time,
+          }
         : { 
             transaction_id: transactionId, 
             contingency_id: item.id, 
