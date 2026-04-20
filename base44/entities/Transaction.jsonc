@@ -326,6 +326,13 @@
         "type": "string"
       }
     },
+    "custom_deadline_labels": {
+      "type": "object",
+      "description": "Custom label overrides for system deadlines, keyed by field name (e.g. inspection_deadline -> 'Building Inspection')",
+      "additionalProperties": {
+        "type": "string"
+      }
+    },
     "status": {
       "type": "string",
       "enum": [

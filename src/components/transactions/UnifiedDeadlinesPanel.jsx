@@ -148,10 +148,15 @@ function DeadlineRow({ item, calendarMaps, transactionId, onUpdateContingency, o
       if (item.timeKey && editTime !== undefined) {
         updates[item.timeKey] = editTime || null;
       }
+      // Persist custom label overrides for system deadlines
+      const trimmed = editLabel.trim();
+      if (trimmed && trimmed !== item.label) {
+        const existing = item.customLabels || {};
+        updates.custom_deadline_labels = { ...existing, [item.key]: trimmed };
+      }
       onUpdateTransaction(updates);
     } else {
       const updates = { due_date: editDate };
-      // Save the editable label as sub_type (always update so user changes are persisted)
       if (editLabel.trim()) {
         updates.sub_type = editLabel.trim();
       }
@@ -191,39 +196,28 @@ function DeadlineRow({ item, calendarMaps, transactionId, onUpdateContingency, o
         <div className="flex-1 min-w-0">
           {/* Label row */}
           <div className="flex items-center gap-1.5 flex-wrap mb-0.5">
-            {/* System deadlines: always show label as static text */}
-            {item.sourceType === "system" && (
-              <span
-                className={`text-sm font-semibold cursor-pointer hover:underline decoration-dotted underline-offset-2 ${isOverdue ? "text-red-500" : ""}`}
-                style={!isOverdue ? { color: "var(--text-primary)" } : {}}
-                onClick={() => { setEditDate(item.date || ""); setEditing(true); }}
-                title="Click to edit date"
-              >{item.label}</span>
-            )}
-            {/* Contingency/manual: show editable input when editing, static label otherwise */}
-            {item.sourceType !== "system" && !editing && (
+            {!editing ? (
               <span
                 className={`text-sm font-semibold cursor-pointer hover:underline decoration-dotted underline-offset-2 ${isOverdue ? "text-red-500" : ""}`}
                 style={!isOverdue ? { color: "var(--text-primary)" } : {}}
                 onClick={() => { setEditLabel(item.subType || item.label || ""); setEditDate(item.date || ""); setEditing(true); }}
-                title="Click to edit label or date"
+                title="Click to edit"
               >{item.label}</span>
-            )}
-            {item.sourceType !== "system" && editing && (
+            ) : (
               <Input
                 placeholder="Deadline name"
                 value={editLabel}
                 onChange={e => setEditLabel(e.target.value)}
-                className="h-7 text-xs py-0"
+                className="h-7 text-xs py-0 flex-1 min-w-[120px]"
                 autoFocus
               />
             )}
-            {item.sourceType === "contingency" && (
+            {!editing && item.sourceType === "contingency" && (
               <span className="text-[10px] bg-white/70 border border-current/20 px-1.5 py-0.5 rounded font-medium opacity-70">
                 From Contingency
               </span>
             )}
-            {item.sourceType === "manual" && (
+            {!editing && item.sourceType === "manual" && (
               <span className="text-[10px] bg-white/70 border border-current/20 px-1.5 py-0.5 rounded font-medium opacity-70">
                 Custom
               </span>
@@ -532,10 +526,12 @@ export default function UnifiedDeadlinesPanel({ transaction, onSave }) {
   const completedDeadlines = transaction.completed_deadlines || [];
 
   // 1. System fields from Transaction
+  const customLabels = transaction.custom_deadline_labels || {};
   const systemItems = SYSTEM_FIELDS.map(f => ({
     id: f.key,
     key: f.key,
-    label: f.label,
+    label: customLabels[f.key] || f.label,
+    customLabels,
     date: transaction[f.key] || null,
     time: f.timeKey ? transaction[f.timeKey] || null : null,
     timeKey: f.timeKey || null,
