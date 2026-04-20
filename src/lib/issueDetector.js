@@ -40,12 +40,46 @@ export function detectIssues(transaction, checklistItems = [], complianceReports
   };
 
   // ── 1. DEADLINE CHECKS ────────────────────────────────────────────────────
+
+  // Map deadline fields to completed_deadlines keys or transaction flags that
+  // indicate the work behind the deadline has been done.
+  const DEADLINE_COMPLETION_MAP = {
+    inspection_deadline:      () => !!transaction.inspection_completed,
+    earnest_money_deadline:   () => !!transaction.earnest_money_received,
+    financing_deadline:       () => (transaction.completed_deadlines || []).includes("financing_deadline"),
+    appraisal_deadline:       () => (transaction.completed_deadlines || []).includes("appraisal_deadline"),
+    due_diligence_deadline:   () => (transaction.completed_deadlines || []).includes("due_diligence_deadline"),
+    ctc_target:               () => (transaction.completed_deadlines || []).includes("ctc_target") || transaction.transaction_phase === "clear_to_close" || transaction.transaction_phase === "closing" || transaction.transaction_phase === "closed",
+    closing_date:             () => transaction.transaction_phase === "closed" || transaction.status === "closed",
+  };
+
+  // Also check txTasks: if a task title matching the deadline keyword is completed, suppress
+  const isDeadlineResolvedByTask = (key) => {
+    const TASK_KEYWORDS = {
+      earnest_money_deadline: ["earnest money"],
+      inspection_deadline:    ["inspection"],
+      financing_deadline:     ["financing", "loan"],
+      appraisal_deadline:     ["appraisal"],
+      due_diligence_deadline: ["due diligence"],
+      ctc_target:             ["clear to close", "ctc"],
+      closing_date:           ["closing"],
+    };
+    const keywords = TASK_KEYWORDS[key] || [];
+    if (keywords.length === 0) return false;
+    return txTasks.some(t =>
+      t.is_completed &&
+      keywords.some(kw => t.title?.toLowerCase().includes(kw))
+    );
+  };
+
   for (const { key, label } of DEADLINE_FIELDS) {
     const dateStr = transaction[key];
     if (!dateStr) continue;
 
-    // Inspection deadline: suppress all alerts if inspection_completed is set
-    if (key === "inspection_deadline" && transaction.inspection_completed) continue;
+    // Suppress if the deadline is marked complete via its specific flag or a completed task
+    const completionCheck = DEADLINE_COMPLETION_MAP[key];
+    if (completionCheck && completionCheck()) continue;
+    if (isDeadlineResolvedByTask(key)) continue;
 
     const hours = hoursUntil(dateStr);
 
