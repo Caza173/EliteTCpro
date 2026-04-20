@@ -206,7 +206,21 @@ export default function TransactionTable({ transactions, sorted = false }) {
                    <div className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0" style={{ background: "var(--accent-subtle)" }}>
                      <MapPin className="w-4 h-4" style={{ color: "var(--accent)" }} />
                    </div>
-                   <span className="font-medium text-sm truncate max-w-[120px] sm:max-w-[200px] block transition-colors" style={{ color: "var(--foreground)", fontWeight: 500 }}>{tx.address}</span>
+                   <div>
+                     <span className="font-medium text-sm truncate max-w-[120px] sm:max-w-[200px] block transition-colors" style={{ color: "var(--foreground)", fontWeight: 500 }}>{tx.address}</span>
+                     <div className="flex items-center gap-3 mt-0.5">
+                       {tx.closing_date && (
+                         <span className="text-[11px]" style={{ color: "var(--text-muted)" }}>
+                           Close: <span className="font-medium">{format(new Date(tx.closing_date), "MMM d")}</span>
+                         </span>
+                       )}
+                       {tx.earnest_money_deadline && (
+                         <span className="text-[11px]" style={{ color: "var(--text-muted)" }}>
+                           EMD: <span className="font-medium">{format(new Date(tx.earnest_money_deadline), "MMM d")}</span>
+                         </span>
+                       )}
+                     </div>
+                   </div>
                  </div>
                </TableCell>
                <TableCell>
