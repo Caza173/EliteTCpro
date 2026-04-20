@@ -525,7 +525,13 @@ export default function TransactionDetail() {
       ? deadlines.map((d) => `<tr><td style="padding:6px 12px;border-bottom:1px solid #f0f0f0;">${d.label}</td><td style="padding:6px 12px;border-bottom:1px solid #f0f0f0;font-weight:600;">${formatSafe(d.date)}</td></tr>`).join("")
       : "<tr><td colspan='2' style='padding:8px 12px;color:#999;'>No deadlines set.</td></tr>";
     const body = `<p>Hello,</p><p>Here is the key deadline timeline for <strong>${transaction.address}</strong>:</p><table style="border-collapse:collapse;width:100%;max-width:480px;">${deadlineRows}</table><p>Best regards,<br/>TC Manager</p>`;
-    const results = await Promise.allSettled(recipients.map((to) => base44.integrations.Core.SendEmail({ to, subject: `Key Deadlines — ${transaction.address}`, body })));
+    const results = await Promise.allSettled(recipients.map((to) => base44.functions.invoke("sendEmail", {
+      to,
+      subject: `Key Deadlines — ${transaction.address}`,
+      body,
+      transaction_id: transaction.id,
+      brokerage_id: transaction.brokerage_id,
+    })));
     setSendingTimeline(false);
     const sent = recipients.filter((_, i) => results[i].status === "fulfilled");
     setAlertDialog({
