@@ -192,13 +192,32 @@ function DeadlineRow({ item, calendarMaps, transactionId, onUpdateContingency, o
         <div className="flex-1 min-w-0">
           {/* Label row */}
           <div className="flex items-center gap-1.5 flex-wrap mb-0.5">
-            {editing ? null : (
+            {/* System deadlines: always show label as static text */}
+            {item.sourceType === "system" && (
               <span
                 className={`text-sm font-semibold cursor-pointer hover:underline decoration-dotted underline-offset-2 ${isOverdue ? "text-red-500" : ""}`}
                 style={!isOverdue ? { color: "var(--text-primary)" } : {}}
-                onClick={() => { setEditLabel(item.subType || ""); setEditDate(item.date || ""); setEditing(true); }}
+                onClick={() => { setEditDate(item.date || ""); setEditing(true); }}
+                title="Click to edit date"
+              >{item.label}</span>
+            )}
+            {/* Contingency/manual: show editable input when editing, static label otherwise */}
+            {item.sourceType !== "system" && !editing && (
+              <span
+                className={`text-sm font-semibold cursor-pointer hover:underline decoration-dotted underline-offset-2 ${isOverdue ? "text-red-500" : ""}`}
+                style={!isOverdue ? { color: "var(--text-primary)" } : {}}
+                onClick={() => { setEditLabel(item.subType || item.label || ""); setEditDate(item.date || ""); setEditing(true); }}
                 title="Click to edit"
               >{item.label}</span>
+            )}
+            {item.sourceType !== "system" && editing && (
+              <Input
+                placeholder="Deadline name"
+                value={editLabel}
+                onChange={e => setEditLabel(e.target.value)}
+                className="h-7 text-xs py-0"
+                autoFocus
+              />
             )}
             {item.sourceType === "contingency" && (
               <span className="text-[10px] bg-white/70 border border-current/20 px-1.5 py-0.5 rounded font-medium opacity-70">
@@ -211,17 +230,6 @@ function DeadlineRow({ item, calendarMaps, transactionId, onUpdateContingency, o
               </span>
             )}
           </div>
-
-          {/* Inline label editor — only for contingency/manual (system labels are fixed) */}
-          {editing && item.sourceType !== "system" && (
-            <Input
-              placeholder="Deadline name"
-              value={editLabel}
-              onChange={e => setEditLabel(e.target.value)}
-              className="h-7 text-xs py-0 mb-1.5"
-              autoFocus
-            />
-          )}
 
           {editing ? (
             <div className="flex flex-col gap-1.5 mt-1">
