@@ -290,6 +290,92 @@ export const tutorialSections = [
     ]
   },
   {
+    id: "task-templates",
+    title: "Task & Phase Templates",
+    icon: "📋",
+    steps: [
+      {
+        title: "Accessing the Task Library",
+        content: [
+          "Open any transaction and go to the Tasks/Workflow tab",
+          "Each phase card has a book icon (Task Library) button in the top right",
+          "Click it to open the Task Library modal for that phase",
+          "The modal has two tabs: 'Saved Tasks' and 'Phase Templates'"
+        ]
+      },
+      {
+        title: "Adding Individual Tasks from the Library",
+        content: [
+          "In the 'Saved Tasks' tab, browse tasks saved by your team",
+          "Check the tasks you want to add to the current phase",
+          "Click 'Add Selected' to append them to the phase task list",
+          "Tasks are added without replacing existing tasks"
+        ]
+      },
+      {
+        title: "Creating a Phase Template",
+        content: [
+          "Set up a phase's task list exactly how you want it",
+          "Open the Task Library modal and go to 'Phase Templates'",
+          "Click 'Save Current Tasks as Template'",
+          "Enter a template name and save — it's now available for all transactions"
+        ]
+      },
+      {
+        title: "Applying a Phase Template",
+        content: [
+          "Open the Task Library modal on any transaction phase",
+          "Go to the 'Phase Templates' tab",
+          "Click 'Apply' on any saved template",
+          "Warning: Applying a template replaces all existing tasks in that phase"
+        ]
+      }
+    ]
+  },
+  {
+    id: "team-management",
+    title: "Teams & Collaborators",
+    icon: "👥",
+    steps: [
+      {
+        title: "Setting Up Teams",
+        content: [
+          "Go to Settings → Team tab (admin/owner only)",
+          "Click 'Create Team' and give it a name",
+          "Add team members by email and assign roles: Team Admin, TC, or Viewer",
+          "Teams segment transactions — TCs only see deals within their team"
+        ]
+      },
+      {
+        title: "Team Roles Explained",
+        content: [
+          "Team Admin: can manage team members and see all team transactions",
+          "TC: can claim and manage deals assigned to their team",
+          "Viewer: read-only access to team transactions",
+          "Platform admins/owners can see all teams and transactions"
+        ]
+      },
+      {
+        title: "Adding Collaborators to a Transaction",
+        content: [
+          "Open a transaction and go to the Overview tab",
+          "Find the 'Collaborators' panel and click 'Add Collaborator'",
+          "Search by email and assign a role: Primary TC, Secondary TC, or Viewer",
+          "Collaborators receive access to that specific transaction"
+        ]
+      },
+      {
+        title: "Pending Deal Queue",
+        content: [
+          "New deals submitted via Agent Intake go into the Pending Queue",
+          "Navigate to 'Pending Queue' in the sidebar to view unclaimed deals",
+          "TCs click 'Claim' to take ownership of a deal",
+          "Admins can force-assign any deal to a specific TC"
+        ]
+      }
+    ]
+  },
+  {
     id: "common-mistakes",
     title: "Common Mistakes",
     icon: "⚠️",
@@ -480,6 +566,65 @@ export const faqSections = [
       {
         question: "How do I invite a new team member?",
         answer: "Go to User Management from the sidebar. Enter their email and assign a role. They'll receive an invitation to create their account."
+      }
+    ]
+  },
+  {
+    title: "Task & Phase Templates",
+    items: [
+      {
+        question: "How do I create a task template?",
+        answer: "Open any transaction's Tasks tab, set up the tasks for a phase the way you want, then click the book icon on that phase card → 'Phase Templates' tab → 'Save Current Tasks as Template'. The template is saved and available for all future transactions."
+      },
+      {
+        question: "Does applying a template delete existing tasks?",
+        answer: "Yes. Applying a phase template replaces all existing tasks in that phase with the template's tasks. Use 'Add Selected' from the Saved Tasks tab if you want to append tasks without replacing."
+      },
+      {
+        question: "Can I save individual tasks to a library?",
+        answer: "Yes. In the Task Library modal under 'Saved Tasks', you can save frequently used tasks by your brokerage and quickly add them to any transaction phase."
+      },
+      {
+        question: "Are templates shared across the team?",
+        answer: "Yes. Templates are saved at the brokerage level and are available to all TCs on your team."
+      }
+    ]
+  },
+  {
+    title: "Teams & Pending Queue",
+    items: [
+      {
+        question: "What is the Pending Deal Queue?",
+        answer: "The Pending Queue (sidebar → 'Pending Queue') shows all deals submitted via Agent Intake that haven't been claimed by a TC yet. TCs claim deals to take ownership. Admins can force-assign deals to specific TCs."
+      },
+      {
+        question: "How do teams work?",
+        answer: "Teams are created in Settings → Team tab. Each team has its own set of TCs. Transactions are assigned to a team, and TCs can only see and claim deals within their team. Admins see all teams."
+      },
+      {
+        question: "What is a deal collaborator?",
+        answer: "Collaborators are additional TCs or viewers added to a specific transaction. A Primary TC has full control, Secondary TCs can assist, and Viewers have read-only access. Add them from the Overview tab."
+      },
+      {
+        question: "Can a TC be on multiple teams?",
+        answer: "Yes. A user can be a member of multiple teams with different roles in each."
+      }
+    ]
+  },
+  {
+    title: "Audit Log",
+    items: [
+      {
+        question: "What does the Audit Log track?",
+        answer: "The Audit Log records all significant actions: phase changes, task completions, document uploads, role changes, deadline edits, and more. It's only visible to Owner/Admin accounts."
+      },
+      {
+        question: "How do I filter the audit log by property?",
+        answer: "Use the 'All Properties' dropdown filter at the top of the Audit Log page to show only events related to a specific transaction/property address."
+      },
+      {
+        question: "Can I see what changed in a specific event?",
+        answer: "Yes. Click any audit log row to open the detail dialog, which shows the 'Before' and 'After' state of the data that was changed."
       }
     ]
   },
