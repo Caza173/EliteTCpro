@@ -1015,10 +1015,6 @@ export default function TransactionDetail() {
                   />
                 </CardContent>
               </Card>
-              <InspectionPanel
-                transaction={transaction}
-                onSave={(changes) => updateMutation.mutate({ id: transaction.id, data: { ...changes, last_activity_at: new Date().toISOString() } })}
-              />
             </div>
           )}
 
