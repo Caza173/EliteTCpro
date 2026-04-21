@@ -11,6 +11,7 @@ import CommPreflightBadge from "./CommPreflightBadge";
 import CommIssueList from "./CommIssueList";
 import CommMessageCard from "./CommMessageCard";
 import ContractDataSnapshot from "./ContractDataSnapshot";
+import FinancialCommitmentEmail from "./FinancialCommitmentEmail";
 
 const TEMPLATE_ORDER = [
   "buyer_under_contract_email",
@@ -179,6 +180,23 @@ export default function UnderContractCommsPanel({ transaction, currentUser }) {
               onUpdated={() => queryClient.invalidateQueries({ queryKey: ["comm-automations", transaction.id] })}
             />
           ))}
+        </div>
+      )}
+
+      {/* Financial Commitment Received — milestone email */}
+      {(transaction.transaction_type === "buyer" || transaction.transaction_type === "dual") &&
+        transaction.financing_contingency_status !== "cleared" && (
+        <div className="space-y-2">
+          <p className="text-xs font-semibold uppercase tracking-wide" style={{ color: "var(--text-muted)" }}>
+            Milestone Emails
+          </p>
+          <FinancialCommitmentEmail transaction={transaction} currentUser={currentUser} />
+        </div>
+      )}
+      {transaction.financing_contingency_status === "cleared" && (
+        <div className="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-2.5 flex items-center gap-2">
+          <CheckCircle2 className="w-4 h-4 text-emerald-500 flex-shrink-0" />
+          <p className="text-xs text-emerald-700 font-medium">Financial Commitment email already sent — financing contingency cleared.</p>
         </div>
       )}
     </div>
