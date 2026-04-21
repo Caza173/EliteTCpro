@@ -364,22 +364,42 @@ function PhaseCard({
       {libraryOpen && (
         <TaskLibraryModal
           phaseNum={phase.phaseNum}
+          phaseLabel={phase.label}
           brokerageId={brokerageId}
+          transactionType={transaction?.transaction_type}
+          currentTasks={phaseTasks}
           onClose={() => setLibraryOpen(false)}
-          onApply={async (items) => {
-            const maxOrder = phaseTasks.length > 0 ? Math.max(...phaseTasks.map(t => t.order_index ?? 0)) + 1 : 0;
-            await Promise.all(items.map((item, i) =>
-              base44.entities.TransactionTask.create({
-                transaction_id: transactionId,
-                brokerage_id: brokerageId,
-                phase: phase.phaseNum,
-                title: item.title,
-                order_index: maxOrder + i,
-                is_completed: false,
-                is_required: item.is_required || false,
-                is_custom: true,
-              })
-            ));
+          onApply={async (items, replaceExisting = false) => {
+            if (replaceExisting) {
+              // Template apply: delete existing phase tasks first, then create template tasks
+              await Promise.all(phaseTasks.map(t => base44.entities.TransactionTask.delete(t.id)));
+              await Promise.all(items.map((item, i) =>
+                base44.entities.TransactionTask.create({
+                  transaction_id: transactionId,
+                  brokerage_id: brokerageId,
+                  phase: phase.phaseNum,
+                  title: item.title,
+                  order_index: i,
+                  is_completed: false,
+                  is_required: item.required || false,
+                  is_custom: true,
+                })
+              ));
+            } else {
+              const maxOrder = phaseTasks.length > 0 ? Math.max(...phaseTasks.map(t => t.order_index ?? 0)) + 1 : 0;
+              await Promise.all(items.map((item, i) =>
+                base44.entities.TransactionTask.create({
+                  transaction_id: transactionId,
+                  brokerage_id: brokerageId,
+                  phase: phase.phaseNum,
+                  title: item.title || item.title,
+                  order_index: maxOrder + i,
+                  is_completed: false,
+                  is_required: item.is_required || item.required || false,
+                  is_custom: true,
+                })
+              ));
+            }
             onTasksChanged?.();
           }}
         />

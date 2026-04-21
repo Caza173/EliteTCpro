@@ -1,0 +1,58 @@
+{
+  "name": "TaskTemplate",
+  "type": "object",
+  "properties": {
+    "brokerage_id": {
+      "type": "string"
+    },
+    "name": {
+      "type": "string",
+      "description": "Template name, e.g. 'Standard Buyer'"
+    },
+    "transaction_type": {
+      "type": "string",
+      "enum": [
+        "buyer",
+        "seller",
+        "dual"
+      ],
+      "default": "buyer"
+    },
+    "phase_num": {
+      "type": "number",
+      "description": "Which phase (1-5) this template applies to"
+    },
+    "phase_label": {
+      "type": "string",
+      "description": "Human-readable phase label"
+    },
+    "tasks": {
+      "type": "array",
+      "description": "Ordered list of task objects",
+      "items": {
+        "type": "object",
+        "properties": {
+          "title": {
+            "type": "string"
+          },
+          "required": {
+            "type": "boolean"
+          }
+        }
+      }
+    },
+    "created_by": {
+      "type": "string"
+    },
+    "is_default": {
+      "type": "boolean",
+      "default": false,
+      "description": "If true, auto-applies to new transactions of this type"
+    }
+  },
+  "required": [
+    "name",
+    "phase_num",
+    "tasks"
+  ]
+}
