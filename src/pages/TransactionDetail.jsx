@@ -27,7 +27,7 @@ import DocChecklistPanel from "../components/transactions/DocChecklistPanel";
 import HealthScoreBadge from "../components/dashboard/HealthScoreBadge";
 import { useCurrentUser } from "../components/auth/useCurrentUser";
 import { useDealAccess } from "../lib/useDealAccess";
-import { evaluateDeadline, getAlertableDeadlines } from "../lib/deadlineUtils";
+import { evaluateDeadline, getAlertableDeadlines } from "../utils/dateUtils";
 import { writeAuditLog, computeHealthScore } from "../components/utils/tenantUtils";
 import FinanceTab from "../components/finance/FinanceTab";
 import TransactionActivityFeed from "../components/transactions/TransactionActivityFeed";

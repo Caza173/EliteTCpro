@@ -14,12 +14,12 @@ import React, { useState } from "react";
 import { base44 } from "@/api/base44Client";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { format, parseISO } from "date-fns";
-import { getTodayLocal, normalizeDeadline, getDaysUntil } from "@/utils/dateUtils";
-import { evaluateDeadline } from "@/lib/deadlineUtils";
+import { getDaysUntil, getDeadlineLabel, getAlertLevel, getAlertableDeadlines, evaluateDeadline } from "@/utils/dateUtils";
+
 import {
-  Pencil, Check, X, Calendar, DollarSign, Home,
+  Pencil, Check, X, Calendar,
   CalendarCheck, CalendarPlus, Loader2, AlertTriangle,
-  Plus, Tag, Zap, CheckCircle2, Trash2,
+  Plus, Zap, CheckCircle2, Trash2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -70,21 +70,24 @@ function getDaysLabel(dateStr, opts = {}) {
   if (!dateStr) return null;
   const days = getDaysUntil(dateStr);
   if (days === null) return null;
-  // Non-actionable dates (e.g. Effective Date) — never show overdue
+  // Non-actionable reference dates (e.g. Effective Date)
   if (opts.nonActionable) {
     if (days === 0) return { label: "Today", cls: "text-blue-600 font-semibold" };
     if (days > 0)   return { label: `${days}d away`, cls: "text-gray-400" };
     return { label: "Reference Date", cls: "text-gray-400" };
   }
-  // EMD with received flag
   if (opts.emdReceived) {
     return { label: "Received", cls: "text-emerald-600 font-semibold" };
   }
-  if (days < 0)  return { label: `${Math.abs(days)}d overdue`, cls: "text-red-600 font-semibold" };
-  if (days === 0) return { label: "Today", cls: "text-orange-600 font-semibold" };
-  if (days <= 3)  return { label: `${days}d left`, cls: "text-amber-600 font-semibold" };
-  if (days <= 7)  return { label: `${days}d left`, cls: "text-yellow-600" };
-  return { label: `${days}d away`, cls: "text-gray-400" };
+  // Use canonical engine classification
+  const level = getAlertLevel(dateStr);
+  const label = getDeadlineLabel(dateStr);
+  const cls =
+    level === "critical" ? "text-red-600 font-semibold" :
+    level === "warning"  ? "text-orange-600 font-semibold" :
+    level === "info"     ? "text-amber-600 font-semibold" :
+    "text-gray-400";
+  return { label, cls };
 }
 
 // ── Single deadline row ──────────────────────────────────────────────────────
