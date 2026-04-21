@@ -70,7 +70,25 @@ Deno.serve(async (req) => {
       last_activity_at: new Date().toISOString(),
     });
 
-    // Notify admins that the deal was claimed
+    // 1. Confirm to the claiming TC
+    await base44.asServiceRole.integrations.Core.SendEmail({
+      to: user.email,
+      from_name: 'EliteTC',
+      subject: `You've Been Assigned a New Deal — ${tx.address}`,
+      body: `
+        <div style="font-family:-apple-system,sans-serif;max-width:520px;margin:0 auto;padding:24px;">
+          <h2 style="color:#0f172a;margin:0 0 12px;">Deal Assigned to You</h2>
+          <p style="color:#475569;font-size:14px;">You have successfully claimed the following deal:</p>
+          <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;padding:16px;margin:16px 0;">
+            <p style="margin:0;font-size:16px;font-weight:600;color:#0f172a;">${tx.address}</p>
+            <p style="margin:4px 0 0;font-size:13px;color:#64748b;">Agent: ${tx.agent || '—'} &nbsp;|&nbsp; Type: ${tx.transaction_type || '—'}</p>
+          </div>
+          <p style="color:#475569;font-size:13px;">Log in to EliteTC to begin managing this transaction.</p>
+        </div>
+      `,
+    }).catch(() => {});
+
+    // 2. Notify admins
     const allUsers = await base44.asServiceRole.entities.User.list();
     const admins = allUsers.filter(u => ['admin', 'owner'].includes(u.role) || u.email === 'nhcazateam@gmail.com');
     await Promise.allSettled(admins.map(admin =>

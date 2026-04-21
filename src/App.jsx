@@ -24,6 +24,7 @@ import TemplateManager from './pages/TemplateManager'
 import TCSignIn from './pages/TCSignIn.jsx'
 import AgentSubmitTransaction from './pages/AgentSubmitTransaction.jsx'
 import TransactionDetail from './pages/TransactionDetail'
+import PendingDeals from './pages/PendingDeals'
 import PortalAccess from './pages/PortalAccess.jsx';
 import { QueryClientProvider } from '@tanstack/react-query'
 import { queryClientInstance } from '@/lib/query-client'
@@ -188,6 +189,13 @@ const AuthenticatedApp = () => {
         <RequireAuth>
           <LayoutWrapper currentPageName="TemplateManager">
             <TemplateManager />
+          </LayoutWrapper>
+        </RequireAuth>
+      } />
+      <Route path="/pending-deals" element={
+        <RequireAuth>
+          <LayoutWrapper currentPageName="PendingDeals">
+            <PendingDeals />
           </LayoutWrapper>
         </RequireAuth>
       } />

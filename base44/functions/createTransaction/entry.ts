@@ -23,6 +23,14 @@ Deno.serve(async (req) => {
       brokerage_id,
     });
 
+    // If newly created deal is pending and unassigned, notify TCs
+    if (tx.status === 'pending' && !tx.assigned_tc_id) {
+      base44.asServiceRole.functions.invoke('notifyTCsOfNewDeal', {
+        transaction_id: tx.id,
+        data: tx,
+      }).catch(e => console.error('notifyTCsOfNewDeal error:', e.message));
+    }
+
     return Response.json(tx);
   } catch (error) {
     console.error('createTransaction error:', error);
