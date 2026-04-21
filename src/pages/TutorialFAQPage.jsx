@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useRef } from "react";
 import { Link } from "react-router-dom";
 import { createPageUrl } from "@/utils";
 import { tutorialSections, faqSections } from "@/lib/helpContent";
@@ -161,11 +161,15 @@ function FAQSection({ section }) {
 export default function TutorialFAQPage() {
   const [activeTab, setActiveTab] = useState("tutorial");
   const [activeSectionId, setActiveSectionId] = useState(tutorialSections[0].id);
+  const mainRef = useRef(null);
 
   const scrollToSection = (id) => {
     setActiveSectionId(id);
-    const el = document.getElementById(id);
-    if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
+    const container = mainRef.current;
+    const el = container?.querySelector(`#${id}`);
+    if (el && container) {
+      container.scrollTo({ top: el.offsetTop - 16, behavior: "smooth" });
+    }
   };
 
   return (
@@ -260,7 +264,7 @@ export default function TutorialFAQPage() {
         </aside>
 
         {/* Main content */}
-        <main className="flex-1 overflow-y-auto p-5 space-y-4">
+        <main ref={mainRef} className="flex-1 overflow-y-auto p-5 space-y-4">
           {/* Page title */}
           <div className="mb-2">
             <p className="text-[10px] font-mono tracking-widest uppercase mb-1" style={{ color: CYAN }}>
