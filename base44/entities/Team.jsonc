@@ -1,0 +1,28 @@
+{
+  "name": "Team",
+  "type": "object",
+  "properties": {
+    "name": {
+      "type": "string",
+      "description": "Team name"
+    },
+    "brokerage_id": {
+      "type": "string",
+      "description": "Reference to Brokerage"
+    },
+    "created_by": {
+      "type": "string",
+      "description": "User ID of the creator"
+    },
+    "is_active": {
+      "type": "boolean",
+      "default": true
+    },
+    "description": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "name"
+  ]
+}

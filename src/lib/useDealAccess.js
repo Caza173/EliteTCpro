@@ -1,13 +1,16 @@
 /**
  * useDealAccess — Centralized role-based deal access control
  *
- * Visibility rules:
+ * BACKEND-ENFORCED: All transaction queries go through getTeamTransactions
+ * which applies team-based isolation server-side.
+ *
+ * Visibility rules (enforced on server):
  *  - Super admin (owner/admin/master): ALL deals
- *  - TC / tc_lead: 
- *      - ALL pending deals (status === "pending")
- *      - Deals where assigned_tc_id === user.id
- *      - Deals where user is a DealCollaborator
- *  - Agent: deals where agent_email matches OR is a collaborator
+ *  - TC / tc_lead: pending team deals + assigned deals
+ *  - Team admin: all deals in their team(s)
+ *  - Viewer: all deals in their team(s), read-only
+ *  - Agent: only their own deals (by agent_email)
+ *  - Client: only their deal (by client_email)
  */
 import { useQuery } from "@tanstack/react-query";
 import { base44 } from "@/api/base44Client";
@@ -25,52 +28,27 @@ export function isTC(user) {
 export function useDealAccess() {
   const { data: currentUser, isLoading: userLoading } = useCurrentUser();
 
-  const { data: allTransactions = [], isLoading: txLoading } = useQuery({
-    queryKey: ["transactions", "all"],
-    queryFn: () => base44.entities.Transaction.list("-created_date"),
+  // Server-enforced team-scoped query — replaces raw entity.list()
+  const { data: serverData, isLoading: txLoading } = useQuery({
+    queryKey: ["transactions"],
+    queryFn: () =>
+      base44.functions.invoke("getTeamTransactions", { sort: "-created_date", limit: 200 })
+        .then(r => r.data?.transactions || []),
     enabled: !!currentUser,
     staleTime: 30_000,
   });
 
-  const { data: myCollaborations = [], isLoading: collabLoading } = useQuery({
-    queryKey: ["dealCollaborators", currentUser?.email],
-    queryFn: () => base44.entities.DealCollaborator.filter({ user_email: currentUser.email }),
-    enabled: !!currentUser && !isSuperAdmin(currentUser),
-    staleTime: 30_000,
-  });
+  const allTransactions = serverData || [];
+  const isLoading = userLoading || txLoading;
 
-  const isLoading = userLoading || txLoading || (!isSuperAdmin(currentUser) && !!currentUser && collabLoading);
+  // All transactions returned by the server are already access-controlled
+  // so we can treat the full list as "accessible"
+  const transactions = allTransactions;
 
-  const accessibleDealIds = (() => {
-    if (!currentUser) return new Set();
-    if (isSuperAdmin(currentUser)) return new Set(allTransactions.map(t => t.id));
-
-    const collabDealIds = new Set(myCollaborations.map(c => c.deal_id));
-    const userIsTC = isTC(currentUser);
-
-    return new Set(
-      allTransactions
-        .filter(t =>
-          // All pending deals visible to TCs (for claiming)
-          (userIsTC && t.status === "pending") ||
-          // Assigned to this TC
-          t.assigned_tc_id === currentUser.id ||
-          t.assigned_tc_email === currentUser.email ||
-          // Legacy: agent email match
-          t.agent_email === currentUser.email ||
-          // Collaborator
-          collabDealIds.has(t.id)
-        )
-        .map(t => t.id)
-    );
-  })();
-
-  const transactions = isSuperAdmin(currentUser)
-    ? allTransactions
-    : allTransactions.filter(t => accessibleDealIds.has(t.id));
+  const accessibleDealIds = new Set(allTransactions.map(t => t.id));
 
   // Derived views
-  const pendingDeals = allTransactions.filter(t => t.status === "pending");
+  const pendingDeals = allTransactions.filter(t => t.status === "pending" && !t.assigned_tc_id);
   const myDeals = allTransactions.filter(t =>
     t.assigned_tc_id === currentUser?.id || t.assigned_tc_email === currentUser?.email
   );

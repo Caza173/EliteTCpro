@@ -18,9 +18,17 @@ Deno.serve(async (req) => {
       return Response.json({ error: 'No brokerage found' }, { status: 400 });
     }
 
+    // Resolve team_id: use provided or default to creator's first team
+    let team_id = body.team_id || null;
+    if (!team_id) {
+      const memberships = await base44.asServiceRole.entities.TeamMember.filter({ user_id: user.id });
+      if (memberships.length) team_id = memberships[0].team_id;
+    }
+
     const tx = await base44.asServiceRole.entities.Transaction.create({
       ...body,
       brokerage_id,
+      team_id: team_id || null,
     });
 
     // If newly created deal is pending and unassigned, notify TCs

@@ -1,0 +1,46 @@
+{
+  "name": "TeamMember",
+  "type": "object",
+  "properties": {
+    "team_id": {
+      "type": "string",
+      "description": "Reference to Team"
+    },
+    "user_id": {
+      "type": "string",
+      "description": "Reference to User"
+    },
+    "user_email": {
+      "type": "string",
+      "description": "Denormalized email for fast lookup"
+    },
+    "user_name": {
+      "type": "string",
+      "description": "Denormalized name for display"
+    },
+    "role": {
+      "type": "string",
+      "enum": [
+        "team_admin",
+        "tc",
+        "viewer"
+      ],
+      "default": "tc",
+      "description": "Role within this team"
+    },
+    "is_primary": {
+      "type": "boolean",
+      "default": false,
+      "description": "Whether this member is the primary TC for the team"
+    },
+    "added_by": {
+      "type": "string",
+      "description": "Email of user who added this member"
+    }
+  },
+  "required": [
+    "team_id",
+    "user_id",
+    "user_email"
+  ]
+}

@@ -30,6 +30,15 @@ Deno.serve(async (req) => {
     const tx = txList[0];
     if (!tx) return Response.json({ error: 'Transaction not found' }, { status: 404 });
 
+    // Team membership enforcement: TC must be in the same team as the deal
+    if (!isAdmin && tx.team_id) {
+      const memberships = await base44.asServiceRole.entities.TeamMember.filter({ user_id: user.id });
+      const memberTeamIds = memberships.map(m => m.team_id);
+      if (!memberTeamIds.includes(tx.team_id)) {
+        return Response.json({ error: 'You are not a member of this deal\'s team' }, { status: 403 });
+      }
+    }
+
     // Admin forced assignment
     if (isAdmin && force_assign_to_user_id) {
       await base44.asServiceRole.entities.Transaction.update(transaction_id, {

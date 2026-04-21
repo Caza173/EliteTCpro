@@ -15,6 +15,7 @@ import TemplateLibraryPanel from "../components/templates/TemplateLibraryPanel";
 import FeedbackModal from "../components/feedback/FeedbackModal";
 import MyFeedbackSection from "../components/feedback/MyFeedbackSection";
 import ProfileTab from "../components/settings/ProfileTab";
+import TeamManagementPanel from "../components/teams/TeamManagementPanel";
 
 export default function Settings() {
   const { data: currentUser } = useCurrentUser();
@@ -211,6 +212,7 @@ export default function Settings() {
       {/* ── Team ── */}
       {activeTab === "team" && isTCOrAdmin(currentUser) && (
         <div className="space-y-4">
+          {/* Invite User */}
           <Card className="shadow-sm border-gray-100">
             <CardHeader className="pb-3">
               <CardTitle className="text-base font-semibold flex items-center gap-2">
@@ -236,11 +238,12 @@ export default function Settings() {
             </CardContent>
           </Card>
 
+          {/* User Roles */}
           {allUsers.length > 0 && (
             <Card className="shadow-sm border-gray-100">
               <CardHeader className="pb-3">
                 <CardTitle className="text-base font-semibold flex items-center gap-2">
-                  <Users className="w-4 h-4" /> Team Members ({allUsers.length})
+                  <Users className="w-4 h-4" /> Users & Roles ({allUsers.length})
                 </CardTitle>
               </CardHeader>
               <CardContent>
@@ -278,6 +281,19 @@ export default function Settings() {
               </CardContent>
             </Card>
           )}
+
+          {/* Team Management */}
+          <Card className="shadow-sm border-gray-100">
+            <CardHeader className="pb-3">
+              <CardTitle className="text-base font-semibold flex items-center gap-2">
+                <Users className="w-4 h-4 text-blue-500" /> Team Management
+              </CardTitle>
+              <p className="text-xs text-gray-400 mt-0.5">Organize TCs into teams. Each team controls which deals members can see.</p>
+            </CardHeader>
+            <CardContent>
+              <TeamManagementPanel currentUser={currentUser} allUsers={allUsers} />
+            </CardContent>
+          </Card>
         </div>
       )}
 

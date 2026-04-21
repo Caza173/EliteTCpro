@@ -206,7 +206,8 @@ export default function PendingDeals() {
 
   const { data: allDeals = [], isLoading, refetch } = useQuery({
     queryKey: ["pending-deals-page"],
-    queryFn: () => base44.entities.Transaction.filter({ status: "pending" }, "-created_date"),
+    queryFn: () => base44.functions.invoke("getTeamTransactions", { status: "pending", sort: "-created_date" })
+      .then(r => r.data?.transactions || []),
     enabled: !!currentUser,
     staleTime: 10_000,
     refetchInterval: 30_000,
