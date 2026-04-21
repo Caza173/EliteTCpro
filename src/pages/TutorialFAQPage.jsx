@@ -184,16 +184,7 @@ export default function TutorialFAQPage() {
           <span className="text-slate-600 font-mono text-xs">/</span>
           <span className="text-xs font-mono tracking-widest uppercase" style={{ color: CYAN }}>Help_Center</span>
         </div>
-        <div className="flex items-center gap-2">
-          <Link to={createPageUrl("AddTransaction")}>
-            <button
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded text-xs font-mono border transition-all hover:bg-cyan-400/10"
-              style={{ borderColor: "rgba(0,245,255,0.3)", color: CYAN }}
-            >
-              <Plus className="w-3 h-3" /> NEW_TRANSACTION
-            </button>
-          </Link>
-        </div>
+
       </div>
 
       <div className="flex h-[calc(100vh-112px)]">
