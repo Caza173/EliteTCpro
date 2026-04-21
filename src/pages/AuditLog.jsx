@@ -89,6 +89,7 @@ export default function AuditLogPage() {
   const [selectedLog, setSelectedLog] = useState(null);
   const [actionFilter, setActionFilter] = useState("all");
   const [entityFilter, setEntityFilter] = useState("all");
+  const [propertyFilter, setPropertyFilter] = useState("all");
 
   const { data: logs = [], isLoading } = useQuery({
     queryKey: ["auditLogs", currentUser?.brokerage_id],
@@ -123,7 +124,8 @@ export default function AuditLogPage() {
       l.description?.toLowerCase().includes(search.toLowerCase());
     const matchesAction = actionFilter === "all" || l.action === actionFilter;
     const matchesEntity = entityFilter === "all" || l.entity_type === entityFilter;
-    return matchesSearch && matchesAction && matchesEntity;
+    const matchesProperty = propertyFilter === "all" || l.transaction_id === propertyFilter;
+    return matchesSearch && matchesAction && matchesEntity && matchesProperty;
   });
 
   return (
@@ -163,9 +165,20 @@ export default function AuditLogPage() {
               ))}
             </SelectContent>
           </Select>
-          {(actionFilter !== "all" || entityFilter !== "all" || search) && (
+          <Select value={propertyFilter} onValueChange={setPropertyFilter}>
+            <SelectTrigger className="w-52 h-9 text-xs">
+              <SelectValue placeholder="All Properties" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Properties</SelectItem>
+              {transactions.filter(t => logs.some(l => l.transaction_id === t.id)).map(t => (
+                <SelectItem key={t.id} value={t.id}>{t.address}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          {(actionFilter !== "all" || entityFilter !== "all" || propertyFilter !== "all" || search) && (
             <button
-              onClick={() => { setActionFilter("all"); setEntityFilter("all"); setSearch(""); }}
+              onClick={() => { setActionFilter("all"); setEntityFilter("all"); setPropertyFilter("all"); setSearch(""); }}
               className="text-xs text-gray-400 hover:text-gray-600 flex items-center gap-1 px-2"
             >
               <X className="w-3.5 h-3.5" /> Clear
