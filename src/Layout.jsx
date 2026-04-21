@@ -59,11 +59,11 @@ const OWNER_NAV = [
   { label: "Pending Queue",  page: "PendingDeals",   icon: Inbox, path: "/pending-deals" },
   { label: "Addendum Builder",page: "AddendumBuilder",  icon: ClipboardList },
   { label: "Templates",      page: "TemplateManager", icon: Layers },
-  { label: "Billing",          page: "Billing",          icon: CreditCard },
   { label: "Audit Log",      page: "AuditLog",       icon: Shield },
   { label: "Feedback Center",page: "FeedbackCenter", icon: MessageSquarePlus },
   { label: "Integrations",   page: "Integrations", icon: Plug },
   { label: "Help & Training", page: "help",            icon: HelpCircle, path: "/help" },
+  { label: "Billing",          page: "Billing",          icon: CreditCard },
   { label: "Settings",       page: "Settings",       icon: Settings },
 ];
 
