@@ -743,64 +743,60 @@ export default function TransactionDetail() {
         </div>
       )}
 
-      {/* ── TOP HEADER BAR — sticky ── */}
-      <div className="flex-shrink-0 px-5 pt-4 pb-3 border-b" style={{ borderColor: "var(--card-border)", background: "var(--bg-secondary)", position: "sticky", top: 0, zIndex: 20 }}>
-        {/* Row 1: Back + address + badges */}
-        <div className="flex flex-wrap items-center gap-3 mb-2">
+      {/* ── TOP HEADER BAR — Consolidated Command Bar ── */}
+      <div className="flex-shrink-0" style={{ background: "#0F172A", position: "sticky", top: 0, zIndex: 20 }}>
+
+        {/* Main command row */}
+        <div className="flex items-center gap-0 px-4 py-3">
+          {/* Back */}
           <Link to={createPageUrl(
             currentUser?.role === "agent" || currentUser?.role === "user" ? "AgentPortal"
             : currentUser?.role === "client" ? "ClientPortal"
             : "Transactions"
-          )}>
-            <Button variant="ghost" size="sm" className="text-gray-500 hover:text-gray-800 -ml-2 h-8">
-              <ArrowLeft className="w-4 h-4 mr-1" /> Back
-            </Button>
+          )} className="flex items-center gap-1.5 text-slate-400 hover:text-white text-sm font-medium flex-shrink-0 transition-colors">
+            <ArrowLeft className="w-4 h-4" /> Back
           </Link>
-          <div className="flex items-center gap-2 flex-wrap min-w-0">
-            <div className="w-8 h-8 rounded-lg bg-blue-50 flex items-center justify-center flex-shrink-0">
-              <MapPin className="w-4 h-4 text-blue-500" />
-            </div>
-            <EditableAddress
+
+          {/* Divider */}
+          <span className="mx-3 text-slate-600 select-none">|</span>
+
+          {/* Address + badges */}
+          <div className="flex items-center gap-2 flex-wrap min-w-0 flex-1">
+            <EditableAddressDark
               value={transaction.address}
               onSave={v => updateMutation.mutate({ id: transaction.id, data: { address: v } })}
             />
-            <Badge variant="outline" className={`text-xs capitalize flex-shrink-0 ${statusStyles[transaction.status] || statusStyles.active}`}>
+            {/* Status badge */}
+            <span className={`text-[11px] font-semibold px-2 py-0.5 rounded border flex-shrink-0 ${
+              transaction.status === "active" ? "bg-emerald-500/20 text-emerald-300 border-emerald-500/40"
+              : transaction.status === "closed" ? "bg-slate-500/20 text-slate-300 border-slate-500/40"
+              : transaction.status === "cancelled" ? "bg-red-500/20 text-red-300 border-red-500/40"
+              : "bg-amber-500/20 text-amber-300 border-amber-500/40"
+            }`}>
               {transaction.status || "active"}
-            </Badge>
-            {/* Deal origin / type badge */}
+            </span>
+            {/* Deal type badge */}
             {(() => {
               const isBuyer = transaction.deal_origin === "buyer" || (transaction.transaction_type === "buyer" && transaction.deal_origin !== "listing");
               const isListingUC = (transaction.deal_origin === "listing" || transaction.transaction_type === "seller") && transaction.transaction_phase === "under_contract";
-              const isListing = (transaction.deal_origin === "listing" || transaction.transaction_type === "seller") && !isListingUC;
-              if (isBuyer) return (
-                <Badge variant="outline" className="text-xs font-semibold flex-shrink-0 bg-blue-50 text-blue-700 border-blue-300">
-                  🔵 Buyer Transaction
-                </Badge>
-              );
-              if (isListingUC) return (
-                <Badge variant="outline" className="text-xs font-semibold flex-shrink-0 bg-purple-50 text-purple-700 border-purple-300">
-                  🟣 Listing → Under Contract
-                </Badge>
-              );
-              return (
-                <Badge variant="outline" className="text-xs font-semibold flex-shrink-0 bg-emerald-50 text-emerald-700 border-emerald-300">
-                  🟢 Listing
-                </Badge>
-              );
+              if (isBuyer) return <span className="text-[11px] font-semibold px-2 py-0.5 rounded border flex-shrink-0 bg-blue-500/20 text-blue-300 border-blue-500/40">Buyer Transaction</span>;
+              if (isListingUC) return <span className="text-[11px] font-semibold px-2 py-0.5 rounded border flex-shrink-0 bg-purple-500/20 text-purple-300 border-purple-500/40">Listing → Under Contract</span>;
+              return <span className="text-[11px] font-semibold px-2 py-0.5 rounded border flex-shrink-0 bg-teal-500/20 text-teal-300 border-teal-500/40">Listing</span>;
             })()}
-            <HealthScoreBadge
-              healthScore={transaction.health_score ?? computeHealthScore(transaction, checklistItems).health_score}
-              riskLevel={transaction.risk_level ?? computeHealthScore(transaction, checklistItems).risk_level}
-            />
-
+            {/* Health score */}
+            <span className="text-[11px] font-semibold px-2 py-0.5 rounded border flex-shrink-0 bg-slate-700/60 text-slate-300 border-slate-600">
+              Health: {transaction.health_score ?? computeHealthScore(transaction, checklistItems).health_score}
+            </span>
           </div>
-        </div>
 
-        {/* Row 2: Actions */}
-        <div className="flex flex-wrap items-center gap-1.5 mb-2">
+          {/* Icon-only action toolbar */}
+          <div className="flex items-center gap-0.5 flex-shrink-0 ml-3">
+            {/* Status select — compact */}
             <Select value={transaction.transaction_phase || "intake"}
               onValueChange={(v) => updateMutation.mutate({ id: transaction.id, data: { transaction_phase: v, last_activity_at: new Date().toISOString() } })}>
-              <SelectTrigger className="h-8 w-38 text-xs"><SelectValue /></SelectTrigger>
+              <SelectTrigger className="h-8 w-28 text-[11px] border-slate-600 bg-slate-800 text-slate-300 hover:bg-slate-700 focus:ring-0 focus:ring-offset-0 rounded-lg mr-2">
+                <SelectValue />
+              </SelectTrigger>
               <SelectContent>
                 <SelectItem value="active">Active</SelectItem>
                 <SelectItem value="under_contract">Under Contract</SelectItem>
@@ -811,40 +807,67 @@ export default function TransactionDetail() {
                 <SelectItem value="terminated">Terminated</SelectItem>
               </SelectContent>
             </Select>
-            <Button variant="outline" size="sm" className="h-8 text-blue-600 hover:bg-blue-50 border-blue-200" onClick={() => setEmailModalOpen(true)}>
-              <MailIcon className="w-3.5 h-3.5 mr-1" /> Email
-            </Button>
-            <UnderContractEmailButton transaction={transaction} currentUser={currentUser} documents={documents} />
-            <Button variant="outline" size="sm" className="h-8 text-indigo-600 hover:bg-indigo-50 border-indigo-200" onClick={() => setInviteModalOpen(true)} disabled={invitingClient}>
-              <UserPlus className="w-3.5 h-3.5 mr-1" />{invitingClient ? "Sending…" : "Invite"}
-            </Button>
-            <MarkUnderContractButton transaction={transaction} onConverted={() => queryClient.invalidateQueries({ queryKey: ["transactions"] })} />
-            <Button variant="outline" size="sm" className="h-8 text-red-600 hover:bg-red-50 border-red-200" onClick={() => setConfirmDelete(true)}>
-              <Trash2 className="w-3.5 h-3.5" />
-            </Button>
-            <QuickFeedbackButton defaultType="bug" label="Report" variant="badge"
-              className="border-orange-300 text-orange-500 hover:border-orange-400 hover:bg-orange-50 h-8"
-              context={{ transaction_id: transaction?.id, transaction_address: transaction?.address, route_name: "Transaction Page" }} />
-            <Button size="sm" className="h-8 bg-blue-600 hover:bg-blue-700 text-white gap-1.5 ml-auto" onClick={() => setMobileAIOpen(true)}>
-              <Bot className="w-3.5 h-3.5" /> Ask AI
-            </Button>
-          </div>
 
-        {/* Row 3: Meta strip + attention items */}
-        <div className="flex flex-wrap items-center gap-4">
-        <div className="flex flex-wrap items-center gap-3 text-xs" style={{ color: "var(--text-muted)" }}>
-          {transaction.contract_date && <span><span className="font-medium" style={{ color: "var(--text-secondary)" }}>Contract:</span> {transaction.contract_date}</span>}
-          {transaction.closing_date && <span><span className="font-medium" style={{ color: "var(--text-secondary)" }}>Closing:</span> {transaction.closing_date}</span>}
-          {transaction.sale_price && <span><span className="font-medium" style={{ color: "var(--text-secondary)" }}>Price:</span> ${transaction.sale_price?.toLocaleString()}</span>}
-          {transaction.is_cash_transaction && <span className="text-emerald-600 font-semibold">Cash</span>}
+            <IconAction icon={MailIcon} label="Email" onClick={() => setEmailModalOpen(true)} />
+            <UnderContractEmailButton transaction={transaction} currentUser={currentUser} documents={documents} iconOnly />
+            <IconAction icon={UserPlus} label="Invite" onClick={() => setInviteModalOpen(true)} disabled={invitingClient} />
+            <MarkUnderContractButton transaction={transaction} onConverted={() => queryClient.invalidateQueries({ queryKey: ["transactions"] })} iconOnly />
+            <IconAction icon={Trash2} label="Delete" onClick={() => setConfirmDelete(true)} danger />
+            {/* AI button — slightly highlighted */}
+            <button
+              onClick={() => setMobileAIOpen(true)}
+              title="Ask AI"
+              className="flex flex-col items-center gap-0.5 px-2.5 py-1.5 rounded-lg transition-colors hover:bg-slate-700 ml-1"
+              style={{ background: "rgba(99,102,241,0.25)", border: "1px solid rgba(99,102,241,0.4)" }}
+            >
+              <Bot className="w-4 h-4 text-indigo-300" />
+              <span className="text-[9px] text-indigo-300 font-medium leading-none">Ask AI</span>
+            </button>
+          </div>
+        </div>
+
+        {/* Meta strip row */}
+        <div className="flex items-center gap-4 px-4 pb-2 text-xs" style={{ color: "#94A3B8" }}>
+          {transaction.contract_date && (
+            <span>Contract: <span className="text-slate-200 font-medium">{transaction.contract_date}</span></span>
+          )}
+          {transaction.closing_date && (
+            <span>Closing: <span className="text-slate-200 font-medium">{transaction.closing_date}</span></span>
+          )}
+          {transaction.sale_price && (
+            <span>Price: <span className="text-slate-200 font-medium">${transaction.sale_price?.toLocaleString()}</span></span>
+          )}
+          {transaction.is_cash_transaction && <span className="text-emerald-400 font-semibold">Cash</span>}
           {(transaction.property_type || "residential") !== "land" && (
             <YearBuiltBadge
               value={transaction.year_built}
               onSave={v => updateMutation.mutate({ id: transaction.id, data: { year_built: v, last_activity_at: new Date().toISOString() } })}
+              dark
             />
           )}
         </div>
 
+        {/* Phase stepper row */}
+        <div className="flex items-center gap-1 px-4 py-2 border-t overflow-x-auto scrollbar-none" style={{ borderColor: "#1E293B", background: "#0A1628" }}>
+          {["Pre-Contract","Offer","Escrow","Inspection","Financing","Closing"].map((step, i, arr) => {
+            const phaseNum = i + 1;
+            const isCompleted = (transaction.phases_completed || []).includes(phaseNum);
+            const isCurrent = (transaction.phase || 1) === phaseNum;
+            return (
+              <React.Fragment key={step}>
+                <span className={`text-xs font-semibold whitespace-nowrap flex-shrink-0 ${
+                  isCompleted ? "text-emerald-400"
+                  : isCurrent ? "text-white"
+                  : "text-slate-500"
+                }`} style={isCurrent ? { fontWeight: 700 } : {}}>
+                  {step}
+                </span>
+                {i < arr.length - 1 && (
+                  <span className="text-slate-600 mx-1 flex-shrink-0">→</span>
+                )}
+              </React.Fragment>
+            );
+          })}
         </div>
       </div>
 
@@ -1132,6 +1155,56 @@ function InfoItem({ icon: Icon, label, value, highlight }) {
   );
 }
 
+// ── Dark-theme editable address for command bar ──────────────────────────────
+function EditableAddressDark({ value, onSave }) {
+  const [editing, setEditing] = useState(false);
+  const [draft, setDraft] = useState(value || "");
+
+  const handleSave = () => {
+    setEditing(false);
+    if (draft.trim() && draft.trim() !== value) onSave(draft.trim());
+  };
+
+  return editing ? (
+    <div className="flex items-center gap-1">
+      <input
+        className="text-xl font-bold bg-slate-700 border border-slate-500 rounded px-2 py-0.5 text-white focus:outline-none focus:ring-1 focus:ring-blue-400 w-72"
+        value={draft}
+        onChange={e => setDraft(e.target.value)}
+        onBlur={handleSave}
+        onKeyDown={e => { if (e.key === "Enter") handleSave(); if (e.key === "Escape") setEditing(false); }}
+        autoFocus
+      />
+      <button onClick={handleSave} className="text-blue-400 text-xs font-semibold px-1">✓</button>
+      <button onClick={() => setEditing(false)} className="text-slate-400 text-xs px-1">✕</button>
+    </div>
+  ) : (
+    <div className="flex items-center gap-1.5 group cursor-pointer" onClick={() => { setDraft(value || ""); setEditing(true); }}>
+      <span className="text-xl font-bold text-white">{value}</span>
+      <Pencil className="w-3.5 h-3.5 text-slate-500 opacity-0 group-hover:opacity-100 transition-opacity" />
+    </div>
+  );
+}
+
+// ── Icon-only action button for command bar ───────────────────────────────────
+function IconAction({ icon: Icon, label, onClick, disabled, danger }) {
+  return (
+    <button
+      onClick={onClick}
+      disabled={disabled}
+      title={label}
+      className={`flex flex-col items-center gap-0.5 px-2.5 py-1.5 rounded-lg transition-colors disabled:opacity-40 ${
+        danger
+          ? "hover:bg-red-900/40 text-red-400 hover:text-red-300"
+          : "hover:bg-slate-700 text-slate-400 hover:text-slate-200"
+      }`}
+    >
+      <Icon className="w-4 h-4" />
+      <span className="text-[9px] font-medium leading-none">{label}</span>
+    </button>
+  );
+}
+
 function EditableAddress({ value, onSave }) {
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState(value || "");
@@ -1226,7 +1299,7 @@ function ClientEmailsField({ emails, onSave }) {
   );
 }
 
-function YearBuiltBadge({ value, onSave }) {
+function YearBuiltBadge({ value, onSave, dark }) {
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState(value || "");
   const yr = value ? Number(value) : null;
@@ -1238,10 +1311,13 @@ function YearBuiltBadge({ value, onSave }) {
     if (num !== value) onSave(num);
   };
 
+  const textColor = dark ? "#94A3B8" : "var(--text-secondary)";
+  const valueColor = dark ? "#E2E8F0" : "var(--text-primary)";
+
   if (editing) {
     return (
       <span className="flex items-center gap-1">
-        <span className="font-medium" style={{ color: "var(--text-secondary)" }}>Year Built:</span>
+        <span className="font-medium" style={{ color: textColor }}>Year Built:</span>
         <input
           type="number"
           min="1600"
@@ -1250,7 +1326,7 @@ function YearBuiltBadge({ value, onSave }) {
           onChange={e => setDraft(e.target.value)}
           onBlur={handleSave}
           onKeyDown={e => { if (e.key === "Enter") handleSave(); if (e.key === "Escape") setEditing(false); }}
-          className="w-20 h-5 text-xs border border-blue-300 rounded px-1 focus:outline-none focus:ring-1 focus:ring-blue-400"
+          className={`w-20 h-5 text-xs border rounded px-1 focus:outline-none focus:ring-1 focus:ring-blue-400 ${dark ? "bg-slate-700 border-slate-500 text-white" : "border-blue-300"}`}
           autoFocus
         />
       </span>
@@ -1259,15 +1335,16 @@ function YearBuiltBadge({ value, onSave }) {
 
   return (
     <span
-      className={`flex items-center gap-1 cursor-pointer group ${isPreLead ? "text-amber-600 font-semibold" : ""}`}
+      className={`flex items-center gap-1 cursor-pointer group ${isPreLead ? "font-semibold" : ""}`}
+      style={{ color: isPreLead ? (dark ? "#FCD34D" : "#D97706") : valueColor }}
       onClick={() => { setDraft(value || ""); setEditing(true); }}
       title="Click to edit Year Built"
     >
-      <span className="font-medium" style={{ color: "var(--text-secondary)" }}>Year Built:</span>
+      <span className="font-medium" style={{ color: textColor }}>Year Built:</span>
       {yr ? (
         <>
           {yr}
-          {isPreLead && <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-amber-100 border border-amber-300 text-amber-700 font-bold ml-1">⚠ Lead Paint</span>}
+          {isPreLead && <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-bold ml-1 ${dark ? "bg-amber-900/50 border border-amber-600/50 text-amber-300" : "bg-amber-100 border border-amber-300 text-amber-700"}`}>⚠ Lead Paint</span>}
         </>
       ) : (
         <span className="italic opacity-60">Add year</span>
