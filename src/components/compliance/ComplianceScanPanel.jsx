@@ -248,7 +248,7 @@ function ReportCard({ report, onRescan, onAddTask, scanning, transaction, linked
                 <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide">
                   Issues ({visible.length}{dismissedIds.size > 0 ? ` · ${dismissedIds.size} dismissed` : ""}) — {criticals.length} critical · {highs.length} high · {mediums.length} medium · {lows.length} low
                 </p>
-                {[...criticals, ...highs, ...mediums, ...lows].map((issue, i) => (
+                {[...criticals, ...highs, ...mediums, ...lows].filter(issue => !dismissedIds.has(issue.id || issue.description || JSON.stringify(issue))).map((issue, i) => (
                   <IssueCard key={issue.id || i} issue={issue} onAddTask={onAddTask} transaction={transaction} allIssues={all} linkedDoc={linkedDoc} onViewDoc={onViewDoc} onDismiss={handleDismiss} />
                 ))}
               </div>
