@@ -456,14 +456,13 @@ export default function ComplianceScanPanel({ transaction, currentUser }) {
     updateTxMutation.mutate({ tasks: updatedTasks, last_activity_at: new Date().toISOString() });
   };
 
-  const allBlockers = reports.flatMap(r => [
-    ...(r.blockers || []),
-    ...(r.all_issues || []).filter(i => i.severity === "critical" || i.severity === "blocker"),
-  ]);
-  const allWarnings = reports.flatMap(r => [
-    ...(r.warnings || []),
-    ...(r.all_issues || []).filter(i => i.severity === "high" || i.severity === "medium" || i.severity === "warning"),
-  ]);
+  const isDismissed = (issue) => dismissedIds.has(issue.id || issue.description || JSON.stringify(issue));
+  const allBlockers = reports.flatMap(r =>
+    (r.all_issues || r.blockers || []).filter(i => (i.severity === "critical" || i.severity === "blocker") && !isDismissed(i))
+  );
+  const allWarnings = reports.flatMap(r =>
+    (r.all_issues || r.warnings || []).filter(i => (i.severity === "high" || i.severity === "medium" || i.severity === "warning") && !isDismissed(i))
+  );
   const avgScore = reports.length > 0
     ? Math.round(reports.reduce((sum, r) => sum + (r.compliance_score || 100), 0) / reports.length)
     : null;

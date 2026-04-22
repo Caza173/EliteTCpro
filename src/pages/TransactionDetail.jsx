@@ -667,7 +667,14 @@ export default function TransactionDetail() {
   const totalDeadlineBadge = overdueDeadlineCount + approachingDeadlineCount;
   const overdueTaskCount = overdueTasks.length;
   const missingDocCount = checklistItems.filter(i => i.required && i.status === "missing").length;
-  const complianceBlockerCount = complianceReports.reduce((sum, r) => sum + (r.blockers?.length || 0), 0);
+  const complianceBlockerCount = complianceReports.reduce((sum, r) => {
+    const all = r.all_issues || r.blockers || [];
+    const visible = all.filter(i => {
+      const key = i.id || i.description || JSON.stringify(i);
+      return !dismissedIssueIds.has(key);
+    });
+    return sum + visible.filter(i => i.severity === "critical" || i.severity === "blocker").length;
+  }, 0);
   const issuesBadgeCount = allDetectedIssues.filter(i => !dismissedIssueIds.has(i.id)).length;
 
   const TAB_BADGES = {
