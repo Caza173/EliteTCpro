@@ -246,6 +246,7 @@ export default function AgentIntake() {
   const [buyers, setBuyers] = useState([""]);
   const [sellers, setSellers] = useState([""]);
   const [clientEmails, setClientEmails] = useState([""]);
+  const [clientPhones, setClientPhones] = useState([""]);
   const [parsedData, setParsedData] = useState(null);
   const [documentUrl, setDocumentUrl] = useState(null);
   const [documentName, setDocumentName] = useState(null);
@@ -265,7 +266,7 @@ export default function AgentIntake() {
     setDealType(type); setDocType("ps"); setParsedData(null);
     setDocumentUrl(null); setDocumentName(null);
     setEmailVerified(false); setShowOTP(false);
-    setBuyers([""]); setSellers([""]); setClientEmails([""]);
+    setBuyers([""]); setSellers([""]); setClientEmails([""]); setClientPhones([""]);
     if (type === "listing") setForm({ ...initialListing });
     else if (type === "both") setForm({ ...initialBoth });
     else if (type === "seller_uc") setForm({ ...initialBuyerUC, transaction_type: "seller" });
@@ -388,6 +389,7 @@ export default function AgentIntake() {
 
     setSubmitting(true);
     const cleanClientEmails = clientEmails.filter(Boolean);
+    const cleanClientPhones = clientPhones.filter(Boolean);
     const buyerList = buyers.filter(Boolean);
     const sellerList = sellers.filter(Boolean);
 
@@ -396,6 +398,7 @@ export default function AgentIntake() {
         deal_type: isBuyerAgency ? "buyer_agency" : isSellerUC ? "seller_uc" : dealType,
         form_data: {
           ...form,
+          client_phones: cleanClientPhones,
           sale_price: form.sale_price ? Number(form.sale_price) : undefined,
           is_cash_transaction: form.is_cash_transaction || false,
           inspections_waived: form.inspections_waived || false,
@@ -718,7 +721,7 @@ export default function AgentIntake() {
                 <Separator />
                 <AgentContactSection form={form} set={set} />
                 <Separator />
-                <ClientContactSection clientEmails={clientEmails} setClientEmails={setClientEmails} form={form} set={set} />
+                <ClientContactSection clientEmails={clientEmails} setClientEmails={setClientEmails} clientPhones={clientPhones} setClientPhones={setClientPhones} form={form} set={set} />
               </>
             ) : (
               /* ── STANDARD FORM ── */
@@ -799,7 +802,7 @@ export default function AgentIntake() {
                   </div>
                 </Section>
                 <Separator />
-                <ClientContactSection clientEmails={clientEmails} setClientEmails={setClientEmails} form={form} set={set} />
+                <ClientContactSection clientEmails={clientEmails} setClientEmails={setClientEmails} clientPhones={clientPhones} setClientPhones={setClientPhones} form={form} set={set} />
                 {isListing && (
                   <>
                     <Separator />
@@ -910,7 +913,7 @@ function AgentContactSection({ form, set, onEmailChange }) {
   );
 }
 
-function ClientContactSection({ clientEmails, setClientEmails, form, set }) {
+function ClientContactSection({ clientEmails, setClientEmails, clientPhones, setClientPhones, form, set }) {
   return (
     <Section label="Client Contact">
       <div className="space-y-2">
@@ -930,9 +933,23 @@ function ClientContactSection({ clientEmails, setClientEmails, form, set }) {
           <Plus className="w-3 h-3 mr-1" /> Add Another Email
         </Button>
       </div>
-      <F label="Client Phone" id="client_phone">
-        <Input id="client_phone" type="tel" value={form.client_phone || ""} onChange={e => set("client_phone", e.target.value)} placeholder="(555) 123-4567" className="mt-1.5" />
-      </F>
+      <div className="space-y-2">
+        <Label className="text-sm font-medium text-gray-700">Client Phone(s)</Label>
+        {clientPhones.map((phone, i) => (
+          <div key={i} className="flex gap-2 items-center">
+            <Input type="tel" value={phone}
+              onChange={e => { const next = [...clientPhones]; next[i] = e.target.value; setClientPhones(next); }}
+              placeholder={i === 0 ? "(555) 123-4567" : "Additional phone"} className="flex-1" />
+            {clientPhones.length > 1 && (
+              <Button type="button" variant="ghost" size="icon" className="h-9 w-9 text-gray-400 hover:text-red-500"
+                onClick={() => setClientPhones(clientPhones.filter((_, idx) => idx !== i))}><X className="w-4 h-4" /></Button>
+            )}
+          </div>
+        ))}
+        <Button type="button" variant="outline" size="sm" className="text-xs h-8 mt-1" onClick={() => setClientPhones([...clientPhones, ""])}>
+          <Plus className="w-3 h-3 mr-1" /> Add Another Phone
+        </Button>
+      </div>
     </Section>
   );
 }
