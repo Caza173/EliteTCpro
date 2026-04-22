@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
   ShieldCheck, ShieldAlert, ShieldX, AlertTriangle,
-  Info, Plus, Mail, RefreshCw, Loader2,
+  Info, Plus, Mail, RefreshCw, Loader2, X,
   ChevronDown, ChevronUp, FileText, Scan,
   CheckCircle2, XCircle, MinusCircle, Wand2, ExternalLink,
   FileSignature, Hash, BookOpen, Fingerprint, BellRing
@@ -72,9 +72,10 @@ function ScoreRing({ score }) {
   );
 }
 
-function IssueCard({ issue, onAddTask, transaction, allIssues }) {
+function IssueCard({ issue, onAddTask, transaction, allIssues, linkedDoc, onViewDoc, onDismiss }) {
   const [taskAdded, setTaskAdded] = useState(false);
   const [showEmailModal, setShowEmailModal] = useState(false);
+  const [viewingDoc, setViewingDoc] = useState(false);
   const cfg = SEVERITY_CONFIG[issue.severity] || SEVERITY_CONFIG.medium;
   const Icon = cfg.icon;
   const issueType = issue.type || issue.category || "blank_field";
@@ -84,6 +85,10 @@ function IssueCard({ issue, onAddTask, transaction, allIssues }) {
   const party = issue.party;
 
   return (
+    <>
+      {viewingDoc && linkedDoc && (
+        <DocumentViewerModal doc={linkedDoc} onClose={() => setViewingDoc(false)} />
+      )}
     <div className={`rounded-xl border p-3.5 ${cfg.bg}`}>
       <div className="flex items-start gap-3">
         <Icon className={`w-4 h-4 mt-0.5 flex-shrink-0 ${cfg.iconCls}`} />
@@ -91,7 +96,13 @@ function IssueCard({ issue, onAddTask, transaction, allIssues }) {
           {/* Title row */}
           <div className="flex items-start justify-between gap-2">
             <p className={`text-sm font-semibold leading-snug ${cfg.titleCls}`}>{description}</p>
-            <div className="flex gap-1.5 flex-shrink-0">
+            <div className="flex gap-1.5 flex-shrink-0 items-center">
+              {linkedDoc && (
+                <Button size="sm" variant="outline" className="h-6 text-[11px] px-2 text-purple-600 border-purple-200 hover:bg-purple-50"
+                  onClick={() => setViewingDoc(true)}>
+                  <FileText className="w-3 h-3 mr-0.5" /> View Doc
+                </Button>
+              )}
               <Button size="sm" variant="outline" className="h-6 text-[11px] px-2"
                 onClick={() => { onAddTask(issue); setTaskAdded(true); }} disabled={taskAdded}>
                 {taskAdded ? <CheckCircle2 className="w-3 h-3 text-emerald-500" /> : <Plus className="w-3 h-3" />}
@@ -101,6 +112,13 @@ function IssueCard({ issue, onAddTask, transaction, allIssues }) {
                 onClick={() => setShowEmailModal(true)}>
                 <Mail className="w-3 h-3 mr-0.5" /> Email
               </Button>
+              <button
+                onClick={() => onDismiss(issue)}
+                className="h-6 w-6 flex items-center justify-center rounded text-gray-400 hover:text-gray-600 hover:bg-black/10 transition-colors"
+                title="Dismiss"
+              >
+                <X className="w-3.5 h-3.5" />
+              </button>
             </div>
           </div>
 
@@ -137,12 +155,19 @@ function IssueCard({ issue, onAddTask, transaction, allIssues }) {
         />
       )}
     </div>
+    </>
   );
 }
 
 function ReportCard({ report, onRescan, onAddTask, scanning, transaction, linkedDoc, onViewDoc }) {
   const [expanded, setExpanded] = useState(true);
   const [showFields, setShowFields] = useState(false);
+  const [dismissedIds, setDismissedIds] = useState(new Set());
+
+  const handleDismiss = (issue) => {
+    const key = issue.id || issue.description || JSON.stringify(issue);
+    setDismissedIds(prev => new Set([...prev, key]));
+  };
 
   const sigs = report.signatures || {};
   const fields = report.extracted_fields || {};
@@ -207,17 +232,18 @@ function ReportCard({ report, onRescan, onAddTask, scanning, transaction, linked
           {/* Issues — grouped by severity */}
           {(report.all_issues || []).length > 0 ? (() => {
             const all = report.all_issues || [];
-            const criticals = all.filter(i => i.severity === "critical" || i.severity === "blocker");
-            const highs     = all.filter(i => i.severity === "high");
-            const mediums   = all.filter(i => i.severity === "medium" || i.severity === "warning");
-            const lows      = all.filter(i => i.severity === "low" || i.severity === "info");
+            const visible = all.filter(i => !dismissedIds.has(i.id || i.description || JSON.stringify(i)));
+            const criticals = visible.filter(i => i.severity === "critical" || i.severity === "blocker");
+            const highs     = visible.filter(i => i.severity === "high");
+            const mediums   = visible.filter(i => i.severity === "medium" || i.severity === "warning");
+            const lows      = visible.filter(i => i.severity === "low" || i.severity === "info");
             return (
               <div className="space-y-2">
                 <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide">
-                  Issues ({all.length}) — {criticals.length} critical · {highs.length} high · {mediums.length} medium · {lows.length} low
+                  Issues ({visible.length}{dismissedIds.size > 0 ? ` · ${dismissedIds.size} dismissed` : ""}) — {criticals.length} critical · {highs.length} high · {mediums.length} medium · {lows.length} low
                 </p>
                 {[...criticals, ...highs, ...mediums, ...lows].map((issue, i) => (
-                  <IssueCard key={issue.id || i} issue={issue} onAddTask={onAddTask} transaction={transaction} allIssues={all} />
+                  <IssueCard key={issue.id || i} issue={issue} onAddTask={onAddTask} transaction={transaction} allIssues={all} linkedDoc={linkedDoc} onViewDoc={onViewDoc} onDismiss={handleDismiss} />
                 ))}
               </div>
             );
