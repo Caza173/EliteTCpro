@@ -382,6 +382,7 @@ ISSUE DETECTION RULES — list EVERY issue individually, do NOT group:
    - There are ${buyerCount} buyer(s) and ${sellerCount} seller(s). Only require that many signatures per role.
    - Many forms have extra blank signature lines for additional parties not in this transaction — DO NOT flag those.
    - A blank signature line is only a problem if it corresponds to one of the actual named parties.
+   - AGENT SIGNATURE: If this document is a Buyer Agency Agreement (or any representation agreement), the agent/licensee signature is ALWAYS required — flag it as missing if blank regardless of other rules.
    - Is each required signature block signed or blank?
    - Identify exact party: buyer, seller, agent
    - Include exact page number and location (e.g. "Bottom of page 3, Seller signature line")
@@ -491,7 +492,8 @@ Do NOT summarize issues. Do NOT generalize. List every issue as its own object.`
       }
 
       // Only flag as many buyer/seller missing sigs as there are actual parties
-      const roleLimits = { buyer: buyerCount, seller: sellerCount, agent: 2, unknown: 1 };
+      // Agent: always require 1 signature (the representing agent/licensee)
+      const roleLimits = { buyer: buyerCount, seller: sellerCount, agent: 1, unknown: 1 };
       for (const [role, fields] of Object.entries(missingSigsByRole)) {
         const limit = roleLimits[role] ?? fields.length;
         const toFlag = fields.slice(0, limit);
