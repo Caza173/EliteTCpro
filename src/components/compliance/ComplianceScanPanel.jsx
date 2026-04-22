@@ -159,7 +159,7 @@ function IssueCard({ issue, onAddTask, transaction, allIssues, linkedDoc, onView
   );
 }
 
-function ReportCard({ report, onRescan, onAddTask, scanning, transaction, linkedDoc, onViewDoc, dismissedIds, onDismiss }) {
+function ReportCard({ report, onRescan, onAddTask, scanning, transaction, linkedDoc, onViewDoc, dismissedIds = new Set(), onDismiss }) {
   const [expanded, setExpanded] = useState(true);
   const [showFields, setShowFields] = useState(false);
 
@@ -193,9 +193,16 @@ function ReportCard({ report, onRescan, onAddTask, scanning, transaction, linked
               <div className="flex items-center gap-2 mt-0.5 flex-wrap">
                 <Badge variant="outline" className="text-[11px] text-gray-500">{report.document_type || "Unknown"}</Badge>
                 {report.page_count > 0 && <Badge variant="outline" className="text-[11px] text-gray-400">{report.page_count}p</Badge>}
-                {report.status === 'compliant' && <span className="text-xs text-emerald-600 font-medium flex items-center gap-0.5"><ShieldCheck className="w-3 h-3" /> Compliant</span>}
-                {report.status === 'warnings' && <span className="text-xs text-amber-500 font-medium flex items-center gap-0.5"><ShieldAlert className="w-3 h-3" /> {report.warnings?.length} Warning{report.warnings?.length !== 1 ? 's' : ''}</span>}
-                {report.status === 'blockers' && <span className="text-xs text-red-500 font-medium flex items-center gap-0.5"><ShieldX className="w-3 h-3" /> {report.blockers?.length} Blocker{report.blockers?.length !== 1 ? 's' : ''}</span>}
+                {(() => {
+                  const all = report.all_issues || [];
+                  const visible = all.filter(i => !dismissedIds.has(i.id || i.description || JSON.stringify(i)));
+                  const visibleBlockers = visible.filter(i => i.severity === "critical" || i.severity === "blocker");
+                  const visibleWarnings = visible.filter(i => i.severity === "high" || i.severity === "medium" || i.severity === "warning");
+                  if (visible.length === 0) return <span className="text-xs text-emerald-600 font-medium flex items-center gap-0.5"><ShieldCheck className="w-3 h-3" /> Compliant</span>;
+                  if (visibleBlockers.length > 0) return <span className="text-xs text-red-500 font-medium flex items-center gap-0.5"><ShieldX className="w-3 h-3" /> {visibleBlockers.length} Blocker{visibleBlockers.length !== 1 ? 's' : ''}</span>;
+                  if (visibleWarnings.length > 0) return <span className="text-xs text-amber-500 font-medium flex items-center gap-0.5"><ShieldAlert className="w-3 h-3" /> {visibleWarnings.length} Warning{visibleWarnings.length !== 1 ? 's' : ''}</span>;
+                  return <span className="text-xs text-emerald-600 font-medium flex items-center gap-0.5"><ShieldCheck className="w-3 h-3" /> Compliant</span>;
+                })()}
                 {report.created_date && <span className="text-[11px] text-gray-400">Scanned {format(new Date(report.created_date), "MMM d")}</span>}
               </div>
             </div>
