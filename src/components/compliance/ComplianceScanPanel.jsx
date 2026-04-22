@@ -159,14 +159,13 @@ function IssueCard({ issue, onAddTask, transaction, allIssues, linkedDoc, onView
   );
 }
 
-function ReportCard({ report, onRescan, onAddTask, scanning, transaction, linkedDoc, onViewDoc }) {
+function ReportCard({ report, onRescan, onAddTask, scanning, transaction, linkedDoc, onViewDoc, dismissedIds, onDismiss }) {
   const [expanded, setExpanded] = useState(true);
   const [showFields, setShowFields] = useState(false);
-  const [dismissedIds, setDismissedIds] = useState(new Set());
 
   const handleDismiss = (issue) => {
     const key = issue.id || issue.description || JSON.stringify(issue);
-    setDismissedIds(prev => new Set([...prev, key]));
+    onDismiss(key);
   };
 
   const sigs = report.signatures || {};
@@ -307,6 +306,22 @@ export default function ComplianceScanPanel({ transaction, currentUser }) {
   const [jobStatus, setJobStatus] = useState(null); // null | { status, processed_docs, total_docs }
   const [scanning, setScanning] = useState(false);
   const pollRef = useRef(null);
+
+  const storageKey = `dismissed_issues_${transaction.id}`;
+  const [dismissedIds, setDismissedIds] = useState(() => {
+    try {
+      const stored = localStorage.getItem(storageKey);
+      return new Set(stored ? JSON.parse(stored) : []);
+    } catch { return new Set(); }
+  });
+
+  const handleDismissIssue = (key) => {
+    setDismissedIds(prev => {
+      const next = new Set([...prev, key]);
+      try { localStorage.setItem(storageKey, JSON.stringify([...next])); } catch {}
+      return next;
+    });
+  };
 
   const { data: reports = [], isLoading } = useQuery({
     queryKey: ["compliance-reports", transaction.id],
@@ -570,6 +585,8 @@ export default function ComplianceScanPanel({ transaction, currentUser }) {
               transaction={transaction}
               linkedDoc={documents.find(d => d.id === report.document_id)}
               onViewDoc={setViewingDoc}
+              dismissedIds={dismissedIds}
+              onDismiss={handleDismissIssue}
             />
           ))}
         </div>
