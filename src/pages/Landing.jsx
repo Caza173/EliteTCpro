@@ -270,69 +270,6 @@ export default function Landing() {
         </div>
       </section>
 
-      {/* ── PRICING ── */}
-      <section id="pricing" className="py-24 px-6 bg-gray-50">
-        <div className="max-w-5xl mx-auto">
-          <div className="text-center mb-14">
-            <p className="text-xs font-bold uppercase tracking-widest text-blue-600 mb-3">Pricing</p>
-            <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">Simple, transparent pricing</h2>
-            <p className="text-gray-500">Replace multiple disconnected tools with one system.</p>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            {[
-              {
-                name: "Starter", price: "$99", period: "/mo",
-                subtitle: "For individual agents managing a limited number of deals",
-                features: ["Up to 5 active transactions", "Contract data extraction", "Email alerts & deadline tracking", "Client status portal"],
-                cta: "Get Started", highlighted: false,
-              },
-              {
-                name: "Professional", price: "$299", period: "/mo",
-                subtitle: "For active agents and TCs managing multiple transactions",
-                features: ["Unlimited transactions", "Full compliance scan engine", "Team collaboration & role-based access", "Automated communications", "Custom workflow templates"],
-                cta: "Start Free Trial", highlighted: true,
-              },
-              {
-                name: "Enterprise", price: "Custom", period: "",
-                subtitle: "For teams and brokerages requiring scale and integrations",
-                features: ["Everything in Professional", "Dotloop & SkySlope sync", "Custom integrations & API", "Dedicated support & SLA", "Brokerage-wide audit trail"],
-                cta: "Contact Sales", highlighted: false,
-              },
-            ].map(({ name, price, period, subtitle, features, cta, highlighted }) => (
-              <div
-                key={name}
-                className={`rounded-2xl border p-6 flex flex-col gap-5 ${highlighted ? "border-blue-500 bg-white shadow-lg shadow-blue-100" : "border-gray-200 bg-white"}`}
-              >
-                {highlighted && (
-                  <span className="inline-block text-[11px] font-bold px-3 py-1 rounded-full bg-blue-600 text-white w-fit">Most Popular</span>
-                )}
-                <div>
-                  <p className="text-base font-bold text-gray-900">{name}</p>
-                  <p className="text-3xl font-bold text-blue-600 mt-1">
-                    {price}<span className="text-sm font-normal text-gray-400">{period}</span>
-                  </p>
-                  <p className="text-xs text-gray-500 mt-2 leading-snug">{subtitle}</p>
-                </div>
-                <ul className="space-y-2 flex-1">
-                  {features.map(f => (
-                    <li key={f} className="flex items-start gap-2 text-sm text-gray-600">
-                      <CheckCircle2 className="w-4 h-4 text-emerald-500 flex-shrink-0 mt-0.5" />
-                      {f}
-                    </li>
-                  ))}
-                </ul>
-                <button
-                  onClick={() => highlighted ? navigate("/AgentIntake?agent=1") : window.location.href = "mailto:sales@elitetc.com"}
-                  className={`w-full py-2.5 rounded-lg text-sm font-semibold transition-colors ${highlighted ? "bg-blue-600 text-white hover:bg-blue-700" : "bg-gray-100 text-gray-800 hover:bg-gray-200 border border-gray-200"}`}
-                >
-                  {cta}
-                </button>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
 
       {/* ── CTA FOOTER ── */}
       <section className="py-24 px-6 bg-gray-950 text-center">
