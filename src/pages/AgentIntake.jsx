@@ -287,29 +287,57 @@ export default function AgentIntake() {
   const handleParsed = (parsed) => {
     setParsedData(parsed);
     const u = {};
-    // Support both snake_case (backend v2) and camelCase (legacy)
-    if (parsed.acceptance_date || parsed.effectiveDate)           u.contract_date = parsed.acceptance_date || parsed.effectiveDate;
-    if (parsed.closing_date || parsed.closingDate)                u.closing_date = parsed.closing_date || parsed.closingDate;
-    if (parsed.property_address || parsed.propertyAddress)        u.address = parsed.property_address || parsed.propertyAddress;
-    if (parsed.buyer || parsed.buyerName)                         { const n = parsed.buyer || parsed.buyerName; u.buyer = n; setBuyers([n]); }
-    if (parsed.seller || parsed.sellerName)                       { const n = parsed.seller || parsed.sellerName; u.seller = n; setSellers([n]); }
-    // buyer_agent / seller_agent are the field names returned by parsePurchaseAgreementV2
+    // Support V2 snake_case (buyer_names, seller_names, title_company, purchase_price)
+    // AND legacy camelCase fallbacks
+
+    // Dates
+    const acceptanceDate = parsed.acceptance_date || parsed.effectiveDate || null;
+    if (acceptanceDate)                                           u.contract_date = acceptanceDate;
+    if (parsed.closing_date || parsed.closingDate)               u.closing_date = parsed.closing_date || parsed.closingDate;
+
+    // Property
+    if (parsed.property_address || parsed.propertyAddress)       u.address = parsed.property_address || parsed.propertyAddress;
+
+    // Buyers — V2 returns buyer_names (string), legacy returns buyer or buyerName
+    const buyerVal = parsed.buyer_names || parsed.buyer || parsed.buyerName || null;
+    if (buyerVal) { u.buyer = buyerVal; setBuyers([buyerVal]); }
+
+    // Sellers — V2 returns seller_names (string), legacy returns seller or sellerName
+    const sellerVal = parsed.seller_names || parsed.seller || parsed.sellerName || null;
+    if (sellerVal) { u.seller = sellerVal; setSellers([sellerVal]); }
+
+    // Agents
     if (parsed.buyer_agent || parsed.buyers_agent_name || parsed.buyersAgentName)
       u.buyers_agent_name = parsed.buyer_agent || parsed.buyers_agent_name || parsed.buyersAgentName;
     if (parsed.seller_agent || parsed.sellers_agent_name || parsed.sellersAgentName)
       u.sellers_agent_name = parsed.seller_agent || parsed.sellers_agent_name || parsed.sellersAgentName;
-    // buyer_brokerage goes to buyer side, seller_brokerage goes to seller side (never swapped)
+
+    // Brokerages
     if (parsed.buyer_brokerage || parsed.buyerBrokerage)
       u.buyer_brokerage = parsed.buyer_brokerage || parsed.buyerBrokerage;
     if (parsed.seller_brokerage || parsed.sellerBrokerage)
       u.seller_brokerage = parsed.seller_brokerage || parsed.sellerBrokerage;
-    if (parsed.closing_title_company || parsed.closingTitleCompany) u.closing_title_company = parsed.closing_title_company || parsed.closingTitleCompany;
-    if (parsed.financing_commitment_date || parsed.financingCommitmentDate) u.financing_deadline = parsed.financing_commitment_date || parsed.financingCommitmentDate;
-    // inspection_deadline = date only from contract. NEVER set inspection_scheduled here.
-    if (parsed.inspection_deadline || parsed.inspectionDeadline)  u.inspection_deadline = (parsed.inspection_deadline || parsed.inspectionDeadline || "").split("T")[0];
-    if (parsed.earnest_money_deadline || parsed.earnestMoneyDeadline) u.earnest_money_deadline = parsed.earnest_money_deadline || parsed.earnestMoneyDeadline;
-    if (parsed.due_diligence_deadline || parsed.dueDiligenceDeadline) u.due_diligence_deadline = parsed.due_diligence_deadline || parsed.dueDiligenceDeadline;
-    if (parsed.price || parsed.purchasePrice)                     u.sale_price = String(parsed.price || parsed.purchasePrice);
+
+    // Title company — V2 returns title_company (may be string "null"), legacy returns closing_title_company
+    const titleCo = parsed.title_company !== "null" ? (parsed.title_company || parsed.closing_title_company || parsed.closingTitleCompany || null) : (parsed.closing_title_company || parsed.closingTitleCompany || null);
+    // Use closing_location as fallback (V2 puts it there sometimes)
+    const titleCoFinal = titleCo || (parsed.closing_location !== "null" ? parsed.closing_location : null) || null;
+    if (titleCoFinal) u.closing_title_company = titleCoFinal;
+
+    // Deadlines
+    if (parsed.financing_commitment_date || parsed.financingCommitmentDate)
+      u.financing_deadline = parsed.financing_commitment_date || parsed.financingCommitmentDate;
+    if (parsed.inspection_deadline || parsed.inspectionDeadline)
+      u.inspection_deadline = (parsed.inspection_deadline || parsed.inspectionDeadline || "").split("T")[0];
+    if (parsed.earnest_money_deadline || parsed.earnestMoneyDeadline)
+      u.earnest_money_deadline = parsed.earnest_money_deadline || parsed.earnestMoneyDeadline;
+    if (parsed.due_diligence_deadline || parsed.dueDiligenceDeadline)
+      u.due_diligence_deadline = parsed.due_diligence_deadline || parsed.dueDiligenceDeadline;
+
+    // Price — V2 returns purchase_price (number), legacy returns price or purchasePrice
+    const priceVal = parsed.purchase_price || parsed.price || parsed.purchasePrice || null;
+    if (priceVal)                                                 u.sale_price = String(priceVal);
+
     Object.keys(u).forEach(k => { if (!u[k]) delete u[k]; });
     setForm(p => ({ ...p, ...u }));
   };
