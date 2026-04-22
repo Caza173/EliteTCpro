@@ -127,10 +127,6 @@ function buildHTML(tx, contingencies, currentUser) {
     ${earnestDeadline ? row("Earnest Money Due", fmtDate(earnestDeadline)) : ""}
 
     ${divider}
-    ${sectionHeader("Inspection Deadlines")}
-    ${inspectionsBlock}
-
-    ${divider}
     ${sectionHeader("Financing / Appraisal")}
     ${contingencyBlock}
 
