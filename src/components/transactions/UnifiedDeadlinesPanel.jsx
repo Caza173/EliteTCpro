@@ -484,6 +484,7 @@ function AddCustomDeadlineRow({ transactionId, brokerageId, onAdded, onCancel })
 export default function UnifiedDeadlinesPanel({ transaction, onSave }) {
   const queryClient = useQueryClient();
   const [addingCustom, setAddingCustom] = useState(false);
+  const [syncingAll, setSyncingAll] = useState(false);
 
   const { data: contingencies = [] } = useQuery({
     queryKey: ["contingencies", transaction.id],
@@ -499,6 +500,26 @@ export default function UnifiedDeadlinesPanel({ transaction, onSave }) {
 
   const refreshCalendar = () => queryClient.invalidateQueries({ queryKey: ["calendarMaps", transaction.id] });
   const refreshContingencies = () => queryClient.invalidateQueries({ queryKey: ["contingencies", transaction.id] });
+
+  const handleSyncAll = async (allItems) => {
+    const itemsWithDates = allItems.filter(i => i.date);
+    if (!itemsWithDates.length) { toast.error("No deadlines with dates to sync"); return; }
+    setSyncingAll(true);
+    let succeeded = 0;
+    for (const item of itemsWithDates) {
+      const calMapKey = item.sourceType === "system" ? item.key : `contingency_${item.id}`;
+      try {
+        const payload = item.sourceType === "system"
+          ? { transaction_id: transaction.id, field_key: item.key, due_time: item.time || null, is_all_day: !item.time }
+          : { transaction_id: transaction.id, contingency_id: item.id, field_key: calMapKey, date: item.date, title: item.label, due_time: item.due_time, is_all_day: item.is_all_day };
+        await base44.functions.invoke("syncTransactionDeadlinesToCalendar", payload);
+        succeeded++;
+      } catch (_) {}
+    }
+    refreshCalendar();
+    setSyncingAll(false);
+    toast.success(`Synced ${succeeded} of ${itemsWithDates.length} deadlines to Google Calendar`);
+  };
 
   const handleUpdateContingency = async (id, data) => {
     await base44.entities.Contingency.update(id, data);
@@ -624,6 +645,16 @@ export default function UnifiedDeadlinesPanel({ transaction, onSave }) {
             <CalendarCheck className="w-3.5 h-3.5" /> {synced} synced
           </div>
         )}
+        <Button
+          size="sm"
+          variant="outline"
+          className="h-7 text-xs gap-1.5 ml-auto border-blue-200 text-blue-600 hover:bg-blue-50"
+          onClick={() => handleSyncAll(allItems)}
+          disabled={syncingAll}
+        >
+          {syncingAll ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <CalendarPlus className="w-3.5 h-3.5" />}
+          {syncingAll ? "Syncing…" : "Sync All to Calendar"}
+        </Button>
       </div>
 
       {/* Deadline grid */}
