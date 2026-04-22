@@ -8,10 +8,11 @@ import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import {
   AlertTriangle, ShieldX, Clock, ClipboardList,
-  Mail, CheckCircle2, X,
+  Mail, CheckCircle2, X, FileText,
 } from "lucide-react";
 import { detectIssues, ISSUE_TYPE_LABELS, SEVERITY_STYLES } from "@/lib/issueDetector";
 import EmailGeneratorModal from "@/components/compliance/EmailGeneratorModal";
+import DocumentViewerModal from "@/components/transactions/DocumentViewerModal";
 
 const TYPE_ICONS = {
   compliance_issue:    <ShieldX className="w-4 h-4 text-red-500" />,
@@ -31,9 +32,13 @@ function adaptIssueForEmail(issue) {
   };
 }
 
-function IssueRow({ issue, transaction, autoSendEnabled, currentUser, onDismiss }) {
+function IssueRow({ issue, transaction, autoSendEnabled, currentUser, onDismiss, matchedDoc }) {
   const [emailModalOpen, setEmailModalOpen] = useState(false);
+  const [viewingDoc, setViewingDoc] = useState(false);
   const styles = SEVERITY_STYLES[issue.severity];
+
+  const isSignatureIssue = issue.issue_type === "compliance_issue" &&
+    (issue.description?.toLowerCase().includes("signature") || issue.description?.toLowerCase().includes("initials"));
 
   return (
     <>
@@ -43,6 +48,12 @@ function IssueRow({ issue, transaction, autoSendEnabled, currentUser, onDismiss 
           transaction={transaction}
           currentUser={currentUser}
           onClose={() => setEmailModalOpen(false)}
+        />
+      )}
+      {viewingDoc && matchedDoc && (
+        <DocumentViewerModal
+          doc={matchedDoc}
+          onClose={() => setViewingDoc(false)}
         />
       )}
       <div className={`flex items-start gap-3 p-3 rounded-xl border ${styles.row}`}>
@@ -71,6 +82,17 @@ function IssueRow({ issue, transaction, autoSendEnabled, currentUser, onDismiss 
         </div>
 
         <div className="flex items-center gap-1.5 flex-shrink-0">
+          {isSignatureIssue && matchedDoc && (
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => setViewingDoc(true)}
+              className="h-8 text-xs gap-1.5 text-purple-600 border-purple-200 hover:bg-purple-50"
+            >
+              <FileText className="w-3.5 h-3.5" />
+              View Doc
+            </Button>
+          )}
           <Button
             size="sm"
             variant="outline"
@@ -126,7 +148,24 @@ export default function IssueDetectionPanel({ transaction, currentUser }) {
     staleTime: 30_000,
   });
 
+  const { data: documents = [] } = useQuery({
+    queryKey: ["tx-documents", transaction.id],
+    queryFn: () => base44.entities.Document.filter({ transaction_id: transaction.id }, "-created_date"),
+    enabled: !!transaction.id,
+    staleTime: 30_000,
+  });
+
   const isLoading = loadingChecklist || loadingReports || loadingTasks;
+
+  // Find a document matching an issue's document_reference (by report.document_name or file_name)
+  const findMatchedDoc = (issue) => {
+    if (!issue.document_reference || !documents.length) return null;
+    const ref = issue.document_reference.toLowerCase();
+    return documents.find(d =>
+      (d.file_name && d.file_name.toLowerCase().includes(ref)) ||
+      (d.file_name && ref.includes(d.file_name.toLowerCase().replace(/\.[^.]+$/, "")))
+    ) || null;
+  };
 
   const allIssues = useMemo(
     () => detectIssues(transaction, checklistItems, complianceReports, txTasks),
@@ -230,6 +269,7 @@ export default function IssueDetectionPanel({ transaction, currentUser }) {
               transaction={transaction}
               autoSendEnabled={autoSend}
               currentUser={currentUser}
+              matchedDoc={findMatchedDoc(issue)}
               onDismiss={(id) => setDismissed(prev => {
                 const next = new Set([...prev, id]);
                 try { localStorage.setItem(storageKey, JSON.stringify([...next])); } catch {}
