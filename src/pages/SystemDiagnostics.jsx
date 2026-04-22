@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
 import { CheckCircle2, XCircle, Wifi, HardDrive, Download } from "lucide-react";
 import { usePWA } from "@/lib/PWAContext.jsx";
 
@@ -7,7 +8,7 @@ export default function SystemDiagnostics() {
   const [pwa, setPwa] = useState({});
   const [connection, setConnection] = useState({});
   const [cacheList, setCacheList] = useState([]);
-  const { deferredPrompt, isInstalled } = usePWA();
+  const { deferredPrompt, isInstalled, canInstall, handleInstallClick } = usePWA();
 
   useEffect(() => {
     runDiagnostics();
@@ -179,6 +180,18 @@ export default function SystemDiagnostics() {
               <span>Installed:</span>
               <span className={`font-semibold ${getStatusColor(isInstalled ? "Yes" : "No")}`}>{isInstalled ? "Yes" : "No"}</span>
             </div>
+            {canInstall && !isInstalled && (
+              <div className="pt-2">
+                <Button size="sm" className="w-full gap-2 bg-blue-600 hover:bg-blue-700 text-white" onClick={handleInstallClick}>
+                  <Download className="w-4 h-4" /> Install App
+                </Button>
+              </div>
+            )}
+            {isInstalled && (
+              <p className="text-xs text-emerald-600 font-medium pt-1 flex items-center gap-1">
+                <CheckCircle2 className="w-3.5 h-3.5" /> App is installed
+              </p>
+            )}
           </CardContent>
         </Card>
       </div>
