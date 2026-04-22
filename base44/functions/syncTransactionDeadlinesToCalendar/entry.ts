@@ -10,21 +10,37 @@ const DEADLINE_FIELDS = [
   { field: 'closing_date',            title: 'Closing / Transfer of Title' },
 ];
 
+const USER_TIMEZONE = 'America/New_York';
+
 // Get the next day date string (for all-day event end date)
 function nextDay(dateStr) {
-  const d = new Date(dateStr);
-  d.setDate(d.getDate() + 1);
-  return d.toISOString().split('T')[0];
+  const [y, m, d] = dateStr.split('-').map(Number);
+  const next = new Date(y, m - 1, d + 1);
+  return `${next.getFullYear()}-${String(next.getMonth() + 1).padStart(2, '0')}-${String(next.getDate()).padStart(2, '0')}`;
 }
 
-// Build ISO datetime from date and time
-function buildDateTime(dateStr, timeStr) {
-  if (!timeStr) return null;
+// Build a local ISO datetime string (no UTC conversion) from date + HH:MM time
+function buildLocalDateTime(dateStr, timeStr) {
+  if (!dateStr || !timeStr) return null;
   try {
-    const [hours, minutes] = timeStr.split(':');
-    const d = new Date(dateStr);
-    d.setHours(parseInt(hours, 10), parseInt(minutes, 10), 0, 0);
-    return d.toISOString();
+    // Ensure HH:MM format
+    const [h, m] = timeStr.split(':').map(s => s.padStart(2, '0'));
+    const [year, month, day] = dateStr.split('T')[0].split('-');
+    return `${year}-${month}-${day}T${h}:${m}:00`;
+  } catch {
+    return null;
+  }
+}
+
+// Add N hours to a local datetime string like "2026-04-23T17:00:00"
+function addHours(localDateTimeStr, hours) {
+  try {
+    const [datePart, timePart] = localDateTimeStr.split('T');
+    const [h, m, s] = timePart.split(':').map(Number);
+    const totalMinutes = h * 60 + m + hours * 60;
+    const newH = Math.floor(totalMinutes / 60) % 24;
+    const newM = totalMinutes % 60;
+    return `${datePart}T${String(newH).padStart(2, '0')}:${String(newM).padStart(2, '0')}:${String(s || 0).padStart(2, '0')}`;
   } catch {
     return null;
   }
@@ -47,26 +63,33 @@ async function syncTransaction(base44, transaction, fieldKey, contingencyId, con
   if (transaction.agent_email) attendees.push({ email: transaction.agent_email });
   if (transaction.client_email) attendees.push({ email: transaction.client_email });
 
+  const tz = transaction.timezone || USER_TIMEZONE;
+  const description = `Transaction: ${transaction.address}\nTC: ${transaction.agent || ''}\nAgent: ${transaction.buyers_agent_name || transaction.sellers_agent_name || ''}\n\nManaged via EliteTC.`;
+
   const buildEventBody = (title, dateStr, timeStr, allDay) => {
-    if (allDay === false && timeStr) {
-      const startDateTime = buildDateTime(dateStr, timeStr);
-      const endDateTime = buildDateTime(dateStr, timeStr.replace(/(\d+):(\d+)/, (h, m) => `${parseInt(h) + 1}:${m}`));
+    const pureDateStr = (dateStr || '').split('T')[0]; // strip any time component from date string
+
+    // Use timed event if: explicitly not all-day AND a time is provided
+    if (!allDay && timeStr) {
+      const startDT = buildLocalDateTime(pureDateStr, timeStr);
+      const endDT = addHours(startDT, 1);
       return {
         summary: `${title} — ${transaction.address}`,
-        description: `Transaction: ${transaction.address}\nTC: ${transaction.agent || ''}\nAgent: ${transaction.buyers_agent_name || transaction.sellers_agent_name || ''}\n\nManaged via EliteTC.`,
-        start: { dateTime: startDateTime },
-        end: { dateTime: endDateTime },
+        description,
+        start: { dateTime: startDT, timeZone: tz },
+        end: { dateTime: endDT, timeZone: tz },
         reminders: { useDefault: false, overrides: [{ method: 'email', minutes: 60 }, { method: 'popup', minutes: 30 }] },
         attendees,
         guestsCanSeeOtherGuests: false,
         sendUpdates: 'all',
       };
     } else {
+      // Intentional all-day event
       return {
         summary: `${title} — ${transaction.address}`,
-        description: `Transaction: ${transaction.address}\nTC: ${transaction.agent || ''}\nAgent: ${transaction.buyers_agent_name || transaction.sellers_agent_name || ''}\n\nManaged via EliteTC.`,
-        start: { date: dateStr },
-        end: { date: nextDay(dateStr) },
+        description,
+        start: { date: pureDateStr },
+        end: { date: nextDay(pureDateStr) },
         reminders: { useDefault: false, overrides: [{ method: 'email', minutes: 1440 }, { method: 'popup', minutes: 60 }] },
         attendees,
         guestsCanSeeOtherGuests: false,
@@ -113,17 +136,36 @@ async function syncTransaction(base44, transaction, fieldKey, contingencyId, con
     }
   };
 
+  // Map of system deadline fields to their corresponding time fields on the transaction
+  const FIELD_TIME_MAP = {
+    closing_date: 'closing_time',
+    inspection_deadline: 'inspection_time',
+    appraisal_deadline: 'appraisal_time',
+  };
+
   if (contingencyId && contingencyDate && contingencyTitle) {
     const mapKey = fieldKey || `contingency_${contingencyId}`;
-    await syncOne(mapKey, contingencyTitle, contingencyDate, dueTime, isAllDay ?? true);
+    // For contingencies: if is_all_day is explicitly false and dueTime exists, use timed event
+    const effectiveAllDay = isAllDay !== false || !dueTime;
+    await syncOne(mapKey, contingencyTitle, contingencyDate, dueTime || null, effectiveAllDay);
   } else if (fieldKey) {
     const fieldDef = DEADLINE_FIELDS.find(f => f.field === fieldKey);
     const dateStr = transaction[fieldKey];
-    if (fieldDef && dateStr) await syncOne(fieldKey, fieldDef.title, dateStr, dueTime || null, isAllDay ?? !dueTime);
+    if (fieldDef && dateStr) {
+      // Use time passed in from UI, or fall back to the transaction's time field for this deadline
+      const timeField = FIELD_TIME_MAP[fieldKey];
+      const resolvedTime = dueTime || (timeField ? transaction[timeField] : null) || null;
+      await syncOne(fieldKey, fieldDef.title, dateStr, resolvedTime, !resolvedTime);
+    }
   } else {
+    // Bulk sync: use each field's associated time if available
     for (const { field, title } of DEADLINE_FIELDS) {
       const dateStr = transaction[field];
-      if (dateStr) await syncOne(field, title, dateStr, null, true);
+      if (dateStr) {
+        const timeField = FIELD_TIME_MAP[field];
+        const resolvedTime = timeField ? transaction[timeField] : null;
+        await syncOne(field, title, dateStr, resolvedTime || null, !resolvedTime);
+      }
     }
   }
 

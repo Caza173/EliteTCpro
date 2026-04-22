@@ -184,8 +184,8 @@ function DeadlineRow({ item, calendarMaps, transactionId, onUpdateContingency, o
             field_key: calMapKey, 
             date: item.date, 
             title: item.label,
-            due_time: item.due_time,
-            is_all_day: item.is_all_day
+            due_time: item.due_time || null,
+            is_all_day: item.due_time ? false : (item.is_all_day ?? true),
           };
 
       const res = await base44.functions.invoke("syncTransactionDeadlinesToCalendar", payload);
@@ -511,7 +511,7 @@ export default function UnifiedDeadlinesPanel({ transaction, onSave }) {
       try {
         const payload = item.sourceType === "system"
           ? { transaction_id: transaction.id, field_key: item.key, due_time: item.time || null, is_all_day: !item.time }
-          : { transaction_id: transaction.id, contingency_id: item.id, field_key: calMapKey, date: item.date, title: item.label, due_time: item.due_time, is_all_day: item.is_all_day };
+          : { transaction_id: transaction.id, contingency_id: item.id, field_key: calMapKey, date: item.date, title: item.label, due_time: item.due_time || null, is_all_day: item.due_time ? false : (item.is_all_day ?? true) };
         await base44.functions.invoke("syncTransactionDeadlinesToCalendar", payload);
         succeeded++;
       } catch (_) {}
