@@ -363,6 +363,10 @@ Transaction context:
 - Transaction Type: ${transaction_data?.transaction_type || 'buyer'}
 - Is Cash Transaction: ${transaction_data?.is_cash_transaction ? 'Yes' : 'No'}
 - Sale Price: ${transaction_data?.sale_price ? '$' + Number(transaction_data.sale_price).toLocaleString() : 'Unknown'}
+- Number of Buyers: ${buyerCount} (only flag missing signatures for this many buyers)
+- Number of Sellers: ${sellerCount} (only flag missing signatures for this many sellers)
+- Buyer Name(s): ${transaction_data?.buyers?.join(", ") || transaction_data?.buyer || 'Unknown'}
+- Seller Name(s): ${transaction_data?.sellers?.join(", ") || transaction_data?.seller || 'Unknown'}
 
 ${pdfFieldContext ? `━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 PDF FORM FIELD DATA (AUTHORITATIVE — use as primary source):
@@ -373,8 +377,12 @@ DOCUMENT CLASSIFICATION:
 Identify: document_type (one of: ${allNharTemplates} | Other), page_count, digital signature platform if present.
 
 ISSUE DETECTION RULES — list EVERY issue individually, do NOT group:
-1. SIGNATURE BLOCKS — check every page for signature lines:
-   - Is each signature block signed or blank?
+1. SIGNATURE BLOCKS — check ONLY signature lines for identified parties:
+   - CRITICAL: Only flag missing signatures for actual parties in this transaction.
+   - There are ${buyerCount} buyer(s) and ${sellerCount} seller(s). Only require that many signatures per role.
+   - Many forms have extra blank signature lines for additional parties not in this transaction — DO NOT flag those.
+   - A blank signature line is only a problem if it corresponds to one of the actual named parties.
+   - Is each required signature block signed or blank?
    - Identify exact party: buyer, seller, agent
    - Include exact page number and location (e.g. "Bottom of page 3, Seller signature line")
    - Type: missing_signature
@@ -465,24 +473,44 @@ Do NOT summarize issues. Do NOT generalize. List every issue as its own object.`
     const companionDocs = template?.companion_docs || companionDocsFallback;
 
     // ── Inject PDF-derived issues as authoritative ground truth ──────────────
+    // Determine actual party counts from transaction data to avoid flagging unused template lines
+    const buyerCount = transaction_data?.buyers?.length
+      || (transaction_data?.buyer ? 1 : 0)
+      || 1;
+    const sellerCount = transaction_data?.sellers?.length
+      || (transaction_data?.seller ? 1 : 0)
+      || 1;
+
     const pdfDerivedIssues = [];
     if (pdfFields && hasPdfFields) {
+      // Group missing signature fields by role so we can cap by party count
+      const missingSigsByRole = { buyer: [], seller: [], agent: [], unknown: [] };
       for (const f of (pdfFields.missingSignatures || [])) {
-        pdfDerivedIssues.push({
-          id: `pdf_sig_${f.name}`,
-          type: "missing_signature",
-          description: `Missing ${f.role !== "unknown" ? f.role + " " : ""}signature: "${f.name}"`,
-          field: f.name,
-          party: f.role !== "unknown" ? f.role : null,
-          location: `Signature field "${f.name}"`,
-          page: null,
-          severity: "critical",
-          action_required: `Obtain ${f.role !== "unknown" ? f.role + " " : ""}signature for field "${f.name}"`,
-          // Legacy compatibility
-          category: "missing_signature",
-          message: `Missing ${f.role !== "unknown" ? f.role + " " : ""}signature field: "${f.name}"`,
-          suggested_task: `Obtain signature for field "${f.name}"`,
-        });
+        const role = f.role !== "unknown" ? f.role : "unknown";
+        (missingSigsByRole[role] || missingSigsByRole.unknown).push(f);
+      }
+
+      // Only flag as many buyer/seller missing sigs as there are actual parties
+      const roleLimits = { buyer: buyerCount, seller: sellerCount, agent: 2, unknown: 1 };
+      for (const [role, fields] of Object.entries(missingSigsByRole)) {
+        const limit = roleLimits[role] ?? fields.length;
+        const toFlag = fields.slice(0, limit);
+        for (const f of toFlag) {
+          pdfDerivedIssues.push({
+            id: `pdf_sig_${f.name}`,
+            type: "missing_signature",
+            description: `Missing ${role !== "unknown" ? role + " " : ""}signature: "${f.name}"`,
+            field: f.name,
+            party: role !== "unknown" ? role : null,
+            location: `Signature field "${f.name}"`,
+            page: null,
+            severity: "critical",
+            action_required: `Obtain ${role !== "unknown" ? role + " " : ""}signature for field "${f.name}"`,
+            category: "missing_signature",
+            message: `Missing ${role !== "unknown" ? role + " " : ""}signature field: "${f.name}"`,
+            suggested_task: `Obtain signature for field "${f.name}"`,
+          });
+        }
       }
       for (const f of (pdfFields.missingInitials || [])) {
         pdfDerivedIssues.push({
