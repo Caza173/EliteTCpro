@@ -248,7 +248,7 @@ export default function Settings() {
       </div>
 
       {/* Tab Bar */}
-      <div className="flex gap-1 p-1 rounded-xl mb-6 overflow-x-auto scrollbar-none" style={{ background: "var(--bg-tertiary)" }}>
+      <div className="flex flex-wrap gap-1 p-1 rounded-xl mb-6" style={{ background: "var(--bg-tertiary)" }}>
         {TABS.map(({ id, label, icon: Icon }) => (
           <button
             key={id}
