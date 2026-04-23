@@ -28,7 +28,6 @@ import {
   Droplets,
   BookUser,
   MessageSquarePlus,
-  Plug,
 } from "lucide-react";
 
 import { InstallButtonHeader, InstallButtonFloat } from "./components/pwa/InstallButton.jsx";
@@ -55,9 +54,6 @@ const OWNER_NAV = [
   { label: "Deal Intake",    page: "AgentIntake",    icon: UserPlus },
   { label: "Pending Queue",  page: "PendingDeals",   icon: Inbox, path: "/pending-deals" },
   { label: "Addendum Builder",page: "AddendumBuilder",  icon: ClipboardList },
-
-  { label: "Integrations",   page: "Integrations", icon: Plug },
-
 
   { label: "Settings",       page: "Settings",       icon: Settings },
 ];

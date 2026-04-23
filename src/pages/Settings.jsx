@@ -8,7 +8,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Settings as SettingsIcon, Users, Bell, Palette, Loader2, UserPlus, CheckCircle, Building2, DollarSign, FileText, Pencil, X, Bug, Lightbulb, Puzzle, MessageSquarePlus, Activity, Mail, UserCircle, Trash2, Shield, Search, HelpCircle, BookOpen, Globe, Plus, Upload, CreditCard, TrendingUp, AlertTriangle, ArrowUpRight } from "lucide-react";
+import { Settings as SettingsIcon, Users, Bell, Palette, Loader2, UserPlus, CheckCircle, Building2, DollarSign, FileText, Pencil, X, Bug, Lightbulb, Puzzle, MessageSquarePlus, Activity, Mail, UserCircle, Trash2, Shield, Search, HelpCircle, BookOpen, Globe, Plus, Upload, CreditCard, TrendingUp, AlertTriangle, ArrowUpRight, Plug, Zap, BarChart3, Workflow, Calendar, FileSignature, Home } from "lucide-react";
+import { createPageUrl } from "@/utils";
 import { Progress } from "@/components/ui/progress";
 import { PLAN_DETAILS } from "../components/utils/tenantUtils";
 import { canManageBilling } from "../components/auth/useCurrentUser";
@@ -229,6 +230,7 @@ export default function Settings() {
     { id: "help",       label: "Help",       icon: HelpCircle },
     { id: "feedback",   label: "Feedback",   icon: MessageSquarePlus },
     { id: "billing",    label: "Billing",    icon: CreditCard,        ownerOnly: true },
+    { id: "integrations", label: "Integrations", icon: Plug,              adminOnly: true },
     { id: "system",     label: "System",     icon: Activity,          tcHidden: true },
   ].filter(t => {
     if (t.adminOnly && !isTCOrAdmin(currentUser)) return false;
@@ -549,6 +551,48 @@ export default function Settings() {
           </CardContent>
         </Card>
       )}
+
+      {/* ── Integrations ── */}
+      {activeTab === "integrations" && (() => {
+        const INTEGRATIONS = [
+          { id: "dotloop", name: "Dotloop", icon: Zap, status: "Coming Soon", description: "Integration will be available soon", route: "DotloopIntegration" },
+          { id: "skyslope", name: "SkySlope", icon: BarChart3, status: "Coming Soon", description: "Integration will be available soon", route: null },
+          { id: "zapier", name: "Zapier", icon: Workflow, status: "Coming Soon", description: "Integration will be available soon", route: null },
+          { id: "gmail", name: "Gmail", icon: Mail, status: "Active", description: "Send transactional emails to clients and parties", route: "GmailSetup" },
+          { id: "google-calendar", name: "Google Calendar", icon: Calendar, status: "Active", description: "Sync transaction deadlines to your calendar", route: "GoogleCalendarSetup" },
+          { id: "digital-signatures", name: "Digital Signatures", icon: FileSignature, status: "Coming Soon", description: "Integration will be available soon", route: null },
+          { id: "mls-sync", name: "MLS Sync", icon: Home, status: "Coming Soon", description: "Integration will be available soon", route: null },
+        ];
+        return (
+          <div className="space-y-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              {INTEGRATIONS.map((intg) => {
+                const Icon = intg.icon;
+                const isComingSoon = intg.status === "Coming Soon";
+                const tile = (
+                  <div className={`rounded-xl border p-4 transition-all ${isComingSoon ? "opacity-60 cursor-not-allowed" : "hover:shadow-md cursor-pointer"}`}
+                    style={{ background: "var(--card-bg)", borderColor: "var(--card-border)" }}>
+                    <div className="flex items-start justify-between mb-3">
+                      <div className="w-10 h-10 rounded-lg flex items-center justify-center" style={{ background: "rgba(37,99,235,0.1)" }}>
+                        <Icon className="w-5 h-5 text-blue-600" />
+                      </div>
+                      <span className={`text-xs font-semibold px-2 py-0.5 rounded-full border ${intg.status === "Active" ? "bg-emerald-50 border-emerald-200 text-emerald-700" : ""}`}
+                        style={intg.status !== "Active" ? { background: "var(--bg-tertiary)", borderColor: "var(--border)", color: "var(--text-muted)" } : {}}>
+                        {intg.status}
+                      </span>
+                    </div>
+                    <p className="text-sm font-semibold mb-0.5" style={{ color: "var(--text-primary)" }}>{intg.name}</p>
+                    <p className="text-xs" style={{ color: "var(--text-muted)" }}>{intg.description}</p>
+                  </div>
+                );
+                return intg.route && !isComingSoon
+                  ? <Link key={intg.id} to={createPageUrl(intg.route)}>{tile}</Link>
+                  : <div key={intg.id}>{tile}</div>;
+              })}
+            </div>
+          </div>
+        );
+      })()}
 
       {/* ── System ── */}
       {activeTab === "system" && (
