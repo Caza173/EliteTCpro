@@ -28,6 +28,7 @@ export default function Transactions() {
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [phaseFilter, setPhaseFilter] = useState("all");
+  const [monthFilter, setMonthFilter] = useState("all");
   const [page, setPage] = useState(1);
   const [showIntake, setShowIntake] = useState(false);
   const [dealTab, setDealTab] = useState("all"); // "all" | "pending" | "my"
@@ -48,13 +49,36 @@ export default function Transactions() {
       tx.mls_number?.toLowerCase().includes(q);
     const matchesStatus = statusFilter === "all" || tx.status === statusFilter;
     const matchesPhase = phaseFilter === "all" || String(tx.phase || 1) === phaseFilter;
-    return matchesSearch && matchesStatus && matchesPhase;
-  }), [transactions, search, statusFilter, phaseFilter]);
+    const matchesMonth = monthFilter === "all" || (() => {
+      const d = tx.closing_date || tx.contract_date;
+      if (!d) return false;
+      const dt = new Date(d);
+      return `${dt.getFullYear()}-${String(dt.getMonth() + 1).padStart(2, "0")}` === monthFilter;
+    })();
+    return matchesSearch && matchesStatus && matchesPhase && matchesMonth;
+  }), [transactions, search, statusFilter, phaseFilter, monthFilter]);
 
   const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
   const paginated = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
 
-  useEffect(() => { setPage(1); }, [search, statusFilter, phaseFilter, transactions, dealTab]);
+  useEffect(() => { setPage(1); }, [search, statusFilter, phaseFilter, monthFilter, transactions, dealTab]);
+
+  // Build month options from available transactions
+  const monthOptions = useMemo(() => {
+    const seen = new Set();
+    baseList.forEach(tx => {
+      const d = tx.closing_date || tx.contract_date;
+      if (!d) return;
+      const dt = new Date(d);
+      const key = `${dt.getFullYear()}-${String(dt.getMonth() + 1).padStart(2, "0")}`;
+      seen.add(key);
+    });
+    return Array.from(seen).sort().reverse().map(key => {
+      const [yr, mo] = key.split("-");
+      const label = new Date(Number(yr), Number(mo) - 1, 1).toLocaleDateString("en-US", { month: "long", year: "numeric" });
+      return { value: key, label };
+    });
+  }, [baseList]);
 
   return (
     <div className="flex flex-col w-full min-w-0" style={{ height: "calc(100vh - 48px)", overflow: "hidden" }}>
@@ -161,6 +185,15 @@ export default function Transactions() {
               <SelectItem value="all">All Phases</SelectItem>
               {Object.entries(PHASE_LABELS).map(([num, label]) => (
                 <SelectItem key={num} value={num}>Phase {num} — {label}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <Select value={monthFilter} onValueChange={setMonthFilter}>
+            <SelectTrigger className="w-44"><SelectValue placeholder="All Months" /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Months</SelectItem>
+              {monthOptions.map(({ value, label }) => (
+                <SelectItem key={value} value={value}>{label}</SelectItem>
               ))}
             </SelectContent>
           </Select>
