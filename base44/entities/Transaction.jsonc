@@ -10,28 +10,22 @@
       "description": "Property address"
     },
     "client_access_code": {
-      "type": "string",
-      "description": "Legacy client access code"
+      "type": "string"
     },
     "client_code": {
-      "type": "string",
-      "description": "Unique client portal code (random, non-sequential)"
+      "type": "string"
     },
     "agent_code": {
-      "type": "string",
-      "description": "Unique agent portal code (random, non-sequential)"
+      "type": "string"
     },
     "assigned_tc_id": {
-      "type": "string",
-      "description": "User ID of the TC assigned to this deal. Null = unassigned/pending claim."
+      "type": "string"
     },
     "assigned_tc_email": {
-      "type": "string",
-      "description": "Denormalized email of the assigned TC for fast lookup."
+      "type": "string"
     },
     "claimed_at": {
-      "type": "string",
-      "description": "ISO timestamp when the deal was claimed by a TC."
+      "type": "string"
     },
     "property_type": {
       "type": "string",
@@ -46,16 +40,14 @@
       "default": "residential"
     },
     "year_built": {
-      "type": "number",
-      "description": "Year the property was built (4-digit year). Used to trigger lead-based paint disclosure for pre-1978 structures."
+      "type": "number"
     },
     "deal_origin": {
       "type": "string",
       "enum": [
         "buyer",
         "listing"
-      ],
-      "description": "Origin of the deal: 'buyer' = already a live transaction from intake (no conversion step), 'listing' = started as a listing and may be marked under contract later."
+      ]
     },
     "transaction_phase": {
       "type": "string",
@@ -162,8 +154,7 @@
       "type": "string"
     },
     "agent_company": {
-      "type": "string",
-      "description": "TC / transaction coordinator's company or brokerage"
+      "type": "string"
     },
     "closing_title_company": {
       "type": "string"
@@ -227,7 +218,6 @@
     },
     "additional_contacts": {
       "type": "array",
-      "description": "Additional contacts added manually to the transaction",
       "items": {
         "type": "object",
         "properties": {
@@ -267,6 +257,10 @@
     "sale_price": {
       "type": "number"
     },
+    "earnest_money_amount": {
+      "type": "number",
+      "description": "Earnest money deposit amount in dollars"
+    },
     "client_email": {
       "type": "string"
     },
@@ -292,8 +286,7 @@
       "format": "date"
     },
     "closing_time": {
-      "type": "string",
-      "description": "Time for closing (HH:MM format)"
+      "type": "string"
     },
     "transaction_type": {
       "type": "string",
@@ -321,14 +314,12 @@
     },
     "completed_deadlines": {
       "type": "array",
-      "description": "List of system deadline field keys that have been manually marked as completed",
       "items": {
         "type": "string"
       }
     },
     "custom_deadline_labels": {
       "type": "object",
-      "description": "Custom label overrides for system deadlines, keyed by field name (e.g. inspection_deadline -> 'Building Inspection')",
       "additionalProperties": {
         "type": "string"
       }
@@ -364,30 +355,25 @@
     },
     "inspection_deadline": {
       "type": "string",
-      "format": "date",
-      "description": "Contractual inspection deadline (date only, parsed from contract). Never auto-populated from scheduling."
+      "format": "date"
     },
     "inspection_scheduled": {
       "type": "string",
-      "format": "date-time",
-      "description": "Manually entered datetime when inspection is scheduled to occur. Never auto-populated from contract parsing."
+      "format": "date-time"
     },
     "inspection_completed": {
       "type": "string",
-      "format": "date-time",
-      "description": "Datetime when inspection was actually completed. When set, deadline alerts are suppressed."
+      "format": "date-time"
     },
     "inspection_time": {
-      "type": "string",
-      "description": "Legacy: Time for inspection (HH:MM format) \u2014 use inspection_scheduled instead."
+      "type": "string"
     },
     "appraisal_deadline": {
       "type": "string",
       "format": "date"
     },
     "appraisal_time": {
-      "type": "string",
-      "description": "Time for appraisal (HH:MM format)"
+      "type": "string"
     },
     "financing_deadline": {
       "type": "string",
@@ -520,7 +506,6 @@
     },
     "utility_info": {
       "type": "object",
-      "description": "Utility provider information",
       "properties": {
         "electric_provider": {
           "type": "string"
@@ -553,7 +538,6 @@
     },
     "email_tracking": {
       "type": "object",
-      "description": "Email tracking for special tasks",
       "properties": {
         "zillow_review_drafted_at": {
           "type": "string"
@@ -580,12 +564,13 @@
     },
     "lead_paint_flag": {
       "type": "boolean",
-      "default": false,
-      "description": "True if lead-based paint disclosure has been flagged for this transaction (year_built <= 1978)"
+      "default": false
     },
     "lead_paint_notified_year": {
-      "type": "number",
-      "description": "The year_built value that was active when the lead-paint notification was last triggered. Used to avoid re-notifying for the same value."
+      "type": "number"
+    },
+    "financing_contingency_status": {
+      "type": "string"
     }
   },
   "required": [
