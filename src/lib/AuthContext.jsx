@@ -95,6 +95,12 @@ export const AuthProvider = ({ children }) => {
       setUser(currentUser);
       setIsAuthenticated(true);
       setIsLoadingAuth(false);
+      // Keep cookie in sync so mobile sessions survive localStorage wipes
+      const token = localStorage.getItem('base44_access_token');
+      if (token) {
+        const expires = new Date(Date.now() + 30 * 864e5).toUTCString();
+        document.cookie = `b44_access_token=${encodeURIComponent(token)}; expires=${expires}; path=/; SameSite=Lax`;
+      }
     } catch (error) {
       console.error('User auth check failed:', error);
       setIsLoadingAuth(false);
