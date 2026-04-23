@@ -303,34 +303,44 @@ export default function Layout({ children, currentPageName }) {
 
         {/* Main content */}
         <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
-          {/* Top bar */}
+          {/* Top bar — mobile-first, safe-area aware */}
           <header
-            className="sticky top-0 z-30 backdrop-blur-sm px-4 lg:px-5 h-12 flex items-center gap-3 flex-shrink-0"
+            className="sticky top-0 z-30 flex-shrink-0 flex flex-col"
             style={{
               backgroundColor: "var(--header-bg)",
               borderBottom: "1px solid var(--header-border)",
+              paddingTop: "env(safe-area-inset-top)",
             }}
           >
-            <button
-              className="lg:hidden p-1.5 rounded-lg transition-colors"
-              style={{ color: "var(--text-secondary)" }}
-              onClick={() => setSidebarOpen(true)}
-            >
-              <Menu className="w-4 h-4" />
-            </button>
+            <div className="flex items-center justify-between px-4 lg:px-6 h-14">
+              {/* LEFT — hamburger (mobile only) */}
+              <button
+                className="lg:hidden flex items-center justify-center w-11 h-11 rounded-lg transition-colors hover:bg-black/5"
+                style={{ color: "var(--text-secondary)" }}
+                onClick={() => setSidebarOpen(true)}
+                aria-label="Open menu"
+              >
+                <Menu className="w-5 h-5" />
+              </button>
 
-            <h2
-              className="text-sm font-semibold tracking-tight"
-              style={{ color: "var(--text-primary)" }}
-            >
-              {pageTitle}
-            </h2>
+              {/* CENTER — page title */}
+              <h2
+                className="text-sm font-semibold tracking-tight truncate flex-1 text-center lg:text-left lg:ml-0 mx-2"
+                style={{ color: "var(--text-primary)" }}
+              >
+                {pageTitle}
+              </h2>
 
-            <div className="ml-auto flex items-center gap-1.5">
-              <InstallButtonHeader />
-              <ThemeToggle />
-
-              <UserMenuDropdown />
+              {/* RIGHT — actions */}
+              <div className="flex items-center gap-1">
+                <InstallButtonHeader />
+                <div className="flex items-center justify-center w-11 h-11">
+                  <ThemeToggle />
+                </div>
+                <div className="flex items-center justify-center w-11 h-11">
+                  <UserMenuDropdown />
+                </div>
+              </div>
             </div>
           </header>
 
