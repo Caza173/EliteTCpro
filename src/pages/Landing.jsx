@@ -29,9 +29,9 @@ export default function Landing() {
       <header className="sticky top-0 z-50 flex items-center justify-between px-8 h-14 bg-white border-b border-gray-100">
         <div className="flex items-center gap-2">
           {brokerageLogo ? (
-            <img src={brokerageLogo} alt="Logo" className="h-8 max-w-[140px] object-contain" />
+            <img src={brokerageLogo} alt="Logo" className="h-12 max-w-[200px] object-contain" />
           ) : (
-            <img src="https://media.base44.com/images/public/69a9cd0677a8832ab0cc59bc/ae61fe833_grok-image-c950c1d5-ec9e-4298-9c23-54ed9f0b2340.jpg" alt="EliteTC Logo" className="h-8 max-w-[140px] object-contain" />
+            <img src="https://media.base44.com/images/public/69a9cd0677a8832ab0cc59bc/d012cce81_image.png" alt="EliteTC Logo" className="h-12 max-w-[200px] object-contain" />
           )}
         </div>
 
@@ -70,9 +70,9 @@ export default function Landing() {
         <div className="relative z-10 max-w-3xl mx-auto">
           <div className="flex items-center justify-center gap-2 mb-6">
              {brokerageLogo ? (
-               <img src={brokerageLogo} alt="Logo" className="h-10 max-w-[180px] object-contain brightness-0 invert" />
+               <img src={brokerageLogo} alt="Logo" className="h-16 max-w-[240px] object-contain brightness-0 invert" />
              ) : (
-               <img src="https://media.base44.com/images/public/69a9cd0677a8832ab0cc59bc/ae61fe833_grok-image-c950c1d5-ec9e-4298-9c23-54ed9f0b2340.jpg" alt="EliteTC Logo" className="h-10 max-w-[180px] object-contain" />
+               <img src="https://media.base44.com/images/public/69a9cd0677a8832ab0cc59bc/d012cce81_image.png" alt="EliteTC Logo" className="h-16 max-w-[240px] object-contain" />
              )}
            </div>
 
@@ -309,7 +309,7 @@ export default function Landing() {
       {/* ── Footer ── */}
       <footer className="py-6 px-8 bg-gray-950 border-t border-gray-800 flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <img src="https://media.base44.com/images/public/69a9cd0677a8832ab0cc59bc/ae61fe833_grok-image-c950c1d5-ec9e-4298-9c23-54ed9f0b2340.jpg" alt="EliteTC Logo" className="h-6 max-w-[100px] object-contain" />
+          <img src="https://media.base44.com/images/public/69a9cd0677a8832ab0cc59bc/d012cce81_image.png" alt="EliteTC Logo" className="h-8 max-w-[140px] object-contain" />
         </div>
         <p className="text-xs text-gray-500">© 2026 EliteTC. All rights reserved.</p>
       </footer>
