@@ -733,10 +733,13 @@ export default function TransactionDetail() {
 
       {/* Mobile AI Drawer */}
       {mobileAIOpen && (
-        <div className="fixed inset-0 z-50">
+        <div className="fixed inset-0 z-50 flex justify-end">
           <div className="absolute inset-0 bg-black/50" onClick={() => setMobileAIOpen(false)} />
-          <div className="absolute bottom-0 left-0 right-0 rounded-t-2xl overflow-hidden flex flex-col"
-            style={{ height: "72vh", background: "var(--card-bg)" }}>
+          {/* Mobile: full-width sheet from bottom. Tablet/Desktop: right-side panel */}
+          <div
+            className="relative flex flex-col w-full sm:w-[420px] sm:h-full sm:rounded-none rounded-t-2xl overflow-hidden mt-auto sm:mt-0"
+            style={{ height: "72vh", background: "var(--card-bg)" }}
+          >
             <div className="flex items-center justify-between px-4 py-3 border-b flex-shrink-0" style={{ borderColor: "var(--card-border)" }}>
               <span className="font-semibold text-sm" style={{ color: "var(--text-primary)" }}>AI Assistant · {transaction.address}</span>
               <button onClick={() => setMobileAIOpen(false)} className="p-1 rounded-lg hover:bg-gray-100">
