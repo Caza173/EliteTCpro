@@ -15,7 +15,6 @@ import {
   Building2,
   UserPlus,
   FolderOpen,
-  CreditCard,
   Shield,
   LogOut,
   Users,
@@ -59,7 +58,7 @@ const OWNER_NAV = [
 
   { label: "Integrations",   page: "Integrations", icon: Plug },
 
-  { label: "Billing",          page: "Billing",          icon: CreditCard },
+
   { label: "Settings",       page: "Settings",       icon: Settings },
 ];
 
