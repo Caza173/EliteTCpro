@@ -126,6 +126,9 @@ export default function Layout({ children, currentPageName }) {
 
   useEffect(() => {
     if (!currentUser) return;
+    // Skip redirects if user hasn't completed profile setup
+    if (currentUser.profile_completed === false) return;
+    
     const role = currentUser.role;
     const email = currentUser.email;
     const path = window.location.hash.replace("#", "") || "/";
