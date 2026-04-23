@@ -57,7 +57,6 @@ const OWNER_NAV = [
   { label: "Deal Intake",    page: "AgentIntake",    icon: UserPlus },
   { label: "Pending Queue",  page: "PendingDeals",   icon: Inbox, path: "/pending-deals" },
   { label: "Addendum Builder",page: "AddendumBuilder",  icon: ClipboardList },
-  { label: "Audit Log",      page: "AuditLog",       icon: Shield },
   { label: "Feedback Center",page: "FeedbackCenter", icon: MessageSquarePlus },
   { label: "Integrations",   page: "Integrations", icon: Plug },
   { label: "Help & Training", page: "help",            icon: HelpCircle, path: "/help" },

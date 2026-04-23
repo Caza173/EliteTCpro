@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Settings as SettingsIcon, Users, Bell, Palette, Loader2, UserPlus, CheckCircle, Building2, DollarSign, FileText, Pencil, X, Bug, Lightbulb, Puzzle, MessageSquarePlus, Activity, Mail, UserCircle, Trash2 } from "lucide-react";
+import { Settings as SettingsIcon, Users, Bell, Palette, Loader2, UserPlus, CheckCircle, Building2, DollarSign, FileText, Pencil, X, Bug, Lightbulb, Puzzle, MessageSquarePlus, Activity, Mail, UserCircle, Trash2, Shield, Search } from "lucide-react";
 import { useCurrentUser, isTCOrAdmin, isOwnerOrAdmin } from "../components/auth/useCurrentUser";
 import { ROLE_COLORS } from "../components/utils/tenantUtils";
 import TemplateLibraryPanel from "../components/templates/TemplateLibraryPanel";
@@ -16,6 +16,8 @@ import FeedbackModal from "../components/feedback/FeedbackModal";
 import MyFeedbackSection from "../components/feedback/MyFeedbackSection";
 import ProfileTab from "../components/settings/ProfileTab";
 import TeamManagementPanel from "../components/teams/TeamManagementPanel";
+import { Skeleton } from "@/components/ui/skeleton";
+import { format } from "date-fns";
 
 export default function Settings() {
   const { data: currentUser } = useCurrentUser();
@@ -140,8 +142,51 @@ export default function Settings() {
 
   const roleColors = ROLE_COLORS;
   const [activeTab, setActiveTab] = useState("account");
+  const [auditSearch, setAuditSearch] = useState("");
+  const [auditActionFilter, setAuditActionFilter] = useState("all");
+  const [auditEntityFilter, setAuditEntityFilter] = useState("all");
+  const [selectedLog, setSelectedLog] = useState(null);
 
   const isTC = currentUser?.role === "tc" || currentUser?.role === "tc_lead";
+
+  const { data: auditLogs = [], isLoading: auditLoading } = useQuery({
+    queryKey: ["auditLogs", currentUser?.brokerage_id],
+    queryFn: () => base44.entities.AuditLog.filter({ brokerage_id: currentUser?.brokerage_id }, "-created_date", 100),
+    enabled: !!currentUser?.brokerage_id && isOwnerOrAdmin(currentUser) && activeTab === "auditlog",
+  });
+
+  const { data: auditTransactions = [] } = useQuery({
+    queryKey: ["transactions-audit"],
+    queryFn: () => base44.entities.Transaction.list(),
+    enabled: isOwnerOrAdmin(currentUser) && activeTab === "auditlog",
+  });
+
+  const txAddressMap = Object.fromEntries(auditTransactions.map(t => [t.id, t.address]));
+
+  const filteredLogs = auditLogs.filter((l) => {
+    const matchesSearch = !auditSearch ||
+      l.action?.toLowerCase().includes(auditSearch.toLowerCase()) ||
+      l.actor_email?.toLowerCase().includes(auditSearch.toLowerCase()) ||
+      l.description?.toLowerCase().includes(auditSearch.toLowerCase());
+    const matchesAction = auditActionFilter === "all" || l.action === auditActionFilter;
+    const matchesEntity = auditEntityFilter === "all" || l.entity_type === auditEntityFilter;
+    return matchesSearch && matchesAction && matchesEntity;
+  });
+
+  const uniqueAuditActions = [...new Set(auditLogs.map(l => l.action).filter(Boolean))].sort();
+  const uniqueAuditEntities = [...new Set(auditLogs.map(l => l.entity_type).filter(Boolean))].sort();
+
+  const ACTION_COLORS = {
+    phase_changed: "bg-blue-50 text-blue-700",
+    task_completed: "bg-emerald-50 text-emerald-700",
+    doc_uploaded: "bg-purple-50 text-purple-700",
+    doc_approved: "bg-emerald-50 text-emerald-700",
+    doc_rejected: "bg-red-50 text-red-700",
+    user_invited: "bg-cyan-50 text-cyan-700",
+    role_changed: "bg-amber-50 text-amber-700",
+    billing_event: "bg-orange-50 text-orange-700",
+    deadline_edited: "bg-amber-50 text-amber-700",
+  };
 
   const TABS = [
     { id: "account",    label: "Account",    icon: SettingsIcon },
@@ -149,10 +194,12 @@ export default function Settings() {
     { id: "team",       label: "Team",       icon: Users,             adminOnly: true },
     { id: "finance",    label: "Finance",    icon: DollarSign,        tcHidden: true },
     { id: "templates",  label: "Templates",  icon: FileText,          adminOnly: true },
+    { id: "auditlog",   label: "Audit Log",  icon: Shield,            ownerOnly: true },
     { id: "feedback",   label: "Feedback",   icon: MessageSquarePlus },
     { id: "system",     label: "System",     icon: Activity,          tcHidden: true },
   ].filter(t => {
     if (t.adminOnly && !isTCOrAdmin(currentUser)) return false;
+    if (t.ownerOnly && !isOwnerOrAdmin(currentUser)) return false;
     if (t.tcHidden && isTC) return false;
     return true;
   });
@@ -490,6 +537,118 @@ export default function Settings() {
               <div className="w-9 h-9 rounded-lg bg-gray-50 flex items-center justify-center"><Palette className="w-4 h-4 text-gray-400" /></div>
               <div><p className="font-semibold text-sm text-gray-700">Branding</p><p className="text-xs text-gray-400">Upload logo, set primary color, and customize the client portal.</p></div>
             </CardHeader>
+          </Card>
+        </div>
+      )}
+
+      {/* ── Audit Log ── */}
+      {activeTab === "auditlog" && isOwnerOrAdmin(currentUser) && (
+        <div className="space-y-4">
+          {selectedLog && (
+            <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+              <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={() => setSelectedLog(null)} />
+              <div className="relative bg-white rounded-xl shadow-2xl w-full max-w-2xl max-h-[80vh] flex flex-col overflow-hidden">
+                <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100">
+                  <div className="flex items-center gap-2">
+                    <Badge className={`text-xs ${ACTION_COLORS[selectedLog.action] || "bg-gray-50 text-gray-600"}`}>
+                      {selectedLog.action?.replace(/_/g, " ")}
+                    </Badge>
+                    <span className="text-sm font-semibold text-gray-800">{selectedLog.description || `${selectedLog.entity_type} ${selectedLog.entity_id}`}</span>
+                  </div>
+                  <button onClick={() => setSelectedLog(null)} className="p-1.5 rounded-lg hover:bg-gray-100 transition-colors">
+                    <X className="w-4 h-4 text-gray-500" />
+                  </button>
+                </div>
+                <div className="px-5 py-3 bg-gray-50 border-b border-gray-100 flex flex-wrap gap-4 text-xs text-gray-500">
+                  <span>Actor: <span className="font-medium text-gray-700">{selectedLog.actor_email || "system"}</span></span>
+                  {selectedLog.transaction_id && <span>Transaction: <span className="font-medium text-gray-700">{txAddressMap[selectedLog.transaction_id] || selectedLog.transaction_id}</span></span>}
+                  {selectedLog.entity_type && <span>Entity: <span className="font-medium text-gray-700">{selectedLog.entity_type}</span></span>}
+                  <span>Time: <span className="font-medium text-gray-700">{selectedLog.created_date ? (() => { try { return format(new Date(selectedLog.created_date), "MMM d, yyyy h:mm:ss a"); } catch { return selectedLog.created_date; } })() : "—"}</span></span>
+                </div>
+                <div className="flex-1 overflow-y-auto p-5 space-y-4">
+                  {!selectedLog.before && !selectedLog.after ? (
+                    <p className="text-sm text-gray-400 text-center py-8">No before/after data recorded for this event.</p>
+                  ) : (
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      {selectedLog.before && (
+                        <div>
+                          <p className="text-xs font-semibold uppercase tracking-wider text-gray-400 mb-2">Before</p>
+                          <pre className="bg-gray-50 border border-gray-200 rounded-lg p-3 text-xs text-gray-700 overflow-auto whitespace-pre-wrap break-words">{JSON.stringify(selectedLog.before, null, 2)}</pre>
+                        </div>
+                      )}
+                      {selectedLog.after && (
+                        <div>
+                          <p className="text-xs font-semibold uppercase tracking-wider text-emerald-500 mb-2">After</p>
+                          <pre className="bg-emerald-50 border border-emerald-200 rounded-lg p-3 text-xs text-gray-700 overflow-auto whitespace-pre-wrap break-words">{JSON.stringify(selectedLog.after, null, 2)}</pre>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Filters */}
+          <div className="flex flex-wrap gap-2">
+            <div className="relative">
+              <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+              <Input className="pl-9 w-52 h-8 text-sm" placeholder="Search logs…" value={auditSearch} onChange={(e) => setAuditSearch(e.target.value)} />
+            </div>
+            <Select value={auditActionFilter} onValueChange={setAuditActionFilter}>
+              <SelectTrigger className="w-40 h-8 text-xs"><SelectValue placeholder="All Actions" /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Actions</SelectItem>
+                {uniqueAuditActions.map(a => <SelectItem key={a} value={a}>{a.replace(/_/g, " ")}</SelectItem>)}
+              </SelectContent>
+            </Select>
+            <Select value={auditEntityFilter} onValueChange={setAuditEntityFilter}>
+              <SelectTrigger className="w-36 h-8 text-xs"><SelectValue placeholder="All Entities" /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Entities</SelectItem>
+                {uniqueAuditEntities.map(e => <SelectItem key={e} value={e}>{e}</SelectItem>)}
+              </SelectContent>
+            </Select>
+            {(auditActionFilter !== "all" || auditEntityFilter !== "all" || auditSearch) && (
+              <button onClick={() => { setAuditActionFilter("all"); setAuditEntityFilter("all"); setAuditSearch(""); }} className="text-xs text-gray-400 hover:text-gray-600 flex items-center gap-1 px-2">
+                <X className="w-3.5 h-3.5" /> Clear
+              </button>
+            )}
+          </div>
+
+          <Card className="shadow-sm border-gray-100">
+            <CardContent className="pt-4">
+              {auditLoading ? (
+                <div className="space-y-3">{[1,2,3,4,5].map(i => <Skeleton key={i} className="h-12 rounded" />)}</div>
+              ) : filteredLogs.length === 0 ? (
+                <div className="text-center py-12">
+                  <Shield className="w-10 h-10 text-gray-200 mx-auto mb-3" />
+                  <p className="text-gray-400 text-sm">No audit events recorded yet.</p>
+                </div>
+              ) : (
+                <div className="space-y-1">
+                  {filteredLogs.map((log) => (
+                    <div key={log.id} onClick={() => setSelectedLog(log)} className="flex items-start gap-3 p-3 rounded-lg hover:bg-gray-50 transition-colors cursor-pointer">
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <Badge className={`text-xs ${ACTION_COLORS[log.action] || "bg-gray-50 text-gray-600"}`}>
+                            {log.action?.replace(/_/g, " ")}
+                          </Badge>
+                          <span className="text-sm text-gray-700">{log.description || `${log.entity_type} ${log.entity_id}`}</span>
+                        </div>
+                        <p className="text-xs text-gray-400 mt-0.5">
+                          by <span className="font-medium text-gray-500">{log.actor_email || "system"}</span>
+                          {log.transaction_id && <> · <span className="text-gray-500">{txAddressMap[log.transaction_id] || log.transaction_id?.slice(-6)}</span></>}
+                        </p>
+                      </div>
+                      <span className="text-xs text-gray-400 flex-shrink-0">
+                        {log.created_date ? (() => { try { return format(new Date(log.created_date), "MMM d, h:mm a"); } catch { return ""; } })() : ""}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </CardContent>
           </Card>
         </div>
       )}
