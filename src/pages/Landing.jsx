@@ -59,12 +59,9 @@ export default function Landing() {
 
       {/* ── HERO ── */}
       <section className="relative flex flex-col items-center justify-center text-center px-6 py-28 overflow-hidden min-h-[88vh]">
-        {/* Background image with dark overlay */}
-        <div
-          className="absolute inset-0 bg-cover bg-center"
-          style={{ backgroundImage: "url('https://images.unsplash.com/photo-1560518883-ce09059eeffa?w=1600&q=80')" }}
-        />
-        <div className="absolute inset-0 bg-gradient-to-b from-gray-950/85 via-gray-900/80 to-gray-950/90" />
+        {/* Background with logo color theme */}
+        <div className="absolute inset-0 bg-gradient-to-br from-slate-900 via-blue-900 to-slate-950" />
+        <div className="absolute inset-0 bg-gradient-to-b from-slate-900/90 via-blue-900/80 to-slate-950/95" />
 
         {/* Content */}
         <div className="relative z-10 max-w-3xl mx-auto">
@@ -72,7 +69,7 @@ export default function Landing() {
              {brokerageLogo ? (
                <img src={brokerageLogo} alt="Logo" className="h-16 max-w-[240px] object-contain brightness-0 invert" />
              ) : (
-               <img src="https://media.base44.com/images/public/69a9cd0677a8832ab0cc59bc/9c93e25bf_EliteTCLogoBGRemoved.png" alt="EliteTC Logo" className="h-40 max-w-[500px] object-contain" style={{ mixBlendMode: 'multiply' }} />
+               <img src="https://media.base44.com/images/public/69a9cd0677a8832ab0cc59bc/9c93e25bf_EliteTCLogoBGRemoved.png" alt="EliteTC Logo" className="h-80 max-w-[800px] object-contain" />
              )}
            </div>
 
