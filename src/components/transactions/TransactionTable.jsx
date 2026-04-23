@@ -1,5 +1,6 @@
 import React, { useState, useRef } from "react";
 import { Link, useNavigate } from "react-router-dom";
+
 import { createPageUrl } from "@/utils";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -191,8 +192,58 @@ export default function TransactionTable({ transactions, sorted = false }) {
       })
     : transactions;
 
+  // Mobile card list
+  const MobileCards = () => (
+    <div className="divide-y" style={{ borderColor: "var(--border)" }}>
+      {rows.map((tx) => {
+        const score = calcPriorityScore(tx);
+        const borderColor = score >= 80 ? "#ef4444" : score >= 40 ? "#f59e0b" : "transparent";
+        return (
+          <Link
+            key={tx.id}
+            to={`/transactions/${tx.id}`}
+            className="flex items-start gap-3 px-4 py-3 active:opacity-70"
+            style={{ borderLeft: `3px solid ${borderColor}`, background: "var(--card-bg)" }}
+          >
+            <div className="w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0 mt-0.5" style={{ background: "var(--accent-subtle)" }}>
+              <MapPin className="w-4 h-4" style={{ color: "var(--accent)" }} />
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-semibold truncate" style={{ color: "var(--foreground)" }}>{tx.address}</p>
+              <p className="text-xs truncate mt-0.5" style={{ color: "var(--text-muted)" }}>
+                {tx.buyers?.length ? tx.buyers[0] : (tx.buyer || "—")}
+                {tx.agent ? ` · ${tx.agent}` : ""}
+              </p>
+              <div className="flex items-center gap-2 mt-1.5 flex-wrap">
+                <span className={`text-[10px] font-medium px-1.5 py-0.5 rounded ${TX_PHASE_STYLES[tx.transaction_phase] || TX_PHASE_STYLES.intake}`}>
+                  {TX_PHASE_LABELS[tx.transaction_phase] || "Under Contract"}
+                </span>
+                <Badge variant="outline" className={`text-[10px] font-medium capitalize ${statusStyles[tx.status] || statusStyles.active}`}>
+                  {tx.status || "active"}
+                </Badge>
+                {tx.closing_date && (
+                  <span className="text-[10px]" style={{ color: "var(--text-muted)" }}>
+                    Close: <span className="font-medium">{format(new Date(tx.closing_date), "MMM d")}</span>
+                  </span>
+                )}
+              </div>
+            </div>
+            <ChevronRight className="w-4 h-4 flex-shrink-0 mt-2" style={{ color: "var(--text-muted)" }} />
+          </Link>
+        );
+      })}
+    </div>
+  );
+
   return (
-    <div className="overflow-x-auto">
+    <>
+      {/* Mobile: card list */}
+      <div className="sm:hidden">
+        <MobileCards />
+      </div>
+
+      {/* Desktop: table */}
+      <div className="hidden sm:block overflow-x-auto">
       <Table>
          <TableHeader>
             <TableRow style={{ borderBottomColor: "var(--border)" }}>
@@ -276,6 +327,7 @@ export default function TransactionTable({ transactions, sorted = false }) {
            })}
          </TableBody>
       </Table>
-    </div>
+      </div>
+    </>
   );
 }
