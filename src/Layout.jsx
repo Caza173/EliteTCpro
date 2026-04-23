@@ -103,23 +103,20 @@ export default function Layout({ children, currentPageName }) {
 
   useEffect(() => {
     if (currentUser === undefined) return;
-    // TC onboarding gate
-    const isTCRole = currentUser?.role === "tc" || currentUser?.role === "tc_lead";
-    const needsOnboarding = isTCRole && !currentUser?.profile_completed;
+    
     const ONBOARDING_EXEMPT = ["Onboarding", "Landing", "SetupProfile", "AgentSignIn"];
-    if (needsOnboarding && !ONBOARDING_EXEMPT.includes(currentPageName)) {
+    
+    // ALL new users must complete onboarding before accessing platform
+    if (currentUser !== null && currentUser.profile_completed === false && !ONBOARDING_EXEMPT.includes(currentPageName)) {
       navigate("/onboarding", { replace: true });
       return;
     }
-    // TC restricted pages
+    
+    // TC role-specific restrictions
+    const isTCRole = currentUser?.role === "tc" || currentUser?.role === "tc_lead";
     const TC_RESTRICTED = ["Integrations", "AuditLog", "Billing"];
     if (isTCRole && TC_RESTRICTED.includes(currentPageName)) {
       navigate("/Dashboard", { replace: true });
-      return;
-    }
-    // Enforce profile setup for logged-in users who haven't completed it
-    if (currentUser !== null && currentUser.profile_completed === false && currentPageName !== "SetupProfile" && currentPageName !== "Onboarding") {
-      navigate("/SetupProfile", { replace: true });
       return;
     }
   }, [currentUser, currentPageName, navigate]);
