@@ -114,7 +114,7 @@ Deno.serve(async (req) => {
       
       await sendViaGmail(base44, {
         to: normalEmail,
-        subject: 'Your verification code — EliteTC Deal Intake',
+        subject: 'Your verification code - EliteTC Deal Intake',
         plainTextBody,
         htmlBody,
       });
