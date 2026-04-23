@@ -178,7 +178,7 @@ function DayCell({ day, events, selectedDay, hoveredDay, setSelectedDay, setHove
 }
 
 export default function DeadlineCalendarView({ transactions = [] }) {
-  const [view, setView] = useState("month");
+  const [view, setView] = useState(() => window.innerWidth < 768 ? "day" : "month");
   const [cursor, setCursor] = useState(new Date()); // reference date
   const [selectedDay, setSelectedDay] = useState(null);
   const [hoveredDay, setHoveredDay] = useState(null);
