@@ -31,7 +31,7 @@ export default function Landing() {
           {brokerageLogo ? (
             <img src={brokerageLogo} alt="Logo" className="h-12 max-w-[200px] object-contain" />
           ) : (
-            <img src="https://media.base44.com/images/public/69a9cd0677a8832ab0cc59bc/ee22f0e48_EliteTCLogoBGRemoved1280x1280.png" alt="EliteTC Logo" className="h-12 max-w-[200px] object-contain" />
+            <img src="https://media.base44.com/images/public/69a9cd0677a8832ab0cc59bc/ee22f0e48_EliteTCLogoBGRemoved1280x1280.png" alt="EliteTC Logo" className="h-12 max-w-[200px] object-contain mix-blend-mode-multiply" style={{ mixBlendMode: 'multiply' }} />
           )}
         </div>
 
@@ -72,7 +72,7 @@ export default function Landing() {
              {brokerageLogo ? (
                <img src={brokerageLogo} alt="Logo" className="h-16 max-w-[240px] object-contain brightness-0 invert" />
              ) : (
-               <img src="https://media.base44.com/images/public/69a9cd0677a8832ab0cc59bc/ee22f0e48_EliteTCLogoBGRemoved1280x1280.png" alt="EliteTC Logo" className="h-16 max-w-[240px] object-contain" />
+               <img src="https://media.base44.com/images/public/69a9cd0677a8832ab0cc59bc/ee22f0e48_EliteTCLogoBGRemoved1280x1280.png" alt="EliteTC Logo" className="h-16 max-w-[240px] object-contain" style={{ mixBlendMode: 'multiply' }} />
              )}
            </div>
 
@@ -309,7 +309,7 @@ export default function Landing() {
       {/* ── Footer ── */}
       <footer className="py-6 px-8 bg-gray-950 border-t border-gray-800 flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <img src="https://media.base44.com/images/public/69a9cd0677a8832ab0cc59bc/ee22f0e48_EliteTCLogoBGRemoved1280x1280.png" alt="EliteTC Logo" className="h-8 max-w-[140px] object-contain" />
+          <img src="https://media.base44.com/images/public/69a9cd0677a8832ab0cc59bc/ee22f0e48_EliteTCLogoBGRemoved1280x1280.png" alt="EliteTC Logo" className="h-8 max-w-[140px] object-contain" style={{ mixBlendMode: 'lighten' }} />
         </div>
         <p className="text-xs text-gray-500">© 2026 EliteTC. All rights reserved.</p>
       </footer>
