@@ -2,15 +2,17 @@ import React, { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { base44 } from "@/api/base44Client";
 import { Button } from "@/components/ui/button";
-import { Loader2, Camera, CheckCircle2, Building2 } from "lucide-react";
+import { Loader2, Camera, CheckCircle2, Building2, ImagePlus, X } from "lucide-react";
 
 export default function Onboarding() {
   const navigate = useNavigate();
   const [user, setUser] = useState(null);
   const [saving, setSaving] = useState(false);
   const [uploadingPhoto, setUploadingPhoto] = useState(false);
+  const [uploadingSig, setUploadingSig] = useState(false);
   const [saved, setSaved] = useState(false);
   const fileInputRef = useRef(null);
+  const sigInputRef = useRef(null);
 
   const [form, setForm] = useState({
     full_name: "",
@@ -18,6 +20,7 @@ export default function Onboarding() {
     company: "",
     email_signature: "",
     profile_photo_url: "",
+    signature_block_url: "",
   });
 
   useEffect(() => {
@@ -31,6 +34,7 @@ export default function Onboarding() {
         company: u.profile?.company || u.company || "",
         email_signature: u.profile?.email_signature || u.email_signature || "",
         profile_photo_url: u.profile?.profile_photo_url || u.profile_photo_url || "",
+        signature_block_url: u.profile?.signature_block_url || u.signature_block_url || "",
       }));
     });
   }, []);
@@ -63,6 +67,19 @@ export default function Onboarding() {
       handleChange("profile_photo_url", file_url);
     } finally {
       setUploadingPhoto(false);
+    }
+  };
+
+  const handleSigUpload = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setUploadingSig(true);
+    try {
+      const { file_url } = await base44.integrations.Core.UploadFile({ file });
+      handleChange("signature_block_url", file_url);
+    } finally {
+      setUploadingSig(false);
+      e.target.value = "";
     }
   };
 
@@ -193,6 +210,43 @@ export default function Onboarding() {
               rows={4}
               className="theme-input w-full resize-none"
             />
+          </Field>
+
+          <Field label="Signature Block Image">
+            <div className="space-y-2">
+              {form.signature_block_url ? (
+                <div className="relative inline-block">
+                  <img
+                    src={form.signature_block_url}
+                    alt="Signature block"
+                    className="max-h-24 rounded-lg border object-contain"
+                    style={{ borderColor: "var(--card-border)" }}
+                  />
+                  <button
+                    onClick={() => handleChange("signature_block_url", "")}
+                    className="absolute -top-1.5 -right-1.5 w-5 h-5 rounded-full flex items-center justify-center bg-red-500 text-white hover:bg-red-600"
+                  >
+                    <X className="w-3 h-3" />
+                  </button>
+                </div>
+              ) : null}
+              <button
+                type="button"
+                onClick={() => sigInputRef.current?.click()}
+                disabled={uploadingSig}
+                className="flex items-center gap-2 px-3 py-2 rounded-lg border border-dashed text-sm transition-colors hover:bg-opacity-80"
+                style={{ borderColor: "var(--border)", color: "var(--text-secondary)", backgroundColor: "var(--bg-tertiary)" }}
+              >
+                {uploadingSig
+                  ? <Loader2 className="w-4 h-4 animate-spin" />
+                  : <ImagePlus className="w-4 h-4" />}
+                {uploadingSig ? "Uploading…" : form.signature_block_url ? "Replace image" : "Upload signature image"}
+              </button>
+              <p className="text-[11px]" style={{ color: "var(--text-muted)" }}>
+                Optional — PNG or JPG. Used in email footers and documents.
+              </p>
+              <input ref={sigInputRef} type="file" accept="image/*" className="hidden" onChange={handleSigUpload} />
+            </div>
           </Field>
         </div>
 
