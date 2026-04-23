@@ -176,10 +176,19 @@ function IssueCard({ issue, onAddTask, transaction, allIssues, linkedDoc, onView
               )}
             </div>
 
+            {issue.section && (
+              <p className="text-[10px] mt-1 text-gray-400 font-medium">📄 {issue.section}</p>
+            )}
             {actionRequired && (
               <p className="text-[11px] mt-1.5 font-medium" style={{ color: "var(--text-secondary)" }}>
                 → {actionRequired}
               </p>
+            )}
+            {issue.impact && (
+              <p className="text-[10px] mt-1 italic text-orange-600">⚠ Impact: {issue.impact}</p>
+            )}
+            {issue.confidence !== null && issue.confidence !== undefined && (
+              <p className="text-[10px] mt-0.5 text-gray-400">Confidence: {Math.round(issue.confidence * 100)}%</p>
             )}
           </div>
         </div>

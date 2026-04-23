@@ -84,6 +84,14 @@ Deno.serve(async (req) => {
       due_diligence_deadline: tx.due_diligence_deadline,
       closing_date: tx.closing_date,
       ctc_target: tx.ctc_target,
+      // Party data — critical for party-count-based signature validation
+      buyer: tx.buyer || null,
+      buyers: tx.buyers || [],
+      seller: tx.seller || null,
+      sellers: tx.sellers || [],
+      buyers_agent_name: tx.buyers_agent_name || null,
+      sellers_agent_name: tx.sellers_agent_name || null,
+      brokerage_id: tx.brokerage_id || null,
     };
 
     for (const doc of activeDocs) {

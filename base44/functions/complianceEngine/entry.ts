@@ -499,9 +499,12 @@ OUTPUT — return this exact JSON structure:
       "party": "buyer|seller|agent|null",
       "party_name": "specific person name or null",
       "field": "field or section name",
+      "section": "document section name (e.g. Section 1 - Parties, Section 20 - Professional Fee)",
       "location": "exact location string",
       "page": N,
       "severity": "critical|high|medium|low",
+      "confidence": N,
+      "impact": "brief description of closing risk if not resolved",
       "action_required": "specific corrective action"
     }
   ],
@@ -546,9 +549,12 @@ OUTPUT — return this exact JSON structure:
                 party: { type: "string" },
                 party_name: { type: "string" },
                 field: { type: "string" },
+                section: { type: "string" },
                 location: { type: "string" },
                 page: { type: "number" },
                 severity: { type: "string" },
+                confidence: { type: "number" },
+                impact: { type: "string" },
                 action_required: { type: "string" },
               }
             }
@@ -588,11 +594,14 @@ OUTPUT — return this exact JSON structure:
             type: "missing_signature",
             description: `Missing ${partyName || role} signature: "${f.name}"${f.page ? ` (Page ${f.page})` : ""}`,
             field: f.name,
+            section: "Signature Block",
             party: role !== "unknown" ? role : null,
             party_name: partyName,
             location: f.page ? `Page ${f.page}, signature field "${f.name}"` : `Signature field "${f.name}"`,
             page: f.page,
             severity: "critical",
+            confidence: 0.97,
+            impact: "Document is not fully executed — cannot proceed to closing without all required signatures.",
             action_required: `Obtain ${partyName || role} signature for "${f.name}"`,
             category: "missing_signature",
             message: `Missing ${partyName || role} signature field: "${f.name}"`,
@@ -613,11 +622,14 @@ OUTPUT — return this exact JSON structure:
             type: "missing_initial",
             description: `Missing ${partyName || "buyer"} initials on Page ${pg}`,
             field: f.name,
+            section: `Page ${pg} Footer`,
             party: "buyer",
             party_name: partyName,
             location: `Page ${pg}, footer/margin buyer initials`,
             page: parseInt(pg) || null,
             severity: "high",
+            confidence: 0.95,
+            impact: "Incomplete initials may invalidate the page — lender or title company may reject the document.",
             action_required: `Obtain ${partyName || "buyer"} initials on page ${pg}`,
             category: "missing_initial",
             message: `Missing buyer initials on Page ${pg}`,
@@ -632,11 +644,14 @@ OUTPUT — return this exact JSON structure:
             type: "missing_initial",
             description: `Missing ${partyName || "seller"} initials on Page ${pg}`,
             field: f.name,
+            section: `Page ${pg} Footer`,
             party: "seller",
             party_name: partyName,
             location: `Page ${pg}, footer/margin seller initials`,
             page: parseInt(pg) || null,
             severity: "high",
+            confidence: 0.95,
+            impact: "Incomplete initials may invalidate the page — lender or title company may reject the document.",
             action_required: `Obtain ${partyName || "seller"} initials on page ${pg}`,
             category: "missing_initial",
             message: `Missing seller initials on Page ${pg}`,
@@ -655,11 +670,14 @@ OUTPUT — return this exact JSON structure:
       type: i.type || "blank_field",
       description: i.description || i.message || "Compliance issue detected",
       field: i.field || null,
+      section: i.section || null,
       party: i.party || null,
       party_name: i.party_name || null,
       location: i.location || (i.page ? `Page ${i.page}` : null),
       page: i.page || null,
       severity: i.severity || "medium",
+      confidence: typeof i.confidence === "number" ? i.confidence : null,
+      impact: i.impact || null,
       action_required: i.action_required || i.suggested_task || "Review and correct",
       category: i.type || "other",
       message: i.description || i.message || "Compliance issue detected",
@@ -674,7 +692,42 @@ OUTPUT — return this exact JSON structure:
       return true;
     });
 
-    const issues = [...pdfDerivedIssues, ...aiIssues];
+    // ── STEP 6: Template-based required field validation ──────────────────────
+    // Cross-check extracted fields against NHAR template requirements
+    const templateIssues = [];
+    if (template && result.extracted_fields) {
+      const extracted = result.extracted_fields;
+      for (const req of template.required_fields) {
+        const val = extracted[req.field];
+        const isEmpty = val === null || val === undefined || val === "" || val === "null";
+        if (isEmpty) {
+          const issueKey = `template_field_${req.field}`;
+          const alreadyCovered = [...pdfDerivedIssues, ...aiIssues].some(i => i.field === req.field || (i.description || "").toLowerCase().includes(req.label.toLowerCase()));
+          if (!alreadyCovered) {
+            templateIssues.push({
+              id: issueKey,
+              type: "blank_field",
+              description: `Required field missing: ${req.label} (${docType}, Page ${req.page})`,
+              field: req.field,
+              section: `Section — ${req.label}`,
+              party: null,
+              party_name: null,
+              location: `Page ${req.page}, ${req.label} field`,
+              page: req.page,
+              severity: "high",
+              confidence: 0.9,
+              impact: `Missing ${req.label} may delay or prevent closing.`,
+              action_required: `Fill in the ${req.label} field`,
+              category: "blank_field",
+              message: `Required field "${req.label}" is blank in ${docType}`,
+              suggested_task: `Complete the ${req.label} field on Page ${req.page}`,
+            });
+          }
+        }
+      }
+    }
+
+    const issues = [...pdfDerivedIssues, ...aiIssues, ...templateIssues];
 
     const blockers = issues.filter(i => i.severity === "critical" || i.severity === "blocker");
     const warnings = issues.filter(i => i.severity === "high" || i.severity === "medium" || i.severity === "warning");
