@@ -870,7 +870,8 @@ export default function AgentIntake() {
             )}
 
             {/* ── Submit ── */}
-            <div className="flex justify-end pt-2">
+            <div className="flex justify-end gap-3 pt-2">
+              <Button type="button" variant="outline" onClick={() => window.history.back()}>Cancel</Button>
               <Button type="submit"
                 disabled={submitting || !emailVerified || (requiresDoc && !documentUrl)}
                 className="bg-blue-600 hover:bg-blue-700 px-8 gap-2">
