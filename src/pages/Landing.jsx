@@ -31,14 +31,7 @@ export default function Landing() {
           {brokerageLogo ? (
             <img src={brokerageLogo} alt="Logo" className="h-8 max-w-[140px] object-contain" />
           ) : (
-            <>
-              <div className="w-7 h-7 rounded-lg flex items-center justify-center bg-blue-600">
-                <Building2 className="w-4 h-4 text-white" />
-              </div>
-              <span className="text-sm font-bold text-gray-900">
-                Elite<span className="text-blue-600">TC</span>
-              </span>
-            </>
+            <img src="https://media.base44.com/images/public/69a9cd0677a8832ab0cc59bc/ae61fe833_grok-image-c950c1d5-ec9e-4298-9c23-54ed9f0b2340.jpg" alt="EliteTC Logo" className="h-8 max-w-[140px] object-contain" />
           )}
         </div>
 
@@ -76,17 +69,12 @@ export default function Landing() {
         {/* Content */}
         <div className="relative z-10 max-w-3xl mx-auto">
           <div className="flex items-center justify-center gap-2 mb-6">
-            {brokerageLogo ? (
-              <img src={brokerageLogo} alt="Logo" className="h-10 max-w-[180px] object-contain brightness-0 invert" />
-            ) : (
-              <>
-                <div className="w-8 h-8 rounded-lg flex items-center justify-center bg-blue-600">
-                  <Building2 className="w-4 h-4 text-white" />
-                </div>
-                <span className="text-white font-semibold text-base">EliteTC</span>
-              </>
-            )}
-          </div>
+             {brokerageLogo ? (
+               <img src={brokerageLogo} alt="Logo" className="h-10 max-w-[180px] object-contain brightness-0 invert" />
+             ) : (
+               <img src="https://media.base44.com/images/public/69a9cd0677a8832ab0cc59bc/ae61fe833_grok-image-c950c1d5-ec9e-4298-9c23-54ed9f0b2340.jpg" alt="EliteTC Logo" className="h-10 max-w-[180px] object-contain" />
+             )}
+           </div>
 
           <h1 className="text-4xl md:text-6xl font-bold text-white leading-tight mb-6">
             Every Deadline. Every Document.<br />
@@ -321,10 +309,7 @@ export default function Landing() {
       {/* ── Footer ── */}
       <footer className="py-6 px-8 bg-gray-950 border-t border-gray-800 flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <div className="w-6 h-6 rounded-md flex items-center justify-center bg-blue-600">
-            <Building2 className="w-3.5 h-3.5 text-white" />
-          </div>
-          <span className="text-sm font-bold text-white">Elite<span className="text-blue-400">TC</span></span>
+          <img src="https://media.base44.com/images/public/69a9cd0677a8832ab0cc59bc/ae61fe833_grok-image-c950c1d5-ec9e-4298-9c23-54ed9f0b2340.jpg" alt="EliteTC Logo" className="h-6 max-w-[100px] object-contain" />
         </div>
         <p className="text-xs text-gray-500">© 2026 EliteTC. All rights reserved.</p>
       </footer>
