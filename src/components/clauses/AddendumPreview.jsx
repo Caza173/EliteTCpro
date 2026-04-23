@@ -25,13 +25,46 @@ export default function AddendumPreview({ transaction, selectedClauses, inputs, 
   };
 
   const handleDownload = () => {
-    const blob = new Blob([text], { type: "text/plain" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `Addendum_${(transaction.address || "property").replace(/[^a-z0-9]/gi, "_")}.txt`;
-    a.click();
-    URL.revokeObjectURL(url);
+    const { jsPDF } = window.jspdf || {};
+    // Use jsPDF if available, otherwise fall back to dynamic import
+    const generatePDF = async () => {
+      const { jsPDF } = await import("jspdf");
+      const doc = new jsPDF({ unit: "pt", format: "letter" });
+      const margin = 60;
+      const pageWidth = doc.internal.pageSize.getWidth();
+      const maxWidth = pageWidth - margin * 2;
+
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(13);
+      doc.text("ADDENDUM TO PURCHASE AND SALE AGREEMENT", pageWidth / 2, margin, { align: "center" });
+
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(9);
+      doc.text(`Property: ${transaction.address || ""}`, margin, margin + 22);
+
+      doc.setLineWidth(0.5);
+      doc.line(margin, margin + 32, pageWidth - margin, margin + 32);
+
+      doc.setFontSize(9);
+      const lines = doc.splitTextToSize(text, maxWidth);
+      let y = margin + 48;
+      const lineHeight = 13;
+      const pageHeight = doc.internal.pageSize.getHeight() - margin;
+
+      for (const line of lines) {
+        if (y + lineHeight > pageHeight) {
+          doc.addPage();
+          y = margin;
+        }
+        doc.text(line, margin, y);
+        y += lineHeight;
+      }
+
+      const filename = `Addendum_${(transaction.address || "property").replace(/[^a-z0-9]/gi, "_")}.pdf`;
+      doc.save(filename);
+    };
+
+    generatePDF();
   };
 
   const handleEmail = async () => {
