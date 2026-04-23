@@ -33,13 +33,15 @@ function fmtVal(key, val) {
 
 function EditableField({ label, value, onSave, isCurrency = false }) {
   const [editing, setEditing] = useState(false);
-  const [draft, setDraft] = useState(isCurrency && value ? String(value).replace(/[^\d.]/g, "") : String(value || ""));
+  const rawValue = (value !== null && value !== undefined) ? String(value).replace(/[^\d.]/g, "") : "";
+  const [draft, setDraft] = useState(rawValue);
 
   const handleSave = () => {
     setEditing(false);
     const trimmedDraft = draft.trim();
-    if (trimmedDraft && trimmedDraft !== String(value || "").replace(/[^\d.]/g, "")) {
-      const numValue = isCurrency ? parseFloat(trimmedDraft) : trimmedDraft;
+    // Save if there's any value entered, regardless of original
+    if (trimmedDraft) {
+      const numValue = isCurrency ? parseFloat(trimmedDraft.replace(/,/g, "")) : trimmedDraft;
       onSave(isNaN(numValue) ? trimmedDraft : numValue);
     }
   };
@@ -53,7 +55,7 @@ function EditableField({ label, value, onSave, isCurrency = false }) {
           value={draft}
           onChange={e => setDraft(e.target.value)}
           onBlur={handleSave}
-          onKeyDown={e => { if (e.key === "Enter") handleSave(); if (e.key === "Escape") { setDraft(isCurrency && value ? String(value).replace(/[^\d.]/g, "") : String(value || "")); setEditing(false); } }}
+          onKeyDown={e => { if (e.key === "Enter") handleSave(); if (e.key === "Escape") { setDraft(rawValue); setEditing(false); } }}
           className="flex-1 text-sm border rounded px-2 py-1 focus:outline-none focus:ring-1 focus:ring-blue-400"
           style={{ borderColor: "var(--input-border)", background: "var(--input-bg)", color: "var(--text-primary)" }}
           placeholder={isCurrency ? "0.00" : ""}
