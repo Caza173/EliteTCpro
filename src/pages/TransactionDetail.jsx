@@ -110,6 +110,25 @@ export default function TransactionDetail() {
   }, [id]);
   const [selectedPhase, setSelectedPhase] = useState(1);
   const [mobileAIOpen, setMobileAIOpen] = useState(false);
+
+  // Resizable AI panel (desktop only)
+  const AI_MIN = 320;
+  const AI_MAX = 700;
+  const AI_DEFAULT = 420;
+  const [aiPanelWidth, setAiPanelWidth] = useState(() => {
+    const saved = localStorage.getItem("aiPanelWidth");
+    return saved ? Math.min(AI_MAX, Math.max(AI_MIN, parseInt(saved))) : AI_DEFAULT;
+  });
+  const isResizingAI = useRef(false);
+  const aiResizeStartX = useRef(0);
+  const aiResizeStartWidth = useRef(0);
+
+  const onAIResizeMouseDown = (e) => {
+    isResizingAI.current = true;
+    aiResizeStartX.current = e.clientX;
+    aiResizeStartWidth.current = aiPanelWidth;
+    e.preventDefault();
+  };
   const [sendingTimeline, setSendingTimeline] = useState(false);
   const [timelineModalOpen, setTimelineModalOpen] = useState(false);
   const [syncingCalendar, setSyncingCalendar] = useState(false);
@@ -142,16 +161,26 @@ export default function TransactionDetail() {
 
   useEffect(() => {
     const onMouseMove = (e) => {
-      if (!isResizingNotes.current) return;
-      // dragging left increases notes width (handle is on left edge of notes panel)
-      const delta = resizeStartX.current - e.clientX;
-      const newWidth = Math.min(NOTES_MAX, Math.max(NOTES_MIN, resizeStartWidth.current + delta));
-      setNotesWidth(newWidth);
+      if (isResizingNotes.current) {
+        const delta = resizeStartX.current - e.clientX;
+        const newWidth = Math.min(NOTES_MAX, Math.max(NOTES_MIN, resizeStartWidth.current + delta));
+        setNotesWidth(newWidth);
+      }
+      if (isResizingAI.current) {
+        // dragging left edge of AI panel: moving right increases width
+        const delta = e.clientX - aiResizeStartX.current;
+        const newWidth = Math.min(AI_MAX, Math.max(AI_MIN, aiResizeStartWidth.current + delta));
+        setAiPanelWidth(newWidth);
+      }
     };
     const onMouseUp = () => {
       if (isResizingNotes.current) {
         isResizingNotes.current = false;
         setNotesWidth(w => { localStorage.setItem("notesPanelWidth", String(w)); return w; });
+      }
+      if (isResizingAI.current) {
+        isResizingAI.current = false;
+        setAiPanelWidth(w => { localStorage.setItem("aiPanelWidth", String(w)); return w; });
       }
     };
     document.addEventListener("mousemove", onMouseMove);
@@ -735,12 +764,27 @@ export default function TransactionDetail() {
       {mobileAIOpen && (
         <div className="fixed inset-0 z-50 flex justify-end">
           <div className="absolute inset-0 bg-black/50" onClick={() => setMobileAIOpen(false)} />
-          {/* Mobile: full-width sheet from bottom. Tablet/Desktop: right-side panel */}
+          {/* Mobile: full-width bottom sheet. Desktop: resizable right-side panel */}
           <div
-            className="relative flex flex-col w-full sm:w-[420px] sm:h-full sm:rounded-none rounded-t-2xl overflow-hidden mt-auto sm:mt-0"
-            style={{ height: "72vh", background: "var(--card-bg)" }}
+            className="relative flex flex-col"
+            style={{
+              width: window.innerWidth < 640 ? "100%" : `${aiPanelWidth}px`,
+              height: window.innerWidth < 640 ? "72vh" : "100%",
+              marginTop: window.innerWidth < 640 ? "auto" : "0",
+              borderRadius: window.innerWidth < 640 ? "16px 16px 0 0" : "0",
+              background: "var(--card-bg)",
+            }}
           >
-            <div className="flex items-center justify-between px-4 py-3 border-b flex-shrink-0" style={{ borderColor: "var(--card-border)" }}>
+            {/* Drag-to-resize handle — left edge, desktop only */}
+            <div
+              className="hidden sm:flex absolute left-0 top-0 bottom-0 w-1.5 cursor-col-resize group z-10"
+              style={{ background: "var(--card-border)" }}
+              onMouseDown={onAIResizeMouseDown}
+            >
+              <div className="absolute inset-0 group-hover:bg-indigo-400 transition-colors opacity-0 group-hover:opacity-100" />
+            </div>
+
+            <div className="flex items-center justify-between px-4 py-3 border-b flex-shrink-0 sm:pl-4" style={{ borderColor: "var(--card-border)" }}>
               <span className="font-semibold text-sm" style={{ color: "var(--text-primary)" }}>AI Assistant · {transaction.address}</span>
               <button onClick={() => setMobileAIOpen(false)} className="p-1 rounded-lg hover:bg-gray-100">
                 <X className="w-4 h-4 text-gray-500" />
