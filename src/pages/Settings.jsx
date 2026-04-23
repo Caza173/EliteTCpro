@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { Link } from "react-router-dom";
 import { base44 } from "@/api/base44Client";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -8,7 +8,11 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Settings as SettingsIcon, Users, Bell, Palette, Loader2, UserPlus, CheckCircle, Building2, DollarSign, FileText, Pencil, X, Bug, Lightbulb, Puzzle, MessageSquarePlus, Activity, Mail, UserCircle, Trash2, Shield, Search } from "lucide-react";
+import { Settings as SettingsIcon, Users, Bell, Palette, Loader2, UserPlus, CheckCircle, Building2, DollarSign, FileText, Pencil, X, Bug, Lightbulb, Puzzle, MessageSquarePlus, Activity, Mail, UserCircle, Trash2, Shield, Search, HelpCircle, BookOpen, Globe, Plus, Upload } from "lucide-react";
+import { tutorialSections } from "@/lib/helpContent";
+import TutorialSidebar from "@/components/help/TutorialSidebar";
+import TutorialSectionCard from "@/components/help/TutorialSectionCard";
+import FAQTab from "@/components/help/FAQTab";
 import { useCurrentUser, isTCOrAdmin, isOwnerOrAdmin } from "../components/auth/useCurrentUser";
 import { ROLE_COLORS } from "../components/utils/tenantUtils";
 import TemplateLibraryPanel from "../components/templates/TemplateLibraryPanel";
@@ -142,6 +146,15 @@ export default function Settings() {
 
   const roleColors = ROLE_COLORS;
   const [activeTab, setActiveTab] = useState("account");
+  const [helpTab, setHelpTab] = useState("tutorial");
+  const helpSectionRefs = React.useRef({});
+  const [helpActiveSectionId, setHelpActiveSectionId] = useState(tutorialSections[0].id);
+  const scrollToHelpSection = (id) => {
+    setHelpActiveSectionId(id);
+    const el = document.getElementById(id);
+    if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
+  };
+
   const [auditSearch, setAuditSearch] = useState("");
   const [auditActionFilter, setAuditActionFilter] = useState("all");
   const [auditEntityFilter, setAuditEntityFilter] = useState("all");
@@ -195,6 +208,7 @@ export default function Settings() {
     { id: "finance",    label: "Finance",    icon: DollarSign,        tcHidden: true },
     { id: "templates",  label: "Templates",  icon: FileText,          adminOnly: true },
     { id: "auditlog",   label: "Audit Log",  icon: Shield,            ownerOnly: true },
+    { id: "help",       label: "Help",       icon: HelpCircle },
     { id: "feedback",   label: "Feedback",   icon: MessageSquarePlus },
     { id: "system",     label: "System",     icon: Activity,          tcHidden: true },
   ].filter(t => {
@@ -538,6 +552,59 @@ export default function Settings() {
               <div><p className="font-semibold text-sm text-gray-700">Branding</p><p className="text-xs text-gray-400">Upload logo, set primary color, and customize the client portal.</p></div>
             </CardHeader>
           </Card>
+        </div>
+      )}
+
+      {/* ── Help & Training ── */}
+      {activeTab === "help" && (
+        <div className="space-y-5">
+          {/* Sub-tab bar */}
+          <div className="flex gap-1 bg-gray-100 p-1 rounded-xl w-fit">
+            {[{ id: "tutorial", label: "Tutorial", icon: BookOpen }, { id: "faq", label: "FAQ", icon: HelpCircle }].map(({ id, label, icon: Icon }) => (
+              <button key={id} onClick={() => setHelpTab(id)}
+                className={`flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-medium transition-all ${helpTab === id ? "bg-white shadow-sm text-gray-900" : "text-gray-500 hover:text-gray-700"}`}>
+                <Icon className="w-4 h-4" />{label}
+              </button>
+            ))}
+          </div>
+
+          {helpTab === "tutorial" && (
+            <div className="flex gap-6 items-start">
+              <div className="hidden lg:block">
+                <TutorialSidebar sections={tutorialSections} activeId={helpActiveSectionId} onSelect={scrollToHelpSection} />
+              </div>
+              <div className="lg:hidden w-full">
+                <select className="w-full border rounded-lg px-3 py-2 text-sm mb-4"
+                  style={{ background: "var(--card-bg)", borderColor: "var(--card-border)", color: "var(--text-primary)" }}
+                  value={helpActiveSectionId} onChange={e => scrollToHelpSection(e.target.value)}>
+                  {tutorialSections.map(s => <option key={s.id} value={s.id}>{s.icon} {s.title}</option>)}
+                </select>
+              </div>
+              <div className="flex-1 min-w-0 space-y-5">
+                {tutorialSections.map(section => <TutorialSectionCard key={section.id} section={section} />)}
+                <div className="rounded-xl border p-6 text-center space-y-3" style={{ background: "var(--card-bg)", borderColor: "var(--card-border)" }}>
+                  <h3 className="text-base font-semibold" style={{ color: "var(--text-primary)" }}>Still Need Help?</h3>
+                  <p className="text-sm" style={{ color: "var(--text-muted)" }}>The AI Assistant has full context on your transactions and can answer questions in real time.</p>
+                  <Button size="sm" variant="outline" className="gap-1.5" onClick={() => setHelpTab("faq")}>
+                    <HelpCircle className="w-4 h-4" /> Browse FAQ
+                  </Button>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {helpTab === "faq" && (
+            <div>
+              <FAQTab />
+              <div className="rounded-xl border p-6 text-center space-y-3 mt-5" style={{ background: "var(--card-bg)", borderColor: "var(--card-border)" }}>
+                <h3 className="text-base font-semibold" style={{ color: "var(--text-primary)" }}>Can't find your answer?</h3>
+                <p className="text-sm" style={{ color: "var(--text-muted)" }}>Try the Tutorial tab for step-by-step walkthroughs.</p>
+                <Button size="sm" variant="outline" className="gap-1.5" onClick={() => setHelpTab("tutorial")}>
+                  <BookOpen className="w-4 h-4" /> View Tutorial
+                </Button>
+              </div>
+            </div>
+          )}
         </div>
       )}
 

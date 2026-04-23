@@ -28,7 +28,6 @@ import {
   Receipt,
   Droplets,
   BookUser,
-  HelpCircle,
   MessageSquarePlus,
   Plug,
 } from "lucide-react";
@@ -47,7 +46,7 @@ const TC_NAV = [
   { label: "Deal Intake",     page: "AgentIntake",     icon: UserPlus },
   { label: "Pending Queue",   page: "PendingDeals",    icon: Inbox, path: "/pending-deals" },
   { label: "Addendum Builder", page: "AddendumBuilder", icon: ClipboardList },
-  { label: "Help & Training", page: "help",             icon: HelpCircle, path: "/help" },
+
   { label: "Settings",        page: "Settings",         icon: Settings },
 ];
 
@@ -59,7 +58,7 @@ const OWNER_NAV = [
   { label: "Addendum Builder",page: "AddendumBuilder",  icon: ClipboardList },
 
   { label: "Integrations",   page: "Integrations", icon: Plug },
-  { label: "Help & Training", page: "help",            icon: HelpCircle, path: "/help" },
+
   { label: "Billing",          page: "Billing",          icon: CreditCard },
   { label: "Settings",       page: "Settings",       icon: Settings },
 ];
