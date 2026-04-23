@@ -18,6 +18,7 @@ export default function Onboarding() {
     full_name: "",
     phone: "",
     company: "",
+    team_name: "",
     email_signature: "",
     profile_photo_url: "",
     signature_block_url: "",
@@ -32,6 +33,7 @@ export default function Onboarding() {
         full_name: u.full_name || u.profile?.full_name || "",
         phone: u.profile?.phone || u.phone || "",
         company: u.profile?.company || u.company || "",
+        team_name: u.profile?.team_name || u.team_name || "",
         email_signature: u.profile?.email_signature || u.email_signature || "",
         profile_photo_url: u.profile?.profile_photo_url || u.profile_photo_url || "",
         signature_block_url: u.profile?.signature_block_url || u.signature_block_url || "",
@@ -197,6 +199,15 @@ export default function Onboarding() {
             <input
               value={form.company}
               onChange={(e) => handleChange("company", e.target.value)}
+              placeholder="Optional"
+              className="theme-input w-full"
+            />
+          </Field>
+
+          <Field label="Team Name">
+            <input
+              value={form.team_name}
+              onChange={(e) => handleChange("team_name", e.target.value)}
               placeholder="Optional"
               className="theme-input w-full"
             />
