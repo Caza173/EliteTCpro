@@ -5,12 +5,12 @@ import { useCurrentUser } from "@/lib/CurrentUserContext.jsx";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Building2, User, Camera, ChevronRight, ChevronLeft, CheckCircle, Loader2, Upload } from "lucide-react";
+import { Building2, User, Camera, ChevronRight, ChevronLeft, CheckCircle, Loader2, Upload, ImagePlus, X } from "lucide-react";
 
 const STEPS = [
   { id: 1, title: "Basic Info", desc: "Tell us about yourself" },
   { id: 2, title: "Profile Photo", desc: "Add a photo to your profile" },
-  { id: 3, title: "Email Signature", desc: "Optional — customize your signature" },
+  { id: 3, title: "Email Signature", desc: "Customize your signature block" },
 ];
 
 function ProgressBar({ step }) {
@@ -94,14 +94,19 @@ export default function SetupProfile() {
   const [step, setStep] = useState(1);
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
+  const [uploadingSig, setUploadingSig] = useState(false);
   const [errors, setErrors] = useState({});
+  const sigInputRef = useRef();
 
   const [form, setForm] = useState({
     first_name: "",
     last_name: "",
     phone: "",
     company_name: "",
+    team_name: "",
     profile_photo_url: "",
+    email_signature: "",
+    signature_block_url: "",
     sig_role: "",
   });
 
@@ -141,6 +146,16 @@ export default function SetupProfile() {
     setUploading(false);
   };
 
+  const handleSigImageUpload = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setUploadingSig(true);
+    const { file_url } = await base44.integrations.Core.UploadFile({ file });
+    set("signature_block_url", file_url);
+    setUploadingSig(false);
+    e.target.value = "";
+  };
+
   const handleSubmit = async () => {
     setSaving(true);
     await base44.auth.updateMe({
@@ -148,7 +163,10 @@ export default function SetupProfile() {
       last_name: form.last_name.trim(),
       phone: form.phone.trim(),
       company_name: form.company_name.trim(),
+      team_name: form.team_name.trim(),
       profile_photo_url: form.profile_photo_url,
+      email_signature: form.email_signature.trim(),
+      signature_block_url: form.signature_block_url,
       sig_name: `${form.first_name.trim()} ${form.last_name.trim()}`,
       sig_role: form.sig_role.trim() || "",
       sig_company: form.company_name.trim(),
@@ -220,6 +238,14 @@ export default function SetupProfile() {
               />
               {errors.company_name && <p className="text-xs text-red-500 mt-1">{errors.company_name}</p>}
             </div>
+            <div>
+              <Label className="text-sm font-medium text-slate-700 mb-1.5 block">Team Name</Label>
+              <Input
+                value={form.team_name}
+                onChange={(e) => set("team_name", e.target.value)}
+                placeholder="Optional"
+              />
+            </div>
           </div>
         )}
 
@@ -237,7 +263,7 @@ export default function SetupProfile() {
           </div>
         )}
 
-        {/* Step 3: Signature (optional) */}
+        {/* Step 3: Signature */}
         {step === 3 && (
           <div className="space-y-4">
             <div className="flex items-center gap-2 text-sm text-slate-500 bg-blue-50 border border-blue-100 rounded-lg px-3 py-2">
@@ -252,9 +278,50 @@ export default function SetupProfile() {
                 placeholder="e.g. Transaction Coordinator"
               />
             </div>
+            <div>
+              <Label className="text-sm font-medium text-slate-700 mb-1.5 block">Email Signature Text</Label>
+              <textarea
+                value={form.email_signature}
+                onChange={(e) => set("email_signature", e.target.value)}
+                placeholder={"Best regards,\nYour Name\nYour Company"}
+                rows={4}
+                className="w-full rounded-md border border-slate-200 px-3 py-2 text-sm resize-none focus:outline-none focus:ring-1 focus:ring-blue-400"
+              />
+            </div>
+            <div>
+              <Label className="text-sm font-medium text-slate-700 mb-1.5 block">Signature Block Image</Label>
+              <div className="space-y-2">
+                {form.signature_block_url ? (
+                  <div className="relative inline-block">
+                    <img
+                      src={form.signature_block_url}
+                      alt="Signature block"
+                      className="max-h-20 rounded-lg border border-slate-200 object-contain"
+                    />
+                    <button
+                      onClick={() => set("signature_block_url", "")}
+                      className="absolute -top-1.5 -right-1.5 w-5 h-5 rounded-full flex items-center justify-center bg-red-500 text-white hover:bg-red-600"
+                    >
+                      <X className="w-3 h-3" />
+                    </button>
+                  </div>
+                ) : null}
+                <button
+                  type="button"
+                  onClick={() => sigInputRef.current?.click()}
+                  disabled={uploadingSig}
+                  className="flex items-center gap-2 px-3 py-2 rounded-lg border border-dashed border-slate-300 text-sm text-slate-500 bg-slate-50 hover:bg-slate-100 transition-colors"
+                >
+                  {uploadingSig ? <Loader2 className="w-4 h-4 animate-spin" /> : <ImagePlus className="w-4 h-4" />}
+                  {uploadingSig ? "Uploading…" : form.signature_block_url ? "Replace image" : "Upload signature image"}
+                </button>
+                <p className="text-xs text-slate-400">Optional — PNG or JPG. Used in email footers.</p>
+                <input ref={sigInputRef} type="file" accept="image/*" className="hidden" onChange={handleSigImageUpload} />
+              </div>
+            </div>
 
             {/* Preview */}
-            <div className="mt-4 p-4 rounded-xl border border-slate-200 bg-slate-50">
+            <div className="mt-2 p-4 rounded-xl border border-slate-200 bg-slate-50">
               <p className="text-xs font-semibold text-slate-400 uppercase tracking-wide mb-3">Signature Preview</p>
               <div className="flex items-center gap-3">
                 {form.profile_photo_url && (
@@ -267,6 +334,9 @@ export default function SetupProfile() {
                   <p>{form.phone}</p>
                 </div>
               </div>
+              {form.signature_block_url && (
+                <img src={form.signature_block_url} alt="Signature block" className="mt-3 max-h-16 object-contain" />
+              )}
             </div>
           </div>
         )}
