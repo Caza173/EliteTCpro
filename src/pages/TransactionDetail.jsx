@@ -750,11 +750,11 @@ export default function TransactionDetail() {
         </div>
       )}
 
-      {/* ── TOP HEADER BAR — Consolidated Command Bar ── */}
+      {/* ── TOP HEADER BAR — Mobile-First Stacked Layout ── */}
       <div className="flex-shrink-0" style={{ background: "#0F172A", position: "sticky", top: 0, zIndex: 20 }}>
 
-        {/* Main command row */}
-        <div className="flex items-center gap-0 px-4 py-3">
+        {/* Row 1 — Navigation: Back (left) + Actions (right) */}
+        <div className="flex items-center justify-between px-3 pt-3 pb-2 gap-2">
           {/* Back */}
           <Link to={createPageUrl(
             currentUser?.role === "agent" || currentUser?.role === "user" ? "AgentPortal"
@@ -764,44 +764,11 @@ export default function TransactionDetail() {
             <ArrowLeft className="w-4 h-4" /> Back
           </Link>
 
-          {/* Divider */}
-          <span className="mx-3 text-slate-600 select-none">|</span>
-
-          {/* Address + badges */}
-          <div className="flex items-center gap-2 flex-wrap min-w-0 flex-1">
-            <EditableAddressDark
-              value={transaction.address}
-              onSave={v => updateMutation.mutate({ id: transaction.id, data: { address: v } })}
-            />
-            {/* Status badge */}
-            <span className={`text-[11px] font-semibold px-2 py-0.5 rounded border flex-shrink-0 ${
-              transaction.status === "active" ? "bg-emerald-500/20 text-emerald-300 border-emerald-500/40"
-              : transaction.status === "closed" ? "bg-slate-500/20 text-slate-300 border-slate-500/40"
-              : transaction.status === "cancelled" ? "bg-red-500/20 text-red-300 border-red-500/40"
-              : "bg-amber-500/20 text-amber-300 border-amber-500/40"
-            }`}>
-              {transaction.status || "active"}
-            </span>
-            {/* Deal type badge */}
-            {(() => {
-              const isBuyer = transaction.deal_origin === "buyer" || (transaction.transaction_type === "buyer" && transaction.deal_origin !== "listing");
-              const isListingUC = (transaction.deal_origin === "listing" || transaction.transaction_type === "seller") && transaction.transaction_phase === "under_contract";
-              if (isBuyer) return <span className="text-[11px] font-semibold px-2 py-0.5 rounded border flex-shrink-0 bg-blue-500/20 text-blue-300 border-blue-500/40">Buyer Transaction</span>;
-              if (isListingUC) return <span className="text-[11px] font-semibold px-2 py-0.5 rounded border flex-shrink-0 bg-purple-500/20 text-purple-300 border-purple-500/40">Listing → Under Contract</span>;
-              return <span className="text-[11px] font-semibold px-2 py-0.5 rounded border flex-shrink-0 bg-teal-500/20 text-teal-300 border-teal-500/40">Listing</span>;
-            })()}
-            {/* Health score */}
-            <span className="text-[11px] font-semibold px-2 py-0.5 rounded border flex-shrink-0 bg-slate-700/60 text-slate-300 border-slate-600">
-              Health: {transaction.health_score ?? computeHealthScore(transaction, checklistItems).health_score}
-            </span>
-          </div>
-
-          {/* Icon-only action toolbar */}
-          <div className="flex items-center gap-0.5 flex-shrink-0 ml-3">
-            {/* Status select — compact */}
+          {/* Action toolbar */}
+          <div className="flex items-center gap-0.5 flex-shrink-0">
             <Select value={transaction.transaction_phase || "intake"}
               onValueChange={(v) => updateMutation.mutate({ id: transaction.id, data: { transaction_phase: v, last_activity_at: new Date().toISOString() } })}>
-              <SelectTrigger className="h-8 w-28 text-[11px] border-slate-600 bg-slate-800 text-slate-300 hover:bg-slate-700 focus:ring-0 focus:ring-offset-0 rounded-lg mr-2">
+              <SelectTrigger className="h-7 w-24 text-[11px] border-slate-600 bg-slate-800 text-slate-300 hover:bg-slate-700 focus:ring-0 focus:ring-offset-0 rounded-lg mr-1">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -814,17 +781,15 @@ export default function TransactionDetail() {
                 <SelectItem value="terminated">Terminated</SelectItem>
               </SelectContent>
             </Select>
-
             <IconAction icon={MailIcon} label="Email" onClick={() => setEmailModalOpen(true)} />
             <UnderContractEmailButton transaction={transaction} currentUser={currentUser} documents={documents} iconOnly />
             <IconAction icon={UserPlus} label="Invite" onClick={() => setInviteModalOpen(true)} disabled={invitingClient} />
             <MarkUnderContractButton transaction={transaction} onConverted={() => queryClient.invalidateQueries({ queryKey: ["transactions"] })} iconOnly />
             <IconAction icon={Trash2} label="Delete" onClick={() => setConfirmDelete(true)} danger />
-            {/* AI button — slightly highlighted */}
             <button
               onClick={() => setMobileAIOpen(true)}
               title="Ask AI"
-              className="flex flex-col items-center gap-0.5 px-2.5 py-1.5 rounded-lg transition-colors hover:bg-slate-700 ml-1"
+              className="flex flex-col items-center gap-0.5 px-2 py-1.5 rounded-lg transition-colors hover:bg-slate-700 ml-1"
               style={{ background: "rgba(99,102,241,0.25)", border: "1px solid rgba(99,102,241,0.4)" }}
             >
               <Bot className="w-4 h-4 text-indigo-300" />
@@ -833,8 +798,38 @@ export default function TransactionDetail() {
           </div>
         </div>
 
-        {/* Meta strip row */}
-        <div className="flex items-center gap-4 px-4 pb-2 text-xs" style={{ color: "#94A3B8" }}>
+        {/* Row 2 — Address (full width, wraps) */}
+        <div className="px-3 pb-2">
+          <EditableAddressDark
+            value={transaction.address}
+            onSave={v => updateMutation.mutate({ id: transaction.id, data: { address: v } })}
+          />
+        </div>
+
+        {/* Row 3 — Status badges (wrap-enabled) */}
+        <div className="flex items-center flex-wrap gap-1.5 px-3 pb-2">
+          <span className={`text-[11px] font-semibold px-2 py-0.5 rounded border ${
+            transaction.status === "active" ? "bg-emerald-500/20 text-emerald-300 border-emerald-500/40"
+            : transaction.status === "closed" ? "bg-slate-500/20 text-slate-300 border-slate-500/40"
+            : transaction.status === "cancelled" ? "bg-red-500/20 text-red-300 border-red-500/40"
+            : "bg-amber-500/20 text-amber-300 border-amber-500/40"
+          }`}>
+            {transaction.status || "active"}
+          </span>
+          {(() => {
+            const isBuyer = transaction.deal_origin === "buyer" || (transaction.transaction_type === "buyer" && transaction.deal_origin !== "listing");
+            const isListingUC = (transaction.deal_origin === "listing" || transaction.transaction_type === "seller") && transaction.transaction_phase === "under_contract";
+            if (isBuyer) return <span className="text-[11px] font-semibold px-2 py-0.5 rounded border bg-blue-500/20 text-blue-300 border-blue-500/40">Buyer</span>;
+            if (isListingUC) return <span className="text-[11px] font-semibold px-2 py-0.5 rounded border bg-purple-500/20 text-purple-300 border-purple-500/40">Listing → UC</span>;
+            return <span className="text-[11px] font-semibold px-2 py-0.5 rounded border bg-teal-500/20 text-teal-300 border-teal-500/40">Listing</span>;
+          })()}
+          <span className="text-[11px] font-semibold px-2 py-0.5 rounded border bg-slate-700/60 text-slate-300 border-slate-600">
+            Health: {transaction.health_score ?? computeHealthScore(transaction, checklistItems).health_score}
+          </span>
+        </div>
+
+        {/* Row 4 — Meta strip */}
+        <div className="flex items-center flex-wrap gap-x-4 gap-y-1 px-3 pb-2 text-xs" style={{ color: "#94A3B8" }}>
           {transaction.contract_date && (
             <span>Contract: <span className="text-slate-200 font-medium">{transaction.contract_date}</span></span>
           )}
@@ -854,8 +849,8 @@ export default function TransactionDetail() {
           )}
         </div>
 
-        {/* Phase stepper row */}
-        <div className="flex items-center gap-1 px-4 py-2 border-t overflow-x-auto scrollbar-none" style={{ borderColor: "#1E293B", background: "#0A1628" }}>
+        {/* Row 5 — Phase stepper */}
+        <div className="flex items-center gap-1 px-3 py-2 border-t overflow-x-auto scrollbar-none" style={{ borderColor: "#1E293B", background: "#0A1628" }}>
           {["Pre-Contract","Offer","Escrow","Inspection","Financing","Closing"].map((step, i, arr) => {
             const phaseNum = i + 1;
             const isCompleted = (transaction.phases_completed || []).includes(phaseNum);
@@ -863,15 +858,11 @@ export default function TransactionDetail() {
             return (
               <React.Fragment key={step}>
                 <span className={`text-xs font-semibold whitespace-nowrap flex-shrink-0 ${
-                  isCompleted ? "text-emerald-400"
-                  : isCurrent ? "text-white"
-                  : "text-slate-500"
-                }`} style={isCurrent ? { fontWeight: 700 } : {}}>
+                  isCompleted ? "text-emerald-400" : isCurrent ? "text-white" : "text-slate-500"
+                }`}>
                   {step}
                 </span>
-                {i < arr.length - 1 && (
-                  <span className="text-slate-600 mx-1 flex-shrink-0">→</span>
-                )}
+                {i < arr.length - 1 && <span className="text-slate-600 mx-1 flex-shrink-0">→</span>}
               </React.Fragment>
             );
           })}
@@ -1173,22 +1164,22 @@ function EditableAddressDark({ value, onSave }) {
   };
 
   return editing ? (
-    <div className="flex items-center gap-1">
+    <div className="flex items-start gap-1 w-full">
       <input
-        className="text-xl font-bold bg-slate-700 border border-slate-500 rounded px-2 py-0.5 text-white focus:outline-none focus:ring-1 focus:ring-blue-400 w-72"
+        className="text-base font-bold bg-slate-700 border border-slate-500 rounded px-2 py-0.5 text-white focus:outline-none focus:ring-1 focus:ring-blue-400 flex-1 min-w-0"
         value={draft}
         onChange={e => setDraft(e.target.value)}
         onBlur={handleSave}
         onKeyDown={e => { if (e.key === "Enter") handleSave(); if (e.key === "Escape") setEditing(false); }}
         autoFocus
       />
-      <button onClick={handleSave} className="text-blue-400 text-xs font-semibold px-1">✓</button>
-      <button onClick={() => setEditing(false)} className="text-slate-400 text-xs px-1">✕</button>
+      <button onClick={handleSave} className="text-blue-400 text-xs font-semibold px-1 flex-shrink-0">✓</button>
+      <button onClick={() => setEditing(false)} className="text-slate-400 text-xs px-1 flex-shrink-0">✕</button>
     </div>
   ) : (
-    <div className="flex items-center gap-1.5 group cursor-pointer" onClick={() => { setDraft(value || ""); setEditing(true); }}>
-      <span className="text-xl font-bold text-white">{value}</span>
-      <Pencil className="w-3.5 h-3.5 text-slate-500 opacity-0 group-hover:opacity-100 transition-opacity" />
+    <div className="flex items-start gap-1.5 group cursor-pointer" onClick={() => { setDraft(value || ""); setEditing(true); }}>
+      <span className="text-base font-bold text-white leading-snug break-words">{value}</span>
+      <Pencil className="w-3 h-3 text-slate-500 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0 mt-1" />
     </div>
   );
 }
