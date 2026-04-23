@@ -19,6 +19,7 @@ import FAQTab from "@/components/help/FAQTab";
 import { useCurrentUser, isTCOrAdmin, isOwnerOrAdmin } from "../components/auth/useCurrentUser";
 import { ROLE_COLORS } from "../components/utils/tenantUtils";
 import TemplateLibraryPanel from "../components/templates/TemplateLibraryPanel";
+import BrokerageLogoUpload from "../components/settings/BrokerageLogoUpload";
 import FeedbackModal from "../components/feedback/FeedbackModal";
 import MyFeedbackSection from "../components/feedback/MyFeedbackSection";
 import ProfileTab from "../components/settings/ProfileTab";
@@ -262,27 +263,34 @@ export default function Settings() {
 
       {/* ── Account ── */}
       {activeTab === "account" && (
-        <Card className="shadow-sm border-gray-100">
-          <CardHeader className="pb-3">
-            <CardTitle className="text-base font-semibold flex items-center gap-2">
-              <SettingsIcon className="w-4 h-4" /> My Account
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="flex items-center gap-4">
-              <div className="w-12 h-12 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 font-bold text-lg">
-                {currentUser?.full_name?.[0]?.toUpperCase() || "?"}
+        <div className="space-y-4">
+          <Card className="shadow-sm border-gray-100">
+            <CardHeader className="pb-3">
+              <CardTitle className="text-base font-semibold flex items-center gap-2">
+                <SettingsIcon className="w-4 h-4" /> My Account
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="flex items-center gap-4">
+                <div className="w-12 h-12 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 font-bold text-lg">
+                  {currentUser?.full_name?.[0]?.toUpperCase() || "?"}
+                </div>
+                <div>
+                  <p className="font-semibold text-gray-900">{currentUser?.full_name}</p>
+                  <p className="text-sm text-gray-500">{currentUser?.email}</p>
+                </div>
+                <Badge variant="outline" className={`ml-auto capitalize ${roleColors[currentUser?.role] || roleColors.agent}`}>
+                  {currentUser?.role || "agent"}
+                </Badge>
               </div>
-              <div>
-                <p className="font-semibold text-gray-900">{currentUser?.full_name}</p>
-                <p className="text-sm text-gray-500">{currentUser?.email}</p>
-              </div>
-              <Badge variant="outline" className={`ml-auto capitalize ${roleColors[currentUser?.role] || roleColors.agent}`}>
-                {currentUser?.role || "agent"}
-              </Badge>
-            </div>
-          </CardContent>
-        </Card>
+            </CardContent>
+          </Card>
+
+          {/* Brokerage Logo Upload */}
+          {brokerage && isOwnerOrAdmin(currentUser) && (
+            <BrokerageLogoUpload brokerage={brokerage} onSaved={() => queryClient.invalidateQueries({ queryKey: ["brokerage", currentUser?.brokerage_id] })} />
+          )}
+        </div>
       )}
 
       {/* ── Profile ── */}

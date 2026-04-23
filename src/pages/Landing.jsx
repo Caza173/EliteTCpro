@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { base44 } from "@/api/base44Client";
 import {
@@ -9,6 +9,14 @@ import {
 
 export default function Landing() {
   const navigate = useNavigate();
+  const [brokerageLogo, setBrokerageLogo] = useState(null);
+
+  useEffect(() => {
+    base44.entities.Brokerage.list().then((results) => {
+      const logo = results?.[0]?.branding_logo;
+      if (logo) setBrokerageLogo(logo);
+    }).catch(() => {});
+  }, []);
 
   const scrollTo = (id) => {
     document.getElementById(id)?.scrollIntoView({ behavior: "smooth" });
@@ -20,12 +28,18 @@ export default function Landing() {
       {/* ── Sticky Nav ── */}
       <header className="sticky top-0 z-50 flex items-center justify-between px-8 h-14 bg-white border-b border-gray-100">
         <div className="flex items-center gap-2">
-          <div className="w-7 h-7 rounded-lg flex items-center justify-center bg-blue-600">
-            <Building2 className="w-4 h-4 text-white" />
-          </div>
-          <span className="text-sm font-bold text-gray-900">
-            Elite<span className="text-blue-600">TC</span>
-          </span>
+          {brokerageLogo ? (
+            <img src={brokerageLogo} alt="Logo" className="h-8 max-w-[140px] object-contain" />
+          ) : (
+            <>
+              <div className="w-7 h-7 rounded-lg flex items-center justify-center bg-blue-600">
+                <Building2 className="w-4 h-4 text-white" />
+              </div>
+              <span className="text-sm font-bold text-gray-900">
+                Elite<span className="text-blue-600">TC</span>
+              </span>
+            </>
+          )}
         </div>
 
         <nav className="hidden md:flex items-center gap-6">
@@ -62,10 +76,16 @@ export default function Landing() {
         {/* Content */}
         <div className="relative z-10 max-w-3xl mx-auto">
           <div className="flex items-center justify-center gap-2 mb-6">
-            <div className="w-8 h-8 rounded-lg flex items-center justify-center bg-blue-600">
-              <Building2 className="w-4.5 h-4.5 text-white" />
-            </div>
-            <span className="text-white font-semibold text-base">EliteTC</span>
+            {brokerageLogo ? (
+              <img src={brokerageLogo} alt="Logo" className="h-10 max-w-[180px] object-contain brightness-0 invert" />
+            ) : (
+              <>
+                <div className="w-8 h-8 rounded-lg flex items-center justify-center bg-blue-600">
+                  <Building2 className="w-4 h-4 text-white" />
+                </div>
+                <span className="text-white font-semibold text-base">EliteTC</span>
+              </>
+            )}
           </div>
 
           <h1 className="text-4xl md:text-6xl font-bold text-white leading-tight mb-6">
