@@ -332,14 +332,10 @@ export default function Layout({ children, currentPageName }) {
               </h2>
 
               {/* RIGHT — actions */}
-              <div className="flex items-center gap-1">
+              <div className="flex items-center gap-2">
                 <InstallButtonHeader />
-                <div className="flex items-center justify-center w-11 h-11">
-                  <ThemeToggle />
-                </div>
-                <div className="flex items-center justify-center w-11 h-11">
-                  <UserMenuDropdown />
-                </div>
+                <ThemeToggle />
+                <UserMenuDropdown />
               </div>
             </div>
           </header>
