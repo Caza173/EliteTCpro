@@ -96,6 +96,8 @@ export default function Settings() {
     enabled: isTCOrAdmin(currentUser),
   });
 
+  const [activeTab, setActiveTab] = useState("account");
+
   const { data: billingAccounts = [] } = useQuery({
     queryKey: ["billingAccount", currentUser?.brokerage_id],
     queryFn: () => base44.entities.BillingAccount.filter({ brokerage_id: currentUser?.brokerage_id }),
@@ -164,7 +166,6 @@ export default function Settings() {
   };
 
   const roleColors = ROLE_COLORS;
-  const [activeTab, setActiveTab] = useState("account");
   const [helpTab, setHelpTab] = useState("tutorial");
   const helpSectionRefs = React.useRef({});
   const [helpActiveSectionId, setHelpActiveSectionId] = useState(tutorialSections[0].id);
