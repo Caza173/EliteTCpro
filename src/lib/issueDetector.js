@@ -44,7 +44,7 @@ export function detectIssues(transaction, checklistItems = [], complianceReports
   // Map deadline fields to completed_deadlines keys or transaction flags that
   // indicate the work behind the deadline has been done.
   const DEADLINE_COMPLETION_MAP = {
-    inspection_deadline:      () => !!transaction.inspection_completed,
+    inspection_deadline:      () => !!transaction.inspection_completed || (transaction.completed_deadlines || []).includes("inspection_deadline"),
     earnest_money_deadline:   () => !!transaction.earnest_money_received,
     financing_deadline:       () => (transaction.completed_deadlines || []).includes("financing_deadline"),
     appraisal_deadline:       () => (transaction.completed_deadlines || []).includes("appraisal_deadline"),
@@ -131,7 +131,9 @@ export function detectIssues(transaction, checklistItems = [], complianceReports
   const inspScheduled = transaction.inspection_scheduled;
   const inspCompleted = transaction.inspection_completed;
 
-  if (inspDeadline && !inspCompleted) {
+  const inspDeadlineCompleted = (transaction.completed_deadlines || []).includes("inspection_deadline");
+
+  if (inspDeadline && !inspCompleted && !inspDeadlineCompleted) {
     // Flag: scheduled is after the contractual deadline date
     if (inspScheduled) {
       const scheduledDay = new Date(new Date(inspScheduled).toDateString());
