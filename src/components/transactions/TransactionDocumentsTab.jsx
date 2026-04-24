@@ -320,6 +320,7 @@ export default function TransactionDocumentsTab({ transaction, currentUser }) {
       {/* Transaction blocking banner */}
       {blockingState.blocked && (
         <SignatureBlockBanner
+          transaction={transaction}
           blockingDocuments={blockingState.blocking_documents}
           onSendSignature={(doc) => {
             const fullDoc = documents.find(d => d.id === doc.document_id);
