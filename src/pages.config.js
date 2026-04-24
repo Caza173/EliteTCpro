@@ -52,7 +52,6 @@ import AgentPortal from './pages/AgentPortal';
 import AuditLog from './pages/AuditLog';
 import Billing from './pages/Billing';
 import BrokerageSetup from './pages/BrokerageSetup';
-import ClientPortal from './pages/ClientPortal';
 import Dashboard from './pages/Dashboard';
 import Deadlines from './pages/Deadlines';
 import Documents from './pages/Documents';
@@ -72,7 +71,6 @@ export const PAGES = {
     "AuditLog": AuditLog,
     "Billing": Billing,
     "BrokerageSetup": BrokerageSetup,
-    "ClientPortal": ClientPortal,
     "Dashboard": Dashboard,
     "Deadlines": Deadlines,
     "Documents": Documents,

@@ -63,9 +63,7 @@ const AGENT_NAV = [
   { label: "Deal Intake",     page: "AgentIntake",  icon: UserPlus },
 ];
 
-const CLIENT_NAV = [
-  { label: "My Transaction",  page: "ClientPortal", icon: LayoutDashboard },
-];
+const CLIENT_NAV = [];
 
 const PAGE_TITLES = {
   TransactionDetail: "Transaction Detail",
