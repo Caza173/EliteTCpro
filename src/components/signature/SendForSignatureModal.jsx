@@ -1,7 +1,9 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
 import { Button } from "@/components/ui/button";
 import { X, Plus, Trash2, Send, Loader2, ExternalLink } from "lucide-react";
+import AutoPlacementBadge from "./AutoPlacementBadge";
+import { buildPlacementConfig, validateRecipientsForDocType, describePlacementConfig } from "@/lib/signaturePlacementService";
 
 const ROLES = ["buyer", "seller", "agent", "attorney", "lender", "title", "other"];
 
@@ -21,6 +23,35 @@ export default function SendForSignatureModal({ transaction, document: doc, onCl
   const [message, setMessage] = useState(`Please review and sign the attached document for ${transaction?.address || ""}.`);
   const [sending, setSending] = useState(false);
   const [error, setError] = useState(null);
+  const [placementStatus, setPlacementStatus] = useState(null); // null | "detecting" | { placement_mode, summary, ... }
+
+  // Auto-detect signature placement whenever recipients change
+  useEffect(() => {
+    if (!doc?.file_url || recipients.length === 0) return;
+    const validRecipients = recipients.filter(r => r.name && r.email);
+    if (validRecipients.length === 0) return;
+
+    let cancelled = false;
+    setPlacementStatus("detecting");
+
+    base44.functions.invoke("autoPlaceSignatures", {
+      document_url: doc.file_url,
+      document_type: doc.doc_type || "other",
+      file_name: doc.file_name,
+      transaction_id: transaction?.id,
+      recipients: validRecipients,
+    }).then(res => {
+      if (!cancelled && res?.data?.success) {
+        setPlacementStatus(res.data);
+      } else if (!cancelled) {
+        setPlacementStatus(null);
+      }
+    }).catch(() => {
+      if (!cancelled) setPlacementStatus(null);
+    });
+
+    return () => { cancelled = true; };
+  }, [doc?.file_url, doc?.doc_type, recipients.map(r => r.role + r.email).join(",")]);
 
   const addRecipient = () => {
     setRecipients(r => [...r, { name: "", email: "", role: "other", routing_order: r.length + 1 }]);
@@ -93,6 +124,9 @@ export default function SendForSignatureModal({ transaction, document: doc, onCl
               Preview document
             </a>
           )}
+
+          {/* Auto-placement status */}
+          <AutoPlacementBadge status={placementStatus} />
 
           {/* Recipients */}
           <div>
