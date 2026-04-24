@@ -2,6 +2,18 @@
   "name": "Transaction",
   "type": "object",
   "properties": {
+    "team_id": {
+      "type": "string",
+      "description": "Team this transaction belongs to"
+    },
+    "created_by": {
+      "type": "string",
+      "description": "User ID who created the transaction"
+    },
+    "assigned_tc_id": {
+      "type": "string",
+      "description": "User ID of assigned TC (when claimed)"
+    },
     "brokerage_id": {
       "type": "string"
     },
@@ -16,12 +28,6 @@
       "type": "string"
     },
     "agent_code": {
-      "type": "string"
-    },
-    "assigned_tc_id": {
-      "type": "string"
-    },
-    "assigned_tc_email": {
       "type": "string"
     },
     "claimed_at": {
@@ -571,6 +577,27 @@
     },
     "financing_contingency_status": {
       "type": "string"
+    },
+    "blocked_by_signature": {
+      "type": "boolean",
+      "default": false,
+      "description": "True when a required document is pending signature and blocks phase progression"
+    },
+    "auto_send_signatures": {
+      "type": "boolean",
+      "default": false,
+      "description": "Auto-send signature requests when documents are uploaded"
+    },
+    "compliance_status": {
+      "type": "string",
+      "enum": [
+        "pending",
+        "compliant",
+        "warnings",
+        "failed"
+      ],
+      "default": "pending",
+      "description": "Overall compliance status driven by signature and document checks"
     }
   },
   "required": [
@@ -579,24 +606,75 @@
   ],
   "rls": {
     "read": {
-      "data.brokerage_id": "{{user.data.brokerage_id}}"
+      "$or": [
+        {
+          "user_condition": {
+            "role": "super_admin"
+          }
+        },
+        {
+          "data.team_id": "{{user.data.team_id}}",
+          "user_condition": {
+            "role": "admin"
+          }
+        },
+        {
+          "data.team_id": "{{user.data.team_id}}",
+          "$or": [
+            {
+              "data.assigned_tc_id": "{{user.id}}"
+            },
+            {
+              "data.created_by": "{{user.id}}"
+            }
+          ]
+        }
+      ]
     },
     "create": {
-      "data.brokerage_id": "{{user.data.brokerage_id}}"
-    },
-    "update": {
-      "data.brokerage_id": "{{user.data.brokerage_id}}"
-    },
-    "delete": {
-      "data.brokerage_id": "{{user.data.brokerage_id}}",
       "user_condition": {
         "role": {
           "$in": [
+            "super_admin",
             "admin",
-            "owner"
+            "tc",
+            "agent"
           ]
         }
       }
+    },
+    "update": {
+      "$or": [
+        {
+          "user_condition": {
+            "role": "super_admin"
+          }
+        },
+        {
+          "data.team_id": "{{user.data.team_id}}",
+          "user_condition": {
+            "role": "admin"
+          }
+        },
+        {
+          "data.assigned_tc_id": "{{user.id}}"
+        }
+      ]
+    },
+    "delete": {
+      "$or": [
+        {
+          "user_condition": {
+            "role": "super_admin"
+          }
+        },
+        {
+          "data.team_id": "{{user.data.team_id}}",
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      ]
     }
   }
 }

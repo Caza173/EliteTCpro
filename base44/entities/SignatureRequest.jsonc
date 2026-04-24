@@ -3,10 +3,12 @@
   "type": "object",
   "properties": {
     "transaction_id": {
-      "type": "string"
+      "type": "string",
+      "description": "Reference to Transaction"
     },
     "document_id": {
-      "type": "string"
+      "type": "string",
+      "description": "Reference to Document"
     },
     "provider": {
       "type": "string",
@@ -32,7 +34,8 @@
         "declined",
         "expired",
         "cancelled",
-        "error"
+        "error",
+        "needs_attention"
       ],
       "default": "draft"
     },
@@ -54,8 +57,12 @@
     "declined_at": {
       "type": "string"
     },
-    "created_by": {
+    "cancelled_at": {
       "type": "string"
+    },
+    "last_reminder_sent_at": {
+      "type": "string",
+      "description": "Timestamp of last reminder email sent"
     },
     "is_embedded": {
       "type": "boolean",
@@ -73,10 +80,34 @@
     "needs_manual_field_review": {
       "type": "boolean",
       "default": false
+    },
+    "error_message": {
+      "type": "string"
+    },
+    "attention_reason": {
+      "type": "string",
+      "description": "Reason for needs_attention state"
+    },
+    "progress_completed": {
+      "type": "number",
+      "default": 0,
+      "description": "Number of signers who have signed"
+    },
+    "progress_total": {
+      "type": "number",
+      "default": 0,
+      "description": "Total required signers"
+    },
+    "created_by": {
+      "type": "string"
+    },
+    "brokerage_id": {
+      "type": "string"
     }
   },
   "required": [
     "transaction_id",
+    "document_id",
     "provider"
   ]
 }

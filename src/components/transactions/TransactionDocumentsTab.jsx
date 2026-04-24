@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Upload, FileText, Trash2, Download, Loader2, FolderOpen, ClipboardCheck, Eye, Mail, Filter, FilePlus, Layers, AlertCircle, CheckSquare, Square, ShieldCheck, PenLine } from "lucide-react";
+import { Upload, FileText, Trash2, Download, Loader2, FolderOpen, ClipboardCheck, Eye, Mail, Filter, FilePlus, Layers, AlertCircle, CheckSquare, Square, PenLine, Zap } from "lucide-react";
 import { toast } from "sonner";
 import DocumentViewerModal from "./DocumentViewerModal";
 import { format } from "date-fns";
@@ -18,6 +18,8 @@ import EmailComposerModal from "../email/EmailComposerModal";
 import GenerateDocumentModal from "@/components/templates/GenerateDocumentModal";
 import SendForSignatureModal from "@/components/signature/SendForSignatureModal";
 import SignatureRequestsPanel from "@/components/signature/SignatureRequestsPanel";
+import SignatureBlockBanner from "@/components/signature/SignatureBlockBanner";
+import { checkTransactionBlocked, documentRequiresSignature } from "@/lib/signatureRequirementEngine";
 
 const DOC_TYPES = [
   { value: "purchase_and_sale", label: "Purchase & Sale Agreement" },
@@ -88,6 +90,22 @@ export default function TransactionDocumentsTab({ transaction, currentUser }) {
     queryFn: () => base44.entities.DocumentChecklistItem.filter({ transaction_id: transaction.id }),
     enabled: !!transaction.id,
   });
+
+  const { data: signatureRequests = [] } = useQuery({
+    queryKey: ["signatures", transaction.id],
+    queryFn: () => base44.entities.SignatureRequest.filter({ transaction_id: transaction.id }),
+    staleTime: 30_000,
+    enabled: !!transaction.id,
+  });
+
+  const blockingState = checkTransactionBlocked(documents, signatureRequests);
+
+  const handleAutoSendToggle = async () => {
+    const newVal = !transaction.auto_send_signatures;
+    await base44.entities.Transaction.update(transaction.id, { auto_send_signatures: newVal });
+    queryClient.invalidateQueries({ queryKey: ["transaction", transaction.id] });
+    toast.success(newVal ? "Auto-send signatures enabled" : "Auto-send signatures disabled");
+  };
 
   const handleDeleteDocument = async (id) => {
     setDeleteError(null);
@@ -299,6 +317,17 @@ export default function TransactionDocumentsTab({ transaction, currentUser }) {
 
   return (
     <div className="space-y-5">
+      {/* Transaction blocking banner */}
+      {blockingState.blocked && (
+        <SignatureBlockBanner
+          blockingDocuments={blockingState.blocking_documents}
+          onSendSignature={(doc) => {
+            const fullDoc = documents.find(d => d.id === doc.document_id);
+            if (fullDoc) { setSigModalDoc(fullDoc); setSigModalOpen(true); }
+          }}
+        />
+      )}
+
       {sigModalOpen && sigModalDoc && (
         <SendForSignatureModal
           document={sigModalDoc}
@@ -361,8 +390,23 @@ export default function TransactionDocumentsTab({ transaction, currentUser }) {
           <button className="ml-auto text-amber-500 hover:text-amber-700 text-xs underline" onClick={() => setUploadError(null)}>Dismiss</button>
         </div>
       )}
-      {/* Create Document from Template + Dedupe */}
-      <div className="flex justify-end gap-2 flex-wrap">
+      {/* Toolbar */}
+      <div className="flex justify-between items-center gap-2 flex-wrap">
+        {/* Auto-send toggle */}
+        <button
+          onClick={handleAutoSendToggle}
+          className={`flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-lg border transition-colors ${
+            transaction.auto_send_signatures
+              ? "bg-blue-50 border-blue-200 text-blue-700"
+              : "bg-transparent border-gray-200 text-gray-500 hover:border-gray-300"
+          }`}
+          title="When enabled, documents that require signatures will be auto-sent when uploaded"
+        >
+          <Zap className={`w-3.5 h-3.5 ${transaction.auto_send_signatures ? "text-blue-600" : "text-gray-400"}`} />
+          Auto-Send Signatures: {transaction.auto_send_signatures ? "On" : "Off"}
+        </button>
+
+        <div className="flex gap-2 flex-wrap">
         <Button
           onClick={() => { setSigModalDoc(documents[0] || null); setSigModalOpen(!!documents[0]); }}
           variant="outline"
@@ -398,6 +442,7 @@ export default function TransactionDocumentsTab({ transaction, currentUser }) {
         >
           <FilePlus className="w-4 h-4" /> Create Document
         </Button>
+        </div>
       </div>
 
       <Card className="shadow-sm border-gray-100">
@@ -578,6 +623,13 @@ export default function TransactionDocumentsTab({ transaction, currentUser }) {
                     <Badge className={`text-xs hidden sm:inline-flex ${TYPE_COLORS[doc.doc_type] || TYPE_COLORS.other}`}>
                       {DOC_LABELS[doc.doc_type] || doc.doc_type}
                     </Badge>
+                    {documentRequiresSignature(doc.doc_type) && (() => {
+                      const sig = signatureRequests.find(s => s.document_id === doc.id);
+                      if (!sig) return <span className="hidden sm:inline-flex text-[10px] font-semibold px-1.5 py-0.5 rounded-full bg-amber-50 text-amber-600 border border-amber-200">Sig Required</span>;
+                      if (sig.status === "completed") return <span className="hidden sm:inline-flex text-[10px] font-semibold px-1.5 py-0.5 rounded-full bg-emerald-50 text-emerald-600">✓ Signed</span>;
+                      if (sig.status === "needs_attention") return <span className="hidden sm:inline-flex text-[10px] font-semibold px-1.5 py-0.5 rounded-full bg-red-50 text-red-600">⚠ Attention</span>;
+                      return <span className="hidden sm:inline-flex text-[10px] font-semibold px-1.5 py-0.5 rounded-full bg-blue-50 text-blue-600">Pending Sig</span>;
+                    })()}
                     <div className="flex items-center gap-1">
                       <Button variant="ghost" size="icon" className="h-8 w-8 text-blue-500 hover:text-blue-700" title="Preview"
                         onClick={() => setViewingDoc(doc)}>
