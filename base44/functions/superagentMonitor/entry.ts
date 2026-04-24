@@ -47,8 +47,7 @@ Deno.serve(async (req) => {
     // This map persists dismissed/resolved state permanently — no time window.
     const existingAlertMap = new Map();
     for (const a of existingAlerts) {
-      const key = `${a.transaction_id}|${a.alert_type}|${a.detail_key || ""}`;
-      // Keep the most recent record per key
+      const key = `${a.transaction_id}|${a.deadline_id || ""}`;
       if (!existingAlertMap.has(key)) {
         existingAlertMap.set(key, a);
       }
@@ -57,18 +56,7 @@ Deno.serve(async (req) => {
     // Back-fill deadline_value on old dismissed/resolved alerts that are missing it,
     // so they are not incorrectly recreated on subsequent runs.
     const txMap = new Map(transactions.map(tx => [tx.id, tx]));
-    const alertsNeedingBackfill = existingAlerts.filter(a =>
-      (a.status === "dismissed" || a.status === "resolved") &&
-      !a.deadline_value &&
-      (a.alert_type === "deadline_overdue" || a.alert_type === "deadline_approaching") &&
-      a.detail_key
-    );
-    await Promise.all(alertsNeedingBackfill.map(a => {
-      const tx = txMap.get(a.transaction_id);
-      const deadlineValue = tx?.[a.detail_key];
-      if (!deadlineValue) return Promise.resolve();
-      return base44.asServiceRole.entities.MonitorAlert.update(a.id, { deadline_value: deadlineValue });
-    }));
+    // No backfill needed with new schema
 
     // ---- Fetch TransactionTasks (separate entity) in one go ----
     const allTransactionTasks = await base44.asServiceRole.entities.TransactionTask.list();
@@ -121,29 +109,24 @@ Deno.serve(async (req) => {
       }
 
       // ---- AUTO-RESOLVE stale open alerts ----
-      const openAlertsForTx = existingAlerts.filter(a => a.transaction_id === txId && a.status === "open");
+      const openAlertsForTx = existingAlerts.filter(a => a.transaction_id === txId && a.alert_state === "active");
       for (const openAlert of openAlertsForTx) {
         let shouldResolve = false;
+        const deadlineId = openAlert.deadline_id || "";
 
-        if (openAlert.alert_type === "deadline_overdue" || openAlert.alert_type === "deadline_approaching") {
-          // Resolve if deadline was removed from transaction, or it's now satisfied by tasks
-          const field = openAlert.detail_key;
-          if (!tx[field]) {
-            shouldResolve = true; // deadline removed
-          } else if (isDeadlineSatisfied(field)) {
-            shouldResolve = true; // tasks confirm it's done
+        // Deadline-based alerts
+        if (DEADLINE_FIELDS.some(d => d.field === deadlineId)) {
+          const field = deadlineId;
+          if (!tx[field] || isDeadlineSatisfied(field)) {
+            shouldResolve = true;
           } else {
-            // Resolve if deadline approaching alert is now past the 7-day window OR overdue alert has a future date (extended)
             const deadlineDate = new Date(tx[field]);
             const daysLeft = Math.ceil((deadlineDate - today) / (1000 * 60 * 60 * 24));
-            if (openAlert.alert_type === "deadline_approaching" && (daysLeft < 0 || daysLeft > 7)) {
-              shouldResolve = true;
-            }
+            if (daysLeft > 7) shouldResolve = true;
           }
         }
 
-        if (openAlert.alert_type === "tasks_overdue") {
-          // Resolve if no more overdue tasks
+        if (deadlineId === "tasks_overdue") {
           const currentOverdue = [
             ...inlineTasks.filter(t => !t.completed && t.due_date && new Date(t.due_date) < today),
             ...entityTasks.filter(t => !t.is_completed && t.due_date && new Date(t.due_date) < today),
@@ -151,27 +134,25 @@ Deno.serve(async (req) => {
           if (currentOverdue.length === 0) shouldResolve = true;
         }
 
-        if (openAlert.alert_type === "missing_documents") {
-          const txChecklist = checklistItems.filter(ci => ci.transaction_id === txId);
+        if (deadlineId.startsWith("missing_documents")) {
           const currentPhase = tx.phase || 1;
-          const stillMissing = txChecklist.filter(ci =>
-            ci.required && ci.status === "missing" && (ci.required_by_phase || 1) <= currentPhase
+          const stillMissing = checklistItems.filter(ci =>
+            ci.transaction_id === txId && ci.required && ci.status === "missing" && (ci.required_by_phase || 1) <= currentPhase
           );
           if (stillMissing.length === 0) shouldResolve = true;
         }
 
-        if (openAlert.alert_type === "compliance_blockers") {
+        if (deadlineId === "compliance_blockers") {
           const txCompliance = complianceIssues.filter(ci => ci.transaction_id === txId);
           if (txCompliance.filter(ci => ci.severity === "blocker").length === 0) shouldResolve = true;
         }
 
         if (shouldResolve) {
           await base44.asServiceRole.entities.MonitorAlert.update(openAlert.id, {
-            status: "resolved",
+            alert_state: "resolved",
             resolved_at: new Date().toISOString(),
           });
-          // Update the map so we don't recreate this alert below
-          existingAlertMap.set(`${openAlert.transaction_id}|${openAlert.alert_type}|${openAlert.detail_key || ""}`, { ...openAlert, status: "resolved" });
+          existingAlertMap.set(`${openAlert.transaction_id}|${deadlineId}`, { ...openAlert, alert_state: "resolved" });
         }
       }
 
@@ -198,89 +179,73 @@ Deno.serve(async (req) => {
 
         if (daysLeft < 0 && field !== "closing_date") {
           // Overdue deadline
-          const key = `${txId}|deadline_overdue|${field}`;
+          const key = `${txId}|${field}`;
           const existing = existingAlertMap.get(key);
-
-          // If dismissed/resolved AND deadline hasn't changed, skip permanently
-          if (existing && (existing.status === "dismissed" || existing.status === "resolved")) {
-            // Only recreate if the deadline date itself actually changed (extension granted)
-            // If deadline_value was never stored, treat as unchanged — do NOT recreate
-            const deadlineChanged = existing.deadline_value && existing.deadline_value !== tx[field];
+          if (existing && existing.alert_state === "active") continue;
+          if (existing && (existing.alert_state === "resolved" || existing.alert_state === "dismissed")) {
+            const deadlineChanged = existing.deadline_date && existing.deadline_date !== tx[field];
             if (!deadlineChanged) continue;
-            // Deadline genuinely changed (extension) — delete old alert so we can recreate it as active
             await base44.asServiceRole.entities.MonitorAlert.delete(existing.id);
-          } else if (existing && existing.status === "open") {
-            continue; // already an open alert, no duplicate needed
           }
 
           alertsToCreate.push({
             transaction_id: txId,
             brokerage_id: txBrokerageId,
             transaction_address: tx.address,
-            alert_type: "deadline_overdue",
-            priority: "critical",
-            detail_key: field,
-            deadline_value: tx[field],
-            message: `${label} was ${Math.abs(daysLeft)} day(s) ago (${tx[field]}) and may be overdue.`,
-            suggested_action: `Confirm ${label} status with all parties immediately.`,
-            status: "open",
+            deadline_id: field,
+            deadline_label: label,
+            deadline_date: tx[field],
+            severity: "critical",
+            days_remaining: daysLeft,
+            alert_state: "active",
+            generated_at: new Date().toISOString(),
           });
         } else if (daysLeft >= 0 && daysLeft <= 7) {
           // Approaching deadline
-          const key = `${txId}|deadline_approaching|${field}`;
+          const key = `${txId}|${field}`;
           const existing = existingAlertMap.get(key);
-
-          if (existing && (existing.status === "dismissed" || existing.status === "resolved")) {
-            // Only recreate if deadline date genuinely changed
-            const deadlineChanged = existing.deadline_value && existing.deadline_value !== tx[field];
+          if (existing && existing.alert_state === "active") continue;
+          if (existing && (existing.alert_state === "resolved" || existing.alert_state === "dismissed")) {
+            const deadlineChanged = existing.deadline_date && existing.deadline_date !== tx[field];
             if (!deadlineChanged) continue;
             await base44.asServiceRole.entities.MonitorAlert.delete(existing.id);
-          } else if (existing && existing.status === "open") {
-            continue;
           }
 
-          const priority = daysLeft <= 2 ? "critical" : daysLeft <= 4 ? "warning" : "info";
+          const severity = daysLeft <= 2 ? "critical" : daysLeft <= 4 ? "warning" : "info";
           alertsToCreate.push({
             transaction_id: txId,
             brokerage_id: txBrokerageId,
             transaction_address: tx.address,
-            alert_type: "deadline_approaching",
-            priority,
-            detail_key: field,
-            deadline_value: tx[field],
-            message: daysLeft === 0
-              ? `${label} is TODAY.`
-              : `${label} is approaching in ${daysLeft} day(s) (${tx[field]}).`,
-            suggested_action: `Follow up on ${label}.`,
-            status: "open",
+            deadline_id: field,
+            deadline_label: label,
+            deadline_date: tx[field],
+            severity,
+            days_remaining: daysLeft,
+            alert_state: "active",
+            generated_at: new Date().toISOString(),
           });
         }
       }
 
       // ---- 2. Overdue Tasks ----
       if (overdueTasks.length > 0) {
-        const key = `${txId}|tasks_overdue|tasks`;
+        const key = `${txId}|tasks_overdue`;
         const existing = existingAlertMap.get(key);
-        if (!existing || existing.status === "open") {
+        if (!existing || existing.alert_state === "active") {
           if (!existing) {
             alertsToCreate.push({
               transaction_id: txId,
               brokerage_id: txBrokerageId,
               transaction_address: tx.address,
-              alert_type: "tasks_overdue",
-              priority: "warning",
-              detail_key: "tasks",
-              message: `${overdueTasks.length} task${overdueTasks.length > 1 ? "s are" : " is"} overdue: ${overdueTasks.slice(0, 3).map(t => t.name || t.title).join(", ")}${overdueTasks.length > 3 ? "..." : ""}`,
-              suggested_action: "Review and complete or reassign overdue tasks.",
-              status: "open",
+              deadline_id: "tasks_overdue",
+              deadline_label: "Overdue Tasks",
+              severity: "warning",
+              alert_state: "active",
+              generated_at: new Date().toISOString(),
             });
           }
-          // If open already, update message in place
-          else if (existing.status === "open") {
-            await base44.asServiceRole.entities.MonitorAlert.update(existing.id, {
-              message: `${overdueTasks.length} task${overdueTasks.length > 1 ? "s are" : " is"} overdue: ${overdueTasks.slice(0, 3).map(t => t.name || t.title).join(", ")}${overdueTasks.length > 3 ? "..." : ""}`,
-            });
-          }
+          // already active — no update needed
+          
         }
         // dismissed/resolved — do not recreate
       }
@@ -292,19 +257,18 @@ Deno.serve(async (req) => {
       );
       if (missingRequired.length > 0) {
         const docNames = missingRequired.slice(0, 3).map(ci => ci.label || ci.doc_type).join(", ");
-        const key = `${txId}|missing_documents|phase_${currentPhase}`;
+        const key = `${txId}|missing_documents_phase_${currentPhase}`;
         const existing = existingAlertMap.get(key);
         if (!existing) {
           alertsToCreate.push({
             transaction_id: txId,
             brokerage_id: txBrokerageId,
             transaction_address: tx.address,
-            alert_type: "missing_documents",
-            priority: "warning",
-            detail_key: `phase_${currentPhase}`,
-            message: `${missingRequired.length} required document${missingRequired.length > 1 ? "s are" : " is"} missing for Phase ${currentPhase}: ${docNames}${missingRequired.length > 3 ? "..." : ""}`,
-            suggested_action: "Upload or request missing documents.",
-            status: "open",
+            deadline_id: `missing_documents_phase_${currentPhase}`,
+            deadline_label: `Missing Documents (Phase ${currentPhase})`,
+            severity: "warning",
+            alert_state: "active",
+            generated_at: new Date().toISOString(),
           });
         }
         // dismissed/resolved — do not recreate
@@ -313,19 +277,18 @@ Deno.serve(async (req) => {
       // ---- 4. Compliance Issues (surface, don't duplicate) ----
       const blockers = txCompliance.filter(ci => ci.severity === "blocker");
       if (blockers.length > 0) {
-        const key = `${txId}|compliance_blockers|blockers`;
+        const key = `${txId}|compliance_blockers`;
         const existing = existingAlertMap.get(key);
         if (!existing) {
           alertsToCreate.push({
             transaction_id: txId,
             brokerage_id: txBrokerageId,
             transaction_address: tx.address,
-            alert_type: "compliance_blockers",
-            priority: "critical",
-            detail_key: "blockers",
-            message: `${blockers.length} compliance blocker${blockers.length > 1 ? "s" : ""}: ${blockers.slice(0, 2).map(b => b.message).join("; ")}`,
-            suggested_action: "Review and resolve compliance blockers immediately.",
-            status: "open",
+            deadline_id: "compliance_blockers",
+            deadline_label: "Compliance Blockers",
+            severity: "critical",
+            alert_state: "active",
+            generated_at: new Date().toISOString(),
           });
         }
         // dismissed/resolved — do not recreate
@@ -338,7 +301,7 @@ Deno.serve(async (req) => {
         if (daysToClose >= 0 && daysToClose <= 7) {
           const hasOpenIssues = missingRequired.length > 0 || blockers.length > 0 || incompleteTasks.length > 0;
           if (hasOpenIssues) {
-            const key = `${txId}|closing_risk|closing`;
+            const key = `${txId}|closing_risk`;
             const existing = existingAlertMap.get(key);
             if (!existing) {
               const riskDetails = [
@@ -351,15 +314,13 @@ Deno.serve(async (req) => {
                 transaction_id: txId,
                 brokerage_id: txBrokerageId,
                 transaction_address: tx.address,
-                alert_type: "closing_risk",
-                priority: "critical",
-                detail_key: "closing",
-                deadline_value: tx.closing_date,
-                message: daysToClose === 0
-                  ? `Closing is TODAY with unresolved issues: ${riskDetails}.`
-                  : `Closing in ${daysToClose} day(s) with unresolved issues: ${riskDetails}.`,
-                suggested_action: "Resolve all outstanding items before closing.",
-                status: "open",
+                deadline_id: "closing_risk",
+                deadline_label: "Closing Risk",
+                deadline_date: tx.closing_date,
+                severity: "critical",
+                days_remaining: daysToClose,
+                alert_state: "active",
+                generated_at: new Date().toISOString(),
               });
             }
             // dismissed/resolved — do not recreate
