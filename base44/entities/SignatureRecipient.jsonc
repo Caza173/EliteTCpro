@@ -1,0 +1,49 @@
+{
+  "name": "SignatureRecipient",
+  "type": "object",
+  "properties": {
+    "signature_id": {
+      "type": "string"
+    },
+    "name": {
+      "type": "string"
+    },
+    "email": {
+      "type": "string"
+    },
+    "role": {
+      "type": "string",
+      "enum": [
+        "buyer",
+        "seller",
+        "agent",
+        "attorney",
+        "lender",
+        "title",
+        "other"
+      ],
+      "default": "other"
+    },
+    "routing_order": {
+      "type": "number",
+      "default": 1
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "pending",
+        "signed",
+        "declined",
+        "expired"
+      ],
+      "default": "pending"
+    },
+    "signed_at": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "signature_id",
+    "email"
+  ]
+}

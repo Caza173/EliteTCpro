@@ -16,7 +16,7 @@ import ConfirmDialog from "@/components/ui/ConfirmDialog";
 import SuggestedDocuments from "./SuggestedDocuments";
 import EmailComposerModal from "../email/EmailComposerModal";
 import GenerateDocumentModal from "@/components/templates/GenerateDocumentModal";
-import RequestSignatureModal from "@/components/signature/RequestSignatureModal";
+import SendForSignatureModal from "@/components/signature/SendForSignatureModal";
 import SignatureRequestsPanel from "@/components/signature/SignatureRequestsPanel";
 
 const DOC_TYPES = [
@@ -71,6 +71,7 @@ export default function TransactionDocumentsTab({ transaction, currentUser }) {
   const [typeFilter, setTypeFilter] = useState("all");
   const [generateModalOpen, setGenerateModalOpen] = useState(false);
   const [sigModalOpen, setSigModalOpen] = useState(false);
+  const [sigModalDoc, setSigModalDoc] = useState(null);
   const [selectedIds, setSelectedIds] = useState(new Set());
   const [bulkDeleting, setBulkDeleting] = useState(false);
   const [confirmBulkDelete, setConfirmBulkDelete] = useState(false);
@@ -298,12 +299,12 @@ export default function TransactionDocumentsTab({ transaction, currentUser }) {
 
   return (
     <div className="space-y-5">
-      {sigModalOpen && (
-        <RequestSignatureModal
+      {sigModalOpen && sigModalDoc && (
+        <SendForSignatureModal
+          document={sigModalDoc}
           transaction={transaction}
-          documents={documents}
-          onClose={() => setSigModalOpen(false)}
-          onCreated={() => setSigModalOpen(false)}
+          onClose={() => { setSigModalOpen(false); setSigModalDoc(null); }}
+          onSuccess={() => queryClient.invalidateQueries({ queryKey: ["tx-signatures", transaction.id] })}
         />
       )}
       {generateModalOpen && (
@@ -363,10 +364,12 @@ export default function TransactionDocumentsTab({ transaction, currentUser }) {
       {/* Create Document from Template + Dedupe */}
       <div className="flex justify-end gap-2 flex-wrap">
         <Button
-          onClick={() => setSigModalOpen(true)}
+          onClick={() => { setSigModalDoc(documents[0] || null); setSigModalOpen(!!documents[0]); }}
           variant="outline"
           size="sm"
           className="gap-2 border-blue-300 text-blue-700 hover:bg-blue-50"
+          disabled={documents.length === 0}
+          title={documents.length === 0 ? "Upload a document first" : "Send a document for signature"}
         >
           <PenLine className="w-4 h-4" /> Request Signature
         </Button>
@@ -466,7 +469,11 @@ export default function TransactionDocumentsTab({ transaction, currentUser }) {
         </Card>
       )}
 
-      <SignatureRequestsPanel transactionId={transaction.id} />
+      <SignatureRequestsPanel
+        transactionId={transaction.id}
+        documents={documents}
+        onSendNew={documents.length > 0 ? () => { setSigModalDoc(documents[0]); setSigModalOpen(true); } : undefined}
+      />
 
       {transaction.property_type && (
         <SuggestedDocuments
@@ -584,6 +591,10 @@ export default function TransactionDocumentsTab({ transaction, currentUser }) {
                       <Button variant="ghost" size="icon" className="h-8 w-8 text-indigo-500 hover:text-indigo-700" title="Attach to Email"
                         onClick={() => setEmailModal({ open: true, preselectedDoc: doc })}>
                         <Mail className="w-4 h-4" />
+                      </Button>
+                      <Button variant="ghost" size="icon" className="h-8 w-8 text-blue-500 hover:text-blue-700" title="Send for Signature"
+                        onClick={() => { setSigModalDoc(doc); setSigModalOpen(true); }}>
+                        <PenLine className="w-4 h-4" />
                       </Button>
                       {canDelete && (
                         <Button
