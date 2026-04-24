@@ -59,8 +59,7 @@ const OWNER_NAV = [
 ];
 
 const AGENT_NAV = [
-  { label: "My Transactions", page: "AgentPortal",  icon: LayoutDashboard },
-  { label: "Deal Intake",     page: "AgentIntake",  icon: UserPlus },
+  { label: "Deal Intake", page: "AgentIntake", icon: UserPlus },
 ];
 
 const CLIENT_NAV = [];
