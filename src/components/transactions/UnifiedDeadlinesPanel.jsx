@@ -528,13 +528,11 @@ export default function UnifiedDeadlinesPanel({ transaction, onSave }) {
 
   const handleDeleteDeadline = async (item) => {
     if (item.sourceType === "system") {
-      // Call the updateTransaction backend function directly (it handles RLS and null stripping)
       try {
-        await base44.functions.invoke("updateTransaction", {
-          transaction_id: transaction.id,
-          data: { [item.key]: "" },
-        });
-        queryClient.invalidateQueries({ queryKey: ["transactions"] });
+        // Clear the date (and time if applicable) by saving null via onSave
+        const updates = { [item.key]: null };
+        if (item.timeKey) updates[item.timeKey] = null;
+        await onSave(updates);
         toast.success(`${item.label} date cleared`);
       } catch (e) {
         toast.error("Failed to clear: " + (e.message || "unknown error"));
@@ -554,9 +552,11 @@ export default function UnifiedDeadlinesPanel({ transaction, onSave }) {
   // ── Build unified deadline list ──────────────────────────────────────────
   const completedDeadlines = transaction.completed_deadlines || [];
 
-  // 1. System fields from Transaction
+  // 1. System fields from Transaction — skip appraisal for cash deals
   const customLabels = transaction.custom_deadline_labels || {};
-  const systemItems = SYSTEM_FIELDS.map(f => ({
+  const systemItems = SYSTEM_FIELDS
+  .filter(f => !(f.key === "appraisal_deadline" && transaction.is_cash_transaction))
+  .map(f => ({
     id: f.key,
     key: f.key,
     label: customLabels[f.key] || f.label,
