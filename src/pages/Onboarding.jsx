@@ -1,11 +1,13 @@
 import React, { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { base44 } from "@/api/base44Client";
+import { useCurrentUser } from "@/lib/CurrentUserContext.jsx";
 import { Button } from "@/components/ui/button";
 import { Loader2, Camera, CheckCircle2, Building2, ImagePlus, X } from "lucide-react";
 
 export default function Onboarding() {
   const navigate = useNavigate();
+  const { refreshUser } = useCurrentUser();
   const [user, setUser] = useState(null);
   const [saving, setSaving] = useState(false);
   const [uploadingPhoto, setUploadingPhoto] = useState(false);
@@ -96,6 +98,8 @@ export default function Onboarding() {
         profile_completed: true,
         onboarding_completed_at: new Date().toISOString(),
       });
+      // Refresh currentUser so AuthGate sees profile_completed=true before navigating
+      await refreshUser();
       navigate("/Dashboard", { replace: true });
     } finally {
       setSaving(false);
