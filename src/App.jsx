@@ -36,6 +36,7 @@ import { CurrentUserProvider } from '@/lib/CurrentUserContext.jsx';
 import { PWAProvider } from '@/lib/PWAContext.jsx';
 import UserNotRegisteredError from '@/components/UserNotRegisteredError';
 import RequireAuth from '@/components/auth/RequireAuth';
+import AuthGate from '@/components/auth/AuthGate';
 
 const { Pages, Layout, mainPage } = pagesConfig;
 const mainPageKey = mainPage ?? Object.keys(Pages)[0];
@@ -68,6 +69,7 @@ const AuthenticatedApp = () => {
 
   // Render the main app
   return (
+    <AuthGate>
     <Routes>
       <Route path="/onboarding" element={<Onboarding />} />
       <Route path="/" element={<Landing />} />
@@ -209,6 +211,7 @@ const AuthenticatedApp = () => {
       } />
       <Route path="*" element={<PageNotFound />} />
     </Routes>
+    </AuthGate>
   );
 };
 

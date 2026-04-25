@@ -94,39 +94,23 @@ export default function Layout({ children, currentPageName }) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
 
-  const { currentUser = null, isLoading: userLoading = false } = useCurrentUserCtx() || {};
+  const { currentUser = null } = useCurrentUserCtx() || {};
 
   const navigate = useNavigate();
 
+  // Role-specific restrictions (non-routing guards — just page-level access control)
   useEffect(() => {
-    // Wait for auth to settle before making any routing decisions
-    if (userLoading || currentUser === undefined) return;
+    if (!currentUser || currentUser.profile_completed !== true) return;
 
-    const EXEMPT_PAGES = ["Onboarding", "Landing", "SetupProfile", "AgentSignIn"];
-    const isMaster = currentUser?.email === "nhcazateam@gmail.com";
-
-    // ── State A: Not logged in ──
-    if (!currentUser) return; // public routes are fine
-
-    // ── State B: Logged in but profile not complete ──
-    if (currentUser.profile_completed !== true) {
-      if (currentPageName !== "Onboarding") {
-        navigate("/onboarding", { replace: true });
-      }
-      return;
-    }
-
-    // ── State C: Logged in + profile complete ──
-
-    // TC role-specific page restrictions
+    const isMaster = currentUser.email === "nhcazateam@gmail.com";
     const isTCRole = currentUser.role === "tc" || currentUser.role === "tc_lead";
     const TC_RESTRICTED = ["Integrations", "AuditLog", "Billing"];
+
     if (isTCRole && TC_RESTRICTED.includes(currentPageName)) {
       navigate("/Dashboard", { replace: true });
       return;
     }
 
-    // Role-based home redirect (client / unroled users)
     if (!isMaster) {
       const role = currentUser.role;
       const path = window.location.pathname;
@@ -138,7 +122,7 @@ export default function Layout({ children, currentPageName }) {
         navigate(createPageUrl("Dashboard"), { replace: true });
       }
     }
-  }, [currentUser, userLoading, currentPageName, navigate]);
+  }, [currentUser, currentPageName, navigate]);
 
   const role = currentUser?.role;
   const isMaster = currentUser?.email === "nhcazateam@gmail.com";
