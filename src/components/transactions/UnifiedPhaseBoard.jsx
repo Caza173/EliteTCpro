@@ -31,7 +31,7 @@ function getPhaseStatus(phaseNum, tasks, phasesCompleted = []) {
   const allRequiredDone = allRequired.length > 0 && allRequired.every(t => t.is_completed);
 
   if (allRequiredDone) return "complete";
-  if (phasesCompleted.includes(phaseNum) && ownTasks.length === 0) return "complete";
+  if (phasesCompleted.map(Number).includes(phaseNum) && ownTasks.length === 0) return "complete";
 
   // Active if any task in own or sub-phases has been started
   const anyStarted = tasks.filter(t => allPhaseNums.includes(t.phase)).some(t => t.is_completed);
@@ -468,7 +468,7 @@ export default function UnifiedPhaseBoard({
   currentUser,
 }) {
   const allPhases = getPhasesForType(transactionType);
-  const phasesCompleted = transaction?.phases_completed || [];
+  const phasesCompleted = (transaction?.phases_completed || []).map(Number);
   const currentPhase = transaction?.phase || 1;
   const queryClient = useQueryClient();
   const [localTasks, setLocalTasks] = useState(null);

@@ -120,9 +120,9 @@ export default function Dashboard() {
     staleTime: 30_000,
   });
 
-  const active = transactions.filter(t => t.status === "active");
+  const active = transactions.filter(t => t.status === "active" && t.transaction_phase !== "closed");
   const pending = transactions.filter(t => t.status === "pending");
-  const closed = transactions.filter(t => t.status === "closed");
+  const closed = transactions.filter(t => t.status === "closed" || t.transaction_phase === "closed");
   const atRiskCount = active.filter(tx => computeHealthScore(tx, checklistItems).risk_level === "at_risk").length;
   const pendingApprovalCount = checklistItems.filter(ci => ci.status === "uploaded").length;
   const missingDocsCount = checklistItems.filter(ci =>
