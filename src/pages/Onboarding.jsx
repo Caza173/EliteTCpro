@@ -27,6 +27,11 @@ export default function Onboarding() {
   useEffect(() => {
     base44.auth.me().then((u) => {
       if (!u) return;
+      // Already completed — skip onboarding
+      if (u.profile_completed === true) {
+        navigate("/Dashboard", { replace: true });
+        return;
+      }
       setUser(u);
       setForm((f) => ({
         ...f,

@@ -20,7 +20,7 @@ export function CurrentUserProvider({ children }) {
 
       setCurrentUser(authUser);
 
-      // Background existence check — only logs out if user was deleted.
+      // Background existence check — logs out if user was deleted.
       // Done async so it never blocks rendering.
       base44.functions.invoke("checkUserExists", {})
         .then(res => {

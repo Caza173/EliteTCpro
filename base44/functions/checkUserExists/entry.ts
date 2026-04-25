@@ -16,7 +16,11 @@ Deno.serve(async (req) => {
       return Response.json({ exists: false, user: null });
     }
 
-    return Response.json({ exists: true, user: users[0] });
+    return Response.json({
+      exists: true,
+      profile_completed: users[0].profile_completed === true,
+      user: users[0],
+    });
   } catch (error) {
     return Response.json({ error: error.message }, { status: 500 });
   }

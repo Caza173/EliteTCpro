@@ -104,8 +104,8 @@ export default function Layout({ children, currentPageName }) {
     const ONBOARDING_EXEMPT = ["Onboarding", "Landing", "SetupProfile", "AgentSignIn"];
     
     // ALL new users must complete onboarding before accessing platform
-    // !profile_completed catches both undefined (new user) and false (incomplete)
-    if (!userLoading && currentUser !== null && !currentUser.profile_completed && !ONBOARDING_EXEMPT.includes(currentPageName)) {
+    // !profile_completed catches undefined (new user), false (incomplete), and null
+    if (!userLoading && currentUser !== null && currentUser.profile_completed !== true && !ONBOARDING_EXEMPT.includes(currentPageName)) {
       navigate("/onboarding", { replace: true });
       return;
     }
@@ -122,7 +122,7 @@ export default function Layout({ children, currentPageName }) {
   useEffect(() => {
     if (!currentUser) return;
     // Skip redirects if user hasn't completed profile setup
-    if (currentUser.profile_completed === false) return;
+    if (currentUser.profile_completed !== true) return;
     
     const role = currentUser.role;
     const email = currentUser.email;
