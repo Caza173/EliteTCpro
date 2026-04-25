@@ -4,31 +4,35 @@ import { base44 } from "@/api/base44Client";
 const CurrentUserContext = createContext(null);
 
 export function CurrentUserProvider({ children }) {
-  const [currentUser, setCurrentUser] = useState(undefined); // undefined = loading
+  const [currentUser, setCurrentUser] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [isDeleted, setIsDeleted] = useState(false);
 
   const fetchUser = useCallback(async () => {
+    setIsLoading(true);
     try {
-      const user = await base44.auth.me();
-      if (!user) {
+      const authUser = await base44.auth.me();
+
+      if (!authUser) {
         setCurrentUser(null);
-        setIsLoading(false);
         return;
       }
-      // Use backend (service role) to definitively verify the user record still exists.
-      // If the user was deleted from the app, force logout immediately.
-      try {
-        const res = await base44.functions.invoke("checkUserExists", {});
-        if (!res?.data?.exists) {
-          await base44.auth.logout();
-          return;
-        }
-      } catch {
-        // If the check fails (e.g. network error), still allow user in — 
-        // don't block legitimate users due to a transient backend error.
+
+      // Service-role check: does this user actually exist in the app DB?
+      const res = await base44.functions.invoke("checkUserExists", {});
+      const data = res?.data;
+
+      if (!data?.exists) {
+        // User was deleted — hard logout
+        setIsDeleted(true);
+        await base44.auth.logout();
+        window.location.href = "/";
+        return;
       }
-      setCurrentUser(user);
-    } catch {
+
+      setCurrentUser(data.user);
+    } catch (err) {
+      console.error("User fetch error:", err);
       setCurrentUser(null);
     } finally {
       setIsLoading(false);
@@ -41,20 +45,17 @@ export function CurrentUserProvider({ children }) {
 
   const refreshUser = useCallback(async () => {
     try {
-      const user = await base44.auth.me();
-      if (!user) { setCurrentUser(null); return; }
-      try {
-        const res = await base44.functions.invoke("checkUserExists", {});
-        if (!res?.data?.exists) {
-          await base44.auth.logout();
-          return;
-        }
-      } catch {
-        // transient error — keep current session
+      const res = await base44.functions.invoke("checkUserExists", {});
+      const data = res?.data;
+      if (!data?.exists) {
+        setIsDeleted(true);
+        await base44.auth.logout();
+        window.location.href = "/";
+        return;
       }
-      setCurrentUser(user);
-    } catch {
-      setCurrentUser(null);
+      setCurrentUser(data.user);
+    } catch (err) {
+      console.error("refreshUser error:", err);
     }
   }, []);
 
@@ -63,7 +64,7 @@ export function CurrentUserProvider({ children }) {
   }, []);
 
   return (
-    <CurrentUserContext.Provider value={{ currentUser, isLoading, refreshUser, updateCurrentUser }}>
+    <CurrentUserContext.Provider value={{ currentUser, isLoading, isDeleted, refreshUser, updateCurrentUser }}>
       {children}
     </CurrentUserContext.Provider>
   );

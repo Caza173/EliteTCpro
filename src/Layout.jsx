@@ -94,7 +94,7 @@ export default function Layout({ children, currentPageName }) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
 
-  const { currentUser = null } = useCurrentUserCtx();
+  const { currentUser = null, isLoading: userLoading } = useCurrentUserCtx();
 
   const navigate = useNavigate();
 
@@ -104,8 +104,8 @@ export default function Layout({ children, currentPageName }) {
     const ONBOARDING_EXEMPT = ["Onboarding", "Landing", "SetupProfile", "AgentSignIn"];
     
     // ALL new users must complete onboarding before accessing platform
-    // profile_completed can be undefined (new user) or false (explicitly not done)
-    if (currentUser !== null && !currentUser.profile_completed && !ONBOARDING_EXEMPT.includes(currentPageName)) {
+    // !profile_completed catches both undefined (new user) and false (incomplete)
+    if (!userLoading && currentUser !== null && !currentUser.profile_completed && !ONBOARDING_EXEMPT.includes(currentPageName)) {
       navigate("/onboarding", { replace: true });
       return;
     }
