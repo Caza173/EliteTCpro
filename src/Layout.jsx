@@ -39,23 +39,21 @@ import LogoutButton from "./components/auth/LogoutButton";
 import { useCurrentUser as useCurrentUserCtx } from "./lib/CurrentUserContext.jsx";
 
 const TC_NAV = [
-  { label: "Dashboard",       page: "Dashboard",       icon: LayoutDashboard },
-  { label: "Transactions",    page: "Transactions",    icon: FileText },
-  { label: "Deal Intake",     page: "AgentIntake",     icon: UserPlus },
+  { label: "Dashboard",       page: "Dashboard",       icon: LayoutDashboard, path: "/Dashboard" },
+  { label: "Transactions",    page: "Transactions",    icon: FileText, path: "/Transactions" },
+  { label: "Deal Intake",     page: "AgentIntake",     icon: UserPlus, path: "/AgentIntake" },
   { label: "Pending Queue",   page: "PendingDeals",    icon: Inbox, path: "/pending-deals" },
-  { label: "Addendum Builder", page: "AddendumBuilder", icon: ClipboardList },
-
-  { label: "Settings",        page: "Settings",         icon: Settings },
+  { label: "Addendum Builder", page: "AddendumBuilder", icon: ClipboardList, path: "/AddendumBuilder" },
+  { label: "Settings",        page: "Settings",         icon: Settings, path: "/Settings" },
 ];
 
 const OWNER_NAV = [
-  { label: "Dashboard",      page: "Dashboard",      icon: LayoutDashboard },
-  { label: "Transactions",   page: "Transactions",   icon: FileText },
-  { label: "Deal Intake",    page: "AgentIntake",    icon: UserPlus },
+  { label: "Dashboard",      page: "Dashboard",      icon: LayoutDashboard, path: "/Dashboard" },
+  { label: "Transactions",   page: "Transactions",   icon: FileText, path: "/Transactions" },
+  { label: "Deal Intake",    page: "AgentIntake",    icon: UserPlus, path: "/AgentIntake" },
   { label: "Pending Queue",  page: "PendingDeals",   icon: Inbox, path: "/pending-deals" },
-  { label: "Addendum Builder",page: "AddendumBuilder",  icon: ClipboardList },
-
-  { label: "Settings",       page: "Settings",       icon: Settings },
+  { label: "Addendum Builder",page: "AddendumBuilder",  icon: ClipboardList, path: "/AddendumBuilder" },
+  { label: "Settings",       page: "Settings",       icon: Settings, path: "/Settings" },
 ];
 
 const AGENT_NAV = [
