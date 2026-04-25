@@ -13,7 +13,7 @@ export default function BrokerageLogoUpload({ brokerage, onSaved }) {
     if (!file) return;
     setUploading(true);
     const { file_url } = await base44.integrations.Core.UploadFile({ file });
-    await base44.entities.Brokerage.update(brokerage.id, { branding_logo: file_url });
+    await base44.functions.invoke("updateBrokerage", { brokerage_id: brokerage.id, data: { branding_logo: file_url } });
     setUploading(false);
     setSaved(true);
     setTimeout(() => setSaved(false), 2500);
@@ -21,7 +21,7 @@ export default function BrokerageLogoUpload({ brokerage, onSaved }) {
   };
 
   const handleRemove = async () => {
-    await base44.entities.Brokerage.update(brokerage.id, { branding_logo: "" });
+    await base44.functions.invoke("updateBrokerage", { brokerage_id: brokerage.id, data: { branding_logo: "" } });
     onSaved?.();
   };
 

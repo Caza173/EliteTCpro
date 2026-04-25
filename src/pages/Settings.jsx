@@ -135,7 +135,7 @@ export default function Settings() {
   }, [brokerage]);
 
   const saveBrokerageMutation = useMutation({
-    mutationFn: (data) => base44.entities.Brokerage.update(brokerage.id, data),
+    mutationFn: (data) => base44.functions.invoke("updateBrokerage", { brokerage_id: brokerage.id, data }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["brokerage", currentUser?.brokerage_id] });
       setBrokerageSaved(true);
