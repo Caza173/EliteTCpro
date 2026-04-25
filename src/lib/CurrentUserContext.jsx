@@ -16,11 +16,16 @@ export function CurrentUserProvider({ children }) {
         return;
       }
       // Use backend (service role) to definitively verify the user record still exists.
-      // Client-side User entity reads can be misleading for deleted accounts.
-      const res = await base44.functions.invoke("checkUserExists", {});
-      if (!res?.data?.exists) {
-        await base44.auth.logout();
-        return;
+      // If the user was deleted from the app, force logout immediately.
+      try {
+        const res = await base44.functions.invoke("checkUserExists", {});
+        if (!res?.data?.exists) {
+          await base44.auth.logout();
+          return;
+        }
+      } catch {
+        // If the check fails (e.g. network error), still allow user in — 
+        // don't block legitimate users due to a transient backend error.
       }
       setCurrentUser(user);
     } catch {
@@ -38,10 +43,14 @@ export function CurrentUserProvider({ children }) {
     try {
       const user = await base44.auth.me();
       if (!user) { setCurrentUser(null); return; }
-      const res = await base44.functions.invoke("checkUserExists", {});
-      if (!res?.data?.exists) {
-        await base44.auth.logout();
-        return;
+      try {
+        const res = await base44.functions.invoke("checkUserExists", {});
+        if (!res?.data?.exists) {
+          await base44.auth.logout();
+          return;
+        }
+      } catch {
+        // transient error — keep current session
       }
       setCurrentUser(user);
     } catch {

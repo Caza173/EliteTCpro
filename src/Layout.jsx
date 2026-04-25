@@ -104,7 +104,8 @@ export default function Layout({ children, currentPageName }) {
     const ONBOARDING_EXEMPT = ["Onboarding", "Landing", "SetupProfile", "AgentSignIn"];
     
     // ALL new users must complete onboarding before accessing platform
-    if (currentUser !== null && currentUser.profile_completed === false && !ONBOARDING_EXEMPT.includes(currentPageName)) {
+    // profile_completed can be undefined (new user) or false (explicitly not done)
+    if (currentUser !== null && !currentUser.profile_completed && !ONBOARDING_EXEMPT.includes(currentPageName)) {
       navigate("/onboarding", { replace: true });
       return;
     }
