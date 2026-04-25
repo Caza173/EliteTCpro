@@ -82,7 +82,8 @@ Deno.serve(async (req) => {
 
     // Fetch all transactions in user's teams
     const allTx = await base44.asServiceRole.entities.Transaction.filter({}, sort, limit);
-    let teamTx = allTx.filter(tx => tx.team_id && teamIds.includes(tx.team_id));
+    // Include transactions in user's teams OR legacy transactions with no team_id (not yet migrated)
+    let teamTx = allTx.filter(tx => !tx.team_id || teamIds.includes(tx.team_id));
 
     // For TC (not team_admin): also include assigned deals in any team (safety net for legacy data)
     if (isTC) {
