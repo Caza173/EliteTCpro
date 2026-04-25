@@ -35,7 +35,10 @@ export function useDealAccess() {
       base44.functions.invoke("getTeamTransactions", { sort: "-created_date", limit: 200 })
         .then(r => r.data?.transactions || []),
     enabled: !!currentUser,
-    staleTime: 30_000,
+    staleTime: 60_000,
+    cacheTime: 90_000,
+    retry: 1,
+    retryDelay: (attemptIndex) => Math.min(1000 * Math.pow(2, attemptIndex), 10_000),
   });
 
   const allTransactions = serverData || [];
