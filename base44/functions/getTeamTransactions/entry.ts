@@ -89,9 +89,10 @@ Deno.serve(async (req) => {
     if (isTC) {
       const myMembership = memberships.find(m => m.role === 'team_admin');
       if (!myMembership) {
-        // Pure TC: can only see pending (unassigned) team deals + their own assigned deals
+        // Pure TC: can see ALL deals assigned to them (any status) + unassigned pending team deals
         teamTx = teamTx.filter(tx =>
           tx.assigned_tc_id === user.id ||
+          tx.created_by === user.id ||
           (!tx.assigned_tc_id && tx.status === 'pending')
         );
       }
