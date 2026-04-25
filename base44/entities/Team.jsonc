@@ -6,6 +6,10 @@
       "type": "string",
       "description": "Team name"
     },
+    "owner_id": {
+      "type": "string",
+      "description": "User ID of the platform owner who owns this team"
+    },
     "brokerage_id": {
       "type": "string",
       "description": "Reference to Brokerage"

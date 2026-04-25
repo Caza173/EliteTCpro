@@ -2,26 +2,25 @@
   "name": "User",
   "type": "object",
   "properties": {
-    "brokerage_id": {
-      "type": "string"
-    },
     "role": {
       "type": "string",
       "enum": [
-        "admin",
         "owner",
-        "tc_lead",
+        "team_lead",
         "tc",
+        "admin",
+        "tc_lead",
         "agent",
         "client"
       ],
-      "default": "agent",
-      "description": "owner/admin = full access, tc_lead = senior TC, tc = standard transactions, agent = own deals, client = read-only portal"
-    },
-    "phone": {
-      "type": "string"
+      "default": "tc",
+      "description": "owner = full platform access; team_lead = manages a team (maps from admin/tc_lead); tc = transaction coordinator; admin/tc_lead are legacy aliases kept for backward compat"
     },
     "team_id": {
+      "type": "string",
+      "description": "Required for all non-owner users. Links user to their team."
+    },
+    "brokerage_id": {
       "type": "string"
     },
     "status": {
@@ -32,6 +31,9 @@
         "disabled"
       ],
       "default": "active"
+    },
+    "phone": {
+      "type": "string"
     },
     "broker_split_percent": {
       "type": "number",

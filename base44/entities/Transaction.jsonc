@@ -605,44 +605,8 @@
     "agent"
   ],
   "rls": {
-    "read": {
-      "$or": [
-        {
-          "user_condition": {
-            "role": "super_admin"
-          }
-        },
-        {
-          "data.team_id": "{{user.data.team_id}}",
-          "user_condition": {
-            "role": "admin"
-          }
-        },
-        {
-          "data.team_id": "{{user.data.team_id}}",
-          "$or": [
-            {
-              "data.assigned_tc_id": "{{user.id}}"
-            },
-            {
-              "data.created_by": "{{user.id}}"
-            }
-          ]
-        }
-      ]
-    },
-    "create": {
-      "user_condition": {
-        "role": {
-          "$in": [
-            "super_admin",
-            "admin",
-            "tc",
-            "agent"
-          ]
-        }
-      }
-    },
+    "read": true,
+    "create": true,
     "update": {
       "$or": [
         {
@@ -651,13 +615,25 @@
           }
         },
         {
-          "data.team_id": "{{user.data.team_id}}",
           "user_condition": {
             "role": "admin"
           }
         },
         {
+          "user_condition": {
+            "role": "tc"
+          }
+        },
+        {
+          "user_condition": {
+            "role": "tc_lead"
+          }
+        },
+        {
           "data.assigned_tc_id": "{{user.id}}"
+        },
+        {
+          "data.created_by": "{{user.id}}"
         }
       ]
     },
@@ -669,7 +645,6 @@
           }
         },
         {
-          "data.team_id": "{{user.data.team_id}}",
           "user_condition": {
             "role": "admin"
           }

@@ -1,0 +1,157 @@
+{
+  "name": "Approval",
+  "type": "object",
+  "properties": {
+    "transaction_id": {
+      "type": "string",
+      "description": "Reference to Transaction"
+    },
+    "team_id": {
+      "type": "string",
+      "description": "Team this approval belongs to"
+    },
+    "type": {
+      "type": "string",
+      "enum": [
+        "fuel_proration",
+        "commission_statement"
+      ],
+      "description": "Type of approval request"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "draft",
+        "sent",
+        "approved",
+        "rejected"
+      ],
+      "default": "draft"
+    },
+    "data_json": {
+      "type": "object",
+      "description": "Stores full breakdown/payload for this approval",
+      "additionalProperties": true
+    },
+    "sent_to_email": {
+      "type": "string",
+      "description": "Email address the approval request was sent to"
+    },
+    "sent_at": {
+      "type": "string",
+      "description": "ISO timestamp when approval was sent"
+    },
+    "approved_at": {
+      "type": "string",
+      "description": "ISO timestamp when approved or rejected"
+    },
+    "approved_by": {
+      "type": "string",
+      "description": "Email or name of who approved/rejected"
+    },
+    "token": {
+      "type": "string",
+      "description": "Secure random token for approve/reject links"
+    },
+    "token_expires_at": {
+      "type": "string",
+      "description": "ISO timestamp when the token expires (72h from send)"
+    },
+    "version": {
+      "type": "number",
+      "default": 1,
+      "description": "Incremented each time approval is re-sent after edits"
+    },
+    "rejection_reason": {
+      "type": "string",
+      "description": "Optional reason provided when rejecting"
+    },
+    "reminder_count": {
+      "type": "number",
+      "default": 0,
+      "description": "How many reminders have been sent"
+    },
+    "last_reminder_at": {
+      "type": "string",
+      "description": "ISO timestamp of last reminder sent"
+    },
+    "created_by": {
+      "type": "string",
+      "description": "User ID who created this approval request"
+    }
+  },
+  "required": [
+    "transaction_id",
+    "team_id",
+    "type"
+  ],
+  "rls": {
+    "read": {
+      "$or": [
+        {
+          "user_condition": {
+            "role": "owner"
+          }
+        },
+        {
+          "data.team_id": "{{user.data.team_id}}"
+        }
+      ]
+    },
+    "create": {
+      "user_condition": {
+        "role": {
+          "$in": [
+            "owner",
+            "team_lead",
+            "tc",
+            "admin",
+            "tc_lead"
+          ]
+        }
+      }
+    },
+    "update": {
+      "$or": [
+        {
+          "user_condition": {
+            "role": "owner"
+          }
+        },
+        {
+          "data.team_id": "{{user.data.team_id}}",
+          "user_condition": {
+            "role": {
+              "$in": [
+                "team_lead",
+                "tc",
+                "admin",
+                "tc_lead"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    "delete": {
+      "$or": [
+        {
+          "user_condition": {
+            "role": "owner"
+          }
+        },
+        {
+          "data.team_id": "{{user.data.team_id}}",
+          "user_condition": {
+            "role": {
+              "$in": [
+                "team_lead",
+                "admin"
+              ]
+            }
+          }
+        }
+      ]
+    }
+  }
+}
