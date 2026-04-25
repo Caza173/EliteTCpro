@@ -94,7 +94,7 @@ export default function Layout({ children, currentPageName }) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
 
-  const { currentUser = null, isLoading: userLoading } = useCurrentUserCtx();
+  const { currentUser = null, isLoading: userLoading = false } = useCurrentUserCtx() || {};
 
   const navigate = useNavigate();
 
