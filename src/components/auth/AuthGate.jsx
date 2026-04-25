@@ -1,4 +1,4 @@
-import React, { useEffect } from "react";
+import React, { useEffect, useRef } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { useCurrentUser } from "@/lib/CurrentUserContext.jsx";
 
@@ -9,48 +9,52 @@ const PUBLIC_PATHS = [
   "/TCSignIn", "/agent/submit-transaction",
 ];
 
+function isPublicPath(path) {
+  return PUBLIC_PATHS.some(p => path === p || path.startsWith(p + "/"));
+}
+
 export default function AuthGate({ children }) {
   const { currentUser, isLoading } = useCurrentUser();
   const location = useLocation();
   const navigate = useNavigate();
+  const lastNavigated = useRef(null);
 
   const path = location.pathname;
-  const profileCompleted = currentUser?.profile_completed === true;
-
-  console.log("AUTH STATE", {
-    path,
-    isLoading,
-    user: !!currentUser,
-    profile_completed: currentUser?.profile_completed,
-  });
 
   useEffect(() => {
+    // Wait until auth is fully resolved
     if (isLoading) return;
 
-    // A: Not logged in
-    if (!currentUser) {
-      const isPublic = PUBLIC_PATHS.some(p => path === p || path.startsWith(p + "/"));
-      if (!isPublic) {
-        navigate("/", { replace: true });
-      }
-      return;
-    }
+    // Derive stable values — never undefined
+    const loggedIn = !!currentUser;
+    const profileCompleted = currentUser?.profile_completed === true;
 
-    // B: Logged in, profile not complete
-    if (!profileCompleted) {
+    let target = null;
+
+    if (!loggedIn) {
+      // Not logged in: redirect protected pages to landing
+      if (!isPublicPath(path)) {
+        target = "/";
+      }
+    } else if (!profileCompleted) {
+      // Logged in but profile incomplete: must finish onboarding
       if (path !== "/onboarding") {
-        navigate("/onboarding", { replace: true });
+        target = "/onboarding";
       }
-      return;
+    } else {
+      // Fully onboarded: don't let them sit on landing or onboarding
+      if (path === "/" || path === "/onboarding" || path === "/Landing") {
+        target = "/Dashboard";
+      }
     }
 
-    // C: Logged in + complete — block landing and onboarding
-    if (path === "/" || path === "/onboarding") {
-      navigate("/Dashboard", { replace: true });
+    // Only navigate if target is different from current path AND we haven't just navigated there
+    if (target && target !== path && lastNavigated.current !== target) {
+      lastNavigated.current = target;
+      navigate(target, { replace: true });
     }
-  }, [currentUser, isLoading, path, profileCompleted]);
+  }, [isLoading, currentUser?.id, currentUser?.profile_completed, path]);
 
-  // Block render until auth is resolved
   if (isLoading) {
     return (
       <div className="fixed inset-0 flex items-center justify-center" style={{ backgroundColor: "#0F172A" }}>
