@@ -12,7 +12,12 @@ Deno.serve(async (req) => {
     const { user_id } = await req.json();
     if (!user_id) return Response.json({ error: "user_id required" }, { status: 400 });
 
-    await base44.asServiceRole.entities.User.delete(user_id);
+    // Soft-delete: mark as deleted so returning users are treated as new
+    await base44.asServiceRole.entities.User.update(user_id, {
+      is_deleted: true,
+      deleted_at: new Date().toISOString(),
+      status: 'disabled',
+    });
 
     return Response.json({ success: true });
   } catch (error) {

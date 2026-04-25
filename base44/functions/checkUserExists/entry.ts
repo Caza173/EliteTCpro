@@ -16,6 +16,11 @@ Deno.serve(async (req) => {
       return Response.json({ exists: false, user: null });
     }
 
+    // Treat soft-deleted users as non-existent → forces fresh onboarding on re-login
+    if (users[0].is_deleted === true) {
+      return Response.json({ exists: false, user: null });
+    }
+
     return Response.json({
       exists: true,
       profile_completed: users[0].profile_completed === true,

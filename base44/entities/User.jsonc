@@ -14,7 +14,7 @@
         "client"
       ],
       "default": "tc",
-      "description": "owner = full platform access; team_lead = manages a team (maps from admin/tc_lead); tc = transaction coordinator; admin/tc_lead are legacy aliases kept for backward compat"
+      "description": "owner = full platform access; team_lead = manages a team; tc = transaction coordinator; admin/tc_lead are legacy aliases"
     },
     "team_id": {
       "type": "string",
@@ -121,6 +121,14 @@
     "profile_completed": {
       "type": "boolean",
       "default": false
+    },
+    "is_deleted": {
+      "type": "boolean",
+      "default": false
+    },
+    "deleted_at": {
+      "type": "string",
+      "description": "ISO timestamp when user was soft-deleted"
     }
   },
   "required": []
