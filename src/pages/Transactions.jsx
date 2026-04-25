@@ -8,9 +8,10 @@ import { Input } from "@/components/ui/input";
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
-import { Search, ChevronLeft, ChevronRight, Clock, Star } from "lucide-react";
+import { Search, ChevronLeft, ChevronRight, Clock, Star, LayoutGrid, List } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import TransactionTable from "../components/transactions/TransactionTable";
+import TransactionCardGrid from "../components/transactions/TransactionCardGrid";
 import ContractIntakeModal from "../components/intake/ContractIntakeModal";
 import { useDealAccess } from "../lib/useDealAccess";
 import PendingDealsQueue from "../components/deals/PendingDealsQueue";
@@ -32,6 +33,7 @@ export default function Transactions() {
   const [page, setPage] = useState(1);
   const [showIntake, setShowIntake] = useState(false);
   const [dealTab, setDealTab] = useState("all"); // "all" | "pending" | "my"
+  const [viewMode, setViewMode] = useState(() => localStorage.getItem("tx_view") || "table");
   // Role-based deal access — filters to only deals the user may see
   const { transactions, pendingDeals, myDeals, isLoading, currentUser, isSuperAdmin, isTC } = useDealAccess();
 
@@ -156,7 +158,7 @@ export default function Transactions() {
           ))}
         </div>
 
-        <div className="flex flex-col sm:flex-row gap-3">
+        <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-center">
           <div className="relative flex-1 max-w-sm">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
             <Input
@@ -197,6 +199,24 @@ export default function Transactions() {
               ))}
             </SelectContent>
           </Select>
+
+          {/* View toggle */}
+          <div className="flex gap-0.5 p-0.5 rounded-lg border ml-auto" style={{ borderColor: "var(--border)", background: "var(--bg-tertiary)" }}>
+            <button
+              onClick={() => { setViewMode("table"); localStorage.setItem("tx_view", "table"); }}
+              className={`p-1.5 rounded-md transition-colors ${viewMode === "table" ? "bg-white shadow-sm" : "hover:opacity-70"}`}
+              title="Table view"
+            >
+              <List className="w-4 h-4" style={{ color: viewMode === "table" ? "var(--text-primary)" : "var(--text-muted)" }} />
+            </button>
+            <button
+              onClick={() => { setViewMode("cards"); localStorage.setItem("tx_view", "cards"); }}
+              className={`p-1.5 rounded-md transition-colors ${viewMode === "cards" ? "bg-white shadow-sm" : "hover:opacity-70"}`}
+              title="Card view"
+            >
+              <LayoutGrid className="w-4 h-4" style={{ color: viewMode === "cards" ? "var(--text-primary)" : "var(--text-muted)" }} />
+            </button>
+          </div>
         </div>
       </div>
 
@@ -210,17 +230,19 @@ export default function Transactions() {
           />
         ) : (
           <>
-            <Card className="shadow-sm border-gray-100">
-              <CardContent className="px-0 pb-0 pt-0">
-                {isLoading ? (
-                  <div className="space-y-3 p-6">
-                    {[1,2,3,4,5].map(i => <Skeleton key={i} className="h-12 rounded" />)}
-                  </div>
-                ) : (
+            {isLoading ? (
+              <div className="space-y-3 p-2">
+                {[1,2,3,4,5].map(i => <Skeleton key={i} className="h-12 rounded" />)}
+              </div>
+            ) : viewMode === "cards" ? (
+              <TransactionCardGrid transactions={paginated} />
+            ) : (
+              <Card className="shadow-sm border-gray-100">
+                <CardContent className="px-0 pb-0 pt-0">
                   <TransactionTable transactions={paginated} />
-                )}
-              </CardContent>
-            </Card>
+                </CardContent>
+              </Card>
+            )}
 
             {totalPages > 1 && (
               <div className="flex items-center justify-between px-2 py-3">
