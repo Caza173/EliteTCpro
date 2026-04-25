@@ -99,43 +99,46 @@ export default function Layout({ children, currentPageName }) {
   const navigate = useNavigate();
 
   useEffect(() => {
-    if (currentUser === undefined) return;
-    
-    const ONBOARDING_EXEMPT = ["Onboarding", "Landing", "SetupProfile", "AgentSignIn"];
-    
-    // ALL new users must complete onboarding before accessing platform
-    // !profile_completed catches undefined (new user), false (incomplete), and null
-    if (!userLoading && currentUser !== null && currentUser.profile_completed !== true && !ONBOARDING_EXEMPT.includes(currentPageName)) {
-      navigate("/onboarding", { replace: true });
+    // Wait for auth to settle before making any routing decisions
+    if (userLoading || currentUser === undefined) return;
+
+    const EXEMPT_PAGES = ["Onboarding", "Landing", "SetupProfile", "AgentSignIn"];
+    const isMaster = currentUser?.email === "nhcazateam@gmail.com";
+
+    // ── State A: Not logged in ──
+    if (!currentUser) return; // public routes are fine
+
+    // ── State B: Logged in but profile not complete ──
+    if (currentUser.profile_completed !== true) {
+      if (currentPageName !== "Onboarding") {
+        navigate("/onboarding", { replace: true });
+      }
       return;
     }
-    
-    // TC role-specific restrictions
-    const isTCRole = currentUser?.role === "tc" || currentUser?.role === "tc_lead";
+
+    // ── State C: Logged in + profile complete ──
+
+    // TC role-specific page restrictions
+    const isTCRole = currentUser.role === "tc" || currentUser.role === "tc_lead";
     const TC_RESTRICTED = ["Integrations", "AuditLog", "Billing"];
     if (isTCRole && TC_RESTRICTED.includes(currentPageName)) {
       navigate("/Dashboard", { replace: true });
       return;
     }
-  }, [currentUser, currentPageName, navigate]);
 
-  useEffect(() => {
-    if (!currentUser) return;
-    // Skip redirects if user hasn't completed profile setup
-    if (currentUser.profile_completed !== true) return;
-    
-    const role = currentUser.role;
-    const email = currentUser.email;
-    const path = window.location.hash.replace("#", "") || "/";
-    const isClientPage = path.startsWith("/ClientPortal");
-    const isTransactionDetail = path.startsWith("/TransactionDetail");
-    if (email === "nhcazateam@gmail.com") return;
-    if (role === "client" && !isClientPage && !isTransactionDetail) {
-      navigate(createPageUrl("ClientPortal"), { replace: true });
-    } else if ((!role || role === "user") && !isTransactionDetail) {
-      navigate(createPageUrl("Dashboard"), { replace: true });
+    // Role-based home redirect (client / unroled users)
+    if (!isMaster) {
+      const role = currentUser.role;
+      const path = window.location.pathname;
+      const isClientPage = path.includes("ClientPortal");
+      const isTransactionDetail = path.includes("TransactionDetail") || path.includes("/transactions/");
+      if (role === "client" && !isClientPage && !isTransactionDetail) {
+        navigate(createPageUrl("ClientPortal"), { replace: true });
+      } else if ((!role || role === "user") && !isTransactionDetail) {
+        navigate(createPageUrl("Dashboard"), { replace: true });
+      }
     }
-  }, [currentUser, navigate]);
+  }, [currentUser, userLoading, currentPageName, navigate]);
 
   const role = currentUser?.role;
   const isMaster = currentUser?.email === "nhcazateam@gmail.com";

@@ -27,11 +27,8 @@ export default function Onboarding() {
   useEffect(() => {
     base44.auth.me().then((u) => {
       if (!u) return;
-      // Already completed — skip onboarding
-      if (u.profile_completed === true) {
-        navigate("/Dashboard", { replace: true });
-        return;
-      }
+      // Note: do NOT redirect if already completed here — Layout handles that.
+      // Only populate the form for the user.
       setUser(u);
       setForm((f) => ({
         ...f,
