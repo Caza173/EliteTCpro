@@ -6,9 +6,10 @@ import {
   parseISO, isSameDay, startOfWeek, endOfWeek, addWeeks, subWeeks,
   addDays, subDays, isSameMonth,
 } from "date-fns";
-import { ChevronLeft, ChevronRight, X } from "lucide-react";
+import { ChevronLeft, ChevronRight, X, CalendarPlus } from "lucide-react";
 import { Link } from "react-router-dom";
 import { createPageUrl } from "@/utils";
+import AddAppointmentModal from "./AddAppointmentModal";
 
 const DEADLINE_TYPES = [
   { key: "earnest_money_deadline",  label: "Earnest Money",   dot: "bg-blue-400",    pill: "bg-blue-50 text-blue-700 border-blue-200" },
@@ -183,6 +184,7 @@ export default function DeadlineCalendarView({ transactions = [] }) {
   const [selectedDay, setSelectedDay] = useState(null);
   const [hoveredDay, setHoveredDay] = useState(null);
   const [txList, setTxList] = useState(transactions);
+  const [apptModal, setApptModal] = useState(null); // null | { defaultDate }
 
   // Subscribe to transaction & contingency updates for real-time deadline syncing
   useEffect(() => {
@@ -434,6 +436,16 @@ export default function DeadlineCalendarView({ transactions = [] }) {
               </button>
             ))}
           </div>
+          {/* Add Appointment */}
+          <button
+            onClick={() => setApptModal({ defaultDate: selectedDay || cursor })}
+            className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-medium border transition-colors hover:opacity-80"
+            style={{ borderColor: "var(--border)", color: "var(--accent)", background: "var(--accent-subtle)" }}
+          >
+            <CalendarPlus className="w-3.5 h-3.5" />
+            Add Appointment
+          </button>
+
           {/* Nav */}
           <div className="flex gap-1">
             <button onClick={goPrev} className="p-1.5 rounded-lg hover:bg-gray-100 transition-colors">
@@ -493,6 +505,16 @@ export default function DeadlineCalendarView({ transactions = [] }) {
           </div>
         ))}
       </div>
+
+      {/* Add Appointment Modal */}
+      {apptModal && (
+        <AddAppointmentModal
+          transactions={transactions}
+          defaultDate={apptModal.defaultDate}
+          onClose={() => setApptModal(null)}
+          onSaved={() => setApptModal(null)}
+        />
+      )}
     </div>
   );
 }
