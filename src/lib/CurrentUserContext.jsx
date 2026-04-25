@@ -10,6 +10,19 @@ export function CurrentUserProvider({ children }) {
   const fetchUser = useCallback(async () => {
     try {
       const user = await base44.auth.me();
+      if (!user) {
+        setCurrentUser(null);
+        setIsLoading(false);
+        return;
+      }
+      // Verify the user record still exists in the app's User entity.
+      // If it was deleted by an admin, force logout so they can't access the app.
+      const users = await base44.entities.User.filter({ id: user.id });
+      if (!users || users.length === 0) {
+        // User was deleted from the app — clear session
+        await base44.auth.logout();
+        return;
+      }
       setCurrentUser(user || null);
     } catch {
       setCurrentUser(null);
@@ -25,6 +38,12 @@ export function CurrentUserProvider({ children }) {
   const refreshUser = useCallback(async () => {
     try {
       const user = await base44.auth.me();
+      if (!user) { setCurrentUser(null); return; }
+      const users = await base44.entities.User.filter({ id: user.id });
+      if (!users || users.length === 0) {
+        await base44.auth.logout();
+        return;
+      }
       setCurrentUser(user || null);
     } catch {
       setCurrentUser(null);
