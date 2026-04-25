@@ -101,7 +101,7 @@ export default function Onboarding() {
         onboarding_completed_at: new Date().toISOString(),
       });
       // Optimistically update context so AuthGate sees profile_completed=true immediately
-      updateCurrentUser({ profile_completed: true });
+      updateCurrentUser({ profile_completed: true, role: "tc" });
       navigate("/Dashboard", { replace: true });
     } finally {
       setSaving(false);
