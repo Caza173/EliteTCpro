@@ -56,6 +56,13 @@ export default function TransactionAlertsPanel({ brokerageId }) {
     },
   });
 
+  const handleClearAll = async () => {
+    await Promise.all(filtered.map(a =>
+      base44.entities.MonitorAlert.update(a.id, { alert_state: "dismissed", dismissed_at: new Date().toISOString() })
+    ));
+    queryClient.invalidateQueries({ queryKey: ["monitorAlerts", brokerageId] });
+  };
+
   const handleDismiss = async (e, alert) => {
     e.preventDefault();
     e.stopPropagation();
@@ -83,6 +90,16 @@ export default function TransactionAlertsPanel({ brokerageId }) {
           <Badge className="text-xs bg-red-100 text-red-700 border-red-200 border">{totalCount}</Badge>
         )}
       </div>
+
+      {filtered.length > 0 && (
+        <button
+          onClick={handleClearAll}
+          className="text-xs font-medium hover:underline"
+          style={{ color: "var(--text-muted)" }}
+        >
+          Clear all
+        </button>
+      )}
 
       <div className="flex gap-1.5 flex-wrap">
         {[
