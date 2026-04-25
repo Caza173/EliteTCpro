@@ -46,7 +46,6 @@ import MarkUnderContractButton from "../components/transactions/MarkUnderContrac
 import ListingIntakeTab from "../components/transactions/ListingIntakeTab";
 import UnifiedDeadlinesPanel from "../components/transactions/UnifiedDeadlinesPanel";
 import ContactsSection from "../components/transactions/ContactsSection";
-import PortalAccessCell from "../components/user/PortalAccessCell";
 import IssueDetectionPanel from "../components/issues/IssueDetectionPanel";
 import { detectIssues } from "../lib/issueDetector";
 import QuickFeedbackButton from "../components/feedback/QuickFeedbackButton";
@@ -947,14 +946,7 @@ export default function TransactionDetail() {
                   onUpdate={(data) => updateMutation.mutate({ id: transaction.id, data })}
                 />
                 
-                {/* Portal Access Section */}
-                <div className="pt-4 border-t" style={{ borderColor: "var(--card-border)" }}>
-                  <div className="flex items-center justify-between mb-2">
-                    <span className="text-xs font-semibold uppercase tracking-wider" style={{ color: "var(--text-muted)" }}>Client Portal Access</span>
-                    <PortalAccessCell transaction={transaction} currentUser={currentUser} onRefresh={() => queryClient.invalidateQueries({ queryKey: ["transactions"] })} />
-                  </div>
-                  <p className="text-xs" style={{ color: "var(--text-muted)" }}>Generate and manage secure portal codes for clients to view this transaction</p>
-                </div>
+
               </div>
             )}
           </div>

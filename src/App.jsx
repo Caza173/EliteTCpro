@@ -26,7 +26,6 @@ import TCSignIn from './pages/TCSignIn.jsx'
 import AgentSubmitTransaction from './pages/AgentSubmitTransaction.jsx'
 import TransactionDetail from './pages/TransactionDetail'
 import PendingDeals from './pages/PendingDeals'
-import PortalAccess from './pages/PortalAccess.jsx';
 import { QueryClientProvider } from '@tanstack/react-query'
 import { queryClientInstance } from '@/lib/query-client'
 import { pagesConfig } from './pages.config'
@@ -153,7 +152,7 @@ const AuthenticatedApp = () => {
       <Route path="/DeadlineResponse" element={<DeadlineResponse />} />
       <Route path="/ApprovalAction" element={<ApprovalAction />} />
       <Route path="/ClientLookup" element={<ClientLookup />} />
-      <Route path="/portal-access" element={<PortalAccess />} />
+
       <Route path="/AddendumBuilder" element={
         <RequireAuth>
           <LayoutWrapper currentPageName="AddendumBuilder">
