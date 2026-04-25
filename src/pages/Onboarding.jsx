@@ -97,6 +97,7 @@ export default function Onboarding() {
       await base44.auth.updateMe({
         profile: { ...form },
         profile_completed: true,
+        role: "tc",
         onboarding_completed_at: new Date().toISOString(),
       });
       // Optimistically update context so AuthGate sees profile_completed=true immediately
