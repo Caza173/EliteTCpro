@@ -4,7 +4,7 @@
   "properties": {
     "team_id": {
       "type": "string",
-      "description": "Team this transaction belongs to"
+      "description": "Team this transaction belongs to (required)"
     },
     "created_by": {
       "type": "string",
@@ -12,7 +12,11 @@
     },
     "assigned_tc_id": {
       "type": "string",
-      "description": "User ID of assigned TC (when claimed)"
+      "description": "User ID of assigned TC"
+    },
+    "agent_id": {
+      "type": "string",
+      "description": "Optional: linked agent user ID"
     },
     "brokerage_id": {
       "type": "string"
@@ -580,13 +584,11 @@
     },
     "blocked_by_signature": {
       "type": "boolean",
-      "default": false,
-      "description": "True when a required document is pending signature and blocks phase progression"
+      "default": false
     },
     "auto_send_signatures": {
       "type": "boolean",
-      "default": false,
-      "description": "Auto-send signature requests when documents are uploaded"
+      "default": false
     },
     "compliance_status": {
       "type": "string",
@@ -596,8 +598,7 @@
         "warnings",
         "failed"
       ],
-      "default": "pending",
-      "description": "Overall compliance status driven by signature and document checks"
+      "default": "pending"
     }
   },
   "required": [
@@ -605,28 +606,64 @@
     "agent"
   ],
   "rls": {
-    "read": true,
-    "create": true,
+    "read": {
+      "$or": [
+        {
+          "user_condition": {
+            "role": "owner"
+          }
+        },
+        {
+          "data.team_id": "{{user.data.team_id}}",
+          "user_condition": {
+            "role": {
+              "$in": [
+                "team_lead",
+                "tc",
+                "admin",
+                "tc_lead"
+              ]
+            }
+          }
+        },
+        {
+          "data.assigned_tc_id": "{{user.id}}"
+        },
+        {
+          "data.created_by": "{{user.id}}"
+        }
+      ]
+    },
+    "create": {
+      "user_condition": {
+        "role": {
+          "$in": [
+            "owner",
+            "team_lead",
+            "tc",
+            "admin",
+            "tc_lead"
+          ]
+        }
+      }
+    },
     "update": {
       "$or": [
         {
           "user_condition": {
-            "role": "super_admin"
+            "role": "owner"
           }
         },
         {
+          "data.team_id": "{{user.data.team_id}}",
           "user_condition": {
-            "role": "admin"
-          }
-        },
-        {
-          "user_condition": {
-            "role": "tc"
-          }
-        },
-        {
-          "user_condition": {
-            "role": "tc_lead"
+            "role": {
+              "$in": [
+                "team_lead",
+                "admin",
+                "tc_lead"
+              ]
+            }
           }
         },
         {
@@ -641,12 +678,18 @@
       "$or": [
         {
           "user_condition": {
-            "role": "super_admin"
+            "role": "owner"
           }
         },
         {
+          "data.team_id": "{{user.data.team_id}}",
           "user_condition": {
-            "role": "admin"
+            "role": {
+              "$in": [
+                "team_lead",
+                "admin"
+              ]
+            }
           }
         }
       ]

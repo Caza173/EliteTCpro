@@ -10,6 +10,7 @@ import GoogleCalendarSetup from './pages/GoogleCalendarSetup'
 import CommissionStatements from './pages/CommissionStatements'
 import FuelProrations from './pages/FuelProrations'
 import DeadlineResponse from './pages/DeadlineResponse'
+import ApprovalAction from './pages/ApprovalAction'
 import ClientLookup from './pages/ClientLookup'
 import AddendumBuilder from './pages/AddendumBuilder'
 import TutorialFAQPage from './pages/TutorialFAQPage'
@@ -150,6 +151,7 @@ const AuthenticatedApp = () => {
         </RequireAuth>
       } />
       <Route path="/DeadlineResponse" element={<DeadlineResponse />} />
+      <Route path="/ApprovalAction" element={<ApprovalAction />} />
       <Route path="/ClientLookup" element={<ClientLookup />} />
       <Route path="/portal-access" element={<PortalAccess />} />
       <Route path="/AddendumBuilder" element={
