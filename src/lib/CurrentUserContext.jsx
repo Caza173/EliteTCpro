@@ -15,15 +15,14 @@ export function CurrentUserProvider({ children }) {
         setIsLoading(false);
         return;
       }
-      // Verify the user record still exists in the app's User entity.
-      // If it was deleted by an admin, force logout so they can't access the app.
-      const users = await base44.entities.User.filter({ id: user.id });
-      if (!users || users.length === 0) {
-        // User was deleted from the app — clear session
+      // Use backend (service role) to definitively verify the user record still exists.
+      // Client-side User entity reads can be misleading for deleted accounts.
+      const res = await base44.functions.invoke("checkUserExists", {});
+      if (!res?.data?.exists) {
         await base44.auth.logout();
         return;
       }
-      setCurrentUser(user || null);
+      setCurrentUser(user);
     } catch {
       setCurrentUser(null);
     } finally {
@@ -39,12 +38,12 @@ export function CurrentUserProvider({ children }) {
     try {
       const user = await base44.auth.me();
       if (!user) { setCurrentUser(null); return; }
-      const users = await base44.entities.User.filter({ id: user.id });
-      if (!users || users.length === 0) {
+      const res = await base44.functions.invoke("checkUserExists", {});
+      if (!res?.data?.exists) {
         await base44.auth.logout();
         return;
       }
-      setCurrentUser(user || null);
+      setCurrentUser(user);
     } catch {
       setCurrentUser(null);
     }
