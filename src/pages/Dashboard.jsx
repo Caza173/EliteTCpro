@@ -204,8 +204,6 @@ export default function Dashboard() {
       <div className="flex gap-1 p-1 rounded-xl overflow-x-auto scrollbar-none" style={{ background: "var(--bg-tertiary)" }}>
         {[
           { id: "overview", label: "Overview" },
-          { id: "documents", label: "Documents" },
-          { id: "notes", label: "Notes" },
           { id: "finance", label: "Finance" },
         ].map(tab => (
           <button
@@ -324,17 +322,6 @@ export default function Dashboard() {
         </div>
       )}
 
-      {/* Tab: Documents */}
-      {activeTab === "documents" && (
-        <div className="theme-card p-4 text-center">
-          <p className="text-sm" style={{ color: "var(--text-muted)" }}>Documents view coming soon.</p>
-        </div>
-      )}
-
-      {/* Tab: Notes */}
-      {activeTab === "notes" && (
-        <NotesTab transactionId={null} brokerageId={currentUser?.brokerage_id} currentUser={currentUser} />
-      )}
 
     </div>
   );
