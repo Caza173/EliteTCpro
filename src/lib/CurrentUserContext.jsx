@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect, useCallback } from "react";
+import React, { createContext, useContext, useState, useEffect, useCallback, useRef } from "react";
 import { base44 } from "@/api/base44Client";
 
 const CurrentUserContext = createContext(null);
@@ -6,6 +6,7 @@ const CurrentUserContext = createContext(null);
 export function CurrentUserProvider({ children }) {
   const [currentUser, setCurrentUser] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
+  const existenceChecked = useRef(false);
 
   const fetchUser = useCallback(async () => {
     setIsLoading(true);
@@ -20,18 +21,21 @@ export function CurrentUserProvider({ children }) {
 
       setCurrentUser(authUser);
 
-      // Background existence check — logs out if user was deleted.
-      // Done async so it never blocks rendering.
-      base44.functions.invoke("checkUserExists", {})
-        .then(res => {
-          if (!res?.data?.exists) {
-            base44.auth.logout();
-            window.location.href = "/";
-          }
-        })
-        .catch(() => {
-          // Network error — don't log out, just continue
-        });
+      // Background existence check — runs only once per session to avoid rate limits.
+      if (!existenceChecked.current) {
+        existenceChecked.current = true;
+        base44.functions.invoke("checkUserExists", {})
+          .then(res => {
+            // Only act if we get a definitive "does not exist" response
+            if (res?.data?.exists === false) {
+              base44.auth.logout();
+              window.location.href = "/";
+            }
+          })
+          .catch(() => {
+            // Network error, rate limit, etc — do NOT log out, just continue silently
+          });
+      }
 
     } catch (err) {
       console.error("User fetch error:", err);
