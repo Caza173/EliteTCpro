@@ -88,6 +88,7 @@ export default function CommissionStatements() {
           onClose={() => setViewStatement(null)}
           onEdit={() => handleEdit(viewStatement)}
           onUpdated={() => { refresh(); setViewStatement(null); }}
+          onDeleted={() => { refresh(); setViewStatement(null); }}
         />
       )}
 

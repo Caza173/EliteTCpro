@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import { base44 } from "@/api/base44Client";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
-import { X, Download, Send, CheckCircle, Building2, Loader2, Pencil, RotateCcw } from "lucide-react";
+import { X, Download, Send, CheckCircle, Building2, Loader2, Pencil, RotateCcw, Trash2 } from "lucide-react";
 import { format } from "date-fns";
 import { jsPDF } from "jspdf";
 
@@ -125,8 +125,14 @@ function buildPDF(s, logoDataUrl) {
   return doc;
 }
 
-export default function StatementDetailModal({ statement: s, onClose, onEdit, onUpdated }) {
+export default function StatementDetailModal({ statement: s, onClose, onEdit, onUpdated, onDeleted }) {
   const [sending, setSending] = useState(null);
+  const [confirmDelete, setConfirmDelete] = useState(false);
+
+  const deleteMutation = useMutation({
+    mutationFn: () => base44.entities.CommissionStatement.delete(s.id),
+    onSuccess: () => { onDeleted ? onDeleted() : onClose(); },
+  });
 
   const { data: brokerages = [] } = useQuery({
     queryKey: ["brokerage"],
@@ -242,6 +248,19 @@ export default function StatementDetailModal({ statement: s, onClose, onEdit, on
             <Button variant="outline" size="sm" onClick={handleDownload} className="h-8 text-xs gap-1">
               <Download className="w-3 h-3" /> PDF
             </Button>
+            {!confirmDelete ? (
+              <Button variant="outline" size="sm" onClick={() => setConfirmDelete(true)} className="h-8 text-xs gap-1 text-red-600 border-red-200 hover:bg-red-50">
+                <Trash2 className="w-3 h-3" /> Delete
+              </Button>
+            ) : (
+              <div className="flex items-center gap-1">
+                <span className="text-xs text-red-600 font-medium">Sure?</span>
+                <Button size="sm" onClick={() => deleteMutation.mutate()} disabled={deleteMutation.isPending} className="h-7 text-xs bg-red-600 hover:bg-red-700 text-white px-2">
+                  {deleteMutation.isPending ? <Loader2 className="w-3 h-3 animate-spin" /> : "Yes"}
+                </Button>
+                <Button variant="outline" size="sm" onClick={() => setConfirmDelete(false)} className="h-7 text-xs px-2">No</Button>
+              </div>
+            )}
             <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-gray-100 ml-1">
               <X className="w-4 h-4 text-gray-500" />
             </button>
