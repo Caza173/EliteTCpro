@@ -1,8 +1,8 @@
-import React, { useEffect, useRef } from "react";
+import React, { useEffect } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { useCurrentUser } from "@/lib/CurrentUserContext.jsx";
 
-// Public paths that don't require auth
+// Routes that are always accessible without auth
 const PUBLIC_PATHS = [
   "/", "/Landing", "/AgentIntake", "/ClientLookup",
   "/DeadlineResponse", "/ApprovalAction", "/agent-signin",
@@ -13,39 +13,49 @@ function isPublicPath(path) {
   return PUBLIC_PATHS.some(p => path === p || path.startsWith(p + "/"));
 }
 
+function getRedirectTarget(isLoading, currentUser, path) {
+  if (isLoading) return null;
+
+  const loggedIn = !!currentUser;
+  const profileCompleted = currentUser?.profile_completed === true;
+
+  if (!loggedIn) {
+    // Unauthenticated: only public paths allowed
+    if (!isPublicPath(path)) return "/";
+    return null;
+  }
+
+  if (!profileCompleted) {
+    // New user: only /onboarding allowed
+    if (path !== "/onboarding") return "/onboarding";
+    return null;
+  }
+
+  // Completed user: redirect away from landing/onboarding
+  if (path === "/" || path === "/onboarding" || path === "/Landing") {
+    return "/Dashboard";
+  }
+
+  return null;
+}
+
 export default function AuthGate({ children }) {
   const { currentUser, isLoading } = useCurrentUser();
   const location = useLocation();
   const navigate = useNavigate();
-  const redirectedTo = useRef(null);
-
   const path = location.pathname;
-  const loggedIn = !!currentUser;
-  const profileCompleted = currentUser?.profile_completed === true;
 
   useEffect(() => {
+    // Wait until user state is fully resolved
     if (isLoading) return;
 
-    let target = null;
+    const target = getRedirectTarget(isLoading, currentUser, path);
 
-    if (!loggedIn) {
-      if (!isPublicPath(path)) target = "/";
-    } else if (!profileCompleted) {
-      if (path !== "/onboarding") target = "/onboarding";
-    } else {
-      if (path === "/" || path === "/onboarding" || path === "/Landing") target = "/Dashboard";
-    }
-
-    // Only redirect if we have a target, it differs from current path,
-    // AND we haven't already redirected to this exact target
-    if (target && target !== path && redirectedTo.current !== target) {
-      redirectedTo.current = target;
+    // Only navigate if target is different from where we already are
+    if (target && target !== path) {
       navigate(target, { replace: true });
-    } else if (!target) {
-      // Clear the guard when no redirect is needed (user is on correct page)
-      redirectedTo.current = null;
     }
-  }, [isLoading, loggedIn, profileCompleted, path]);
+  }, [isLoading, currentUser?.id, currentUser?.profile_completed, path]);
 
   if (isLoading) {
     return (

@@ -96,31 +96,26 @@ export default function Layout({ children, currentPageName }) {
 
   const navigate = useNavigate();
 
-  // Role-specific restrictions (non-routing guards — just page-level access control)
+  // Role-specific page restrictions (only for completed users)
   useEffect(() => {
     if (!currentUser || currentUser.profile_completed !== true) return;
 
     const isMaster = currentUser.email === "nhcazateam@gmail.com";
-    const isTCRole = currentUser.role === "tc" || currentUser.role === "tc_lead";
+    if (isMaster) return;
+
+    const role = currentUser.role;
+    const isTCRole = role === "tc" || role === "tc_lead";
     const TC_RESTRICTED = ["Integrations", "AuditLog", "Billing"];
+    const path = window.location.pathname;
+    const isTransactionDetail = path.includes("TransactionDetail") || path.includes("/transactions/");
 
     if (isTCRole && TC_RESTRICTED.includes(currentPageName)) {
       navigate("/Dashboard", { replace: true });
-      return;
+    } else if (role === "client" && !path.includes("ClientPortal") && !isTransactionDetail) {
+      navigate(createPageUrl("ClientPortal"), { replace: true });
     }
-
-    if (!isMaster) {
-      const role = currentUser.role;
-      const path = window.location.pathname;
-      const isClientPage = path.includes("ClientPortal");
-      const isTransactionDetail = path.includes("TransactionDetail") || path.includes("/transactions/");
-      if (role === "client" && !isClientPage && !isTransactionDetail) {
-        navigate(createPageUrl("ClientPortal"), { replace: true });
-      } else if ((!role || role === "user") && !isTransactionDetail) {
-        navigate(createPageUrl("Dashboard"), { replace: true });
-      }
-    }
-  }, [currentUser, currentPageName, navigate]);
+    // Removed the "user" role redirect — AuthGate handles all onboarding redirects
+  }, [currentUser?.id, currentUser?.profile_completed, currentUser?.role, currentPageName]);
 
   const role = currentUser?.role;
   const isMaster = currentUser?.email === "nhcazateam@gmail.com";
@@ -204,22 +199,23 @@ export default function Layout({ children, currentPageName }) {
           <nav className="flex-1 px-2 py-3 space-y-0.5 overflow-y-auto">
             {navItems.map((item) => {
               const isActive = currentPageName === item.page;
+              const isLocked = currentUser?.profile_completed !== true;
               const Icon = item.icon;
               return (
                 <Link
                   key={item.page}
                   to={item.path || createPageUrl(item.page)}
                   onClick={() => setSidebarOpen(false)}
-                  title={sidebarCollapsed ? item.label : undefined}
+                  title={isLocked ? "Complete your profile to access this page" : (sidebarCollapsed ? item.label : undefined)}
                   className={`sidebar-nav-item flex items-center gap-2.5 px-2.5 py-2 rounded-lg text-xs font-medium ${
                     sidebarCollapsed ? "justify-center" : ""
-                  }`}
+                  } ${isLocked ? "opacity-40 cursor-not-allowed" : ""}`}
                   style={isActive
                     ? { backgroundColor: "var(--sidebar-item-active)", color: "var(--sidebar-accent)" }
                     : { color: "var(--sidebar-text)" }
                   }
                   onMouseEnter={e => {
-                    if (!isActive) {
+                    if (!isActive && !isLocked) {
                       e.currentTarget.style.backgroundColor = "var(--sidebar-item-hover)";
                       e.currentTarget.style.color = "var(--sidebar-text-active)";
                     }
