@@ -17,15 +17,19 @@ export default function AuthGate({ children }) {
   const { currentUser, isLoading } = useCurrentUser();
   const location = useLocation();
   const navigate = useNavigate();
-  const lastNavigated = useRef(null);
+  const hasRedirected = useRef(false);
 
   const path = location.pathname;
 
   useEffect(() => {
-    // Wait until auth is fully resolved
-    if (isLoading) return;
+    // Reset redirect flag when path changes
+    hasRedirected.current = false;
+  }, [path]);
 
-    // Derive stable values — never undefined
+  useEffect(() => {
+    if (isLoading) return;
+    if (hasRedirected.current) return;
+
     const loggedIn = !!currentUser;
     const profileCompleted = currentUser?.profile_completed === true;
 
@@ -42,15 +46,14 @@ export default function AuthGate({ children }) {
         target = "/onboarding";
       }
     } else {
-      // Fully onboarded: don't let them sit on landing or onboarding
+      // Fully onboarded: redirect away from landing/onboarding to Dashboard
       if (path === "/" || path === "/onboarding" || path === "/Landing") {
         target = "/Dashboard";
       }
     }
 
-    // Only navigate if target is different from current path AND we haven't just navigated there
-    if (target && target !== path && lastNavigated.current !== target) {
-      lastNavigated.current = target;
+    if (target && target !== path) {
+      hasRedirected.current = true;
       navigate(target, { replace: true });
     }
   }, [isLoading, currentUser?.id, currentUser?.profile_completed, path]);
