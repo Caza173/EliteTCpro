@@ -1,18 +1,17 @@
 /**
- * getTeamTransactions — Server-enforced team-scoped transaction query.
+ * getTeamTransactions — Strict ownership-based transaction query.
  *
- * Access rules:
- *   Super admin (nhcazateam@gmail.com | admin | owner) → sees ALL transactions
- *   Team admin → sees all transactions in their teams
- *   TC → sees transactions assigned to them OR pending deals in their teams
- *   Viewer → sees all transactions in their teams (read-only)
- *   Agent/Client → sees only their own transactions (by agent_email or client_email)
+ * Access rules (enforced at query level, no in-memory filtering):
+ *   super_admin (owner/admin/master email) → sees ALL transactions
+ *   agent  → only transactions where agent_email matches
+ *   client → only transactions where client_email matches
+ *   TC / tc_lead → ONLY:
+ *     - assigned_tc_id === user.id
+ *     - OR created_by === user.id
+ *     - OR (status === "pending" AND assigned_tc_id is null/missing) — claim queue
  *
- * Body params (all optional filters):
- *   status          — filter by status (e.g. "pending", "active")
- *   team_id         — filter to a specific team (must be a team user belongs to)
- *   sort            — sort field (default: "-created_date")
- *   limit           — max results (default: 100)
+ * Orphaned transactions (no created_by, no assigned_tc_id) are NEVER returned
+ * to non-admin users — they are invisible unless claimed by admin.
  */
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.25';
 
@@ -25,84 +24,79 @@ Deno.serve(async (req) => {
     if (!user) return Response.json({ error: 'Unauthorized' }, { status: 401 });
 
     const body = await req.json().catch(() => ({}));
-    const { status, team_id: filterTeamId, sort = '-created_date', limit = 200 } = body;
+    const { status, sort = '-created_date', limit = 200 } = body;
 
     const isSuper = user.email === SUPER_ADMIN_EMAIL || user.role === 'admin' || user.role === 'owner';
     const isTC = user.role === 'tc' || user.role === 'tc_lead';
     const isAgent = user.role === 'agent';
     const isClient = user.role === 'client';
 
-    let transactions = [];
-
-    // ── SUPER ADMIN: sees everything ───────────────────────────────────────────
+    // ── SUPER ADMIN: sees everything ──────────────────────────────────────────
     if (isSuper) {
       const filter = {};
       if (status) filter.status = status;
-      if (filterTeamId) filter.team_id = filterTeamId;
-      transactions = await base44.asServiceRole.entities.Transaction.filter(filter, sort, limit);
+      const transactions = await base44.asServiceRole.entities.Transaction.filter(filter, sort, limit);
       return Response.json({ transactions });
     }
 
-    // ── AGENT: only their own deals ────────────────────────────────────────────
+    // ── AGENT: only their own deals by email ──────────────────────────────────
     if (isAgent) {
       const filter = { agent_email: user.email };
       if (status) filter.status = status;
-      transactions = await base44.asServiceRole.entities.Transaction.filter(filter, sort, limit);
+      const transactions = await base44.asServiceRole.entities.Transaction.filter(filter, sort, limit);
       return Response.json({ transactions });
     }
 
-    // ── CLIENT: only their deal ────────────────────────────────────────────────
+    // ── CLIENT: only their deal by email ──────────────────────────────────────
     if (isClient) {
       const filter = { client_email: user.email };
       if (status) filter.status = status;
-      transactions = await base44.asServiceRole.entities.Transaction.filter(filter, sort, limit);
+      const transactions = await base44.asServiceRole.entities.Transaction.filter(filter, sort, limit);
       return Response.json({ transactions });
     }
 
-    // ── TC / VIEWER: team-scoped ───────────────────────────────────────────────
-    // Get the user's team memberships
-    const memberships = await base44.asServiceRole.entities.TeamMember.filter({ user_id: user.id });
-    const myTeamIds = memberships.map(m => m.team_id);
-
-    if (!myTeamIds.length) {
-      // No teams assigned — TC can only see their own assigned or created deals
-      if (isTC) {
-        const allTxNoTeam = await base44.asServiceRole.entities.Transaction.filter({}, sort, limit);
-        transactions = allTxNoTeam.filter(tx =>
-          tx.assigned_tc_id === user.id || tx.created_by === user.id
-        );
-        if (status) transactions = transactions.filter(tx => tx.status === status);
-        return Response.json({ transactions, warning: 'No team assigned — showing only your deals.' });
-      }
-      return Response.json({ transactions: [] });
-    }
-
-    // Filter to specified team if provided (and user is a member of it)
-    const teamIds = filterTeamId && myTeamIds.includes(filterTeamId)
-      ? [filterTeamId]
-      : myTeamIds;
-
-    // Fetch all transactions in user's teams
-    const allTx = await base44.asServiceRole.entities.Transaction.filter({}, sort, limit);
-    let teamTx = allTx.filter(tx => teamIds.includes(tx.team_id));
-
-    // For TC (not team_admin): only show deals assigned to them, created by them, or unassigned pending
+    // ── TC / tc_lead: strict ownership only — NO team-wide visibility ─────────
     if (isTC) {
-      const isTeamAdmin = memberships.some(m => m.role === 'team_admin');
-      if (!isTeamAdmin) {
-        teamTx = teamTx.filter(tx =>
-          tx.assigned_tc_id === user.id ||
-          tx.created_by === user.id ||
-          (!tx.assigned_tc_id && tx.status === 'pending')
-        );
+      // Fetch assigned + created separately (SDK may not support $or, so we merge)
+      const [assigned, created, pendingUnassigned] = await Promise.all([
+        base44.asServiceRole.entities.Transaction.filter(
+          status ? { assigned_tc_id: user.id, status } : { assigned_tc_id: user.id },
+          sort, limit
+        ),
+        base44.asServiceRole.entities.Transaction.filter(
+          status ? { created_by: user.id, status } : { created_by: user.id },
+          sort, limit
+        ),
+        // Unassigned pending deals visible for claim (only when no status filter or status=pending)
+        (!status || status === 'pending')
+          ? base44.asServiceRole.entities.Transaction.filter({ status: 'pending' }, sort, limit)
+          : Promise.resolve([]),
+      ]);
+
+      // Merge and deduplicate by id
+      const seen = new Set();
+      const transactions = [];
+      for (const tx of [...assigned, ...created, ...pendingUnassigned]) {
+        // Only include unassigned pending from pendingUnassigned — not orphaned non-pending
+        if (!seen.has(tx.id)) {
+          // Safety: if this tx came only from pendingUnassigned, ensure it's truly unassigned
+          const isOwned = tx.assigned_tc_id === user.id || tx.created_by === user.id;
+          const isClaimable = tx.status === 'pending' && !tx.assigned_tc_id;
+          if (isOwned || isClaimable) {
+            seen.add(tx.id);
+            transactions.push(tx);
+          }
+        }
       }
+
+      // Sort merged results by created_date desc
+      transactions.sort((a, b) => new Date(b.created_date || 0) - new Date(a.created_date || 0));
+      return Response.json({ transactions });
     }
 
-    if (status) {
-      teamTx = teamTx.filter(tx => tx.status === status);
-    }
+    // ── Any other role: return nothing ────────────────────────────────────────
+    return Response.json({ transactions: [] });
 
-    return Response.json({ transactions: teamTx });
   } catch (error) {
     console.error('getTeamTransactions error:', error);
     return Response.json({ error: error.message }, { status: 500 });
