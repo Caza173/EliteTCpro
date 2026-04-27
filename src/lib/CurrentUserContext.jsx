@@ -6,53 +6,30 @@ const CurrentUserContext = createContext(null);
 export function CurrentUserProvider({ children }) {
   const [currentUser, setCurrentUser] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
-  const existenceChecked = useRef(false);
-
-  const fetchUser = useCallback(async () => {
-    setIsLoading(true);
-    try {
-      // Use auth.me() directly — this is fast and gives us the full user including role, profile, etc.
-      const authUser = await base44.auth.me();
-
-      if (!authUser) {
-        setCurrentUser(null);
-        return;
-      }
-
-      setCurrentUser(authUser);
-
-      // Background existence check — runs only once per session to avoid rate limits.
-      if (!existenceChecked.current) {
-        existenceChecked.current = true;
-        base44.functions.invoke("checkUserExists", {})
-          .then(res => {
-            // Only act if we get a definitive "does not exist" response
-            if (res?.data?.exists === false) {
-              base44.auth.logout();
-              window.location.href = "/";
-            }
-          })
-          .catch(() => {
-            // Network error, rate limit, etc — do NOT log out, just continue silently
-          });
-      }
-
-    } catch (err) {
-      console.error("User fetch error:", err);
-      setCurrentUser(null);
-    } finally {
-      setIsLoading(false);
-    }
-  }, []);
+  const hasFetched = useRef(false);
 
   useEffect(() => {
-    fetchUser();
-  }, [fetchUser]);
+    // Only fetch once on mount — never re-fetch due to dependency changes
+    if (hasFetched.current) return;
+    hasFetched.current = true;
+
+    base44.auth.me()
+      .then(authUser => {
+        setCurrentUser(authUser || null);
+      })
+      .catch(err => {
+        console.error("User fetch error:", err);
+        setCurrentUser(null);
+      })
+      .finally(() => {
+        setIsLoading(false);
+      });
+  }, []);
 
   const refreshUser = useCallback(async () => {
     try {
       const authUser = await base44.auth.me();
-      if (authUser) setCurrentUser(authUser);
+      setCurrentUser(authUser || null);
     } catch (err) {
       console.error("refreshUser error:", err);
     }
