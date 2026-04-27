@@ -99,7 +99,6 @@ function buildPDF(s, logoDataUrl) {
     row(`Buyer Commission (${s.buyer_commission_percent}%):`, amt);
   }
   row("Gross Commission:", fmt$(s.gross_commission));
-  row(`Brokerage Split (${s.brokerage_split_percent || 0}%):`, `-${fmt$(s.brokerage_split_amount)}`);
   if (s.referral_fee) row("Referral Fee:", `-${fmt$(s.referral_fee)}`);
   if (s.tc_fee) row("TC Fee:", `-${fmt$(s.tc_fee)}`);
   if (s.transaction_fee) row("Transaction Fee:", `-${fmt$(s.transaction_fee)}`);
@@ -218,7 +217,6 @@ export default function StatementDetailModal({ statement: s, onClose, onEdit, on
     s.listing_commission_percent ? { label: `Listing Commission (${s.listing_commission_percent}%)`, value: fmt$((s.purchase_price || 0) * s.listing_commission_percent / 100) } : null,
     s.buyer_commission_percent ? { label: `Buyer Commission (${s.buyer_commission_percent}%)`, value: fmt$((s.purchase_price || 0) * s.buyer_commission_percent / 100) } : null,
     { label: "Gross Commission", value: fmt$(s.gross_commission), bold: true },
-    { label: `Brokerage Split (${s.brokerage_split_percent || 0}%)`, value: `-${fmt$(s.brokerage_split_amount)}`, negative: true },
     s.referral_fee ? { label: "Referral Fee", value: `-${fmt$(s.referral_fee)}`, negative: true } : null,
     s.tc_fee ? { label: "TC Fee", value: `-${fmt$(s.tc_fee)}`, negative: true } : null,
     s.transaction_fee ? { label: "Transaction Fee", value: `-${fmt$(s.transaction_fee)}`, negative: true } : null,
