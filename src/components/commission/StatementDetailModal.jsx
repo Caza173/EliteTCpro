@@ -58,13 +58,17 @@ function buildPDF(s, logoDataUrl) {
     doc.setTextColor(...black);
     doc.setFont("helvetica", "normal");
   };
-  const row = (label, value) => {
+  const row = (label, value, valueX = 110) => {
     doc.setFontSize(9);
     doc.setTextColor(...gray);
-    doc.text(label, 20, y);
+    doc.setFont("helvetica", "normal");
+    // Truncate label to fit within the label column (max width = valueX - 20 - 4mm padding)
+    const maxLabelWidth = valueX - 24;
+    const truncatedLabel = doc.splitTextToSize(label, maxLabelWidth)[0];
+    doc.text(truncatedLabel, 20, y);
     doc.setTextColor(...black);
     doc.setFont("helvetica", "bold");
-    doc.text(value || "—", 80, y);
+    doc.text(value || "—", valueX, y, { align: "left" });
     doc.setFont("helvetica", "normal");
     y += 7;
   };
@@ -88,13 +92,11 @@ function buildPDF(s, logoDataUrl) {
   row("Purchase Price:", fmt$(s.purchase_price));
   if (s.listing_commission_percent) {
     const amt = fmt$((s.purchase_price || 0) * s.listing_commission_percent / 100);
-    const label = s.listing_agent_name ? `Listing Commission (${s.listing_commission_percent}%) - ${s.listing_agent_name}` : `Listing Commission (${s.listing_commission_percent}%)`;
-    row(label + (s.listing_agent_brokerage ? ` / ${s.listing_agent_brokerage}` : "") + ":", amt);
+    row(`Listing Commission (${s.listing_commission_percent}%):`, amt);
   }
   if (s.buyer_commission_percent) {
     const amt = fmt$((s.purchase_price || 0) * s.buyer_commission_percent / 100);
-    const label = s.buyer_agent_name ? `Buyer Commission (${s.buyer_commission_percent}%) - ${s.buyer_agent_name}` : `Buyer Commission (${s.buyer_commission_percent}%)`;
-    row(label + (s.buyer_agent_brokerage ? ` / ${s.buyer_agent_brokerage}` : "") + ":", amt);
+    row(`Buyer Commission (${s.buyer_commission_percent}%):`, amt);
   }
   row("Gross Commission:", fmt$(s.gross_commission));
   row(`Brokerage Split (${s.brokerage_split_percent || 0}%):`, `-${fmt$(s.brokerage_split_amount)}`);

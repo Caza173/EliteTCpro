@@ -101,7 +101,10 @@ export default function CommissionStatementButton({ transaction, financeData }) 
         }
         const textColor = deduction ? [220, 38, 38] : [15, 23, 42];
         doc.setTextColor(...textColor);
-        doc.text(label, margin + 2, y);
+        // Truncate label so it never overlaps the value column (leave ~45mm for value)
+        const maxLabelW = vCol - margin - 47;
+        const truncatedLabel = doc.splitTextToSize(label, maxLabelW)[0];
+        doc.text(truncatedLabel, margin + 2, y);
         doc.text(deduction ? `-${fmt(amount)}` : fmt(amount), vCol, y, { align: "right" });
         y += 7;
       };
