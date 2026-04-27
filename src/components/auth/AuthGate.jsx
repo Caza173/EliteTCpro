@@ -17,46 +17,22 @@ export default function AuthGate({ children }) {
   const { currentUser, isLoading } = useCurrentUser();
   const location = useLocation();
   const navigate = useNavigate();
-  const hasRedirected = useRef(false);
 
   const path = location.pathname;
 
-  useEffect(() => {
-    // Reset redirect flag when path changes
-    hasRedirected.current = false;
-  }, [path]);
-
-  useEffect(() => {
-    if (isLoading) return;
-    if (hasRedirected.current) return;
-
-    const loggedIn = !!currentUser;
-    const profileCompleted = currentUser?.profile_completed === true;
-
-    let target = null;
-
+  // Compute redirect target synchronously (no effect needed for simple redirects)
+  const getTarget = (loggedIn, profileCompleted, currentPath) => {
     if (!loggedIn) {
-      // Not logged in: redirect protected pages to landing
-      if (!isPublicPath(path)) {
-        target = "/";
-      }
+      if (!isPublicPath(currentPath)) return "/";
     } else if (!profileCompleted) {
-      // Logged in but profile incomplete: must finish onboarding
-      if (path !== "/onboarding") {
-        target = "/onboarding";
-      }
+      if (currentPath !== "/onboarding") return "/onboarding";
     } else {
-      // Fully onboarded: redirect away from landing/onboarding to Dashboard
-      if (path === "/" || path === "/onboarding" || path === "/Landing") {
-        target = "/Dashboard";
+      if (currentPath === "/" || currentPath === "/onboarding" || currentPath === "/Landing") {
+        return "/Dashboard";
       }
     }
-
-    if (target && target !== path) {
-      hasRedirected.current = true;
-      navigate(target, { replace: true });
-    }
-  }, [isLoading, currentUser?.id, currentUser?.profile_completed, path]);
+    return null;
+  };
 
   if (isLoading) {
     return (
@@ -64,6 +40,15 @@ export default function AuthGate({ children }) {
         <div className="w-8 h-8 border-4 border-slate-600 border-t-slate-200 rounded-full animate-spin" />
       </div>
     );
+  }
+
+  const loggedIn = !!currentUser;
+  const profileCompleted = currentUser?.profile_completed === true;
+  const target = getTarget(loggedIn, profileCompleted, path);
+
+  if (target && target !== path) {
+    navigate(target, { replace: true });
+    return null;
   }
 
   return children;
