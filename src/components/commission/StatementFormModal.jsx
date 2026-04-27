@@ -196,10 +196,6 @@ export default function StatementFormModal({ statement, currentUser, onClose, on
                 </div>
               )}
               <div>
-                <Label className="text-sm font-medium text-gray-700">Brokerage Split %</Label>
-                <Input type="number" step="0.01" className="mt-1.5" value={form.brokerage_split_percent} onChange={e => set("brokerage_split_percent", e.target.value)} />
-              </div>
-              <div>
                 <Label className="text-sm font-medium text-gray-700">Referral Fee (%)</Label>
                 <Input type="number" step="0.01" className="mt-1.5" value={form.referral_fee} onChange={e => set("referral_fee", e.target.value)} placeholder="0" />
               </div>
@@ -214,6 +210,10 @@ export default function StatementFormModal({ statement, currentUser, onClose, on
               <div>
                 <Label className="text-sm font-medium text-gray-700">Title Company Email</Label>
                 <Input type="text" className="mt-1.5" value={form.title_company_email} onChange={e => set("title_company_email", e.target.value)} placeholder="title@company.com" />
+              </div>
+              <div>
+                <Label className="text-sm font-medium text-gray-700">Title Company</Label>
+                <Input type="text" className="mt-1.5" value={form.title_company_name || ""} onChange={e => set("title_company_name", e.target.value)} placeholder="Title company name" />
               </div>
             </div>
 
