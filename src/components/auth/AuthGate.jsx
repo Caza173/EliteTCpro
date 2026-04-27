@@ -17,22 +17,35 @@ export default function AuthGate({ children }) {
   const { currentUser, isLoading } = useCurrentUser();
   const location = useLocation();
   const navigate = useNavigate();
+  const redirectedTo = useRef(null);
 
   const path = location.pathname;
+  const loggedIn = !!currentUser;
+  const profileCompleted = currentUser?.profile_completed === true;
 
-  // Compute redirect target synchronously (no effect needed for simple redirects)
-  const getTarget = (loggedIn, profileCompleted, currentPath) => {
+  useEffect(() => {
+    if (isLoading) return;
+
+    let target = null;
+
     if (!loggedIn) {
-      if (!isPublicPath(currentPath)) return "/";
+      if (!isPublicPath(path)) target = "/";
     } else if (!profileCompleted) {
-      if (currentPath !== "/onboarding") return "/onboarding";
+      if (path !== "/onboarding") target = "/onboarding";
     } else {
-      if (currentPath === "/" || currentPath === "/onboarding" || currentPath === "/Landing") {
-        return "/Dashboard";
-      }
+      if (path === "/" || path === "/onboarding" || path === "/Landing") target = "/Dashboard";
     }
-    return null;
-  };
+
+    // Only redirect if we have a target, it differs from current path,
+    // AND we haven't already redirected to this exact target
+    if (target && target !== path && redirectedTo.current !== target) {
+      redirectedTo.current = target;
+      navigate(target, { replace: true });
+    } else if (!target) {
+      // Clear the guard when no redirect is needed (user is on correct page)
+      redirectedTo.current = null;
+    }
+  }, [isLoading, loggedIn, profileCompleted, path]);
 
   if (isLoading) {
     return (
@@ -40,15 +53,6 @@ export default function AuthGate({ children }) {
         <div className="w-8 h-8 border-4 border-slate-600 border-t-slate-200 rounded-full animate-spin" />
       </div>
     );
-  }
-
-  const loggedIn = !!currentUser;
-  const profileCompleted = currentUser?.profile_completed === true;
-  const target = getTarget(loggedIn, profileCompleted, path);
-
-  if (target && target !== path) {
-    navigate(target, { replace: true });
-    return null;
   }
 
   return children;
