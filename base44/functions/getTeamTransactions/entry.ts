@@ -80,10 +80,9 @@ Deno.serve(async (req) => {
       ? [filterTeamId]
       : myTeamIds;
 
-    // Fetch all transactions in user's teams
+    // Fetch all transactions in user's teams — strictly team-scoped, no fallback to teamless records
     const allTx = await base44.asServiceRole.entities.Transaction.filter({}, sort, limit);
-    // Include transactions in user's teams OR legacy transactions with no team_id (not yet migrated)
-    let teamTx = allTx.filter(tx => !tx.team_id || teamIds.includes(tx.team_id));
+    let teamTx = allTx.filter(tx => teamIds.includes(tx.team_id));
 
     // For TC (not team_admin): show assigned deals + unassigned pending + all closed team deals
     if (isTC) {
