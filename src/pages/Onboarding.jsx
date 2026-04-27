@@ -97,11 +97,10 @@ export default function Onboarding() {
       await base44.auth.updateMe({
         profile: { ...form },
         profile_completed: true,
-        role: "owner",
         onboarding_completed_at: new Date().toISOString(),
       });
       // Optimistically update context so AuthGate sees profile_completed=true immediately
-      updateCurrentUser({ profile_completed: true, role: "owner" });
+      updateCurrentUser({ profile_completed: true });
       navigate("/Dashboard", { replace: true });
     } finally {
       setSaving(false);
