@@ -65,12 +65,14 @@ Deno.serve(async (req) => {
     const myTeamIds = memberships.map(m => m.team_id);
 
     if (!myTeamIds.length) {
-      // No teams assigned — TC can only see their own assigned deals
+      // No teams assigned — TC can only see their own assigned or created deals
       if (isTC) {
-        const filter = { assigned_tc_id: user.id };
-        if (status) filter.status = status;
-        transactions = await base44.asServiceRole.entities.Transaction.filter(filter, sort, limit);
-        return Response.json({ transactions, warning: 'No team assigned — showing only your assigned deals.' });
+        const allTxNoTeam = await base44.asServiceRole.entities.Transaction.filter({}, sort, limit);
+        transactions = allTxNoTeam.filter(tx =>
+          tx.assigned_tc_id === user.id || tx.created_by === user.id
+        );
+        if (status) transactions = transactions.filter(tx => tx.status === status);
+        return Response.json({ transactions, warning: 'No team assigned — showing only your deals.' });
       }
       return Response.json({ transactions: [] });
     }
@@ -80,18 +82,17 @@ Deno.serve(async (req) => {
       ? [filterTeamId]
       : myTeamIds;
 
-    // Fetch all transactions in user's teams — strictly team-scoped, no fallback to teamless records
+    // Fetch all transactions in user's teams
     const allTx = await base44.asServiceRole.entities.Transaction.filter({}, sort, limit);
     let teamTx = allTx.filter(tx => teamIds.includes(tx.team_id));
 
-    // For TC (not team_admin): show assigned deals + unassigned pending + all closed team deals
+    // For TC (not team_admin): only show deals assigned to them, created by them, or unassigned pending
     if (isTC) {
-      const myMembership = memberships.find(m => m.role === 'team_admin');
-      if (!myMembership) {
+      const isTeamAdmin = memberships.some(m => m.role === 'team_admin');
+      if (!isTeamAdmin) {
         teamTx = teamTx.filter(tx =>
           tx.assigned_tc_id === user.id ||
           tx.created_by === user.id ||
-          tx.status === 'closed' ||
           (!tx.assigned_tc_id && tx.status === 'pending')
         );
       }
