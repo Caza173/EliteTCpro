@@ -186,6 +186,7 @@ export default function Settings() {
   const [auditSearch, setAuditSearch] = useState("");
   const [auditActionFilter, setAuditActionFilter] = useState("all");
   const [auditEntityFilter, setAuditEntityFilter] = useState("all");
+  const [auditPropertyFilter, setAuditPropertyFilter] = useState("all");
   const [selectedLog, setSelectedLog] = useState(null);
 
   const isTC = currentUser?.role === "tc" || currentUser?.role === "tc_lead";
@@ -211,7 +212,8 @@ export default function Settings() {
       l.description?.toLowerCase().includes(auditSearch.toLowerCase());
     const matchesAction = auditActionFilter === "all" || l.action === auditActionFilter;
     const matchesEntity = auditEntityFilter === "all" || l.entity_type === auditEntityFilter;
-    return matchesSearch && matchesAction && matchesEntity;
+    const matchesProperty = auditPropertyFilter === "all" || l.transaction_id === auditPropertyFilter;
+    return matchesSearch && matchesAction && matchesEntity && matchesProperty;
   });
 
   const uniqueAuditActions = [...new Set(auditLogs.map(l => l.action).filter(Boolean))].sort();
@@ -804,8 +806,17 @@ export default function Settings() {
                 {uniqueAuditEntities.map(e => <SelectItem key={e} value={e}>{e}</SelectItem>)}
               </SelectContent>
             </Select>
-            {(auditActionFilter !== "all" || auditEntityFilter !== "all" || auditSearch) && (
-              <button onClick={() => { setAuditActionFilter("all"); setAuditEntityFilter("all"); setAuditSearch(""); }} className="text-xs text-gray-400 hover:text-gray-600 flex items-center gap-1 px-2">
+            <Select value={auditPropertyFilter} onValueChange={setAuditPropertyFilter}>
+              <SelectTrigger className="w-48 h-8 text-xs"><SelectValue placeholder="All Properties" /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Properties</SelectItem>
+                {auditTransactions.filter(t => t.address).map(t => (
+                  <SelectItem key={t.id} value={t.id}>{t.address}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            {(auditActionFilter !== "all" || auditEntityFilter !== "all" || auditPropertyFilter !== "all" || auditSearch) && (
+              <button onClick={() => { setAuditActionFilter("all"); setAuditEntityFilter("all"); setAuditPropertyFilter("all"); setAuditSearch(""); }} className="text-xs text-gray-400 hover:text-gray-600 flex items-center gap-1 px-2">
                 <X className="w-3.5 h-3.5" /> Clear
               </button>
             )}
