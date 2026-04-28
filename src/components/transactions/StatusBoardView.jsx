@@ -68,13 +68,19 @@ function DealCard({ tx }) {
 }
 
 export default function StatusBoardView({ transactions }) {
+  // Determine effective column: if transaction_phase is "closed", treat as closed regardless of status
+  const getColumn = (tx) => {
+    if (tx.transaction_phase === "closed" || tx.status === "closed") return "closed";
+    return tx.status || "pending";
+  };
+
   const grouped = {};
   STATUS_COLUMNS.forEach(col => {
-    grouped[col.id] = transactions.filter(tx => (tx.status || "pending") === col.id);
+    grouped[col.id] = transactions.filter(tx => getColumn(tx) === col.id);
   });
 
   // Any status not in our columns goes to a catch-all
-  const other = transactions.filter(tx => !STATUS_COLUMNS.find(c => c.id === tx.status));
+  const other = transactions.filter(tx => !STATUS_COLUMNS.find(c => c.id === getColumn(tx)));
 
   return (
     <div className="flex gap-4 h-full min-h-0 overflow-x-auto pb-4" style={{ scrollbarWidth: "thin" }}>
