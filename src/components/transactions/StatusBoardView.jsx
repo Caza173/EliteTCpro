@@ -103,7 +103,9 @@ function DealCard({ tx, index }) {
 export default function StatusBoardView({ transactions }) {
   const getColumn = (tx) => {
     if (tx.transaction_phase === "closed" || tx.status === "closed") return "closed";
-    return tx.status || "pending";
+    const knownStatuses = STATUS_COLUMNS.map(c => c.id);
+    const s = tx.status || "pending";
+    return knownStatuses.includes(s) ? s : "under_contract";
   };
 
   // Local state for optimistic UI updates
@@ -118,7 +120,6 @@ export default function StatusBoardView({ transactions }) {
   STATUS_COLUMNS.forEach(col => {
     grouped[col.id] = localTxs.filter(tx => getColumn(tx) === col.id);
   });
-  const other = localTxs.filter(tx => !STATUS_COLUMNS.find(c => c.id === getColumn(tx)));
 
   const onDragEnd = async (result) => {
     const { draggableId, destination } = result;
@@ -200,40 +201,7 @@ export default function StatusBoardView({ transactions }) {
           );
         })}
 
-        {/* Other statuses — droppable but not a primary column */}
-        {other.length > 0 && (
-          <div
-            className="flex-shrink-0 flex flex-col rounded-2xl"
-            style={{
-              width: "280px",
-              background: "rgba(148,163,184,0.08)",
-              border: "1px solid rgba(148,163,184,0.3)",
-            }}
-          >
-            <div className="flex items-center justify-between px-3 py-2.5 flex-shrink-0">
-              <div className="flex items-center gap-2">
-                <div className="w-2 h-2 rounded-full bg-slate-400 flex-shrink-0" />
-                <span className="text-sm font-semibold" style={{ color: "var(--text-primary)" }}>Other</span>
-              </div>
-              <span className="text-xs font-bold px-2 py-0.5 rounded-full bg-slate-100 text-slate-500">{other.length}</span>
-            </div>
-            <Droppable droppableId="__other__">
-              {(provided) => (
-                <div
-                  ref={provided.innerRef}
-                  {...provided.droppableProps}
-                  className="flex-1 overflow-y-auto px-2 pb-2 space-y-2"
-                  style={{ minHeight: "80px" }}
-                >
-                  {other.map((tx, index) => (
-                    <DealCard key={tx.id} tx={tx} index={index} />
-                  ))}
-                  {provided.placeholder}
-                </div>
-              )}
-            </Droppable>
-          </div>
-        )}
+
       </div>
     </DragDropContext>
   );
