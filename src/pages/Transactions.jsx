@@ -8,7 +8,8 @@ import { Input } from "@/components/ui/input";
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
-import { Search, ChevronLeft, ChevronRight, Clock, Star, LayoutGrid, List } from "lucide-react";
+import { Search, ChevronLeft, ChevronRight, Clock, Star, LayoutGrid, List, Columns } from "lucide-react";
+import StatusBoardView from "../components/transactions/StatusBoardView";
 import { Skeleton } from "@/components/ui/skeleton";
 import TransactionTable from "../components/transactions/TransactionTable";
 import TransactionCardGrid from "../components/transactions/TransactionCardGrid";
@@ -33,7 +34,7 @@ export default function Transactions() {
   const [page, setPage] = useState(1);
   const [showIntake, setShowIntake] = useState(false);
   const [dealTab, setDealTab] = useState("all"); // "all" | "pending" | "my"
-  const [viewMode, setViewMode] = useState(() => localStorage.getItem("tx_view") || "table");
+  const [viewMode, setViewMode] = useState(() => localStorage.getItem("tx_view") || "table"); // "table" | "cards" | "board"
   // Role-based deal access — filters to only deals the user may see
   const { transactions, pendingDeals, myDeals, isLoading, currentUser, isSuperAdmin, isTC } = useDealAccess();
 
@@ -202,20 +203,20 @@ export default function Transactions() {
 
           {/* View toggle */}
           <div className="flex gap-0.5 p-0.5 rounded-lg border ml-auto" style={{ borderColor: "var(--border)", background: "var(--bg-tertiary)" }}>
-            <button
-              onClick={() => { setViewMode("table"); localStorage.setItem("tx_view", "table"); }}
-              className={`p-1.5 rounded-md transition-colors ${viewMode === "table" ? "bg-white shadow-sm" : "hover:opacity-70"}`}
-              title="Table view"
-            >
-              <List className="w-4 h-4" style={{ color: viewMode === "table" ? "var(--text-primary)" : "var(--text-muted)" }} />
-            </button>
-            <button
-              onClick={() => { setViewMode("cards"); localStorage.setItem("tx_view", "cards"); }}
-              className={`p-1.5 rounded-md transition-colors ${viewMode === "cards" ? "bg-white shadow-sm" : "hover:opacity-70"}`}
-              title="Card view"
-            >
-              <LayoutGrid className="w-4 h-4" style={{ color: viewMode === "cards" ? "var(--text-primary)" : "var(--text-muted)" }} />
-            </button>
+            {[
+              { mode: "table", icon: List, title: "Table view" },
+              { mode: "cards", icon: LayoutGrid, title: "Card view" },
+              { mode: "board", icon: Columns, title: "Board view" },
+            ].map(({ mode, icon: Icon, title }) => (
+              <button
+                key={mode}
+                onClick={() => { setViewMode(mode); localStorage.setItem("tx_view", mode); }}
+                className={`p-1.5 rounded-md transition-colors ${viewMode === mode ? "bg-white shadow-sm" : "hover:opacity-70"}`}
+                title={title}
+              >
+                <Icon className="w-4 h-4" style={{ color: viewMode === mode ? "var(--text-primary)" : "var(--text-muted)" }} />
+              </button>
+            ))}
           </div>
         </div>
       </div>
@@ -234,6 +235,8 @@ export default function Transactions() {
               <div className="space-y-3 p-2">
                 {[1,2,3,4,5].map(i => <Skeleton key={i} className="h-12 rounded" />)}
               </div>
+            ) : viewMode === "board" ? (
+              <StatusBoardView transactions={filtered} />
             ) : viewMode === "cards" ? (
               <TransactionCardGrid transactions={paginated} />
             ) : (
