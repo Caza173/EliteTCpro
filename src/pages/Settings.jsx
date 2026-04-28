@@ -8,7 +8,9 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Settings as SettingsIcon, Users, Bell, Palette, Loader2, UserPlus, CheckCircle, Building2, DollarSign, FileText, Pencil, X, Bug, Lightbulb, Puzzle, MessageSquarePlus, Activity, Mail, UserCircle, Trash2, Shield, Search, HelpCircle, BookOpen, Globe, Plus, Upload, CreditCard, TrendingUp, AlertTriangle, ArrowUpRight, Plug, Zap, BarChart3, Workflow, Calendar, FileSignature, Home } from "lucide-react";
+import { Settings as SettingsIcon, Users, Bell, Palette, Loader2, UserPlus, CheckCircle, Building2, DollarSign, FileText, Pencil, X, Bug, Lightbulb, Puzzle, MessageSquarePlus, Activity, Mail, UserCircle, Trash2, Shield, Search, HelpCircle, BookOpen, Globe, Plus, Upload, CreditCard, TrendingUp, AlertTriangle, ArrowUpRight, Plug, Zap, BarChart3, Workflow, Calendar, FileSignature, Home, Download } from "lucide-react";
+import DeleteAccountModal from "@/components/settings/DeleteAccountModal";
+import ExportDataModal from "@/components/settings/ExportDataModal";
 import { createPageUrl } from "@/utils";
 import { Progress } from "@/components/ui/progress";
 import { PLAN_DETAILS } from "../components/utils/tenantUtils";
@@ -123,6 +125,9 @@ export default function Settings() {
   });
 
   const [feedbackModal, setFeedbackModal] = useState({ open: false, type: "bug" });
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [showExportModal, setShowExportModal] = useState(false);
+  const [exportThenDelete, setExportThenDelete] = useState(false);
   const [editingBrokerage, setEditingBrokerage] = useState(false);
   const [brokerageForm, setBrokerageForm] = useState({});
   const [brokerageSaved, setBrokerageSaved] = useState(false);
@@ -296,6 +301,55 @@ export default function Settings() {
           {brokerage && isOwnerOrAdmin(currentUser) && (
             <BrokerageLogoUpload brokerage={brokerage} onSaved={() => queryClient.invalidateQueries({ queryKey: ["brokerage", currentUser?.brokerage_id] })} />
           )}
+
+          {/* Data & Privacy */}
+          <Card className="shadow-sm border-gray-100">
+            <CardHeader className="pb-3">
+              <CardTitle className="text-base font-semibold flex items-center gap-2">
+                <Download className="w-4 h-4 text-blue-500" /> Data & Privacy
+              </CardTitle>
+              <p className="text-xs text-gray-400 mt-0.5">Export or manage your personal data.</p>
+            </CardHeader>
+            <CardContent>
+              <Button
+                variant="outline"
+                size="sm"
+                className="gap-2"
+                onClick={() => { setExportThenDelete(false); setShowExportModal(true); }}
+              >
+                <Download className="w-4 h-4" /> Export My Data
+              </Button>
+              <p className="text-xs mt-2" style={{ color: "var(--text-muted)" }}>
+                Downloads a full JSON export of your profile, transactions, tasks, and documents. Link expires in 24 hours.
+              </p>
+            </CardContent>
+          </Card>
+
+          {/* Danger Zone */}
+          <Card className="shadow-sm border border-red-200 bg-red-50/30">
+            <CardHeader className="pb-3">
+              <CardTitle className="text-base font-semibold flex items-center gap-2 text-red-700">
+                <AlertTriangle className="w-4 h-4 text-red-500" /> Danger Zone
+              </CardTitle>
+              <p className="text-xs text-red-500 mt-0.5">These actions are irreversible. Please proceed with caution.</p>
+            </CardHeader>
+            <CardContent>
+              <div className="flex items-start justify-between gap-4">
+                <div>
+                  <p className="text-sm font-medium text-red-800">Delete Account</p>
+                  <p className="text-xs text-red-600 mt-0.5">Permanently delete your account and all associated data.</p>
+                </div>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="flex-shrink-0 border-red-300 text-red-700 hover:bg-red-100 hover:border-red-400 gap-1.5"
+                  onClick={() => setShowDeleteModal(true)}
+                >
+                  <Trash2 className="w-3.5 h-3.5" /> Delete Account
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
         </div>
       )}
 
@@ -927,6 +981,24 @@ export default function Settings() {
       )}
 
       <FeedbackModal open={feedbackModal.open} onClose={() => setFeedbackModal({ open: false, type: "bug" })} defaultType={feedbackModal.type} />
+
+      {showDeleteModal && (
+        <DeleteAccountModal
+          onClose={() => setShowDeleteModal(false)}
+          onExportFirst={() => {
+            setShowDeleteModal(false);
+            setExportThenDelete(true);
+            setShowExportModal(true);
+          }}
+        />
+      )}
+
+      {showExportModal && (
+        <ExportDataModal
+          onClose={() => { setShowExportModal(false); if (exportThenDelete) { setExportThenDelete(false); setShowDeleteModal(true); } }}
+          onExportDone={() => { if (exportThenDelete) { setTimeout(() => { setShowExportModal(false); setShowDeleteModal(true); }, 1500); } }}
+        />
+      )}
     </div>
   );
 }
