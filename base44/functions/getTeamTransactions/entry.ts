@@ -35,9 +35,13 @@ Deno.serve(async (req) => {
 
     // ── SUPER ADMIN: sees everything ──────────────────────────────────────────
     if (isSuper) {
-      const filter = {};
-      if (status) filter.status = status;
-      const transactions = await base44.asServiceRole.entities.Transaction.list(sort, limit);
+      // Fetch via user's own RLS-passing credentials (admin role passes the $or check)
+      let transactions;
+      if (status) {
+        transactions = await base44.entities.Transaction.filter({ status }, sort, limit);
+      } else {
+        transactions = await base44.entities.Transaction.list(sort, limit);
+      }
       console.log('[getTeamTransactions] super admin fetched:', transactions.length);
       return Response.json({ transactions });
     }

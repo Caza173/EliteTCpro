@@ -606,7 +606,26 @@
     "agent"
   ],
   "rls": {
-    "read": true,
+    "read": {
+      "$or": [
+        {
+          "user_condition": {
+            "role": {
+              "$in": [
+                "owner",
+                "admin"
+              ]
+            }
+          }
+        },
+        {
+          "data.created_by": "{{user.id}}"
+        },
+        {
+          "data.assigned_tc_id": "{{user.id}}"
+        }
+      ]
+    },
     "create": {
       "user_condition": {
         "role": {
@@ -624,25 +643,19 @@
       "$or": [
         {
           "user_condition": {
-            "role": "owner"
-          }
-        },
-        {
-          "user_condition": {
             "role": {
               "$in": [
-                "team_lead",
-                "admin",
-                "tc_lead"
+                "owner",
+                "admin"
               ]
             }
           }
         },
         {
-          "data.assigned_tc_id": "{{user.id}}"
+          "data.created_by": "{{user.id}}"
         },
         {
-          "data.created_by": "{{user.id}}"
+          "data.assigned_tc_id": "{{user.id}}"
         }
       ]
     },
