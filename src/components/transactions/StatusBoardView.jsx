@@ -200,7 +200,7 @@ export default function StatusBoardView({ transactions }) {
           );
         })}
 
-        {/* Other statuses — not droppable */}
+        {/* Other statuses — droppable but not a primary column */}
         {other.length > 0 && (
           <div
             className="flex-shrink-0 flex flex-col rounded-2xl"
@@ -217,11 +217,21 @@ export default function StatusBoardView({ transactions }) {
               </div>
               <span className="text-xs font-bold px-2 py-0.5 rounded-full bg-slate-100 text-slate-500">{other.length}</span>
             </div>
-            <div className="flex-1 overflow-y-auto px-2 pb-2 space-y-2">
-              {other.map((tx, index) => (
-                <DealCard key={tx.id} tx={tx} index={index} />
-              ))}
-            </div>
+            <Droppable droppableId="__other__">
+              {(provided) => (
+                <div
+                  ref={provided.innerRef}
+                  {...provided.droppableProps}
+                  className="flex-1 overflow-y-auto px-2 pb-2 space-y-2"
+                  style={{ minHeight: "80px" }}
+                >
+                  {other.map((tx, index) => (
+                    <DealCard key={tx.id} tx={tx} index={index} />
+                  ))}
+                  {provided.placeholder}
+                </div>
+              )}
+            </Droppable>
           </div>
         )}
       </div>
