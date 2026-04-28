@@ -6,10 +6,13 @@ import { DragDropContext, Droppable, Draggable } from "@hello-pangea/dnd";
 import { base44 } from "@/api/base44Client";
 
 const STATUS_COLUMNS = [
-  { id: "pending",   label: "Pending",   color: "#F59E0B", bg: "rgba(245,158,11,0.08)",  border: "rgba(245,158,11,0.3)" },
-  { id: "active",    label: "Active",    color: "#10B981", bg: "rgba(16,185,129,0.08)",  border: "rgba(16,185,129,0.3)" },
-  { id: "closed",    label: "Closed",    color: "#64748B", bg: "rgba(100,116,139,0.08)", border: "rgba(100,116,139,0.3)" },
-  { id: "cancelled", label: "Cancelled", color: "#EF4444", bg: "rgba(239,68,68,0.08)",   border: "rgba(239,68,68,0.3)" },
+  { id: "pending",    label: "Pending",    color: "#F59E0B", bg: "rgba(245,158,11,0.08)",  border: "rgba(245,158,11,0.3)" },
+  { id: "active",     label: "Active",     color: "#10B981", bg: "rgba(16,185,129,0.08)",  border: "rgba(16,185,129,0.3)" },
+  { id: "closed",     label: "Closed",     color: "#64748B", bg: "rgba(100,116,139,0.08)", border: "rgba(100,116,139,0.3)" },
+  { id: "cancelled",  label: "Cancelled",  color: "#EF4444", bg: "rgba(239,68,68,0.08)",   border: "rgba(239,68,68,0.3)" },
+  { id: "expired",    label: "Expired",    color: "#F97316", bg: "rgba(249,115,22,0.08)",  border: "rgba(249,115,22,0.3)" },
+  { id: "withdrawn",  label: "Withdrawn",  color: "#8B5CF6", bg: "rgba(139,92,246,0.08)", border: "rgba(139,92,246,0.3)" },
+  { id: "terminated", label: "Terminated", color: "#DC2626", bg: "rgba(220,38,38,0.08)",  border: "rgba(220,38,38,0.3)" },
 ];
 
 function DealCard({ tx, index }) {
