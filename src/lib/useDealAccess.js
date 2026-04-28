@@ -29,17 +29,20 @@ export function useDealAccess() {
   const { data: currentUser, isLoading: userLoading } = useCurrentUser();
 
   // Server-enforced team-scoped query — replaces raw entity.list()
-  const { data: serverData, isLoading: txLoading } = useQuery({
-    queryKey: ["transactions"],
-    queryFn: () =>
-      base44.functions.invoke("getTeamTransactions", { sort: "-created_date", limit: 200 })
-        .then(r => r.data?.transactions || []),
+  const { data: serverData, isLoading: txLoading, error: txError } = useQuery({
+    queryKey: ["transactions", currentUser?.id],
+    queryFn: async () => {
+      const r = await base44.functions.invoke("getTeamTransactions", { sort: "-created_date", limit: 200 });
+      const txs = r.data?.transactions;
+      if (!Array.isArray(txs)) throw new Error("Invalid response from getTeamTransactions");
+      return txs;
+    },
     enabled: !!currentUser,
-    staleTime: 60_000,
-    cacheTime: 90_000,
-    retry: 1,
-    retryDelay: (attemptIndex) => Math.min(1000 * Math.pow(2, attemptIndex), 10_000),
+    staleTime: 30_000,
+    retry: 2,
   });
+
+  if (txError) console.error("[useDealAccess] Error fetching transactions:", txError);
 
   const allTransactions = serverData || [];
   const isLoading = userLoading || txLoading;

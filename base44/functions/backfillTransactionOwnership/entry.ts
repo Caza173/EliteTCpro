@@ -16,8 +16,7 @@ Deno.serve(async (req) => {
     for (const tx of all) {
       const needsUpdate = !tx.created_by || !tx.assigned_tc_id;
       if (needsUpdate) {
-        // Use user-scoped client (admin user) to satisfy RLS update check
-        await base44.entities.Transaction.update(tx.id, {
+        await base44.asServiceRole.entities.Transaction.update(tx.id, {
           created_by: tx.created_by || OWNER_ID,
           assigned_tc_id: tx.assigned_tc_id || OWNER_ID,
         });

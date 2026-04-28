@@ -23,9 +23,11 @@ Deno.serve(async (req) => {
     const user = await base44.auth.me();
     if (!user) return Response.json({ error: 'Unauthorized' }, { status: 401 });
 
-    const body = await req.json().catch(() => ({}));
+    let body = {};
+    try { body = await req.json(); } catch (_) {}
     const { status, sort = '-created_date', limit = 200 } = body;
 
+    console.log('[getTeamTransactions] user:', user.email, 'role:', user.role, 'id:', user.id);
     const isSuper = user.email === SUPER_ADMIN_EMAIL || user.role === 'admin' || user.role === 'owner';
     const isTC = user.role === 'tc' || user.role === 'tc_lead';
     const isAgent = user.role === 'agent';
@@ -35,7 +37,8 @@ Deno.serve(async (req) => {
     if (isSuper) {
       const filter = {};
       if (status) filter.status = status;
-      const transactions = await base44.asServiceRole.entities.Transaction.filter(filter, sort, limit);
+      const transactions = await base44.asServiceRole.entities.Transaction.list(sort, limit);
+      console.log('[getTeamTransactions] super admin fetched:', transactions.length);
       return Response.json({ transactions });
     }
 
