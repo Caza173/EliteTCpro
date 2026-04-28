@@ -44,7 +44,7 @@ export default function TransactionCardGrid({ transactions }) {
         return (
           <Link
             key={tx.id}
-            to={`${createPageUrl("TransactionDetail")}?id=${tx.id}`}
+            to={`/transactions/${tx.id}`}
             className="group block rounded-xl border transition-all hover:shadow-md"
             style={{ background: "var(--card-bg)", borderColor: "var(--card-border)" }}
           >
