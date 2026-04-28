@@ -20,8 +20,8 @@ Deno.serve(async (req) => {
 
     let transactions;
     if (isSuper) {
-      // Admins/owners get all transactions
-      transactions = await base44.asServiceRole.entities.Transaction.list('-created_date', 500);
+      // Admins/owners: use user-scoped call (admin role passes the RLS $or check)
+      transactions = await base44.entities.Transaction.list('-created_date', 500);
     } else {
       // Regular users get only their owned/assigned transactions
       const [createdTx, assignedTx] = await Promise.all([
