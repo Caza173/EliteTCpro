@@ -15,16 +15,25 @@ Deno.serve(async (req) => {
 
     console.log(`[exportUserData] Exporting data for: ${userEmail}`);
 
-    // Fetch all owned data in parallel
-    const [createdTx, assignedTx] = await Promise.all([
-      base44.asServiceRole.entities.Transaction.filter({ created_by: userId }),
-      base44.asServiceRole.entities.Transaction.filter({ assigned_tc_id: userId }),
-    ]);
+    const SUPER_ADMIN_EMAIL = 'nhcazateam@gmail.com';
+    const isSuper = userEmail === SUPER_ADMIN_EMAIL || user.role === 'admin' || user.role === 'owner';
 
-    const txMap = new Map();
-    [...createdTx, ...assignedTx].forEach(tx => txMap.set(tx.id, tx));
-    const allTxIds = [...txMap.keys()];
-    const transactions = [...txMap.values()];
+    let transactions;
+    if (isSuper) {
+      // Admins/owners get all transactions
+      transactions = await base44.asServiceRole.entities.Transaction.list('-created_date', 500);
+    } else {
+      // Regular users get only their owned/assigned transactions
+      const [createdTx, assignedTx] = await Promise.all([
+        base44.asServiceRole.entities.Transaction.filter({ created_by: userId }),
+        base44.asServiceRole.entities.Transaction.filter({ assigned_tc_id: userId }),
+      ]);
+      const txMap = new Map();
+      [...createdTx, ...assignedTx].forEach(tx => txMap.set(tx.id, tx));
+      transactions = [...txMap.values()];
+    }
+
+    const allTxIds = transactions.map(tx => tx.id);
 
     // Fetch sub-records for all transactions
     const [tasks, notes, aiLogs, auditLogs, notifications, documents] = await Promise.all([
