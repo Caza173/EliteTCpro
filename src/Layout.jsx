@@ -25,6 +25,7 @@ import {
   Inbox,
   Layers,
   Receipt,
+  CreditCard,
   Droplets,
   BookUser,
   MessageSquarePlus,
@@ -45,6 +46,7 @@ const TC_NAV = [
   { label: "Pending Queue",   page: "PendingDeals",    icon: Inbox, path: "/pending-deals" },
   { label: "Addendum Builder", page: "AddendumBuilder", icon: ClipboardList, path: "/AddendumBuilder" },
   { label: "Invoices",        page: "Invoices",         icon: Receipt, path: "/invoices" },
+  { label: "Billing",         page: "Billing",          icon: CreditCard, path: "/Billing" },
   { label: "Settings",        page: "Settings",         icon: Settings, path: "/Settings" },
 ];
 

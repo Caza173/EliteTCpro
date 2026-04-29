@@ -51,11 +51,10 @@ export default function Billing() {
     },
   });
 
-  if (!canManageBilling(currentUser)) {
+  if (!currentUser) {
     return (
       <div className="max-w-xl mx-auto text-center py-20">
-        <CreditCard className="w-10 h-10 text-gray-300 mx-auto mb-3" />
-        <p className="text-gray-500">Billing management is restricted to Owner/Admin accounts.</p>
+        <Loader2 className="w-8 h-8 text-gray-300 mx-auto animate-spin" />
       </div>
     );
   }
