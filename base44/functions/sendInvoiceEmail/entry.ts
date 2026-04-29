@@ -100,11 +100,33 @@ Deno.serve(async (req) => {
 </body>
 </html>`;
 
-    await base44.asServiceRole.integrations.Core.SendEmail({
-      to: invoice.client_email,
-      subject: `Invoice ${invoice.invoice_number || `INV-${invoice_id.slice(-6).toUpperCase()}`} — ${fmt(invoice.total)}`,
-      body: emailBody,
+    // Use Gmail connector to send to external email addresses
+    const { accessToken } = await base44.asServiceRole.connectors.getConnection("gmail");
+    const subject = `Invoice ${invoice.invoice_number || `INV-${invoice_id.slice(-6).toUpperCase()}`} — ${fmt(invoice.total)}`;
+
+    const emailLines = [
+      `To: ${invoice.client_email}`,
+      `Subject: ${subject}`,
+      `MIME-Version: 1.0`,
+      `Content-Type: text/html; charset=utf-8`,
+      ``,
+      emailBody,
+    ];
+    const rawEmail = btoa(emailLines.join('\r\n')).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+
+    const gmailRes = await fetch('https://gmail.googleapis.com/gmail/v1/users/me/messages/send', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${accessToken}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ raw: rawEmail }),
     });
+
+    if (!gmailRes.ok) {
+      const err = await gmailRes.json();
+      throw new Error(`Gmail send failed: ${JSON.stringify(err)}`);
+    }
 
     // Mark as sent
     await base44.asServiceRole.entities.Invoice.update(invoice_id, {

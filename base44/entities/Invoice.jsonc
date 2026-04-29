@@ -94,56 +94,9 @@
     "client_email"
   ],
   "rls": {
-    "read": {
-      "$or": [
-        {
-          "user_condition": {
-            "role": {
-              "$in": [
-                "owner",
-                "admin"
-              ]
-            }
-          }
-        },
-        {
-          "data.created_by": "{{user.id}}"
-        }
-      ]
-    },
-    "update": {
-      "$or": [
-        {
-          "user_condition": {
-            "role": {
-              "$in": [
-                "owner",
-                "admin"
-              ]
-            }
-          }
-        },
-        {
-          "data.created_by": "{{user.id}}"
-        }
-      ]
-    },
-    "delete": {
-      "$or": [
-        {
-          "user_condition": {
-            "role": {
-              "$in": [
-                "owner",
-                "admin"
-              ]
-            }
-          }
-        },
-        {
-          "data.created_by": "{{user.id}}"
-        }
-      ]
-    }
+    "create": true,
+    "read": true,
+    "update": true,
+    "delete": true
   }
 }
