@@ -44,6 +44,7 @@ const TC_NAV = [
   { label: "Deal Intake",     page: "AgentIntake",     icon: UserPlus, path: "/AgentIntake" },
   { label: "Pending Queue",   page: "PendingDeals",    icon: Inbox, path: "/pending-deals" },
   { label: "Addendum Builder", page: "AddendumBuilder", icon: ClipboardList, path: "/AddendumBuilder" },
+  { label: "Invoices",        page: "Invoices",         icon: Receipt, path: "/invoices" },
   { label: "Settings",        page: "Settings",         icon: Settings, path: "/Settings" },
 ];
 
@@ -53,6 +54,7 @@ const OWNER_NAV = [
   { label: "Deal Intake",    page: "AgentIntake",    icon: UserPlus, path: "/AgentIntake" },
   { label: "Pending Queue",  page: "PendingDeals",   icon: Inbox, path: "/pending-deals" },
   { label: "Addendum Builder",page: "AddendumBuilder",  icon: ClipboardList, path: "/AddendumBuilder" },
+  { label: "Invoices",       page: "Invoices",       icon: Receipt, path: "/invoices" },
   { label: "Settings",       page: "Settings",       icon: Settings, path: "/Settings" },
 ];
 
@@ -85,6 +87,7 @@ const PAGE_TITLES = {
   PendingDeals: "Pending Deal Queue",
   TemplateManager: "Templates",
   Contacts: "Contacts",
+  Invoices: "Invoices",
   TutorialFAQPage: "Help & Training",
 };
 

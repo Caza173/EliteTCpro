@@ -622,6 +622,7 @@ export default function Settings() {
           { id: "google-calendar", name: "Google Calendar", icon: Calendar, status: "Active", description: "Sync transaction deadlines to your calendar", route: "GoogleCalendarSetup" },
           { id: "digital-signatures", name: "Digital Signatures", icon: FileSignature, status: "Coming Soon", description: "Integration will be available soon", route: null },
           { id: "mls-sync", name: "MLS Sync", icon: Home, status: "Coming Soon", description: "Integration will be available soon", route: null },
+          { id: "invoices", name: "Invoices", icon: FileText, status: "Active", description: "Create and email invoices to clients directly from EliteTC", route: "invoices" },
         ];
         return (
           <div className="space-y-4">
@@ -645,8 +646,9 @@ export default function Settings() {
                     <p className="text-xs" style={{ color: "var(--text-muted)" }}>{intg.description}</p>
                   </div>
                 );
+                const href = intg.id === "invoices" ? "/invoices" : createPageUrl(intg.route);
                 return intg.route && !isComingSoon
-                  ? <Link key={intg.id} to={createPageUrl(intg.route)}>{tile}</Link>
+                  ? <Link key={intg.id} to={href}>{tile}</Link>
                   : <div key={intg.id}>{tile}</div>;
               })}
             </div>
