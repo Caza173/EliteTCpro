@@ -28,6 +28,15 @@
     "property_address": {
       "type": "string"
     },
+    "transaction_side": {
+      "type": "string",
+      "enum": [
+        "buyer",
+        "seller",
+        "both"
+      ],
+      "default": "buyer"
+    },
     "line_items": {
       "type": "array",
       "items": {

@@ -114,6 +114,7 @@ export default function Invoices() {
                     <p className="text-xs mt-0.5 truncate" style={{ color: "var(--text-secondary)" }}>
                       {inv.client_name} · {inv.client_email}
                       {inv.property_address ? ` · ${inv.property_address}` : ""}
+                      {inv.transaction_side ? ` · ${inv.transaction_side.charAt(0).toUpperCase() + inv.transaction_side.slice(1)} Side` : ""}
                     </p>
                     {inv.due_date && (
                       <p className="text-xs mt-0.5" style={{ color: "var(--text-muted)" }}>

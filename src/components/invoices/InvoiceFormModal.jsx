@@ -23,6 +23,7 @@ export default function InvoiceFormModal({ invoice, currentUser, onClose, onSave
     due_date: "",
     tax_rate: 0,
     notes: "",
+    transaction_side: "buyer",
     line_items: [newItem()],
   });
 
@@ -37,6 +38,7 @@ export default function InvoiceFormModal({ invoice, currentUser, onClose, onSave
         due_date: invoice.due_date || "",
         tax_rate: invoice.tax_rate || 0,
         notes: invoice.notes || "",
+        transaction_side: invoice.transaction_side || "buyer",
         line_items: invoice.line_items?.length ? invoice.line_items : [newItem()],
       });
     }
@@ -126,7 +128,26 @@ export default function InvoiceFormModal({ invoice, currentUser, onClose, onSave
             </div>
             <div>
               <Label className="text-xs mb-1 block" style={{ color: "var(--text-muted)" }}>Property Address</Label>
-              <Input value={form.property_address} onChange={e => setForm(f => ({ ...f, property_address: e.target.value }))} placeholder="Optional" className="h-8 text-sm" />
+              <Input value={form.property_address} onChange={e => setForm(f => ({ ...f, property_address: e.target.value }))} placeholder="123 Main St" className="h-8 text-sm" />
+            </div>
+          </div>
+
+          <div>
+            <Label className="text-xs mb-1 block" style={{ color: "var(--text-muted)" }}>Transaction Side</Label>
+            <div className="flex gap-2">
+              {["buyer", "seller", "both"].map((side) => (
+                <button
+                  key={side}
+                  type="button"
+                  onClick={() => setForm(f => ({ ...f, transaction_side: side }))}
+                  className="flex-1 py-1.5 rounded-lg border text-xs font-medium capitalize transition-all"
+                  style={form.transaction_side === side
+                    ? { background: "var(--accent)", color: "var(--accent-text)", borderColor: "var(--accent)" }
+                    : { background: "var(--bg-tertiary)", color: "var(--text-secondary)", borderColor: "var(--border)" }}
+                >
+                  {side}
+                </button>
+              ))}
             </div>
           </div>
 
