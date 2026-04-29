@@ -51,37 +51,31 @@ Deno.serve(async (req) => {
 
     const subscriptionId = user.stripe_subscription_id;
 
-    // If there's an existing subscription, check if it's active and just update it
+    // If there's an existing subscription ID, try to retrieve it
     if (subscriptionId) {
-      let sub;
+      let sub = null;
       try {
         sub = await stripe.subscriptions.retrieve(subscriptionId);
       } catch (_) {
-        sub = null;
+        // Subscription not found in Stripe — clear the stale ID
+        await base44.auth.updateMe({ stripe_subscription_id: null });
       }
 
       if (sub && sub.status === 'active') {
         // Update existing active subscription (upgrade or downgrade)
         const itemId = sub.items.data[0]?.id;
-        if (isUpgrade) {
-          await stripe.subscriptions.update(subscriptionId, {
-            items: [{ id: itemId, price: priceId }],
-            proration_behavior: 'create_prorations',
-          });
-        } else {
-          await stripe.subscriptions.update(subscriptionId, {
-            items: [{ id: itemId, price: priceId }],
-            proration_behavior: 'none',
-            billing_cycle_anchor: 'unchanged',
-          });
-        }
+        await stripe.subscriptions.update(subscriptionId, {
+          items: [{ id: itemId, price: priceId }],
+          proration_behavior: isUpgrade ? 'create_prorations' : 'none',
+          ...(isUpgrade ? {} : { billing_cycle_anchor: 'unchanged' }),
+        });
         await base44.auth.updateMe(planMeta);
         return Response.json({ ok: true });
       }
 
-      // If subscription is incomplete or expired, cancel it and fall through to checkout
-      if (sub && (sub.status === 'incomplete' || sub.status === 'incomplete_expired')) {
-        await stripe.subscriptions.cancel(subscriptionId);
+      // Non-active subscription — cancel if possible and fall through to checkout
+      if (sub && ['incomplete', 'incomplete_expired', 'past_due', 'canceled'].includes(sub.status)) {
+        try { await stripe.subscriptions.cancel(subscriptionId); } catch (_) {}
         await base44.auth.updateMe({ stripe_subscription_id: null });
       }
     }
