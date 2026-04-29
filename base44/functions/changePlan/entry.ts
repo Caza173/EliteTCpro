@@ -1,7 +1,6 @@
 /**
- * changePlan — upgrade or downgrade a user's Stripe subscription.
- * Upgrades take effect immediately (with proration).
- * Downgrades take effect at the end of the current billing cycle.
+ * changePlan — creates a Stripe Checkout Session for new subscriptions,
+ * or updates an existing active subscription (upgrade/downgrade).
  */
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.25';
 import Stripe from 'npm:stripe@14.21.0';
@@ -24,7 +23,7 @@ Deno.serve(async (req) => {
     const user = await base44.auth.me();
     if (!user) return Response.json({ error: 'Unauthorized' }, { status: 401 });
 
-    const { plan_id } = await req.json(); // 'individual_monthly' | 'team_monthly'
+    const { plan_id, success_url, cancel_url } = await req.json();
 
     if (!PRICE_IDS[plan_id]) {
       return Response.json({ error: 'Invalid plan' }, { status: 400 });
@@ -35,10 +34,11 @@ Deno.serve(async (req) => {
       return Response.json({ error: `Stripe price ID for ${plan_id} not configured` }, { status: 500 });
     }
 
-    let customerId = user.stripe_customer_id;
-    let subscriptionId = user.stripe_subscription_id;
+    const planMeta = PLAN_META[plan_id];
+    const isUpgrade = plan_id === 'team_monthly';
 
-    // Create Stripe customer if needed
+    // Ensure Stripe customer exists
+    let customerId = user.stripe_customer_id;
     if (!customerId) {
       const customer = await stripe.customers.create({
         email: user.email,
@@ -49,72 +49,63 @@ Deno.serve(async (req) => {
       await base44.auth.updateMe({ stripe_customer_id: customerId });
     }
 
-    const planMeta = PLAN_META[plan_id];
-    const isUpgrade = plan_id === 'team_monthly';
+    const subscriptionId = user.stripe_subscription_id;
 
-    if (!subscriptionId) {
-      // Create new subscription
-      const sub = await stripe.subscriptions.create({
-        customer: customerId,
-        items: [{ price: priceId }],
-        payment_behavior: 'allow_incomplete',
-        expand: ['latest_invoice.payment_intent'],
-      });
-      subscriptionId = sub.id;
-      await base44.auth.updateMe({
-        stripe_subscription_id: subscriptionId,
-        ...planMeta,
-      });
-      return Response.json({
-        ok: true,
-        client_secret: sub.latest_invoice?.payment_intent?.client_secret,
-        subscription_id: subscriptionId,
-      });
+    // If there's an existing subscription, check if it's active and just update it
+    if (subscriptionId) {
+      let sub;
+      try {
+        sub = await stripe.subscriptions.retrieve(subscriptionId);
+      } catch (_) {
+        sub = null;
+      }
+
+      if (sub && sub.status === 'active') {
+        // Update existing active subscription (upgrade or downgrade)
+        const itemId = sub.items.data[0]?.id;
+        if (isUpgrade) {
+          await stripe.subscriptions.update(subscriptionId, {
+            items: [{ id: itemId, price: priceId }],
+            proration_behavior: 'create_prorations',
+          });
+        } else {
+          await stripe.subscriptions.update(subscriptionId, {
+            items: [{ id: itemId, price: priceId }],
+            proration_behavior: 'none',
+            billing_cycle_anchor: 'unchanged',
+          });
+        }
+        await base44.auth.updateMe(planMeta);
+        return Response.json({ ok: true });
+      }
+
+      // If subscription is incomplete or expired, cancel it and fall through to checkout
+      if (sub && (sub.status === 'incomplete' || sub.status === 'incomplete_expired')) {
+        await stripe.subscriptions.cancel(subscriptionId);
+        await base44.auth.updateMe({ stripe_subscription_id: null });
+      }
     }
 
-    // Update existing subscription — if it's incomplete, cancel and recreate
-    const sub = await stripe.subscriptions.retrieve(subscriptionId);
+    // No active subscription — create a Stripe Checkout Session to collect payment
+    const session = await stripe.checkout.sessions.create({
+      mode: 'subscription',
+      customer: customerId,
+      line_items: [{ price: priceId, quantity: 1 }],
+      success_url: success_url || 'https://app.base44.com/Billing?success=1',
+      cancel_url: cancel_url || 'https://app.base44.com/Billing?canceled=1',
+      metadata: {
+        user_id: user.id,
+        plan_id,
+      },
+      subscription_data: {
+        metadata: {
+          user_id: user.id,
+          plan_id,
+        },
+      },
+    });
 
-    if (sub.status === 'incomplete' || sub.status === 'incomplete_expired') {
-      await stripe.subscriptions.cancel(subscriptionId);
-      const newSub = await stripe.subscriptions.create({
-        customer: customerId,
-        items: [{ price: priceId }],
-        payment_behavior: 'allow_incomplete',
-        expand: ['latest_invoice.payment_intent'],
-      });
-      await base44.auth.updateMe({
-        stripe_subscription_id: newSub.id,
-        ...planMeta,
-      });
-      return Response.json({
-        ok: true,
-        client_secret: newSub.latest_invoice?.payment_intent?.client_secret,
-        subscription_id: newSub.id,
-      });
-    }
-
-    const itemId = sub.items.data[0]?.id;
-
-    if (isUpgrade) {
-      // Upgrade immediately with proration
-      await stripe.subscriptions.update(subscriptionId, {
-        items: [{ id: itemId, price: priceId }],
-        proration_behavior: 'create_prorations',
-      });
-    } else {
-      // Downgrade at period end
-      await stripe.subscriptions.update(subscriptionId, {
-        items: [{ id: itemId, price: priceId }],
-        proration_behavior: 'none',
-        billing_cycle_anchor: 'unchanged',
-      });
-    }
-
-    // Update user record
-    await base44.auth.updateMe(planMeta);
-
-    return Response.json({ ok: true });
+    return Response.json({ ok: true, checkout_url: session.url });
   } catch (error) {
     console.error('[changePlan]', error);
     return Response.json({ error: error.message }, { status: 500 });

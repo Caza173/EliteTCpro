@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -28,16 +28,43 @@ export default function Billing() {
   const [changingPlan, setChangingPlan] = useState(null);
   const [message, setMessage] = useState(null);
 
+  // Check for success/canceled query params from Stripe redirect
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get("success") === "1") {
+      setMessage("Payment successful! Your plan is now active.");
+      queryClient.invalidateQueries({ queryKey: ["currentUser"] });
+      window.history.replaceState({}, "", window.location.pathname);
+    } else if (params.get("canceled") === "1") {
+      setMessage("Error: Checkout was canceled. No changes were made.");
+      window.history.replaceState({}, "", window.location.pathname);
+    }
+  }, []);
+
   // Derive current plan from user record (subscription_plan field)
   const currentPlanKey = currentUser?.subscription_plan === "team"
     ? "team_monthly"
     : "individual_monthly";
 
   const changePlanMutation = useMutation({
-    mutationFn: (plan_id) => base44.functions.invoke("changePlan", { plan_id }),
+    mutationFn: (plan_id) => {
+      const origin = window.location.origin;
+      return base44.functions.invoke("changePlan", {
+        plan_id,
+        success_url: `${origin}/Billing?success=1`,
+        cancel_url: `${origin}/Billing?canceled=1`,
+      });
+    },
     onMutate: (plan_id) => setChangingPlan(plan_id),
     onSuccess: (res, plan_id) => {
       setChangingPlan(null);
+      const data = res.data;
+      // If backend returned a Stripe Checkout URL, redirect there
+      if (data?.checkout_url) {
+        window.location.href = data.checkout_url;
+        return;
+      }
+      // Otherwise it was an in-place update (existing active subscription)
       const isUpgrade = plan_id === "team_monthly";
       setMessage(isUpgrade
         ? "Plan upgraded successfully! Team features are now active."
