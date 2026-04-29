@@ -57,7 +57,7 @@ Deno.serve(async (req) => {
       const sub = await stripe.subscriptions.create({
         customer: customerId,
         items: [{ price: priceId }],
-        payment_behavior: 'default_incomplete',
+        payment_behavior: 'allow_incomplete',
         expand: ['latest_invoice.payment_intent'],
       });
       subscriptionId = sub.id;
@@ -72,8 +72,28 @@ Deno.serve(async (req) => {
       });
     }
 
-    // Update existing subscription
+    // Update existing subscription — if it's incomplete, cancel and recreate
     const sub = await stripe.subscriptions.retrieve(subscriptionId);
+
+    if (sub.status === 'incomplete' || sub.status === 'incomplete_expired') {
+      await stripe.subscriptions.cancel(subscriptionId);
+      const newSub = await stripe.subscriptions.create({
+        customer: customerId,
+        items: [{ price: priceId }],
+        payment_behavior: 'allow_incomplete',
+        expand: ['latest_invoice.payment_intent'],
+      });
+      await base44.auth.updateMe({
+        stripe_subscription_id: newSub.id,
+        ...planMeta,
+      });
+      return Response.json({
+        ok: true,
+        client_secret: newSub.latest_invoice?.payment_intent?.client_secret,
+        subscription_id: newSub.id,
+      });
+    }
+
     const itemId = sub.items.data[0]?.id;
 
     if (isUpgrade) {
