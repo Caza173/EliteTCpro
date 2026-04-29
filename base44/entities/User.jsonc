@@ -129,6 +129,26 @@
     "deleted_at": {
       "type": "string",
       "description": "ISO timestamp when user was soft-deleted"
+    },
+    "subscription_plan": {
+      "type": "string",
+      "enum": [
+        "individual",
+        "team"
+      ],
+      "default": "individual",
+      "description": "User's active subscription plan"
+    },
+    "can_create_team": {
+      "type": "boolean",
+      "default": false,
+      "description": "Whether this user is allowed to create teams and invite members"
+    },
+    "stripe_customer_id": {
+      "type": "string"
+    },
+    "stripe_subscription_id": {
+      "type": "string"
     }
   },
   "required": []

@@ -1,47 +1,55 @@
-import React from "react";
+import React, { useState } from "react";
 import { base44 } from "@/api/base44Client";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Progress } from "@/components/ui/progress";
 import { Skeleton } from "@/components/ui/skeleton";
-import { CreditCard, Users, CheckCircle, AlertTriangle, TrendingUp, ArrowUpRight } from "lucide-react";
+import {
+  CreditCard, CheckCircle, AlertTriangle, TrendingUp, ArrowUpRight,
+  ArrowDownRight, Loader2, Users, User,
+} from "lucide-react";
 import { format } from "date-fns";
 import { useCurrentUser, canManageBilling } from "../components/auth/useCurrentUser";
 import { PLAN_DETAILS } from "../components/utils/tenantUtils";
 
-const planOrder = ["starter", "pro", "team"];
+const PLAN_ORDER = ["individual_monthly", "team_monthly"];
 
-const statusBadge = {
-  trial: "bg-amber-50 text-amber-700 border-amber-200",
-  active: "bg-emerald-50 text-emerald-700 border-emerald-200",
+const STATUS_BADGE = {
+  trial:    "bg-amber-50 text-amber-700 border-amber-200",
+  active:   "bg-emerald-50 text-emerald-700 border-emerald-200",
   past_due: "bg-red-50 text-red-700 border-red-200",
   canceled: "bg-gray-50 text-gray-600 border-gray-200",
 };
 
 export default function Billing() {
   const { data: currentUser } = useCurrentUser();
+  const queryClient = useQueryClient();
+  const [changingPlan, setChangingPlan] = useState(null);
+  const [message, setMessage] = useState(null);
 
-  const { data: billingAccounts = [], isLoading } = useQuery({
-    queryKey: ["billingAccount", currentUser?.brokerage_id],
-    queryFn: () => base44.entities.BillingAccount.filter({ brokerage_id: currentUser?.brokerage_id }),
-    enabled: !!currentUser?.brokerage_id,
+  // Derive current plan from user record (subscription_plan field)
+  const currentPlanKey = currentUser?.subscription_plan === "team"
+    ? "team_monthly"
+    : "individual_monthly";
+
+  const changePlanMutation = useMutation({
+    mutationFn: (plan_id) => base44.functions.invoke("changePlan", { plan_id }),
+    onMutate: (plan_id) => setChangingPlan(plan_id),
+    onSuccess: (res, plan_id) => {
+      setChangingPlan(null);
+      const isUpgrade = plan_id === "team_monthly";
+      setMessage(isUpgrade
+        ? "Plan upgraded successfully! Team features are now active."
+        : "Downgrade scheduled — will take effect at the end of your billing cycle."
+      );
+      queryClient.invalidateQueries({ queryKey: ["currentUser"] });
+    },
+    onError: (err) => {
+      setChangingPlan(null);
+      setMessage(`Error: ${err?.response?.data?.error || err.message}`);
+    },
   });
-
-  const billing = billingAccounts[0];
-
-  const { data: allUsers = [] } = useQuery({
-    queryKey: ["users"],
-    queryFn: () => base44.entities.User.list(),
-    enabled: !!currentUser?.brokerage_id,
-  });
-
-  const seatUsers = allUsers.filter((u) =>
-    u.brokerage_id === currentUser?.brokerage_id &&
-    ["tc", "agent"].includes(u.role) &&
-    u.status !== "disabled"
-  );
 
   if (!canManageBilling(currentUser)) {
     return (
@@ -52,27 +60,33 @@ export default function Billing() {
     );
   }
 
-  if (isLoading) {
-    return (
-      <div className="max-w-3xl mx-auto space-y-4 py-6">
-        <Skeleton className="h-8 w-40" />
-        <Skeleton className="h-48 rounded-xl" />
-      </div>
-    );
-  }
-
-  const plan = billing?.plan || "starter";
-  const planInfo = PLAN_DETAILS[plan];
-  const seatLimit = billing?.seat_limit ?? planInfo?.seat_limit ?? 6;
-  const seatsUsed = seatUsers.length;
-  const seatPct = Math.min(100, (seatsUsed / seatLimit) * 100);
+  const currentPlanInfo = PLAN_DETAILS[currentPlanKey];
 
   return (
-    <div className="max-w-3xl mx-auto space-y-6">
+    <div className="max-w-2xl mx-auto space-y-6">
       <div>
-        <h1 className="text-2xl font-bold text-gray-900 tracking-tight">Billing & Plan</h1>
-        <p className="text-sm text-gray-500 mt-0.5">Manage your subscription and seats.</p>
+        <h1 className="text-2xl font-bold tracking-tight" style={{ color: "var(--text-primary)" }}>
+          Billing & Plan
+        </h1>
+        <p className="text-sm mt-0.5" style={{ color: "var(--text-muted)" }}>
+          Manage your subscription.
+        </p>
       </div>
+
+      {/* Message banner */}
+      {message && (
+        <div className={`flex items-start gap-2 p-3 rounded-lg border text-sm ${
+          message.startsWith("Error")
+            ? "bg-red-50 border-red-200 text-red-700"
+            : "bg-emerald-50 border-emerald-200 text-emerald-700"
+        }`}>
+          {message.startsWith("Error")
+            ? <AlertTriangle className="w-4 h-4 flex-shrink-0 mt-0.5" />
+            : <CheckCircle className="w-4 h-4 flex-shrink-0 mt-0.5" />}
+          <span>{message}</span>
+          <button onClick={() => setMessage(null)} className="ml-auto text-xs opacity-60 hover:opacity-100">✕</button>
+        </div>
+      )}
 
       {/* Current Plan */}
       <Card className="shadow-sm border-gray-100">
@@ -81,49 +95,40 @@ export default function Billing() {
             <CardTitle className="text-base font-semibold flex items-center gap-2">
               <CreditCard className="w-4 h-4" /> Current Plan
             </CardTitle>
-            <Badge variant="outline" className={`capitalize ${statusBadge[billing?.status || "trial"]}`}>
-              {billing?.status || "trial"}
-            </Badge>
           </div>
         </CardHeader>
-        <CardContent className="space-y-4">
+        <CardContent>
           <div className="flex items-center gap-4">
             <div className="w-12 h-12 rounded-xl bg-blue-50 flex items-center justify-center">
-              <TrendingUp className="w-6 h-6 text-blue-500" />
+              {currentUser?.subscription_plan === "team"
+                ? <Users className="w-6 h-6 text-blue-500" />
+                : <User className="w-6 h-6 text-blue-500" />}
             </div>
             <div>
-              <p className="text-xl font-bold text-gray-900">{planInfo?.label || plan} Plan</p>
-              <p className="text-sm text-gray-500">{planInfo?.price} — {planInfo?.description}</p>
+              <p className="text-xl font-bold" style={{ color: "var(--text-primary)" }}>
+                {currentPlanInfo?.label} Plan
+              </p>
+              <p className="text-sm" style={{ color: "var(--text-muted)" }}>
+                {currentPlanInfo?.price} — {currentPlanInfo?.description}
+              </p>
             </div>
+            <Badge variant="outline" className="ml-auto bg-emerald-50 text-emerald-700 border-emerald-200">
+              Active
+            </Badge>
           </div>
-          {billing?.trial_ends_at && billing.status === "trial" && (
-            <div className="flex items-center gap-2 p-3 rounded-lg bg-amber-50 border border-amber-200 text-sm text-amber-700">
-              <AlertTriangle className="w-4 h-4 flex-shrink-0" />
-              Trial ends {format(new Date(billing.trial_ends_at), "MMMM d, yyyy")}. Upgrade to keep access.
-            </div>
-          )}
-          {billing?.current_period_end && billing.status === "active" && (
-            <p className="text-xs text-gray-400">Next billing date: {format(new Date(billing.current_period_end), "MMMM d, yyyy")}</p>
-          )}
-        </CardContent>
-      </Card>
 
-      {/* Seat Usage */}
-      <Card className="shadow-sm border-gray-100">
-        <CardHeader className="pb-3">
-          <CardTitle className="text-base font-semibold flex items-center gap-2">
-            <Users className="w-4 h-4" /> Seat Usage
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-3">
-          <div className="flex items-center justify-between text-sm">
-            <span className="text-gray-600">{seatsUsed} of {seatLimit === 999 ? "∞" : seatLimit} seats used</span>
-            {seatsUsed >= seatLimit && seatLimit < 999 && (
-              <span className="text-red-600 font-medium text-xs">Seat limit reached</span>
+          {/* Team feature indicator */}
+          <div className="mt-4 flex items-center gap-2 text-sm">
+            {currentUser?.can_create_team ? (
+              <span className="flex items-center gap-1.5 text-emerald-600">
+                <CheckCircle className="w-4 h-4" /> Team creation & member invites enabled
+              </span>
+            ) : (
+              <span className="flex items-center gap-1.5" style={{ color: "var(--text-muted)" }}>
+                <Users className="w-4 h-4" /> Upgrade to Team to create teams and invite members
+              </span>
             )}
           </div>
-          {seatLimit < 999 && <Progress value={seatPct} className="h-2" />}
-          <p className="text-xs text-gray-400">TC and Agent roles count toward seats. Owner, Admin, and Client do not.</p>
         </CardContent>
       </Card>
 
@@ -134,43 +139,65 @@ export default function Billing() {
         </CardHeader>
         <CardContent>
           <div className="grid gap-3">
-            {planOrder.map((p) => {
-              const info = PLAN_DETAILS[p];
-              const isCurrent = p === plan;
-              const isUpgrade = planOrder.indexOf(p) > planOrder.indexOf(plan);
+            {PLAN_ORDER.map((planKey) => {
+              const info = PLAN_DETAILS[planKey];
+              const isCurrent = planKey === currentPlanKey;
+              const isUpgrade = PLAN_ORDER.indexOf(planKey) > PLAN_ORDER.indexOf(currentPlanKey);
+              const isLoading = changingPlan === planKey;
+
               return (
                 <div
-                  key={p}
-                  className={`flex items-center justify-between p-4 rounded-xl border ${isCurrent ? "border-blue-300 bg-blue-50/50" : "border-gray-100 bg-white"}`}
+                  key={planKey}
+                  className={`flex items-center justify-between p-4 rounded-xl border transition-all ${
+                    isCurrent
+                      ? "border-blue-300 bg-blue-50/50"
+                      : "border-gray-100"
+                  }`}
+                  style={!isCurrent ? { background: "var(--card-bg)" } : {}}
                 >
                   <div className="flex items-center gap-3">
-                    {isCurrent && <CheckCircle className="w-5 h-5 text-blue-500 flex-shrink-0" />}
+                    <div className="w-9 h-9 rounded-lg flex items-center justify-center"
+                      style={{ background: isCurrent ? "rgba(37,99,235,0.12)" : "var(--bg-tertiary)" }}>
+                      {info.can_create_team
+                        ? <Users className="w-4 h-4" style={{ color: isCurrent ? "var(--accent)" : "var(--text-muted)" }} />
+                        : <User className="w-4 h-4" style={{ color: isCurrent ? "var(--accent)" : "var(--text-muted)" }} />}
+                    </div>
                     <div>
-                      <p className="font-semibold text-sm text-gray-900">{info.label}</p>
-                      <p className="text-xs text-gray-500">{info.description}</p>
+                      <p className="font-semibold text-sm" style={{ color: "var(--text-primary)" }}>{info.label}</p>
+                      <p className="text-xs" style={{ color: "var(--text-muted)" }}>{info.description}</p>
                     </div>
                   </div>
-                  <div className="flex items-center gap-3">
-                    <span className="font-bold text-gray-900 text-sm">{info.price}</span>
-                    {!isCurrent && (
+
+                  <div className="flex items-center gap-3 flex-shrink-0">
+                    <span className="font-bold text-sm" style={{ color: "var(--text-primary)" }}>{info.price}</span>
+                    {isCurrent ? (
+                      <Badge variant="outline" className="text-blue-600 border-blue-300">Current</Badge>
+                    ) : (
                       <Button
                         size="sm"
                         variant={isUpgrade ? "default" : "outline"}
-                        className={isUpgrade ? "bg-blue-600 hover:bg-blue-700" : ""}
-                        onClick={() => alert(`Stripe integration: redirect to checkout for ${info.label} plan.\n\nTo enable Stripe billing, upgrade to Builder+ and connect the Stripe integration.`)}
+                        className={isUpgrade ? "gap-1 bg-blue-600 hover:bg-blue-700" : "gap-1"}
+                        disabled={!!changingPlan}
+                        onClick={() => changePlanMutation.mutate(planKey)}
                       >
-                        {isUpgrade ? <><ArrowUpRight className="w-3 h-3 mr-1" />Upgrade</> : "Switch"}
+                        {isLoading
+                          ? <Loader2 className="w-3 h-3 animate-spin" />
+                          : isUpgrade
+                            ? <ArrowUpRight className="w-3 h-3" />
+                            : <ArrowDownRight className="w-3 h-3" />}
+                        {isUpgrade ? "Upgrade" : "Downgrade"}
                       </Button>
                     )}
-                    {isCurrent && <Badge variant="outline" className="text-blue-600 border-blue-300">Current</Badge>}
                   </div>
                 </div>
               );
             })}
           </div>
-          <p className="text-xs text-gray-400 mt-4">
-            Stripe billing requires the Builder+ plan. Contact support to enable payment processing.
-          </p>
+
+          <div className="mt-4 space-y-1 text-xs" style={{ color: "var(--text-muted)" }}>
+            <p>• Upgrades take effect immediately with prorated billing.</p>
+            <p>• Downgrades take effect at the end of your current billing cycle.</p>
+          </div>
         </CardContent>
       </Card>
     </div>

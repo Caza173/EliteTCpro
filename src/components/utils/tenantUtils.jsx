@@ -74,9 +74,20 @@ export async function createNotification({ brokerageId, userEmail, transactionId
 }
 
 export const PLAN_DETAILS = {
-  starter: { label: "Starter", price: "$49/mo", seat_limit: 6, description: "1 TC + 5 Agents" },
-  pro: { label: "Pro", price: "$149/mo", seat_limit: 28, description: "3 TC + 25 Agents" },
-  team: { label: "Team", price: "$299/mo", seat_limit: 999, description: "Unlimited seats" },
+  individual_monthly: {
+    label: "Individual",
+    price: "$24.99/mo",
+    stripe_price_id: "individual_monthly",
+    description: "Perfect for solo TCs managing their own transactions",
+    can_create_team: false,
+  },
+  team_monthly: {
+    label: "Team",
+    price: "$39.99/mo",
+    stripe_price_id: "team_monthly",
+    description: "Collaborate with others — create teams and invite members",
+    can_create_team: true,
+  },
 };
 
 export const ROLE_COLORS = {
