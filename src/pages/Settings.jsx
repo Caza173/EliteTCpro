@@ -646,8 +646,8 @@ export default function Settings() {
                     <p className="text-xs" style={{ color: "var(--text-muted)" }}>{intg.description}</p>
                   </div>
                 );
-                const href = intg.id === "invoices" ? "/invoices" : createPageUrl(intg.route);
-                return intg.route && !isComingSoon
+                const href = intg.id === "invoices" ? "/invoices" : (intg.route ? createPageUrl(intg.route) : null);
+                return intg.route && !isComingSoon && href
                   ? <Link key={intg.id} to={href}>{tile}</Link>
                   : <div key={intg.id}>{tile}</div>;
               })}
