@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { base44 } from "@/api/base44Client";
 import { Button } from "@/components/ui/button";
-import { X, Download, Loader2, CheckCircle, FileJson, AlertCircle } from "lucide-react";
+import { X, Download, Loader2, CheckCircle, FileSpreadsheet, AlertCircle } from "lucide-react";
 
 export default function ExportDataModal({ onClose, onExportDone }) {
   const [status, setStatus] = useState("idle"); // idle | loading | done | error
@@ -48,7 +48,7 @@ export default function ExportDataModal({ onClose, onExportDone }) {
           {status === "idle" && (
             <>
               <p className="text-sm" style={{ color: "var(--text-secondary)" }}>
-                Your data export will be generated and available for download. The link expires in 24 hours.
+                Your data export will be generated as an Excel (.xlsx) file with multiple sheets. The link expires in 24 hours.
               </p>
               <div className="rounded-xl border p-4 space-y-2" style={{ borderColor: "var(--border)", background: "var(--bg-tertiary)" }}>
                 <p className="text-xs font-semibold uppercase tracking-wider mb-2" style={{ color: "var(--text-muted)" }}>
@@ -63,7 +63,7 @@ export default function ExportDataModal({ onClose, onExportDone }) {
                   "In-app notifications",
                 ].map((item, i) => (
                   <div key={i} className="flex items-center gap-2 text-sm" style={{ color: "var(--text-secondary)" }}>
-                    <FileJson className="w-3.5 h-3.5 flex-shrink-0" style={{ color: "var(--accent)" }} />
+                    <FileSpreadsheet className="w-3.5 h-3.5 flex-shrink-0" style={{ color: "var(--accent)" }} />
                     {item}
                   </div>
                 ))}
@@ -107,9 +107,9 @@ export default function ExportDataModal({ onClose, onExportDone }) {
                 ))}
               </div>
 
-              <a href={result.download_url} download target="_blank" rel="noreferrer">
+              <a href={result.download_url} download={result.file_name || "elitetc-export.xlsx"} target="_blank" rel="noreferrer">
                 <Button className="w-full gap-2" style={{ background: "var(--accent)", color: "var(--accent-text)" }}>
-                  <Download className="w-4 h-4" /> Download Export
+                  <Download className="w-4 h-4" /> Download Excel Export
                 </Button>
               </a>
             </div>
