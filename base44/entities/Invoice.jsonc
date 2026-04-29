@@ -111,18 +111,6 @@
         }
       ]
     },
-    "create": {
-      "user_condition": {
-        "role": {
-          "$in": [
-            "owner",
-            "admin",
-            "tc",
-            "tc_lead"
-          ]
-        }
-      }
-    },
     "update": {
       "$or": [
         {

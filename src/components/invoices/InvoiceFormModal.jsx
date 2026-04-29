@@ -11,6 +11,7 @@ const newItem = () => ({ description: "", quantity: 1, unit_price: 0, amount: 0 
 const fmt = (n) => parseFloat((n || 0).toFixed(2));
 
 export default function InvoiceFormModal({ invoice, currentUser, onClose, onSaved }) {
+
   const isEdit = !!invoice;
 
   const [form, setForm] = useState({
@@ -56,12 +57,15 @@ export default function InvoiceFormModal({ invoice, currentUser, onClose, onSave
   const taxAmount = fmt(subtotal * ((form.tax_rate || 0) / 100));
   const total = fmt(subtotal + taxAmount);
 
+  const [error, setError] = useState(null);
+
   const saveMutation = useMutation({
     mutationFn: async (data) => {
       if (isEdit) return base44.entities.Invoice.update(invoice.id, data);
       return base44.entities.Invoice.create(data);
     },
     onSuccess: onSaved,
+    onError: (err) => setError(err?.response?.data?.message || err.message || "Failed to save invoice"),
   });
 
   const handleSubmit = (e) => {
@@ -204,6 +208,12 @@ export default function InvoiceFormModal({ invoice, currentUser, onClose, onSave
               style={{ background: "var(--input-bg)", borderColor: "var(--input-border)", color: "var(--text-primary)" }}
             />
           </div>
+
+          {error && (
+            <div className="text-sm text-red-600 bg-red-50 border border-red-200 rounded-lg px-3 py-2">
+              {error}
+            </div>
+          )}
 
           {/* Actions */}
           <div className="flex gap-2 pt-1">
