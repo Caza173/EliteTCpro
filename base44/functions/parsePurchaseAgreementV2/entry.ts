@@ -105,10 +105,15 @@ function calculateDeadlines(raw, effectiveDate) {
   }
 
   // Optional addendum fields
+  // Appraisal deadline = Section 19 Financing Deadline (NH P&S standard — same date)
+  // Only override if an explicit separate appraisal date exists in an addendum
   if (raw.appraisal_days > 0) {
     calc.appraisal_deadline = field(addDays(effectiveDate, raw.appraisal_days), "MEDIUM", "Addendum/Clause", `Calculated: effective_date + ${raw.appraisal_days} days`);
   } else if (raw.appraisal_deadline_explicit) {
     calc.appraisal_deadline = field(raw.appraisal_deadline_explicit, "HIGH", "Addendum");
+  } else if (calc.financing_commitment_date) {
+    // NH P&S standard: financing commitment date (Section 19) = appraisal due date
+    calc.appraisal_deadline = field(calc.financing_commitment_date.value, "HIGH", "Section 19", "Mirrors financing commitment date per NH P&S standard");
   }
 
   if (raw.buyer_home_sale_deadline_explicit) {
@@ -511,7 +516,7 @@ Return -1 if the section is present but the blank is illegible. Return 0 if the 
       inspection_deadline:       calc.inspection_deadline?.value || null,
       due_diligence_deadline:    calc.due_diligence_deadline?.value || null,
       financing_commitment_date: calc.financing_commitment_date?.value || calc.financing_application_deadline?.value || raw.financing_commitment_date_explicit || null,
-      appraisal_deadline:        calc.appraisal_deadline?.value || null,
+      appraisal_deadline:        calc.appraisal_deadline?.value || calc.financing_commitment_date?.value || null,
 
       // Validation & debug
       validation_errors: validationErrors,
