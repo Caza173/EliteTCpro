@@ -3,14 +3,12 @@ import { base44 } from "@/api/base44Client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Loader2, User } from "lucide-react";
 
 export default function Step1Profile({ user, onComplete }) {
   const [form, setForm] = useState({
     full_name: user?.full_name || "",
     company_name: user?.company_name || "",
-    role: user?.role || "tc",
   });
   const [saving, setSaving] = useState(false);
 
@@ -21,7 +19,6 @@ export default function Step1Profile({ user, onComplete }) {
       first_name: form.full_name.split(" ")[0] || form.full_name,
       last_name: form.full_name.split(" ").slice(1).join(" ") || "",
       company_name: form.company_name,
-      role: form.role,
       profile_completed: true,
       profile: {
         ...(user?.profile || {}),
@@ -67,22 +64,6 @@ export default function Step1Profile({ user, onComplete }) {
             required
             className="bg-slate-900 border-slate-600 text-white placeholder:text-slate-500 focus:border-blue-500"
           />
-        </div>
-
-        <div>
-          <Label className="text-slate-300 text-sm mb-1.5 block">Your Role</Label>
-          <Select value={form.role} onValueChange={(v) => setForm((f) => ({ ...f, role: v }))}>
-            <SelectTrigger className="bg-slate-900 border-slate-600 text-white focus:border-blue-500">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent className="bg-slate-800 border-slate-700 text-white">
-              <SelectItem value="tc">Transaction Coordinator (TC)</SelectItem>
-              <SelectItem value="tc_lead">TC Lead</SelectItem>
-              <SelectItem value="agent">Agent</SelectItem>
-              <SelectItem value="owner">Brokerage Owner</SelectItem>
-              <SelectItem value="admin">Admin</SelectItem>
-            </SelectContent>
-          </Select>
         </div>
 
         <Button
