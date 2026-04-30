@@ -24,6 +24,7 @@ const TEMPLATE_ORDER = [
   "inspection_completed_email",
   "appraisal_ordered_email",
   "appraisal_scheduled_email",
+  "appraisal_completed_email",
 ];
 
 function sortComms(comms) {

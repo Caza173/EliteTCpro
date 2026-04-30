@@ -313,6 +313,15 @@ function buildAppraisalScheduledEmail(data) {
   };
 }
 
+function buildAppraisalCompletedEmail(data) {
+  const { buyer_name, property_address, purchase_price, lender_name } = data;
+  const lender = lender_name || "your lender";
+  return {
+    subject: `Appraisal Completed – ${fmt(property_address)}`,
+    body: `Dear ${fmt(buyer_name, "there")},\n\nGreat news — the appraisal for your property at ${fmt(property_address)} has been completed.\n\nThe report has been submitted to ${lender} for review. We will notify you of the results as soon as they are available.\n\nWhat this means:\n- If the property appraised at or above ${fmtPrice(purchase_price)}, we're on track to proceed to closing.\n- If the appraisal came in below the purchase price, we'll reach out to discuss next steps.\n\nPlease don't hesitate to reach out if you have any questions.\n\nBest regards`,
+  };
+}
+
 // ─── Communication Records Builder ──────────────────────────────────────────
 
 function buildAllComms(data, preflight, transaction, sourceDocId, sourceDocName) {
@@ -408,6 +417,10 @@ function buildAllComms(data, preflight, transaction, sourceDocId, sourceDocName)
   // K. Task-triggered: Appraisal Scheduled
   const { subject: apsSub, body: apsBody } = buildAppraisalScheduledEmail(data);
   comms.push({ ...taskBase, template_type: "appraisal_scheduled_email", subject: apsSub, generated_content: apsBody, recipients: buyerEmails, cc_recipients: [] });
+
+  // L. Task-triggered: Appraisal Completed
+  const { subject: apcSub, body: apcBody } = buildAppraisalCompletedEmail(data);
+  comms.push({ ...taskBase, template_type: "appraisal_completed_email", subject: apcSub, generated_content: apcBody, recipients: buyerEmails, cc_recipients: [] });
 
   return comms;
 }
