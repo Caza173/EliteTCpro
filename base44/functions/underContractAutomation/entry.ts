@@ -1,4 +1,4 @@
-import { createClientFromRequest } from 'npm:@base44/sdk@0.8.23';
+import { createClientFromRequest } from 'npm:@base44/sdk@0.8.25';
 
 /**
  * Under-Contract Communications Automation
@@ -488,8 +488,10 @@ Deno.serve(async (req) => {
     if (!transaction_id) return Response.json({ error: "transaction_id is required" }, { status: 400 });
 
     // Fetch transaction
-    const transactions = await base44.asServiceRole.entities.Transaction.filter({ id: transaction_id });
-    const transaction = transactions[0];
+    let transaction;
+    try {
+      transaction = await base44.asServiceRole.entities.Transaction.get(transaction_id);
+    } catch (_) {}
     if (!transaction) return Response.json({ error: "Transaction not found" }, { status: 404 });
 
     // ── PREFLIGHT ────────────────────────────────────────────────────────────
@@ -535,8 +537,11 @@ Deno.serve(async (req) => {
     if (action === "send") {
       if (!comm_id) return Response.json({ error: "comm_id required for send action" }, { status: 400 });
 
-      const comms = await base44.asServiceRole.entities.CommAutomation.filter({ id: comm_id });
-      const comm = comms[0];
+      let comm;
+      try {
+        const commList = await base44.asServiceRole.entities.CommAutomation.filter({ transaction_id });
+        comm = commList.find(c => c.id === comm_id);
+      } catch (_) {}
       if (!comm) return Response.json({ error: "Communication not found" }, { status: 404 });
 
       if (comm.template_status === "blocked") {
