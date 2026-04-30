@@ -149,6 +149,24 @@
     },
     "stripe_subscription_id": {
       "type": "string"
+    },
+    "onboarding_step": {
+      "type": "number",
+      "default": 1,
+      "description": "Current onboarding step (1-5)"
+    },
+    "onboarding_complete": {
+      "type": "boolean",
+      "default": false,
+      "description": "Whether the user has completed onboarding"
+    },
+    "onboarding_intent": {
+      "type": "string",
+      "enum": [
+        "start_transaction",
+        "explore_demo"
+      ],
+      "description": "User's selected intent from step 2"
     }
   },
   "required": []

@@ -18,6 +18,7 @@ function getRedirectTarget(isLoading, currentUser, path) {
 
   const loggedIn = !!currentUser;
   const profileCompleted = currentUser?.profile_completed === true;
+  const onboardingComplete = currentUser?.onboarding_complete === true;
 
   if (!loggedIn) {
     // Unauthenticated: only public paths allowed
@@ -26,13 +27,19 @@ function getRedirectTarget(isLoading, currentUser, path) {
   }
 
   if (!profileCompleted) {
-    // New user: only /onboarding allowed
-    if (path !== "/onboarding") return "/onboarding";
+    // New user who hasn't even done step 1: force to /onboarding
+    if (!path.startsWith("/onboarding")) return "/onboarding";
     return null;
   }
 
-  // Completed user: redirect away from landing/onboarding
-  if (path === "/" || path === "/onboarding" || path === "/Landing") {
+  if (profileCompleted && !onboardingComplete) {
+    // User completed step 1 but not all of onboarding
+    if (!path.startsWith("/onboarding")) return "/onboarding";
+    return null;
+  }
+
+  // Fully onboarded user: redirect away from landing/onboarding
+  if (path === "/" || path.startsWith("/onboarding") || path === "/Landing") {
     return "/Dashboard";
   }
 
@@ -55,7 +62,7 @@ export default function AuthGate({ children }) {
     if (target && target !== path) {
       navigate(target, { replace: true });
     }
-  }, [isLoading, currentUser?.id, currentUser?.profile_completed, path]);
+  }, [isLoading, currentUser?.id, currentUser?.profile_completed, currentUser?.onboarding_complete, path]);
 
   if (isLoading) {
     return (

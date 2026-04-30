@@ -26,6 +26,7 @@ import GlobalAIAssistant from "../components/ai/GlobalAIAssistant";
 
 import FinanceDashboardMetrics from "../components/finance/FinanceDashboardMetrics";
 import NotesTab from "../components/dashboard/NotesTab";
+import GetStartedChecklist from "../components/onboarding/GetStartedChecklist";
 
 const STATUS_STYLES = {
   active:    { bg: "bg-emerald-50", text: "text-emerald-700", dot: "bg-emerald-500" },
@@ -148,6 +149,11 @@ export default function Dashboard() {
 
       {/* Silent checkers */}
       {!isLoading && <AddendumAlertChecker transactions={transactions} currentUser={currentUser} />}
+
+      {/* Onboarding checklist widget */}
+      {!isLoading && currentUser && !currentUser.onboarding_complete && (
+        <GetStartedChecklist user={currentUser} />
+      )}
 
       {/* Page header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">

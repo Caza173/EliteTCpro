@@ -73,6 +73,7 @@ const AuthenticatedApp = () => {
     <AuthGate>
     <Routes>
       <Route path="/onboarding" element={<Onboarding />} />
+      <Route path="/onboarding/*" element={<Onboarding />} />
       <Route path="/" element={<Landing />} />
       <Route path="/Landing" element={<Landing />} />
       <Route path="/SetupProfile" element={
