@@ -148,6 +148,7 @@ export default function Layout({ children, currentPageName }) {
           <div
             className="fixed inset-0 bg-black/40 z-40 lg:hidden backdrop-blur-sm"
             onClick={() => setSidebarOpen(false)}
+            style={{ touchAction: "none" }}
           />
         )}
 
@@ -323,7 +324,12 @@ export default function Layout({ children, currentPageName }) {
           {/* Page content */}
           <main
             className="flex-1 p-4 lg:p-5 min-w-0 overflow-y-auto overflow-x-hidden transition-theme"
-            style={{ backgroundColor: "var(--bg-primary)", color: "var(--text-primary)" }}
+            style={{
+              backgroundColor: "var(--bg-primary)",
+              color: "var(--text-primary)",
+              WebkitOverflowScrolling: "touch",
+              overscrollBehavior: "contain",
+            }}
           >
             {children}
           </main>
