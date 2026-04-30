@@ -8,12 +8,10 @@ import Step3Transaction from "./onboarding/Step3Transaction";
 import Step4Document from "./onboarding/Step4Document";
 import Step5Value from "./onboarding/Step5Value";
 import { base44 } from "@/api/base44Client";
-import { useQueryClient } from "@tanstack/react-query";
 
 export default function Onboarding() {
-  const { currentUser } = useCurrentUser();
+  const { currentUser, refreshUser } = useCurrentUser();
   const navigate = useNavigate();
-  const queryClient = useQueryClient();
 
   // Resume from saved step if available; default to 1
   const savedStep = currentUser?.onboarding_step || 1;
@@ -22,8 +20,6 @@ export default function Onboarding() {
   );
   const [transactionId, setTransactionId] = useState(null);
   const [parsedData, setParsedData] = useState(null);
-
-  const refreshUser = () => queryClient.invalidateQueries({ queryKey: ["currentUser"] });
 
   // Step 1 → 2
   const handleStep1Complete = () => {
