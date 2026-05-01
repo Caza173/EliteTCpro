@@ -1,7 +1,7 @@
 import React, { useState, useRef } from "react";
 import { base44 } from "@/api/base44Client";
 import { useQuery } from "@tanstack/react-query";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { createPageUrl } from "@/utils";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -160,11 +160,14 @@ function F({ label, id, children }) {
 
 export default function AgentIntake() {
   const { data: currentUser } = useQuery({ queryKey: ["currentUser"], queryFn: () => base44.auth.me(), retry: false });
+  const navigate = useNavigate();
 
   // Hide TC features when accessed via the public agent intake link (?agent=1)
   const isAgentPublicFlow = new URLSearchParams(window.location.search).get("agent") === "1";
   // Internal TC view — show pending reviews
   const isTC = !isAgentPublicFlow && currentUser && ["tc", "tc_lead", "admin", "owner"].includes(currentUser.role);
+  // Authenticated user — create transaction directly instead of going through intake queue
+  const isAuthenticatedUser = !!currentUser && !isAgentPublicFlow;
 
   const [activeTab, setActiveTab] = useState("submit"); // "submit" | "review"
   const [dealType, setDealType] = useState(null);
@@ -290,12 +293,19 @@ export default function AgentIntake() {
     setForm(p => ({ ...p, ...u }));
   };
 
+  // Derived deal type flags (needed in handleSubmit and render)
+  const isBuyerUC = dealType === "buyer_uc";
+  const isSellerUC = dealType === "seller_uc";
+  const isListing = dealType === "listing";
+  const isBoth = dealType === "both";
+  const isBuyerAgency = isBuyerUC && docType === "buyer_agency";
+  const isUnderContract = (isBoth || isBuyerUC || isSellerUC) && !isBuyerAgency;
+  const requiresDoc = !isBuyerAgency;
+  const dealConfig = DEAL_TYPES.find(d => d.id === dealType);
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setSubmitError("");
-
-    const isBuyerAgency = dealType === "buyer_uc" && docType === "buyer_agency";
-    const requiresDoc = !isBuyerAgency;
 
     // Guard: doc required
     if (requiresDoc && !documentUrl) {
@@ -309,41 +319,60 @@ export default function AgentIntake() {
     const sellerList = sellers.filter(Boolean);
 
     try {
-      const res = await base44.functions.invoke("submitIntake", {
-        deal_type: isBuyerAgency ? "buyer_agency" : isSellerUC ? "seller_uc" : dealType,
-        form_data: {
+      if (isAuthenticatedUser) {
+        // Authenticated users: create transaction directly — visible immediately in pending queue
+        const txPayload = {
           ...form,
+          address: isBuyerAgency ? "Pre-Transaction — Buyer Representation" : (form.address || ""),
+          agent: form.agent || "",
+          agent_email: form.agent_email || "",
+          agent_phone: form.agent_phone || form.client_phone || "",
+          buyers: buyerList,
+          sellers: sellerList,
+          buyer: buyerList[0] || "",
+          seller: sellerList[0] || "",
+          client_emails: cleanClientEmails,
+          client_email: cleanClientEmails[0] || "",
           client_phones: cleanClientPhones,
           sale_price: form.sale_price ? Number(form.sale_price) : undefined,
           is_cash_transaction: form.is_cash_transaction || false,
-          inspections_waived: form.inspections_waived || false,
-          inspection_waiver_type: form.inspections_waived ? (form.inspection_waiver_type || null) : null,
-          inspection_waiver_notes: form.inspections_waived ? (form.inspection_waiver_notes || "") : "",
-          // Clear inspection dates if waived
+          transaction_type: form.transaction_type || (isSellerUC ? "seller" : isListing ? "seller" : "buyer"),
+          status: "pending",
+          document_url: documentUrl || undefined,
+          document_name: documentName || undefined,
           inspection_deadline: form.inspections_waived ? null : form.inspection_deadline,
-          general_inspection_date: form.inspections_waived ? null : form.general_inspection_date,
-          septic_inspection_date: form.inspections_waived ? null : form.septic_inspection_date,
-          water_test_date: form.inspections_waived ? null : form.water_test_date,
-          radon_air_date: form.inspections_waived ? null : form.radon_air_date,
-          radon_water_date: form.inspections_waived ? null : form.radon_water_date,
-          custom_inspection_label: form.inspections_waived ? null : form.custom_inspection_label,
-          custom_inspection_date: form.inspections_waived ? null : form.custom_inspection_date,
-        },
-        buyers: buyerList,
-        sellers: sellerList,
-        client_emails: cleanClientEmails,
-        agent_name: form.agent || "",
-        agent_email: form.agent_email || "",
-        agent_phone: form.agent_phone || form.client_phone || "",
-        property_address: isBuyerAgency ? "Pre-Transaction — Buyer Representation" : (form.address || ""),
-        document_url: documentUrl,
-        document_name: documentName,
-        // honeypot (intentionally blank — backend checks this)
-        _honey: "",
-      });
-
-      if (res.data?.error) throw new Error(res.data.error);
-      setSubmitted(true);
+        };
+        const res = await base44.functions.invoke("createTransaction", txPayload);
+        if (res.data?.error) throw new Error(res.data.error);
+        navigate("/pending-deals");
+      } else {
+        // Public/unauthenticated: go through intake submission queue
+        const res = await base44.functions.invoke("submitIntake", {
+          deal_type: isBuyerAgency ? "buyer_agency" : isSellerUC ? "seller_uc" : dealType,
+          form_data: {
+            ...form,
+            client_phones: cleanClientPhones,
+            sale_price: form.sale_price ? Number(form.sale_price) : undefined,
+            is_cash_transaction: form.is_cash_transaction || false,
+            inspections_waived: form.inspections_waived || false,
+            inspection_waiver_type: form.inspections_waived ? (form.inspection_waiver_type || null) : null,
+            inspection_waiver_notes: form.inspections_waived ? (form.inspection_waiver_notes || "") : "",
+            inspection_deadline: form.inspections_waived ? null : form.inspection_deadline,
+          },
+          buyers: buyerList,
+          sellers: sellerList,
+          client_emails: cleanClientEmails,
+          agent_name: form.agent || "",
+          agent_email: form.agent_email || "",
+          agent_phone: form.agent_phone || form.client_phone || "",
+          property_address: isBuyerAgency ? "Pre-Transaction — Buyer Representation" : (form.address || ""),
+          document_url: documentUrl,
+          document_name: documentName,
+          _honey: "",
+        });
+        if (res.data?.error) throw new Error(res.data.error);
+        setSubmitted(true);
+      }
     } catch (err) {
       setSubmitError(err.message || "Submission failed. Please try again.");
     }
@@ -377,15 +406,6 @@ export default function AgentIntake() {
   }
 
   // ── TC Review Tab (TC users only) ─────────────────────────────────────────
-
-  const isBuyerUC = dealType === "buyer_uc";
-  const isSellerUC = dealType === "seller_uc";
-  const isListing = dealType === "listing";
-  const isBoth = dealType === "both";
-  const isBuyerAgency = isBuyerUC && docType === "buyer_agency";
-  const isUnderContract = (isBoth || isBuyerUC || isSellerUC) && !isBuyerAgency;
-  const requiresDoc = !isBuyerAgency;
-  const dealConfig = DEAL_TYPES.find(d => d.id === dealType);
 
   // ── Step 1: Type Selection ────────────────────────────────────────────────
 
