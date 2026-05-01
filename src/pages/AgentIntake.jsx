@@ -11,7 +11,7 @@ import { Switch } from "@/components/ui/switch";
 import { Separator } from "@/components/ui/separator";
 import {
   Loader2, Send, CheckCircle, FileSearch, Plus, X, Upload,
-  FileText, Zap, Home, FileSignature, UserCheck, ShieldCheck, Mail, Phone,
+  FileText, Zap, Home, FileSignature, UserCheck,
   ClipboardList, AlertTriangle, ArrowLeft,
 } from "lucide-react";
 import { generateSmartTasks } from "../components/transactions/defaultTasks";
@@ -72,79 +72,6 @@ const initialBuyerAgency = {
 };
 
 // ── OTP Verification Component ────────────────────────────────────────────────
-
-function OTPVerification({ email, onVerified }) {
-  const [sending, setSending] = useState(false);
-  const [sent, setSent] = useState(false);
-  const [code, setCode] = useState("");
-  const [verifying, setVerifying] = useState(false);
-  const [error, setError] = useState("");
-  const [cooldown, setCooldown] = useState(0);
-
-  const sendOTP = async () => {
-    if (!email) { setError("Email is required."); return; }
-    setSending(true); setError("");
-    try {
-      const res = await base44.functions.invoke("sendOTP", { action: "send", email });
-      if (res.data?.error) throw new Error(res.data.error);
-      setSent(true);
-      setCooldown(60);
-      const iv = setInterval(() => setCooldown(c => { if (c <= 1) { clearInterval(iv); return 0; } return c - 1; }), 1000);
-    } catch (e) { setError(e.message || "Failed to send code."); }
-    setSending(false);
-  };
-
-  const verifyOTP = async () => {
-    if (!code.trim()) { setError("Enter the 6-digit code."); return; }
-    setVerifying(true); setError("");
-    try {
-      const res = await base44.functions.invoke("sendOTP", { action: "verify", email, code });
-      if (res.data?.error) throw new Error(res.data.error);
-      onVerified();
-    } catch (e) { setError(e.message || "Verification failed."); }
-    setVerifying(false);
-  };
-
-  return (
-    <div className="space-y-4">
-      <div className="flex items-center gap-2 p-3 rounded-xl bg-blue-50 border border-blue-100 text-sm text-blue-700">
-        <ShieldCheck className="w-4 h-4 flex-shrink-0" />
-        We'll send a 6-digit verification code to <strong>{email}</strong>
-      </div>
-
-      {!sent ? (
-        <Button onClick={sendOTP} disabled={sending || !email} className="w-full bg-blue-600 hover:bg-blue-700 text-white gap-2">
-          {sending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Mail className="w-4 h-4" />}
-          Send Verification Code
-        </Button>
-      ) : (
-        <div className="space-y-3">
-          <div>
-            <Label className="text-sm font-medium text-gray-700">Enter 6-digit code *</Label>
-            <Input
-              className="mt-1.5 text-center font-mono text-xl tracking-widest"
-              placeholder="000000"
-              maxLength={6}
-              value={code}
-              onChange={e => setCode(e.target.value.replace(/\D/g, ""))}
-              onKeyDown={e => e.key === "Enter" && verifyOTP()}
-            />
-          </div>
-          <div className="flex gap-2">
-            <Button onClick={verifyOTP} disabled={verifying || code.length < 6} className="flex-1 bg-blue-600 hover:bg-blue-700 text-white gap-2">
-              {verifying ? <Loader2 className="w-4 h-4 animate-spin" /> : <ShieldCheck className="w-4 h-4" />}
-              Verify
-            </Button>
-            <Button variant="outline" onClick={sendOTP} disabled={sending || cooldown > 0} className="flex-shrink-0 text-xs">
-              {cooldown > 0 ? `Resend (${cooldown}s)` : "Resend"}
-            </Button>
-          </div>
-        </div>
-      )}
-      {error && <p className="text-red-500 text-sm">{error}</p>}
-    </div>
-  );
-}
 
 // ── Document Upload (required) ────────────────────────────────────────────────
 
@@ -251,10 +178,6 @@ export default function AgentIntake() {
   const [documentUrl, setDocumentUrl] = useState(null);
   const [documentName, setDocumentName] = useState(null);
 
-  // Security state
-  const [emailVerified, setEmailVerified] = useState(false);
-  const [showOTP, setShowOTP] = useState(false);
-
   // Submission state
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState("");
@@ -265,7 +188,6 @@ export default function AgentIntake() {
   const selectDealType = (type) => {
     setDealType(type); setDocType("ps"); setParsedData(null);
     setDocumentUrl(null); setDocumentName(null);
-    setEmailVerified(false); setShowOTP(false);
     setBuyers([""]); setSellers([""]); setClientEmails([""]); setClientPhones([""]);
     if (type === "listing") setForm({ ...initialListing });
     else if (type === "both") setForm({ ...initialBoth });
@@ -380,13 +302,6 @@ export default function AgentIntake() {
       setSubmitError("Please upload the signed agreement document before submitting.");
       return;
     }
-    // Guard: email must be verified
-    if (!emailVerified) {
-      setShowOTP(true);
-      setSubmitError("Please verify your email before submitting.");
-      return;
-    }
-
     setSubmitting(true);
     const cleanClientEmails = clientEmails.filter(Boolean);
     const cleanClientPhones = clientPhones.filter(Boolean);
@@ -453,7 +368,7 @@ export default function AgentIntake() {
           <AlertTriangle className="w-4 h-4" /> Pending Review — Not yet active
         </div>
         <div>
-          <Button onClick={() => { setSubmitted(false); setDealType(null); setEmailVerified(false); setShowOTP(false); }} className="bg-blue-600 hover:bg-blue-700">
+          <Button onClick={() => { setSubmitted(false); setDealType(null); }} className="bg-blue-600 hover:bg-blue-700">
             Submit Another
           </Button>
         </div>
@@ -562,52 +477,7 @@ export default function AgentIntake() {
         </div>
       </div>
 
-      {/* Security notice */}
-      <div className="flex items-start gap-3 px-4 py-3 rounded-xl bg-slate-50 border border-slate-200 text-sm text-slate-600">
-        <ShieldCheck className="w-4 h-4 mt-0.5 flex-shrink-0 text-slate-500" />
-        <p>Email verification required · Submissions are instantly activated and visible in your dashboard.</p>
-      </div>
-
-      {/* ── Email Verification — top of form ── */}
-      <Card className="shadow-sm border-gray-100">
-        <CardContent className="pt-5 pb-5">
-          <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">Email Verification *</p>
-          {emailVerified ? (
-            <div className="flex items-center gap-2 p-3 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-700 text-sm">
-              <ShieldCheck className="w-4 h-4" />
-              <span>Email verified — <strong>{form.agent_email}</strong></span>
-            </div>
-          ) : (
-            <>
-              <div className="mb-3">
-                <Label className="text-sm font-medium text-gray-700">Agent Email *</Label>
-                <Input
-                  type="email"
-                  className="mt-1.5"
-                  placeholder="agent@brokerage.com"
-                  value={form.agent_email || ""}
-                  onChange={e => { set("agent_email", e.target.value); setEmailVerified(false); }}
-                  required
-                />
-              </div>
-              <OTPVerification
-                email={form.agent_email}
-                onVerified={() => { setEmailVerified(true); setShowOTP(false); }}
-              />
-            </>
-          )}
-        </CardContent>
-      </Card>
-
-      {/* Document Upload — only shown after email verified */}
-      {!emailVerified && (
-        <div className="flex items-center gap-3 px-4 py-4 rounded-xl bg-amber-50 border border-amber-200 text-amber-700 text-sm">
-          <ShieldCheck className="w-5 h-5 flex-shrink-0" />
-          <p>Verify your email above to unlock the form and document upload.</p>
-        </div>
-      )}
-
-      {emailVerified && <Card className="shadow-sm border-blue-100 bg-blue-50/20">
+      <Card className="shadow-sm border-blue-100 bg-blue-50/20">
         <CardHeader className="pb-3">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
@@ -653,9 +523,9 @@ export default function AgentIntake() {
             </>
           )}
         </CardContent>
-      </Card>}
+      </Card>
 
-      {emailVerified && <Card className="shadow-sm border-gray-100">
+      <Card className="shadow-sm border-gray-100">
         <CardContent className="pt-6">
           {/* Honeypot — hidden from humans */}
           <input
@@ -795,7 +665,7 @@ export default function AgentIntake() {
                 <Section label="Coordinator &amp; Title">
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <F label="Transaction Coordinator *" id="agent"><Input id="agent" value={form.agent || ""} onChange={e => set("agent", e.target.value)} placeholder="TC Name" required className="mt-1.5" /></F>
-                    <F label="TC Email *" id="agent_email"><Input id="agent_email" type="email" value={form.agent_email || ""} onChange={e => { set("agent_email", e.target.value); setEmailVerified(false); }} placeholder="tc@office.com" required className="mt-1.5" /></F>
+                    <F label="TC Email *" id="agent_email"><Input id="agent_email" type="email" value={form.agent_email || ""} onChange={e => set("agent_email", e.target.value)} placeholder="tc@office.com" required className="mt-1.5" /></F>
                     {isUnderContract && (
                       <F label="Closing / Title Company" id="closing_title_company"><Input id="closing_title_company" value={form.closing_title_company || ""} onChange={e => set("closing_title_company", e.target.value)} placeholder="NH Title & Escrow" className="mt-1.5" /></F>
                     )}
@@ -858,7 +728,7 @@ export default function AgentIntake() {
             {!isBuyerAgency && (
               <>
                 <Separator />
-                <AgentContactSection form={form} set={set} onEmailChange={() => setEmailVerified(false)} />
+                <AgentContactSection form={form} set={set} />
               </>
             )}
 
@@ -873,21 +743,18 @@ export default function AgentIntake() {
             <div className="flex justify-end gap-3 pt-2">
               <Button type="button" variant="outline" onClick={() => window.history.back()}>Cancel</Button>
               <Button type="submit"
-                disabled={submitting || !emailVerified || (requiresDoc && !documentUrl)}
+                disabled={submitting || (requiresDoc && !documentUrl)}
                 className="bg-blue-600 hover:bg-blue-700 px-8 gap-2">
                 {submitting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
                 {isListing ? "Submit Listing" : isBoth ? "Submit Dual Transaction" : isBuyerAgency ? "Submit Representation Agreement" : isSellerUC ? "Submit Seller Transaction" : "Submit Buyer Transaction"}
               </Button>
             </div>
-            {!emailVerified && (
-              <p className="text-xs text-right text-amber-600">⚠ Verify your email at the top to enable submission</p>
-            )}
             {requiresDoc && !documentUrl && (
               <p className="text-xs text-right text-red-500">⚠ A signed document upload is required</p>
             )}
           </form>
         </CardContent>
-      </Card>}
+      </Card>
     </div>
   );
 }
