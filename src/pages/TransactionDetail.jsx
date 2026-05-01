@@ -192,7 +192,7 @@ export default function TransactionDetail() {
 
   const { data: transactions = [], isLoading: isLoadingList } = useQuery({
     queryKey: ["transactions"],
-    queryFn: () => base44.entities.Transaction.list(),
+    queryFn: () => base44.functions.invoke("getTeamTransactions", { sort: "-created_date", limit: 200 }).then(r => r.data?.transactions || []),
   });
 
   const [transactionFromId, setTransactionFromId] = useState(null);
@@ -812,19 +812,23 @@ export default function TransactionDetail() {
 
           {/* Action toolbar */}
           <div className="flex items-center gap-0.5 flex-shrink-0">
-            <Select value={transaction.transaction_phase || "intake"}
-              onValueChange={(v) => updateMutation.mutate({ id: transaction.id, data: { transaction_phase: v, last_activity_at: new Date().toISOString() } })}>
+            <Select value={transaction.status || "pending"}
+              onValueChange={(v) => {
+                const phaseMap = { active: "under_contract", closed: "closing", cancelled: "intake", pending: "intake" };
+                updateMutation.mutate({ id: transaction.id, data: {
+                  status: v,
+                  transaction_phase: phaseMap[v] || transaction.transaction_phase,
+                  last_activity_at: new Date().toISOString(),
+                }});
+              }}>
               <SelectTrigger className="h-7 w-24 text-[11px] border-slate-600 bg-slate-800 text-slate-300 hover:bg-slate-700 focus:ring-0 focus:ring-offset-0 rounded-lg mr-1">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="active">Active</SelectItem>
-                <SelectItem value="under_contract">Under Contract</SelectItem>
                 <SelectItem value="pending">Pending</SelectItem>
+                <SelectItem value="active">Active</SelectItem>
                 <SelectItem value="closed">Closed</SelectItem>
-                <SelectItem value="withdrawn">Withdraw</SelectItem>
-                <SelectItem value="expired">Expired</SelectItem>
-                <SelectItem value="terminated">Terminated</SelectItem>
+                <SelectItem value="cancelled">Cancelled</SelectItem>
               </SelectContent>
             </Select>
             <IconAction icon={MailIcon} label="Email" onClick={() => setEmailModalOpen(true)} />
