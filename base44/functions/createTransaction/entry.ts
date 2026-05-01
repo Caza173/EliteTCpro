@@ -8,32 +8,29 @@ Deno.serve(async (req) => {
 
     const body = await req.json();
 
-    // Get brokerage_id from user profile or fall back to first brokerage
-    let brokerage_id = user.data?.brokerage_id || body.brokerage_id;
-    if (!brokerage_id) {
-      const brokerages = await base44.asServiceRole.entities.Brokerage.list();
-      brokerage_id = brokerages[0]?.id;
-    }
-    if (!brokerage_id) {
-      return Response.json({ error: 'No brokerage found' }, { status: 400 });
-    }
+    // brokerage_id is optional — new users may not have one yet
+    const brokerage_id = user.data?.brokerage_id || body.brokerage_id || null;
 
     // Resolve team_id: use provided or default to creator's first team
     let team_id = body.team_id || null;
     if (!team_id) {
-      const memberships = await base44.asServiceRole.entities.TeamMember.filter({ user_id: user.id });
-      if (memberships.length) team_id = memberships[0].team_id;
+      try {
+        const memberships = await base44.asServiceRole.entities.TeamMember.filter({ user_id: user.id });
+        if (memberships.length) team_id = memberships[0].team_id;
+      } catch (e) {
+        console.warn('[createTransaction] could not fetch team memberships:', e.message);
+      }
     }
 
     // Ensure agent field is always populated — required by schema
     const agent = body.agent || user.full_name || user.email || '';
 
-    // Create transaction under user context (not service role) so created_by is stamped correctly
+    // Create transaction under user context so created_by is stamped correctly
     const tx = await base44.entities.Transaction.create({
       ...body,
       agent,
-      brokerage_id,
-      team_id: team_id || null,
+      brokerage_id: brokerage_id || undefined,
+      team_id: team_id || undefined,
       created_by: user.id,
     });
 

@@ -307,11 +307,7 @@ export default function AgentIntake() {
     e.preventDefault();
     setSubmitError("");
 
-    // Guard: doc required
-    if (requiresDoc && !documentUrl) {
-      setSubmitError("Please upload the signed agreement document before submitting.");
-      return;
-    }
+    // Document upload is encouraged but not required — allow manual input
     setSubmitting(true);
     const cleanClientEmails = clientEmails.filter(Boolean);
     const cleanClientPhones = clientPhones.filter(Boolean);
@@ -505,7 +501,7 @@ export default function AgentIntake() {
             <div className="flex items-center gap-2">
               <FileSearch className="w-4 h-4 text-blue-500" />
               <CardTitle className="text-base font-semibold">
-                Upload Agreement {requiresDoc && <span className="text-red-500 text-sm font-normal ml-1">* Required</span>}
+                Upload Agreement <span className="text-gray-400 text-sm font-normal ml-1">(optional — AI auto-fills fields)</span>
               </CardTitle>
             </div>
             {isBuyerUC && (
@@ -524,7 +520,7 @@ export default function AgentIntake() {
           <CardDescription>
             {isListing ? "Upload your listing agreement — AI auto-fills seller, list price, commission"
               : isBuyerAgency ? "Optional — AI reads buyer agency agreement fields"
-              : "Required — AI auto-fills buyer, seller, and all deadline dates"}
+              : "Optional — AI auto-fills buyer, seller, and deadline dates. Or enter manually below."}
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -765,14 +761,14 @@ export default function AgentIntake() {
             <div className="flex justify-end gap-3 pt-2">
               <Button type="button" variant="outline" onClick={() => window.history.back()}>Cancel</Button>
               <Button type="submit"
-                disabled={submitting || (requiresDoc && !documentUrl)}
+                disabled={submitting}
                 className="bg-blue-600 hover:bg-blue-700 px-8 gap-2">
                 {submitting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
                 {isListing ? "Submit Listing" : isBoth ? "Submit Dual Transaction" : isBuyerAgency ? "Submit Representation Agreement" : isSellerUC ? "Submit Seller Transaction" : "Submit Buyer Transaction"}
               </Button>
             </div>
             {requiresDoc && !documentUrl && (
-              <p className="text-xs text-right text-red-500">⚠ A signed document upload is required</p>
+              <p className="text-xs text-right text-amber-500">⚠ Upload a signed document to auto-fill fields (optional)</p>
             )}
           </form>
         </CardContent>
