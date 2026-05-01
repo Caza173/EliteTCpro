@@ -324,8 +324,8 @@ export default function AgentIntake() {
         const txPayload = {
           ...form,
           address: isBuyerAgency ? "Pre-Transaction — Buyer Representation" : (form.address || ""),
-          agent: form.agent || "",
-          agent_email: form.agent_email || "",
+          agent: form.agent || currentUser?.full_name || currentUser?.email || "",
+          agent_email: form.agent_email || currentUser?.email || "",
           agent_phone: form.agent_phone || form.client_phone || "",
           buyers: buyerList,
           sellers: sellerList,
@@ -344,6 +344,8 @@ export default function AgentIntake() {
         };
         const res = await base44.functions.invoke("createTransaction", txPayload);
         if (res.data?.error) throw new Error(res.data.error);
+        if (!res.data?.id) throw new Error("Transaction was not created. Please try again.");
+        console.log('[AgentIntake] transaction created:', res.data.id, '| created_by:', res.data.created_by);
         navigate("/pending-deals");
       } else {
         // Public/unauthenticated: go through intake submission queue
