@@ -101,8 +101,24 @@ Deno.serve(async (req) => {
       return Response.json({ transactions });
     }
 
-    // ── Any other role: return nothing ────────────────────────────────────────
-    return Response.json({ transactions: [] });
+    // ── Any other role (e.g. agent submitting via intake): their own created deals ──
+    const [assigned, created] = await Promise.all([
+      base44.asServiceRole.entities.Transaction.filter(
+        status ? { assigned_tc_id: user.id, status } : { assigned_tc_id: user.id },
+        sort, limit
+      ),
+      base44.asServiceRole.entities.Transaction.filter(
+        status ? { created_by: user.id, status } : { created_by: user.id },
+        sort, limit
+      ),
+    ]);
+    const seen = new Set();
+    const transactions = [];
+    for (const tx of [...assigned, ...created]) {
+      if (!seen.has(tx.id)) { seen.add(tx.id); transactions.push(tx); }
+    }
+    transactions.sort((a, b) => new Date(b.created_date || 0) - new Date(a.created_date || 0));
+    return Response.json({ transactions });
 
   } catch (error) {
     console.error('getTeamTransactions error:', error);

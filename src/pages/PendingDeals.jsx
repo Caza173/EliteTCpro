@@ -234,22 +234,18 @@ export default function PendingDeals() {
     return unsubscribe;
   }, [queryClient]);
 
-  const pendingDeals = allDeals.filter(d => !removedIds.has(d.id) && !d.assigned_tc_id);
+  // TCs/admins only see unassigned deals in the queue; other roles see their own deals regardless
+  const pendingDeals = allDeals.filter(d => {
+    if (removedIds.has(d.id)) return false;
+    if (isAdmin || isTC) return !d.assigned_tc_id;
+    // Non-TC users (e.g. agents who submitted a deal): show their own deals
+    return d.created_by === currentUser?.id || d.assigned_tc_id === currentUser?.id;
+  });
 
   const handleClaimed = (dealId) => {
     setRemovedIds(prev => new Set([...prev, dealId]));
     queryClient.invalidateQueries({ queryKey: ["transactions"] });
   };
-
-  if (!currentUser || (!isAdmin && !isTC)) {
-    return (
-      <div className="max-w-2xl mx-auto py-20 text-center">
-        <AlertTriangle className="w-10 h-10 text-amber-400 mx-auto mb-3" />
-        <p className="text-sm font-medium" style={{ color: "var(--text-primary)" }}>Access Restricted</p>
-        <p className="text-xs mt-1" style={{ color: "var(--text-muted)" }}>Only TCs and admins can view the pending deal queue.</p>
-      </div>
-    );
-  }
 
   return (
     <div className="max-w-4xl mx-auto space-y-6 w-full">
