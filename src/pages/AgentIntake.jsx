@@ -565,7 +565,7 @@ export default function AgentIntake() {
       {/* Security notice */}
       <div className="flex items-start gap-3 px-4 py-3 rounded-xl bg-slate-50 border border-slate-200 text-sm text-slate-600">
         <ShieldCheck className="w-4 h-4 mt-0.5 flex-shrink-0 text-slate-500" />
-        <p>Email verification required · All submissions are reviewed by a TC before activation · Agent portal access codes are issued after approval.</p>
+        <p>Email verification required · Submissions are instantly activated and visible in your dashboard.</p>
       </div>
 
       {/* ── Email Verification — top of form ── */}

@@ -37,6 +37,9 @@
     "claimed_at": {
       "type": "string"
     },
+    "allowed_agent_code": {
+      "type": "string"
+    },
     "property_type": {
       "type": "string",
       "enum": [
@@ -80,9 +83,6 @@
         "listing"
       ],
       "default": "buyer"
-    },
-    "allowed_agent_code": {
-      "type": "string"
     },
     "dotloop_loop_id": {
       "type": "string"
@@ -626,19 +626,7 @@
         }
       ]
     },
-    "create": {
-      "user_condition": {
-        "role": {
-          "$in": [
-            "owner",
-            "team_lead",
-            "tc",
-            "admin",
-            "tc_lead"
-          ]
-        }
-      }
-    },
+    "create": true,
     "update": {
       "$or": [
         {
@@ -663,18 +651,16 @@
       "$or": [
         {
           "user_condition": {
-            "role": "owner"
-          }
-        },
-        {
-          "user_condition": {
             "role": {
               "$in": [
-                "team_lead",
+                "owner",
                 "admin"
               ]
             }
           }
+        },
+        {
+          "data.created_by": "{{user.id}}"
         }
       ]
     }
