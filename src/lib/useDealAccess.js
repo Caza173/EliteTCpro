@@ -1,34 +1,27 @@
 /**
- * useDealAccess — Centralized role-based deal access control
+ * useDealAccess — Ownership-based deal access control.
  *
- * BACKEND-ENFORCED: All transaction queries go through getTeamTransactions
- * which applies team-based isolation server-side.
+ * A user can see a deal if:
+ *   - deal.created_by === currentUser.id
+ *   - OR deal.assigned_tc_id === currentUser.id
+ *   - OR user is super_admin (owner/admin/master email)
  *
- * Visibility rules (enforced on server):
- *  - Super admin (owner/admin/master): ALL deals
- *  - TC / tc_lead: pending team deals + assigned deals
- *  - Team admin: all deals in their team(s)
- *  - Viewer: all deals in their team(s), read-only
- *  - Agent: only their own deals (by agent_email)
- *  - Client: only their deal (by client_email)
+ * All filtering is enforced server-side via getTeamTransactions.
  */
 import { useQuery } from "@tanstack/react-query";
 import { base44 } from "@/api/base44Client";
-import { useCurrentUser, isOwnerOrAdmin, isMasterAccount } from "@/components/auth/useCurrentUser";
+import { useCurrentUser } from "@/components/auth/useCurrentUser";
+
+const SUPER_ADMIN_EMAIL = "nhcazateam@gmail.com";
 
 export function isSuperAdmin(user) {
   if (!user) return false;
-  return isMasterAccount(user) || isOwnerOrAdmin(user);
-}
-
-export function isTC(user) {
-  return user?.role === "tc" || user?.role === "tc_lead";
+  return user.email === SUPER_ADMIN_EMAIL || user.role === "owner" || user.role === "admin";
 }
 
 export function useDealAccess() {
   const { data: currentUser, isLoading: userLoading } = useCurrentUser();
 
-  // Server-enforced team-scoped query — replaces raw entity.list()
   const { data: serverData, isLoading: txLoading, error: txError } = useQuery({
     queryKey: ["transactions", currentUser?.id],
     queryFn: async () => {
@@ -46,17 +39,12 @@ export function useDealAccess() {
 
   const allTransactions = serverData || [];
   const isLoading = userLoading || txLoading;
-
-  // All transactions returned by the server are already access-controlled
-  // so we can treat the full list as "accessible"
-  const transactions = allTransactions;
-
   const accessibleDealIds = new Set(allTransactions.map(t => t.id));
 
-  // Derived views
+  // Pending = unassigned deals the user created (they're waiting for a TC)
   const pendingDeals = allTransactions.filter(t => t.status === "pending" && !t.assigned_tc_id);
   const myDeals = allTransactions.filter(t =>
-    t.assigned_tc_id === currentUser?.id || t.assigned_tc_email === currentUser?.email
+    t.assigned_tc_id === currentUser?.id || t.created_by === currentUser?.id
   );
 
   function canAccess(dealId) {
@@ -65,7 +53,7 @@ export function useDealAccess() {
   }
 
   return {
-    transactions,
+    transactions: allTransactions,
     pendingDeals,
     myDeals,
     allTransactions,
@@ -74,7 +62,8 @@ export function useDealAccess() {
     canAccess,
     currentUser,
     isSuperAdmin: isSuperAdmin(currentUser),
-    isTC: isTC(currentUser),
+    // Keep isTC as a helper but base it on ownership/role
+    isTC: currentUser?.role === "tc" || currentUser?.role === "tc_lead",
   };
 }
 

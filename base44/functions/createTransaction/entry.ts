@@ -29,6 +29,7 @@ Deno.serve(async (req) => {
       ...body,
       brokerage_id,
       team_id: team_id || null,
+      created_by: user.id, // always stamp creator for ownership-based access
     });
 
     // If newly created deal is pending and unassigned, notify TCs

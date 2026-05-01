@@ -219,7 +219,7 @@ export default function PendingDeals() {
     enabled: isAdmin,
     staleTime: 60_000,
   });
-  const tcUsers = allUsers.filter(u => ["tc", "tc_lead"].includes(u.role));
+  const tcUsers = allUsers.filter(u => ["tc", "tc_lead", "admin", "owner"].includes(u.role));
 
   // Real-time subscription — remove claimed deals instantly from all screens
   useEffect(() => {
@@ -234,11 +234,10 @@ export default function PendingDeals() {
     return unsubscribe;
   }, [queryClient]);
 
-  // TCs/admins only see unassigned deals in the queue; other roles see their own deals regardless
+  // Ownership-based filter: super admins/TCs see unassigned queue; everyone else sees their own deals
   const pendingDeals = allDeals.filter(d => {
     if (removedIds.has(d.id)) return false;
-    if (isAdmin || isTC) return !d.assigned_tc_id;
-    // Non-TC users (e.g. agents who submitted a deal): show their own deals
+    if (isAdmin || isTC) return !d.assigned_tc_id; // TC/admin: unassigned claim queue
     return d.created_by === currentUser?.id || d.assigned_tc_id === currentUser?.id;
   });
 
