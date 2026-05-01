@@ -41,7 +41,7 @@ export default function Transactions() {
   // The base list for the "all" tab respects access control
   const baseList = dealTab === "my" ? myDeals : transactions;
 
-  const filtered = useMemo(() => baseList.filter((tx) => {
+  const filtered = useMemo(() => (baseList || []).filter((tx) => {
     const q = search.toLowerCase();
     const matchesSearch =
       !search ||

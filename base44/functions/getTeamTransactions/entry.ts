@@ -33,22 +33,26 @@ Deno.serve(async (req) => {
       return Response.json({ transactions });
     }
 
-    // ── EVERYONE ELSE: ownership-based — created_by OR assigned_tc_id ─────────
+    // ── EVERYONE ELSE: ownership-based — created_by OR assigned_tc_id OR agent_email ─────────
     const filterBase = status ? { status } : {};
 
-    const [created, assigned] = await Promise.all([
+    const [created, assigned, byEmail] = await Promise.all([
       base44.asServiceRole.entities.Transaction.filter(
         { ...filterBase, created_by: user.id }, sort, limit
       ),
       base44.asServiceRole.entities.Transaction.filter(
         { ...filterBase, assigned_tc_id: user.id }, sort, limit
       ),
+      // Also match by agent_email so deals created on behalf of this user are visible
+      user.email ? base44.asServiceRole.entities.Transaction.filter(
+        { ...filterBase, agent_email: user.email }, sort, limit
+      ) : Promise.resolve([]),
     ]);
 
     // Merge and deduplicate
     const seen = new Set();
     const transactions = [];
-    for (const tx of [...created, ...assigned]) {
+    for (const tx of [...created, ...assigned, ...byEmail]) {
       if (!seen.has(tx.id)) {
         seen.add(tx.id);
         transactions.push(tx);
@@ -56,7 +60,7 @@ Deno.serve(async (req) => {
     }
     transactions.sort((a, b) => new Date(b.created_date || 0) - new Date(a.created_date || 0));
 
-    console.log('[getTeamTransactions] ownership fetch:', transactions.length, 'for', user.email);
+    console.log('[getTeamTransactions] ownership fetch:', transactions.length, 'for', user.email, '(created:', created.length, 'assigned:', assigned.length, 'byEmail:', byEmail.length, ')');
     return Response.json({ transactions });
 
   } catch (error) {
