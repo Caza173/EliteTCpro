@@ -149,48 +149,7 @@ function DealCard({ deal, currentUser, tcUsers, isAdmin, isTC, onClaimed }) {
           )}
         </div>
 
-        {/* Actions */}
-        <div className="flex flex-col items-end gap-2 flex-shrink-0 ml-2">
-          {(isTC || isAdmin) && (
-            <Button
-              size="sm"
-              className="h-8 text-xs gap-1.5 bg-blue-600 hover:bg-blue-700 text-white"
-              disabled={claiming || assigning}
-              onClick={handleClaim}
-            >
-              {claiming
-                ? <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                : <CheckCircle2 className="w-3.5 h-3.5" />}
-              Claim Deal
-            </Button>
-          )}
-
-          {isAdmin && tcUsers.length > 0 && (
-            <div className="flex items-center gap-1.5">
-              <select
-                value={selectedTC}
-                onChange={e => setSelectedTC(e.target.value)}
-                className="h-7 text-xs rounded-md border px-2 focus:outline-none"
-                style={{ borderColor: "var(--input-border)", background: "var(--input-bg)", color: "var(--text-primary)" }}
-              >
-                <option value="">Assign to TC…</option>
-                {tcUsers.map(u => (
-                  <option key={u.id} value={u.id}>{u.full_name || u.email}</option>
-                ))}
-              </select>
-              <Button
-                size="sm"
-                variant="outline"
-                className="h-7 text-xs gap-1 border-indigo-200 text-indigo-600 hover:bg-indigo-50"
-                disabled={!selectedTC || assigning}
-                onClick={handleAssign}
-              >
-                {assigning ? <Loader2 className="w-3 h-3 animate-spin" /> : <UserPlus className="w-3 h-3" />}
-                Assign
-              </Button>
-            </div>
-          )}
-        </div>
+        
       </div>
     </div>
   );
