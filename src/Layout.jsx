@@ -22,7 +22,6 @@ import {
   PanelLeftClose,
   PanelLeftOpen,
   ClipboardList,
-  Inbox,
   Layers,
   Receipt,
   CreditCard,
@@ -43,7 +42,7 @@ const TC_NAV = [
   { label: "Dashboard",       page: "Dashboard",       icon: LayoutDashboard, path: "/Dashboard" },
   { label: "Transactions",    page: "Transactions",    icon: FileText, path: "/Transactions" },
   { label: "Deal Intake",     page: "AgentIntake",     icon: UserPlus, path: "/AgentIntake" },
-  { label: "Pending Queue",   page: "PendingDeals",    icon: Inbox, path: "/pending-deals" },
+
   { label: "Addendum Builder", page: "AddendumBuilder", icon: ClipboardList, path: "/AddendumBuilder" },
   { label: "Invoices",        page: "Invoices",         icon: Receipt, path: "/invoices" },
   { label: "Billing",         page: "Billing",          icon: CreditCard, path: "/Billing" },
@@ -54,7 +53,7 @@ const OWNER_NAV = [
   { label: "Dashboard",      page: "Dashboard",      icon: LayoutDashboard, path: "/Dashboard" },
   { label: "Transactions",   page: "Transactions",   icon: FileText, path: "/Transactions" },
   { label: "Deal Intake",    page: "AgentIntake",    icon: UserPlus, path: "/AgentIntake" },
-  { label: "Pending Queue",  page: "PendingDeals",   icon: Inbox, path: "/pending-deals" },
+
   { label: "Addendum Builder",page: "AddendumBuilder",  icon: ClipboardList, path: "/AddendumBuilder" },
   { label: "Invoices",       page: "Invoices",       icon: Receipt, path: "/invoices" },
   { label: "Settings",       page: "Settings",       icon: Settings, path: "/Settings" },

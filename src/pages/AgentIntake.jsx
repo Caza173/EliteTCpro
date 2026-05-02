@@ -338,11 +338,11 @@ export default function AgentIntake() {
           document_name: documentName || undefined,
           inspection_deadline: form.inspections_waived ? null : form.inspection_deadline,
         };
-        const res = await base44.functions.invoke("createTransaction", txPayload);
+        const res = await base44.functions.invoke("createTransaction", { ...txPayload, status: "active" });
         if (res.data?.error) throw new Error(res.data.error);
         if (!res.data?.id) throw new Error("Transaction was not created. Please try again.");
         console.log('[AgentIntake] transaction created:', res.data.id, '| created_by:', res.data.created_by);
-        navigate("/pending-deals");
+        navigate(`/transactions/${res.data.id}`);
       } else {
         // Public/unauthenticated: go through intake submission queue
         const res = await base44.functions.invoke("submitIntake", {
