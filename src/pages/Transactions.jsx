@@ -8,14 +8,13 @@ import { Input } from "@/components/ui/input";
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
-import { Search, ChevronLeft, ChevronRight, Clock, Star, LayoutGrid, List, Columns } from "lucide-react";
+import { Search, ChevronLeft, ChevronRight, Star, LayoutGrid, List, Columns } from "lucide-react";
 import StatusBoardView from "../components/transactions/StatusBoardView";
 import { Skeleton } from "@/components/ui/skeleton";
 import TransactionTable from "../components/transactions/TransactionTable";
 import TransactionCardGrid from "../components/transactions/TransactionCardGrid";
 import ContractIntakeModal from "../components/intake/ContractIntakeModal";
 import { useDealAccess } from "../lib/useDealAccess";
-import PendingDealsQueue from "../components/deals/PendingDealsQueue";
 
 const PAGE_SIZE = 25;
 
@@ -92,7 +91,7 @@ export default function Transactions() {
           <div>
             <h1 className="text-2xl font-bold tracking-tight" style={{ color: "var(--text-primary)" }}>Transactions</h1>
             <p className="text-sm mt-0.5" style={{ color: "var(--text-muted)" }}>
-              {dealTab === "pending" ? `${pendingDeals.length} pending deals` : `${filtered.length} of ${baseList.length} transactions`}
+              {filtered.length} of {baseList.length} transactions
             </p>
           </div>
         </div>
@@ -145,7 +144,6 @@ export default function Transactions() {
         <div className="tabs-container">
           {[
             { id: "all", label: "All Deals" },
-            ...(isSuperAdmin || isTC ? [{ id: "pending", label: `Pending${pendingDeals.length > 0 ? ` (${pendingDeals.length})` : ""}`, icon: Clock }] : []),
             { id: "my", label: "My Deals", icon: Star },
           ].map(tab => (
             <button
@@ -223,13 +221,8 @@ export default function Transactions() {
 
       {/* Scrollable table / queue */}
       <div className="flex-1 overflow-y-auto min-h-0" style={{ scrollbarWidth: "thin", scrollbarColor: "#cbd5e1 transparent" }}>
-        {dealTab === "pending" ? (
-          <PendingDealsQueue
-            currentUser={currentUser}
-            pendingDeals={pendingDeals}
-            isLoading={isLoading}
-          />
-        ) : (
+        {(() => {
+          return (
           <>
             {isLoading ? (
               <div className="space-y-3 p-2">
@@ -280,7 +273,8 @@ export default function Transactions() {
               </div>
             )}
           </>
-        )}
+          );
+        })()}
       </div>
 
       <ContractIntakeModal open={showIntake} onClose={() => setShowIntake(false)} />
