@@ -218,10 +218,17 @@ export default function IssueDetectionPanel({ transaction, currentUser }) {
 
         <div className="flex items-center gap-3">
           {/* Auto-send toggle */}
-          <div className="flex items-center gap-2">
-            <Switch id="autosend" checked={autoSend} onCheckedChange={setAutoSend} />
-            <Label htmlFor="autosend" className="text-xs text-gray-500 cursor-pointer">Auto-send emails</Label>
-          </div>
+          <button
+            onClick={() => setAutoSend(v => !v)}
+            className={`flex items-center gap-2 px-3 py-1.5 rounded-lg border text-xs font-medium transition-all ${
+              autoSend
+                ? "bg-amber-50 border-amber-300 text-amber-700 shadow-sm"
+                : "bg-white border-gray-200 text-gray-500 hover:border-gray-300 hover:text-gray-700"
+            }`}
+          >
+            <span className={`w-2 h-2 rounded-full flex-shrink-0 transition-colors ${autoSend ? "bg-amber-500" : "bg-gray-300"}`} />
+            Auto-send emails
+          </button>
         </div>
       </div>
 
