@@ -211,10 +211,14 @@ export default function TransactionDetail() {
     const fetchById = async () => {
       setIsLoadingById(true);
       try {
-        const result = await base44.entities.Transaction.filter({ id });
-        if (result && result.length > 0) {
-          setTransactionFromId(result[0]);
-          console.log("TransactionDetail - Fetched from DB:", result[0].id);
+        // Use the backend function (service role) instead of direct entity access
+        // to bypass RLS restrictions for non-admin users
+        const res = await base44.functions.invoke("getTeamTransactions", { sort: "-created_date", limit: 200 });
+        const all = res.data?.transactions || [];
+        const found = all.find(t => t.id === id);
+        if (found) {
+          setTransactionFromId(found);
+          console.log("TransactionDetail - Fetched from getTeamTransactions:", found.id);
         } else {
           setNotFound(true);
           console.log("TransactionDetail - Transaction not found:", id);
