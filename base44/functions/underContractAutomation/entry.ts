@@ -483,17 +483,19 @@ Deno.serve(async (req) => {
     if (!user) return Response.json({ error: "Unauthorized" }, { status: 401 });
 
     const body = await req.json().catch(() => ({}));
-    const { action = "generate", transaction_id, comm_id, parsed_fields, source_document_id, source_document_name } = body;
+    const { action = "generate", transaction_id, comm_id, parsed_fields, source_document_id, source_document_name, transaction_data } = body;
 
     if (!transaction_id) return Response.json({ error: "transaction_id is required" }, { status: 400 });
 
-    // Fetch transaction (use filter to avoid 404 throws)
-    let transaction;
-    try {
-      const results = await base44.asServiceRole.entities.Transaction.filter({ id: transaction_id });
-      transaction = results?.[0] || null;
-    } catch (e) {
-      console.error("Error fetching transaction:", e.message);
+    // Use transaction_data passed from frontend if available, otherwise fetch via list
+    let transaction = transaction_data || null;
+    if (!transaction) {
+      try {
+        const all = await base44.asServiceRole.entities.Transaction.list("-created_date", 500);
+        transaction = all.find(t => t.id === transaction_id) || null;
+      } catch (e) {
+        console.error("Error fetching transaction:", e.message);
+      }
     }
     if (!transaction) return Response.json({ error: "Transaction not found" }, { status: 404 });
 

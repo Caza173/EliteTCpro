@@ -76,6 +76,7 @@ export default function UnderContractCommsPanel({ transaction, currentUser }) {
       const res = await base44.functions.invoke("underContractAutomation", {
         action: isRegen ? "regenerate" : "generate",
         transaction_id: transaction.id,
+        transaction_data: transaction,
       });
       if (res.data?.error) {
         setError(res.data.error);
