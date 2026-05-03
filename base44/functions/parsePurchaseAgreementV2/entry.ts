@@ -430,6 +430,62 @@ Return -1 if the section is present but the blank is illegible. Return 0 if the 
       }
     }
 
+    // ── PASS 4: Targeted effective date fallback ───────────────────────────────
+    // Run if acceptance_date was not found — it is the anchor for ALL relative deadlines
+    if (!raw.acceptance_date) {
+      console.log("Pass 4: Targeted effective date extraction");
+      const fb4 = await base44.integrations.Core.ExtractDataFromUploadedFile({
+        file_url,
+        json_schema: {
+          type: "object",
+          description: `NHAR P&S Agreement — extract ONLY the Effective Date and the Transfer of Title (closing) date.
+
+EFFECTIVE DATE rules:
+- Look in the top-right area of Page 1 for a box labeled "EFFECTIVE DATE" or a line that says "EFFECTIVE DATE: ___"
+- Also look for text like "THIS AGREEMENT made this ___ day of ___, 20___" at the very top of Page 1 — that date is the effective date
+- Also look for "Accepted on:" or "Date of Acceptance:" or "Acceptance Date:" near the signature area at the bottom of the last page
+- Return the date in YYYY-MM-DD format
+
+CLOSING DATE rules:
+- Section 5: "On or before ___ at ___" — the date before the location is the closing date
+- Also labeled "Transfer of Title date" or "Closing Date"
+- Return the date in YYYY-MM-DD format`,
+          properties: {
+            acceptance_date: {
+              type: "string",
+              description: "The EFFECTIVE DATE of the contract in YYYY-MM-DD format. Look in the top-right box on Page 1, or near 'THIS AGREEMENT made this' at the top, or at the signature/acceptance area. This is the master date anchor."
+            },
+            closing_date: {
+              type: "string",
+              description: "Transfer of Title / Closing date in YYYY-MM-DD from Section 5."
+            },
+            earnest_money_days: {
+              type: "number",
+              description: "INTEGER from blank in Section 3: 'within ___days of the EFFECTIVE DATE'. The number written in the blank."
+            },
+            due_diligence_days: {
+              type: "number",
+              description: "INTEGER from blank in Section 16: 'BUYER must notify SELLER in writing within ___days from the effective date'. The number in the blank."
+            },
+            general_building_days: {
+              type: "number",
+              description: "Days for General Building inspection (row a in Section 15) IF YES is checked. 0 if NO."
+            },
+          }
+        }
+      });
+
+      if (fb4.status !== "error" && fb4.output) {
+        const fb = fb4.output;
+        console.log("Pass 4 result:", fb);
+        if (!raw.acceptance_date && fb.acceptance_date) raw.acceptance_date = fb.acceptance_date;
+        if (!raw.closing_date && fb.closing_date) raw.closing_date = fb.closing_date;
+        if (!raw.earnest_money_days && fb.earnest_money_days > 0) raw.earnest_money_days = fb.earnest_money_days;
+        if (!raw.due_diligence_days && fb.due_diligence_days > 0) raw.due_diligence_days = fb.due_diligence_days;
+        if (!raw.general_building_days && fb.general_building_days > 0) raw.general_building_days = fb.general_building_days;
+      }
+    }
+
     // ── Calculate all deadlines ────────────────────────────────────────────────
     const effectiveDate = raw.acceptance_date || null;
     const calc = effectiveDate ? calculateDeadlines(raw, effectiveDate) : {};
@@ -521,7 +577,7 @@ Return -1 if the section is present but the blank is illegible. Return 0 if the 
       // Validation & debug
       validation_errors: validationErrors,
       _debug: {
-        passes_run: missingAnyDeadline ? 3 : ((!raw.purchase_price || !raw.deposit_amount) ? 2 : 1),
+        passes_run: !effectiveDate ? 4 : missingAnyDeadline ? 3 : ((!raw.purchase_price || !raw.deposit_amount) ? 2 : 1),
         effective_date_found: !!effectiveDate,
         flags: debugFlags,
         confidence_summary: {
