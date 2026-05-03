@@ -39,6 +39,7 @@ export default function UnderContractCommsPanel({ transaction, currentUser }) {
   const queryClient = useQueryClient();
   const [sending, setSending] = useState(null);
   const [generating, setGenerating] = useState(false);
+  const [error, setError] = useState(null);
 
   const SMS_TYPES = ["buyer_sms", "seller_sms"];
 
@@ -70,12 +71,19 @@ export default function UnderContractCommsPanel({ transaction, currentUser }) {
 
   const handleGenerate = async (isRegen = false) => {
     setGenerating(true);
+    setError(null);
     try {
-      await base44.functions.invoke("underContractAutomation", {
+      const res = await base44.functions.invoke("underContractAutomation", {
         action: isRegen ? "regenerate" : "generate",
         transaction_id: transaction.id,
       });
-      queryClient.invalidateQueries({ queryKey: ["comm-automations", transaction.id] });
+      if (res.data?.error) {
+        setError(res.data.error);
+      } else {
+        queryClient.invalidateQueries({ queryKey: ["comm-automations", transaction.id] });
+      }
+    } catch (e) {
+      setError(e?.response?.data?.error || e?.message || "Failed to generate communications. Please try again.");
     } finally {
       setGenerating(false);
     }
@@ -83,13 +91,20 @@ export default function UnderContractCommsPanel({ transaction, currentUser }) {
 
   const handleSend = async (commId) => {
     setSending(commId);
+    setError(null);
     try {
-      await base44.functions.invoke("underContractAutomation", {
+      const res = await base44.functions.invoke("underContractAutomation", {
         action: "send",
         transaction_id: transaction.id,
         comm_id: commId,
       });
-      queryClient.invalidateQueries({ queryKey: ["comm-automations", transaction.id] });
+      if (res.data?.error) {
+        setError(res.data.error);
+      } else {
+        queryClient.invalidateQueries({ queryKey: ["comm-automations", transaction.id] });
+      }
+    } catch (e) {
+      setError(e?.response?.data?.error || e?.message || "Failed to send communication.");
     } finally {
       setSending(null);
     }
@@ -99,6 +114,12 @@ export default function UnderContractCommsPanel({ transaction, currentUser }) {
   if (!isLoading && filteredComms.length === 0) {
     return (
       <div className="space-y-4">
+        {error && (
+          <div className="flex items-start gap-2 p-3 rounded-xl bg-red-50 border border-red-200 text-red-700 text-sm">
+            <AlertTriangle className="w-4 h-4 flex-shrink-0 mt-0.5" />
+            <span>{error}</span>
+          </div>
+        )}
         <AtlasBanner
           status={null}
           onGenerate={() => handleGenerate(false)}
@@ -111,6 +132,12 @@ export default function UnderContractCommsPanel({ transaction, currentUser }) {
 
   return (
     <div className="space-y-4">
+      {error && (
+        <div className="flex items-start gap-2 p-3 rounded-xl bg-red-50 border border-red-200 text-red-700 text-sm">
+          <AlertTriangle className="w-4 h-4 flex-shrink-0 mt-0.5" />
+          <span>{error}</span>
+        </div>
+      )}
       {/* Atlas Banner */}
       <AtlasBanner
         status={preflightStatus}
