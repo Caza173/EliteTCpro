@@ -179,8 +179,9 @@ function validateDeadlines(raw, calc, flags) {
 Deno.serve(async (req) => {
   try {
     const base44 = createClientFromRequest(req);
-    const user = await base44.auth.me();
-    if (!user) return Response.json({ error: "Unauthorized" }, { status: 401 });
+    // Allow unauthenticated access — this function is called during public agent intake
+    // Use service role for all integrations since user may not be logged in
+    const serviceBase44 = base44.asServiceRole;
 
     const { file_url, transaction_id, brokerage_id } = await req.json();
     if (!file_url) return Response.json({ error: "No file_url provided" }, { status: 400 });
@@ -189,7 +190,7 @@ Deno.serve(async (req) => {
     console.log("NHAR P&S Parse — Pass 1: Full structured extraction");
 
     // ── PASS 1: Full structured extraction ──────────────────────────────────────
-    const extraction = await base44.integrations.Core.ExtractDataFromUploadedFile({
+    const extraction = await serviceBase44.integrations.Core.ExtractDataFromUploadedFile({
       file_url,
       json_schema: {
         type: "object",
@@ -350,7 +351,7 @@ SECTION 20 (Page 5): Additional Provisions, Concessions, Professional Fee.`,
     // ── PASS 2: Financial fallback (price/deposit multi-line scan) ─────────────
     if (!raw.purchase_price || !raw.deposit_amount) {
       console.log("Pass 2: Financial fallback");
-      const fb2 = await base44.integrations.Core.ExtractDataFromUploadedFile({
+      const fb2 = await serviceBase44.integrations.Core.ExtractDataFromUploadedFile({
         file_url,
         json_schema: {
           type: "object",
@@ -378,7 +379,7 @@ Strip $ and commas. Return plain numbers.`,
 
     if (missingAnyDeadline && raw.acceptance_date) {
       console.log("Pass 3: OCR reinforcement for relative deadlines (Sections 3, 15, 16)");
-      const fb3 = await base44.integrations.Core.ExtractDataFromUploadedFile({
+      const fb3 = await serviceBase44.integrations.Core.ExtractDataFromUploadedFile({
         file_url,
         json_schema: {
           type: "object",
@@ -434,7 +435,7 @@ Return -1 if the section is present but the blank is illegible. Return 0 if the 
     // Run if acceptance_date was not found — it is the anchor for ALL relative deadlines
     if (!raw.acceptance_date) {
       console.log("Pass 4: Targeted effective date extraction");
-      const fb4 = await base44.integrations.Core.ExtractDataFromUploadedFile({
+      const fb4 = await serviceBase44.integrations.Core.ExtractDataFromUploadedFile({
         file_url,
         json_schema: {
           type: "object",
