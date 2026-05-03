@@ -42,10 +42,14 @@ Deno.serve(async (req) => {
     const teamMemberships = await base44.asServiceRole.entities.TeamMember.filter({ user_id: user.id });
     const userTeamIds = teamMemberships.map(m => m.team_id).filter(Boolean);
 
-    const [created, assigned, byEmail, byTeam] = await Promise.all([
+    const [created, createdByEmail, assigned, byEmail, byTeam] = await Promise.all([
       base44.asServiceRole.entities.Transaction.filter(
         { ...filterBase, created_by: user.id }, sort, limit
       ),
+      // Also match created_by stored as email (some transactions stamped this way)
+      user.email ? base44.asServiceRole.entities.Transaction.filter(
+        { ...filterBase, created_by: user.email }, sort, limit
+      ) : Promise.resolve([]),
       base44.asServiceRole.entities.Transaction.filter(
         { ...filterBase, assigned_tc_id: user.id }, sort, limit
       ),
@@ -60,7 +64,7 @@ Deno.serve(async (req) => {
     // Merge and deduplicate
     const seen = new Set();
     const transactions = [];
-    for (const tx of [...created, ...assigned, ...byEmail, ...byTeam]) {
+    for (const tx of [...created, ...createdByEmail, ...assigned, ...byEmail, ...byTeam]) {
       if (!seen.has(tx.id)) {
         seen.add(tx.id);
         transactions.push(tx);
@@ -69,7 +73,8 @@ Deno.serve(async (req) => {
     transactions.sort((a, b) => new Date(b.created_date || 0) - new Date(a.created_date || 0));
 
     console.log('[getTeamTransactions] ownership fetch:', transactions.length,
-      '| created:', created.length,
+      '| created (id):', created.length,
+      '| created (email):', createdByEmail.length,
       '| assigned:', assigned.length,
       '| byEmail:', byEmail.length,
       '| byTeam:', byTeam.length);
