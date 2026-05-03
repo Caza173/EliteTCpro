@@ -487,11 +487,14 @@ Deno.serve(async (req) => {
 
     if (!transaction_id) return Response.json({ error: "transaction_id is required" }, { status: 400 });
 
-    // Fetch transaction
+    // Fetch transaction (use filter to avoid 404 throws)
     let transaction;
     try {
-      transaction = await base44.asServiceRole.entities.Transaction.get(transaction_id);
-    } catch (_) {}
+      const results = await base44.asServiceRole.entities.Transaction.filter({ id: transaction_id });
+      transaction = results?.[0] || null;
+    } catch (e) {
+      console.error("Error fetching transaction:", e.message);
+    }
     if (!transaction) return Response.json({ error: "Transaction not found" }, { status: 404 });
 
     // ── PREFLIGHT ────────────────────────────────────────────────────────────
