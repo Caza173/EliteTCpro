@@ -49,6 +49,10 @@ export function useDealAccess() {
 
   function canAccess(dealId) {
     if (!currentUser || !dealId) return false;
+    // If transactions failed to load (network error), fail open — don't deny access
+    if (txError) return true;
+    // If still loading, fail open
+    if (isLoading) return true;
     return accessibleDealIds.has(dealId);
   }
 

@@ -659,8 +659,9 @@ export default function TransactionDetail() {
     );
   }
 
-  // Access control gate — deny if user is not authorized for this deal
-  if (!accessLoading && transaction && !canAccess(transaction.id)) {
+  // Access control gate — only deny if fully loaded and explicitly not accessible
+  // Never deny if transactions list had errors (network issues) or is still loading
+  if (!accessLoading && !isLoading && transaction && !canAccess(transaction.id)) {
     return (
       <div className="max-w-5xl mx-auto text-center py-20 w-full min-w-0">
         <div className="w-16 h-16 rounded-full bg-red-50 flex items-center justify-center mx-auto mb-4">
