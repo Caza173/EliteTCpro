@@ -906,8 +906,8 @@ export default function TransactionDetail() {
 
         {/* Row 5 — Phase stepper */}
         <div className="flex items-center gap-1 px-3 py-2 border-t overflow-x-auto scrollbar-none" style={{ borderColor: "#1E293B", background: "#0A1628" }}>
-          {["Pre-Contract","Offer","Escrow","Inspection","Financing","Closing"].map((step, i, arr) => {
-            const phaseNum = i + 1;
+          {["Escrow","Inspection","Financing","Closing"].map((step, i, arr) => {
+            const phaseNum = i + 3;
             const isCompleted = (transaction.phases_completed || []).includes(phaseNum);
             const isCurrent = (transaction.phase || 1) === phaseNum;
             return (
