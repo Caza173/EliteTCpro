@@ -21,7 +21,30 @@ Deno.serve(async (req) => {
 
     let body = {};
     try { body = await req.json(); } catch (_) {}
-    const { status, sort = '-created_date', limit = 200 } = body;
+    const { status, sort = '-created_date', limit = 200, transaction_id } = body;
+
+    // ── SINGLE TRANSACTION LOOKUP (by ID) ────────────────────────────────────
+    // Used by TransactionDetail when a transaction isn't found in the list
+    if (transaction_id) {
+      const allByOwnership = await Promise.all([
+        base44.asServiceRole.entities.Transaction.filter({ id: transaction_id, created_by: user.id }),
+        base44.asServiceRole.entities.Transaction.filter({ id: transaction_id, created_by: user.email }),
+        base44.asServiceRole.entities.Transaction.filter({ id: transaction_id, assigned_tc_id: user.id }),
+        user.email ? base44.asServiceRole.entities.Transaction.filter({ id: transaction_id, agent_email: user.email }) : Promise.resolve([]),
+      ]);
+      // Super admins can access any transaction
+      const isSupAdmin = user.email === SUPER_ADMIN_EMAIL || user.role === 'admin' || user.role === 'owner';
+      let tx = null;
+      if (isSupAdmin) {
+        const all = await base44.asServiceRole.entities.Transaction.filter({ id: transaction_id });
+        tx = all[0] || null;
+      } else {
+        const matches = allByOwnership.flat();
+        tx = matches.find(t => t.id === transaction_id) || null;
+      }
+      console.log('[getTeamTransactions] single lookup', transaction_id, '→', tx ? 'found' : 'not found');
+      return Response.json({ transactions: tx ? [tx] : [], transaction: tx });
+    }
 
     console.log('[getTeamTransactions] user:', user.email, 'role:', user.role, 'id:', user.id);
     const isSuper = user.email === SUPER_ADMIN_EMAIL || user.role === 'admin' || user.role === 'owner';
@@ -35,6 +58,11 @@ Deno.serve(async (req) => {
       return Response.json({ transactions });
     }
 
+    // ── "user" role: broad scan — new users submit their own deals ───────────
+    // For users with role "user", also scan by agent_email since new users
+    // submit deals with their own email as the agent.
+    const isNewUser = user.role === 'user';
+
     // ── EVERYONE ELSE: ownership + team based ─────────────────────────────────
     const filterBase = status ? { status } : {};
 
@@ -46,7 +74,7 @@ Deno.serve(async (req) => {
       base44.asServiceRole.entities.Transaction.filter(
         { ...filterBase, created_by: user.id }, sort, limit
       ),
-      // Also match created_by stored as email (some transactions stamped this way)
+      // Also match created_by stored as email (platform auto-stamps may use email)
       user.email ? base44.asServiceRole.entities.Transaction.filter(
         { ...filterBase, created_by: user.email }, sort, limit
       ) : Promise.resolve([]),
@@ -72,12 +100,27 @@ Deno.serve(async (req) => {
     }
     transactions.sort((a, b) => new Date(b.created_date || 0) - new Date(a.created_date || 0));
 
+    // For new "user" role: also fetch by agent field matching their email or name
+    let byAgentName = [];
+    if (isNewUser && user.full_name) {
+      byAgentName = await base44.asServiceRole.entities.Transaction.filter(
+        { ...filterBase, agent: user.full_name }, sort, limit
+      ).catch(() => []);
+    }
+
+    // Re-merge with agent name matches
+    for (const tx of byAgentName) {
+      if (!seen.has(tx.id)) { seen.add(tx.id); transactions.push(tx); }
+    }
+    transactions.sort((a, b) => new Date(b.created_date || 0) - new Date(a.created_date || 0));
+
     console.log('[getTeamTransactions] ownership fetch:', transactions.length,
       '| created (id):', created.length,
       '| created (email):', createdByEmail.length,
       '| assigned:', assigned.length,
       '| byEmail:', byEmail.length,
-      '| byTeam:', byTeam.length);
+      '| byTeam:', byTeam.length,
+      '| byAgentName:', byAgentName.length);
 
     return Response.json({ transactions });
 

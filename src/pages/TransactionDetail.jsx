@@ -198,7 +198,7 @@ export default function TransactionDetail() {
   // Try to find in list first, fallback to fetch by ID
   const transaction = transactions.find((t) => t.id === id) || transactionFromId;
 
-  // Fallback fetch if not found in list
+  // Fallback fetch if not found in list — use direct ID lookup
   useEffect(() => {
     if (!id || isLoadingList) return;
     if (transaction) return; // Already found
@@ -207,14 +207,11 @@ export default function TransactionDetail() {
     const fetchById = async () => {
       setIsLoadingById(true);
       try {
-        // Use the backend function (service role) instead of direct entity access
-        // to bypass RLS restrictions for non-admin users
-        const res = await base44.functions.invoke("getTeamTransactions", { sort: "-created_date", limit: 200 });
-        const all = res.data?.transactions || [];
-        const found = all.find(t => t.id === id);
+        const res = await base44.functions.invoke("getTeamTransactions", { transaction_id: id });
+        const found = res.data?.transaction || res.data?.transactions?.[0] || null;
         if (found) {
           setTransactionFromId(found);
-          console.log("TransactionDetail - Fetched from getTeamTransactions:", found.id);
+          console.log("TransactionDetail - Found by direct lookup:", found.id);
         } else {
           setNotFound(true);
           console.log("TransactionDetail - Transaction not found:", id);
