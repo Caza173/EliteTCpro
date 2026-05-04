@@ -181,38 +181,11 @@ export function detectIssues(transaction, checklistItems = [], complianceReports
   }
 
   // ── 3. COMPLIANCE SCAN ISSUES (from ComplianceReport) ─────────────────────
+  // Note: signature checks are intentionally excluded here — they produce false
+  // positives when signature requests have since been completed. The Compliance
+  // tab handles full signature validation with up-to-date status.
   for (const report of complianceReports) {
-    // Missing signatures
-    const sigs = report.signatures || {};
-    for (const [role, status] of Object.entries(sigs)) {
-      if (status === "missing") {
-        const roleLabel = { buyer_signature: "Buyer", seller_signature: "Seller", buyer_agent_signature: "Buyer's Agent", seller_agent_signature: "Seller's Agent" }[role] || role;
-        add({
-          key: `missing_sig_${report.id}_${role}`,
-          issue_type: "compliance_issue",
-          severity: "high",
-          description: `Missing signature: ${roleLabel} has not signed "${report.document_name}".`,
-          deadline: null,
-          deadline_label: null,
-          document_reference: report.document_name,
-        });
-      }
-    }
-
-    // Missing initials pages
-    for (const pg of (report.missing_initials_pages || [])) {
-      add({
-        key: `missing_initials_${report.id}_p${pg}`,
-        issue_type: "compliance_issue",
-        severity: "medium",
-        description: `Missing initials on page ${pg} of "${report.document_name}".`,
-        deadline: null,
-        deadline_label: null,
-        document_reference: report.document_name,
-      });
-    }
-
-    // Blockers from AI scan
+    // Blockers from AI scan only (no signature/initials checks)
     for (const blocker of (report.blockers || [])) {
       add({
         key: `blocker_${report.id}_${blocker.id || blocker.message?.slice(0, 20)}`,
