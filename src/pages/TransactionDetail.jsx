@@ -34,8 +34,6 @@ import TransactionActivityFeed from "../components/transactions/TransactionActiv
 import TransactionDocumentsTab from "../components/transactions/TransactionDocumentsTab";
 import ContractTimeline from "../components/transactions/ContractTimeline";
 import EditableDeadlinePanel from "../components/transactions/EditableDeadlinePanel";
-import ComplianceScanPanel from "../components/compliance/ComplianceScanPanel";
-import ComplianceMonitorWidget from "../components/compliance/ComplianceMonitorWidget";
 import TransactionFinancialTools from "../components/transactions/TransactionFinancialTools";
 import TCAIAssistant from "../components/ai/TCAIAssistant";
 import ConfirmDialog from "../components/ui/ConfirmDialog";
@@ -61,7 +59,6 @@ const TX_TABS = [
   { id: "issues",        label: "Issues",        icon: AlertTriangle,   info: "Auto-detected issues: missing docs, signatures, deadlines" },
   { id: "deadlines",     label: "Deadlines",     icon: Clock,           info: "All key dates — edit inline or sync to Google Calendar" },
   { id: "documents",     label: "Documents",     icon: FolderOpen,      info: "Upload, classify, and manage transaction documents" },
-  { id: "compliance",    label: "Compliance",    icon: ShieldCheck,     info: "AI-powered scan for missing signatures and blockers" },
   { id: "communications", label: "Communications", icon: Send,          info: "Atlas under-contract communications and status" },
   { id: "financial_tools", label: "Financial Tools", icon: Receipt,     info: "Commission statements, fuel prorations, and deal expenses" },
   { id: "team",          label: "Team",          icon: Users,           info: "Manage TC collaborators, roles, and task assignments" },
@@ -73,7 +70,6 @@ const LISTING_TABS = [
   { id: "issues",         label: "Issues",         icon: AlertTriangle,   info: "Auto-detected issues: missing docs, signatures, deadlines" },
   { id: "deadlines",      label: "Deadlines",      icon: Clock,           info: "All key dates — edit inline or sync to Google Calendar" },
   { id: "documents",      label: "Documents",      icon: FolderOpen,      info: "Upload, classify, and manage transaction documents" },
-  { id: "compliance",     label: "Compliance",     icon: ShieldCheck,     info: "AI-powered scan for missing signatures and blockers" },
   { id: "communications", label: "Communications", icon: Send,            info: "Atlas under-contract communications and status" },
   { id: "financial_tools", label: "Financial Tools", icon: Receipt,       info: "Commission statements, fuel prorations, and deal expenses" },
   { id: "team",           label: "Team",           icon: Users,           info: "Manage TC collaborators, roles, and task assignments" },
@@ -700,21 +696,12 @@ export default function TransactionDetail() {
   const totalDeadlineBadge = overdueDeadlineCount + approachingDeadlineCount;
   const overdueTaskCount = overdueTasks.length;
   const missingDocCount = checklistItems.filter(i => i.required && i.status === "missing").length;
-  const complianceBlockerCount = complianceReports.reduce((sum, r) => {
-    const all = r.all_issues || r.blockers || [];
-    const visible = all.filter(i => {
-      const key = i.id || i.description || JSON.stringify(i);
-      return !dismissedIssueIds.has(key);
-    });
-    return sum + visible.filter(i => i.severity === "critical" || i.severity === "blocker").length;
-  }, 0);
   const issuesBadgeCount = allDetectedIssues.filter(i => !dismissedIssueIds.has(i.id)).length;
 
   const TAB_BADGES = {
     issues:          issuesBadgeCount,
     deadlines:       totalDeadlineBadge,
     documents:       missingDocCount,
-    compliance:      complianceBlockerCount,
     overview:        overdueTaskCount,
     communications:  commsReadyCount + commsBlockedCount,
   };
@@ -1071,7 +1058,6 @@ export default function TransactionDetail() {
           )}
 
           {activeTab === "documents" && <TransactionDocumentsTab transaction={transaction} currentUser={currentUser} />}
-          {activeTab === "compliance" && <ComplianceScanPanel transaction={transaction} currentUser={currentUser} />}
           {activeTab === "financial_tools" && <TransactionFinancialTools transaction={transaction} currentUser={currentUser} />}
           {/* ── Tab: Communications ── */}
           {activeTab === "communications" && (
