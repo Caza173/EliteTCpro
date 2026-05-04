@@ -904,24 +904,7 @@ export default function TransactionDetail() {
           )}
         </div>
 
-        {/* Row 5 — Phase stepper */}
-        <div className="flex items-center gap-1 px-3 py-2 border-t overflow-x-auto scrollbar-none" style={{ borderColor: "#1E293B", background: "#0A1628" }}>
-          {["Escrow","Inspection","Financing","Closing"].map((step, i, arr) => {
-            const phaseNum = i + 3;
-            const isCompleted = (transaction.phases_completed || []).includes(phaseNum);
-            const isCurrent = (transaction.phase || 1) === phaseNum;
-            return (
-              <React.Fragment key={step}>
-                <span className={`text-xs font-semibold whitespace-nowrap flex-shrink-0 ${
-                  isCompleted ? "text-emerald-400" : isCurrent ? "text-white" : "text-slate-500"
-                }`}>
-                  {step}
-                </span>
-                {i < arr.length - 1 && <span className="text-slate-600 mx-1 flex-shrink-0">→</span>}
-              </React.Fragment>
-            );
-          })}
-        </div>
+
       </div>
 
       {/* ── MAIN 2-COLUMN BODY ── */}
