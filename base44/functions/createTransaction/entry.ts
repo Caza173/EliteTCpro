@@ -25,14 +25,13 @@ Deno.serve(async (req) => {
     // Ensure agent field is always populated — required by schema
     const agent = body.agent || user.full_name || user.email || '';
 
-    // Create transaction using service role so created_by is explicitly set
-    // and queryable regardless of the user's role
-    const tx = await base44.asServiceRole.entities.Transaction.create({
+    // Create under user context so the platform stamps created_by = user.id correctly.
+    // Then immediately update agent_email via service role to ensure it's set.
+    const tx = await base44.entities.Transaction.create({
       ...body,
       agent,
       brokerage_id: brokerage_id || undefined,
       team_id: team_id || undefined,
-      created_by: user.id,
       agent_email: body.agent_email || user.email || undefined,
     });
 

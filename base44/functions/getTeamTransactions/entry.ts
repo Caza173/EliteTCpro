@@ -26,23 +26,21 @@ Deno.serve(async (req) => {
     // ── SINGLE TRANSACTION LOOKUP (by ID) ────────────────────────────────────
     // Used by TransactionDetail when a transaction isn't found in the list
     if (transaction_id) {
-      const allByOwnership = await Promise.all([
-        base44.asServiceRole.entities.Transaction.filter({ id: transaction_id, created_by: user.id }),
-        base44.asServiceRole.entities.Transaction.filter({ id: transaction_id, created_by: user.email }),
-        base44.asServiceRole.entities.Transaction.filter({ id: transaction_id, assigned_tc_id: user.id }),
-        user.email ? base44.asServiceRole.entities.Transaction.filter({ id: transaction_id, agent_email: user.email }) : Promise.resolve([]),
-      ]);
-      // Super admins can access any transaction
       const isSupAdmin = user.email === SUPER_ADMIN_EMAIL || user.role === 'admin' || user.role === 'owner';
       let tx = null;
       if (isSupAdmin) {
         const all = await base44.asServiceRole.entities.Transaction.filter({ id: transaction_id });
         tx = all[0] || null;
       } else {
-        const matches = allByOwnership.flat();
-        tx = matches.find(t => t.id === transaction_id) || null;
+        // Try all ownership vectors in parallel
+        const results = await Promise.all([
+          base44.asServiceRole.entities.Transaction.filter({ id: transaction_id, created_by: user.id }),
+          base44.asServiceRole.entities.Transaction.filter({ id: transaction_id, assigned_tc_id: user.id }),
+          user.email ? base44.asServiceRole.entities.Transaction.filter({ id: transaction_id, agent_email: user.email }) : Promise.resolve([]),
+        ]);
+        tx = results.flat().find(t => t.id === transaction_id) || null;
       }
-      console.log('[getTeamTransactions] single lookup', transaction_id, '→', tx ? 'found' : 'not found');
+      console.log('[getTeamTransactions] single lookup', transaction_id, '→', tx ? 'found' : 'not found', '| user.id:', user.id);
       return Response.json({ transactions: tx ? [tx] : [], transaction: tx });
     }
 
