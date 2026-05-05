@@ -11,11 +11,12 @@ Deno.serve(async (req) => {
     const brokerage_id = user.data?.brokerage_id || body.brokerage_id || null;
     const agent = body.agent || user.full_name || user.email || '';
 
-    // Strip fields that must not come from client input
-    const { created_by: _stripped, team_id: _team, ...safeBody } = body;
+    // Strip any client-supplied ownership fields — platform stamps created_by = user.id
+    const { created_by: _c, team_id: _t, assigned_tc_id: _a, ...safeBody } = body;
 
-    // CRITICAL: Use user-scoped client (base44.entities, NOT asServiceRole)
-    // This ensures the platform auto-stamps created_by = the calling user's UUID
+    console.log(`[createTransaction] user.id=${user.id} user.email=${user.email}`);
+
+    // MUST use user-scoped client so platform stamps created_by = user.id (UUID)
     const tx = await base44.entities.Transaction.create({
       ...safeBody,
       agent,
@@ -23,7 +24,7 @@ Deno.serve(async (req) => {
       agent_email: safeBody.agent_email || user.email || undefined,
     });
 
-    console.log('[createTransaction] created tx.id:', tx.id, '| created_by:', tx.created_by, '| user.id:', user.id);
+    console.log(`[createTransaction] created tx.id=${tx.id} created_by=${tx.created_by} user.id=${user.id} MATCH=${tx.created_by === user.id}`);
 
     return Response.json(tx);
   } catch (error) {

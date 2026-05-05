@@ -1,7 +1,5 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.25';
 
-const SUPER_ADMIN_EMAIL = 'nhcazateam@gmail.com';
-
 Deno.serve(async (req) => {
   try {
     const base44 = createClientFromRequest(req);
@@ -11,21 +9,19 @@ Deno.serve(async (req) => {
     const { transaction_id } = await req.json();
     if (!transaction_id) return Response.json({ error: 'transaction_id required' }, { status: 400 });
 
-    const isSuper = user.email === SUPER_ADMIN_EMAIL;
+    console.log(`[deleteTransaction] user.id=${user.id} tx=${transaction_id}`);
 
-    if (!isSuper) {
-      // Verify ownership with user-scoped client (UUID or legacy email)
-      let existing = await base44.entities.Transaction.filter({ id: transaction_id, created_by: user.id });
-      if (!existing.length) {
-        existing = await base44.entities.Transaction.filter({ id: transaction_id, created_by: user.email });
-      }
-      if (!existing.length) {
-        console.warn('[deleteTransaction] ownership check failed for user:', user.id, 'tx:', transaction_id);
-        return Response.json({ error: 'Forbidden' }, { status: 403 });
-      }
+    // Verify ownership via user-scoped read — RLS blocks access to other users' records
+    const existing = await base44.entities.Transaction.filter({ id: transaction_id });
+    if (!existing.length) {
+      console.warn(`[deleteTransaction] FORBIDDEN user.id=${user.id} attempted tx=${transaction_id}`);
+      return Response.json({ error: 'Forbidden' }, { status: 403 });
     }
 
-    await base44.asServiceRole.entities.Transaction.delete(transaction_id);
+    console.log(`[deleteTransaction] confirmed ownership created_by=${existing[0].created_by} deleting...`);
+
+    // Delete via user-scoped client — RLS enforces ownership on delete too
+    await base44.entities.Transaction.delete(transaction_id);
     return Response.json({ success: true });
   } catch (error) {
     const msg = error?.message || '';
