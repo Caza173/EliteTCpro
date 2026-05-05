@@ -2,14 +2,6 @@
   "name": "Transaction",
   "type": "object",
   "properties": {
-    "team_id": {
-      "type": "string",
-      "description": "Team this transaction belongs to (required)"
-    },
-    "created_by": {
-      "type": "string",
-      "description": "User ID who created the transaction"
-    },
     "assigned_tc_id": {
       "type": "string",
       "description": "User ID of assigned TC"
@@ -608,34 +600,13 @@
   "rls": {
     "create": true,
     "read": {
-      "$or": [
-        {
-          "created_by": "{{user.id}}"
-        },
-        {
-          "created_by": "{{user.email}}"
-        }
-      ]
+      "created_by": "{{user.id}}"
     },
     "update": {
-      "$or": [
-        {
-          "created_by": "{{user.id}}"
-        },
-        {
-          "created_by": "{{user.email}}"
-        }
-      ]
+      "created_by": "{{user.id}}"
     },
     "delete": {
-      "$or": [
-        {
-          "created_by": "{{user.id}}"
-        },
-        {
-          "created_by": "{{user.email}}"
-        }
-      ]
+      "created_by": "{{user.id}}"
     }
   }
 }

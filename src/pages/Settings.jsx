@@ -26,7 +26,6 @@ import BrokerageLogoUpload from "../components/settings/BrokerageLogoUpload";
 import FeedbackModal from "../components/feedback/FeedbackModal";
 import MyFeedbackSection from "../components/feedback/MyFeedbackSection";
 import ProfileTab from "../components/settings/ProfileTab";
-import TeamManagementPanel from "../components/teams/TeamManagementPanel";
 import { Skeleton } from "@/components/ui/skeleton";
 import { format } from "date-fns";
 
@@ -431,18 +430,7 @@ export default function Settings() {
             </Card>
           )}
 
-          {/* Team Management */}
-          <Card className="shadow-sm border-gray-100">
-            <CardHeader className="pb-3">
-              <CardTitle className="text-base font-semibold flex items-center gap-2">
-                <Users className="w-4 h-4 text-blue-500" /> Team Management
-              </CardTitle>
-              <p className="text-xs text-gray-400 mt-0.5">Organize TCs into teams. Each team controls which deals members can see.</p>
-            </CardHeader>
-            <CardContent>
-              <TeamManagementPanel currentUser={currentUser} allUsers={allUsers} />
-            </CardContent>
-          </Card>
+
         </div>
       )}
 
