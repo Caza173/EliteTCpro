@@ -15,8 +15,16 @@ Deno.serve(async (req) => {
     const { transaction_id } = await req.json();
     if (!transaction_id) return Response.json({ error: 'transaction_id required' }, { status: 400 });
 
-    // Use user-scoped delete (RLS no longer has brokerage_id restriction on delete)
-    await base44.entities.Transaction.delete(transaction_id);
+    const isMasterDel = user.email === 'nhcazateam@gmail.com';
+    const isSuperDel = isMasterDel || user.role === 'admin' || user.role === 'owner';
+
+    // Verify ownership for non-super users
+    if (!isSuperDel) {
+      const existing = await base44.asServiceRole.entities.Transaction.filter({ id: transaction_id, created_by: user.id });
+      if (!existing.length) return Response.json({ error: 'Forbidden' }, { status: 403 });
+    }
+
+    await base44.asServiceRole.entities.Transaction.delete(transaction_id);
 
     return Response.json({ success: true });
   } catch (error) {

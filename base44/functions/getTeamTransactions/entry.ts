@@ -16,9 +16,10 @@ Deno.serve(async (req) => {
 
     // ── SINGLE TRANSACTION LOOKUP ────────────────────────────────────────────
     if (transaction_id) {
-      // Admins use service role; regular users use their own scoped client
-      const client = isSuper ? base44.asServiceRole : base44;
-      const results = await client.entities.Transaction.filter({ id: transaction_id });
+      const filter = isSuper
+        ? { id: transaction_id }
+        : { id: transaction_id, created_by: user.id };
+      const results = await base44.asServiceRole.entities.Transaction.filter(filter);
       const tx = results[0] || null;
       console.log('[getTeamTransactions] single lookup', transaction_id, '→', tx ? 'found' : 'not found');
       return Response.json({ transactions: tx ? [tx] : [], transaction: tx });
