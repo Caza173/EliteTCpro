@@ -11,28 +11,18 @@ Deno.serve(async (req) => {
     // brokerage_id is optional — new users may not have one yet
     const brokerage_id = user.data?.brokerage_id || body.brokerage_id || null;
 
-    // Resolve team_id: use provided or default to creator's first team
-    let team_id = body.team_id || null;
-    if (!team_id) {
-      try {
-        const memberships = await base44.asServiceRole.entities.TeamMember.filter({ user_id: user.id });
-        if (memberships.length) team_id = memberships[0].team_id;
-      } catch (e) {
-        console.warn('[createTransaction] could not fetch team memberships:', e.message);
-      }
-    }
-
     // Ensure agent field is always populated — required by schema
     const agent = body.agent || user.full_name || user.email || '';
 
-    // Use user-scoped client so Base44 auto-stamps created_by = user.id (system field)
-    // Explicitly strip created_by from body to prevent email override
-    const { created_by: _stripped, ...safeBody } = body;
+    // Strip created_by from body — must be set by the platform from the auth token, not from input
+    const { created_by: _stripped, team_id: _team, ...safeBody } = body;
+
+    // CRITICAL: Use user-scoped client (base44.entities, NOT base44.asServiceRole.entities)
+    // This ensures created_by is stamped as user.id (UUID) by the platform automatically
     const tx = await base44.entities.Transaction.create({
       ...safeBody,
       agent,
       brokerage_id: brokerage_id || undefined,
-      team_id: team_id || undefined,
       agent_email: safeBody.agent_email || user.email || undefined,
     });
 

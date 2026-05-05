@@ -1,8 +1,10 @@
-import { createClientFromRequest } from 'npm:@base44/sdk@0.8.20';
+import { createClientFromRequest } from 'npm:@base44/sdk@0.8.25';
 
 Deno.serve(async (req) => {
   try {
     const base44 = createClientFromRequest(req);
+
+    // CRITICAL: Require authenticated user — transactions must be owned by the calling user
     const user = await base44.auth.me();
     if (!user) return Response.json({ error: 'Unauthorized' }, { status: 401 });
 
@@ -19,7 +21,8 @@ Deno.serve(async (req) => {
       .split(/[,&]/).map(s => s.trim()).filter(Boolean);
 
     // --- 2. Create Transaction ---
-    // Use user-scoped client so Base44 auto-stamps created_by = user.id (system field)
+    // CRITICAL: Use user-scoped client (base44.entities, NOT asServiceRole)
+    // Platform auto-stamps created_by = user.id (UUID) from auth token
     const tx = await base44.entities.Transaction.create({
       brokerage_id,
       address: extracted.property_address,
@@ -50,11 +53,11 @@ Deno.serve(async (req) => {
       tasks: [],
       last_activity_at: new Date().toISOString(),
     });
-    console.log('[createTransactionFromContract] created tx.id:', tx.id, '| created_by:', tx.created_by);
+    console.log('[createTransactionFromContract] created tx.id:', tx.id, '| created_by:', tx.created_by, '| user.id:', user.id);
 
     const txId = tx.id;
 
-    // --- 3. Create Contacts + Participants ---
+    // --- 3. Create Contacts + Participants (service role OK for secondary records) ---
     const participantDefs = [
       ...buyerList.map(name => ({ name, role: "buyer" })),
       ...sellerList.map(name => ({ name, role: "seller" })),
@@ -67,13 +70,10 @@ Deno.serve(async (req) => {
       const first_name = nameParts[0] || p.name;
       const last_name = nameParts.slice(1).join(" ") || "";
 
-      // Check for existing contact by name
       let contactId = null;
       try {
         const existing = await base44.asServiceRole.entities.Contact.filter({ first_name, last_name });
-        if (existing.length > 0) {
-          contactId = existing[0].id;
-        }
+        if (existing.length > 0) contactId = existing[0].id;
       } catch (_) {}
 
       if (!contactId) {
@@ -82,9 +82,7 @@ Deno.serve(async (req) => {
           : p.role === "seller" ? "seller"
           : "other";
         const contact = await base44.asServiceRole.entities.Contact.create({
-          first_name,
-          last_name,
-          role_type: roleType,
+          first_name, last_name, role_type: roleType,
         });
         contactId = contact.id;
       }
@@ -152,7 +150,7 @@ Deno.serve(async (req) => {
       description: `Transaction created via AI Contract Intake from file: ${file_name || "uploaded file"}`,
     });
 
-    // --- 8. Seed Contingencies from parsed data ---
+    // --- 8. Seed Contingencies ---
     const acceptanceDate = extracted.acceptance_date || null;
     const addDays = (dateStr, days) => {
       if (!dateStr || days == null) return null;
@@ -200,15 +198,14 @@ Deno.serve(async (req) => {
     }
     if (contingenciesToCreate.length > 0) {
       await Promise.all(contingenciesToCreate.map(c => base44.asServiceRole.entities.Contingency.create(c)));
-      console.log(`Seeded ${contingenciesToCreate.length} contingencies for transaction ${txId}`);
     }
 
-    // --- 9. Auto compliance scan (document + deadline check) ---
+    // --- 9. Auto compliance scan ---
     if (file_url) {
       base44.asServiceRole.functions.invoke("complianceEngine", {
         document_url: file_url,
         file_name: file_name || "Purchase and Sale Agreement",
-        document_id: null, // doc was just created, id may not be stable yet
+        document_id: null,
         transaction_id: txId,
         brokerage_id,
         transaction_data: {

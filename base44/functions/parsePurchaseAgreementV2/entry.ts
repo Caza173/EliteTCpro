@@ -179,8 +179,9 @@ function validateDeadlines(raw, calc, flags) {
 Deno.serve(async (req) => {
   try {
     const base44 = createClientFromRequest(req);
-    // Allow unauthenticated access — this function is called during public agent intake
-    // Use service role for all integrations since user may not be logged in
+    // Use service role only for integrations (LLM/file extraction) — this is safe since
+    // the Transaction creation itself happens in separate createTransactionFromContract function
+    // which always uses the user-scoped client.
     const serviceBase44 = base44.asServiceRole;
 
     const { file_url, transaction_id, brokerage_id } = await req.json();
