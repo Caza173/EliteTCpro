@@ -599,8 +599,14 @@
   ],
   "rls": {
     "create": true,
-    "read": true,
-    "update": true,
-    "delete": true
+    "read": {
+      "data.created_by": "{{user.id}}"
+    },
+    "update": {
+      "data.created_by": "{{user.id}}"
+    },
+    "delete": {
+      "data.created_by": "{{user.id}}"
+    }
   }
 }

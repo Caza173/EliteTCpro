@@ -2,6 +2,7 @@ import React, { useState, useRef, useEffect, useCallback, useMemo } from "react"
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { base44 } from "@/api/base44Client";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+// useQuery still used for checklist, tasks, documents, compliance, comms
 import { createPageUrl } from "@/utils";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -93,7 +94,7 @@ export default function TransactionDetail() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const { data: currentUser } = useCurrentUser();
-  const { canAccess, isLoading: accessLoading } = useDealAccess();
+  const { transactions: allTransactions, canAccess, isLoading: accessLoading } = useDealAccess();
 
   const urlSearch = new URLSearchParams(window.location.search);
   const urlTab = urlSearch.get("tab");
@@ -186,45 +187,11 @@ export default function TransactionDetail() {
     };
   }, []);
 
-  const { data: transactions = [], isLoading: isLoadingList } = useQuery({
-    queryKey: ["transactions"],
-    queryFn: () => base44.functions.invoke("getTeamTransactions", { sort: "-created_date", limit: 200 }).then(r => r.data?.transactions || []),
-  });
+  // Use the shared useDealAccess list — same cache key, no duplicate fetch
+  const transactions = allTransactions;
+  const isLoadingList = accessLoading;
 
-  const [transactionFromId, setTransactionFromId] = useState(null);
-  const [isLoadingById, setIsLoadingById] = useState(false);
-  const [notFound, setNotFound] = useState(false);
-
-  // Try to find in list first, fallback to fetch by ID
-  const transaction = transactions.find((t) => t.id === id) || transactionFromId;
-
-  // Fallback fetch if not found in list — use direct ID lookup
-  useEffect(() => {
-    if (!id || isLoadingList) return;
-    if (transaction) return; // Already found
-    if (notFound) return; // Already tried and failed
-    
-    const fetchById = async () => {
-      setIsLoadingById(true);
-      try {
-        const res = await base44.functions.invoke("getTeamTransactions", { transaction_id: id });
-        const found = res.data?.transaction || res.data?.transactions?.[0] || null;
-        if (found) {
-          setTransactionFromId(found);
-          console.log("TransactionDetail - Found by direct lookup:", found.id);
-        } else {
-          setNotFound(true);
-          console.log("TransactionDetail - Transaction not found:", id);
-        }
-      } catch (e) {
-        console.error("TransactionDetail - Fetch error:", e);
-        setNotFound(true);
-      }
-      setIsLoadingById(false);
-    };
-
-    fetchById();
-  }, [id, isLoadingList, transaction, notFound]);
+  const transaction = transactions.find((t) => t.id === id) || null;
 
   const { data: checklistItems = [] } = useQuery({
     queryKey: ["checklist", id],
@@ -395,14 +362,10 @@ export default function TransactionDetail() {
     mutationFn: ({ id, data }) => base44.functions.invoke("updateTransaction", { transaction_id: id, data }),
     onMutate: ({ id: txId, data }) => {
       queryClient.cancelQueries({ queryKey: ["transactions"] });
-      const prev = queryClient.getQueryData(["transactions"]);
-      queryClient.setQueryData(["transactions"], (old = []) =>
-        old.map((t) => (t.id === txId ? { ...t, ...data } : t))
+      // Update both possible cache keys
+      queryClient.setQueriesData({ queryKey: ["transactions"] }, (old = []) =>
+        Array.isArray(old) ? old.map((t) => (t.id === txId ? { ...t, ...data } : t)) : old
       );
-      return { prev };
-    },
-    onError: (_err, _vars, context) => {
-      if (context?.prev) queryClient.setQueryData(["transactions"], context.prev);
     },
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["transactions"] }),
   });
@@ -629,7 +592,7 @@ export default function TransactionDetail() {
     [transaction, checklistItems, complianceReports, txTasks]
   );
 
-  const isLoading = isLoadingList || isLoadingById;
+  const isLoading = isLoadingList;
 
   if (isLoading) {
     return (
