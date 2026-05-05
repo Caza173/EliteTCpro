@@ -600,13 +600,13 @@
   "rls": {
     "create": true,
     "read": {
-      "data.created_by": "{{user.id}}"
+      "data.created_by": "{{user.email}}"
     },
     "update": {
-      "data.created_by": "{{user.id}}"
+      "data.created_by": "{{user.email}}"
     },
     "delete": {
-      "data.created_by": "{{user.id}}"
+      "data.created_by": "{{user.email}}"
     }
   }
 }

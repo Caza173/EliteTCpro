@@ -47,8 +47,9 @@ export default function AddTransaction() {
 
   const createMutation = useMutation({
     mutationFn: async (data) => {
-      const res = await base44.functions.invoke('createTransaction', data);
-      const tx = res.data;
+      // Call SDK directly from frontend so Base44 stamps created_by = user.id (UUID)
+      // DO NOT call via backend function — that stamps email instead of UUID
+      const tx = await base44.entities.Transaction.create(data);
       // Generate doc checklist from template
       if (defaultTemplate) {
         const checklistData = buildChecklistItems(defaultTemplate, tx.id, brokerageId);
