@@ -606,35 +606,36 @@
     "agent"
   ],
   "rls": {
+    "create": true,
     "read": {
       "$or": [
         {
-          "data.assigned_tc_id": "{{user.id}}"
+          "created_by": "{{user.id}}"
         },
         {
-          "data.assigned_tc_id": "{{user.id}}"
-        },
-        {
-          "data.agent_email": "{{user.email}}"
+          "created_by": "{{user.email}}"
         }
       ]
     },
     "update": {
       "$or": [
         {
-          "data.created_by": "{{user.id}}"
+          "created_by": "{{user.id}}"
         },
         {
-          "data.assigned_tc_id": "{{user.id}}"
-        },
-        {
-          "data.assigned_tc_id": "{{user.id}}"
+          "created_by": "{{user.email}}"
         }
       ]
     },
     "delete": {
-      "created_by": "{{user.id}}"
-    },
-    "create": {}
+      "$or": [
+        {
+          "created_by": "{{user.id}}"
+        },
+        {
+          "created_by": "{{user.email}}"
+        }
+      ]
+    }
   }
 }
