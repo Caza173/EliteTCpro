@@ -54,6 +54,33 @@
     "file_url"
   ],
   "rls": {
+    "create": {
+      "data.brokerage_id": "{{user.data.brokerage_id}}",
+      "user_condition": {
+        "role": {
+          "$in": [
+            "admin",
+            "owner",
+            "tc_lead",
+            "tc"
+          ]
+        }
+      }
+    },
+    "read": {
+      "$or": [
+        {
+          "data.brokerage_id": "{{user.data.brokerage_id}}"
+        },
+        {
+          "data.transaction_id": {
+            "$in": [
+              "{{user.data.accessible_tx_ids}}"
+            ]
+          }
+        }
+      ]
+    },
     "update": {
       "data.brokerage_id": "{{user.data.brokerage_id}}",
       "user_condition": {
@@ -63,6 +90,18 @@
             "owner",
             "tc_lead",
             "tc"
+          ]
+        }
+      }
+    },
+    "delete": {
+      "data.brokerage_id": "{{user.data.brokerage_id}}",
+      "user_condition": {
+        "role": {
+          "$in": [
+            "admin",
+            "owner",
+            "tc_lead"
           ]
         }
       }
