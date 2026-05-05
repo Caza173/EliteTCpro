@@ -11,17 +11,16 @@ Deno.serve(async (req) => {
     const brokerage_id = user.data?.brokerage_id || body.brokerage_id || null;
     const agent = body.agent || user.full_name || user.email || '';
 
-    // Strip incoming created_by — we always set it explicitly to user.id (UUID)
+    // Strip fields that must not come from client input
     const { created_by: _stripped, team_id: _team, ...safeBody } = body;
 
-    // Use asServiceRole so we can explicitly set created_by = user.id (UUID)
-    // This ensures the RLS filter (created_by = user.id) always matches
-    const tx = await base44.asServiceRole.entities.Transaction.create({
+    // CRITICAL: Use user-scoped client (base44.entities, NOT asServiceRole)
+    // This ensures the platform auto-stamps created_by = the calling user's UUID
+    const tx = await base44.entities.Transaction.create({
       ...safeBody,
       agent,
       brokerage_id: brokerage_id || undefined,
       agent_email: safeBody.agent_email || user.email || undefined,
-      created_by: user.id,
     });
 
     console.log('[createTransaction] created tx.id:', tx.id, '| created_by:', tx.created_by, '| user.id:', user.id);

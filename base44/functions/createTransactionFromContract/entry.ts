@@ -19,8 +19,9 @@ Deno.serve(async (req) => {
       .split(/[,&]/).map(s => s.trim()).filter(Boolean);
 
     // --- 2. Create Transaction ---
-    // Use asServiceRole + explicit created_by = user.id (UUID) so RLS filter matches
-    const tx = await base44.asServiceRole.entities.Transaction.create({
+    // CRITICAL: Use user-scoped client (base44.entities, NOT asServiceRole)
+    // The platform auto-stamps created_by = calling user's UUID from auth token
+    const tx = await base44.entities.Transaction.create({
       brokerage_id,
       address: extracted.property_address,
       buyer: buyerList.join(" & "),
@@ -49,13 +50,13 @@ Deno.serve(async (req) => {
       phases_completed: [1, 2],
       tasks: [],
       last_activity_at: new Date().toISOString(),
-      created_by: user.id, // CRITICAL: explicit UUID so RLS filter matches
     });
-    console.log('[createTransactionFromContract] created tx.id:', tx.id, '| created_by:', tx.created_by, '| user.id:', user.id);
+
+    console.log('[createTransactionFromContract] tx.id:', tx.id, '| created_by:', tx.created_by, '| user.id:', user.id);
 
     const txId = tx.id;
 
-    // --- 3. Create Contacts + Participants ---
+    // --- 3. Create Contacts + Participants (service role OK for these secondary records) ---
     const participantDefs = [
       ...buyerList.map(name => ({ name, role: "buyer" })),
       ...sellerList.map(name => ({ name, role: "seller" })),
@@ -198,7 +199,7 @@ Deno.serve(async (req) => {
       await Promise.all(contingenciesToCreate.map(c => base44.asServiceRole.entities.Contingency.create(c)));
     }
 
-    // --- 9. Auto compliance scan ---
+    // --- 9. Auto compliance scan (fire and forget) ---
     if (file_url) {
       base44.asServiceRole.functions.invoke("complianceEngine", {
         document_url: file_url,
