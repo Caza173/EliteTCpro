@@ -623,10 +623,19 @@
         },
         {
           "data.assigned_tc_id": "{{user.id}}"
+        },
+        {
+          "data.team_id": {
+            "$in": [
+              "{{user.data.member_team_ids}}"
+            ]
+          }
+        },
+        {
+          "data.agent_email": "{{user.email}}"
         }
       ]
     },
-    "create": true,
     "update": {
       "$or": [
         {
@@ -644,6 +653,13 @@
         },
         {
           "data.assigned_tc_id": "{{user.id}}"
+        },
+        {
+          "data.team_id": {
+            "$in": [
+              "{{user.data.member_team_ids}}"
+            ]
+          }
         }
       ]
     },
