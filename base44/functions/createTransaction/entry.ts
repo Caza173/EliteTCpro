@@ -8,33 +8,23 @@ Deno.serve(async (req) => {
 
     const body = await req.json();
 
-    // brokerage_id is optional — new users may not have one yet
     const brokerage_id = user.data?.brokerage_id || body.brokerage_id || null;
-
-    // Ensure agent field is always populated — required by schema
     const agent = body.agent || user.full_name || user.email || '';
 
-    // Strip created_by from body — must be set by the platform from the auth token, not from input
+    // Strip incoming created_by — we always set it explicitly to user.id (UUID)
     const { created_by: _stripped, team_id: _team, ...safeBody } = body;
 
-    // CRITICAL: Use user-scoped client (base44.entities, NOT base44.asServiceRole.entities)
-    // This ensures created_by is stamped as user.id (UUID) by the platform automatically
-    const tx = await base44.entities.Transaction.create({
+    // Use asServiceRole so we can explicitly set created_by = user.id (UUID)
+    // This ensures the RLS filter (created_by = user.id) always matches
+    const tx = await base44.asServiceRole.entities.Transaction.create({
       ...safeBody,
       agent,
       brokerage_id: brokerage_id || undefined,
       agent_email: safeBody.agent_email || user.email || undefined,
+      created_by: user.id,
     });
 
-    console.log('[createTransaction] created tx.id:', tx.id, '| created_by:', tx.created_by, '| agent:', tx.agent);
-
-    // If newly created deal is pending and unassigned, notify TCs
-    if (tx.status === 'pending' && !tx.assigned_tc_id) {
-      base44.asServiceRole.functions.invoke('notifyTCsOfNewDeal', {
-        transaction_id: tx.id,
-        data: tx,
-      }).catch(e => console.error('notifyTCsOfNewDeal error:', e.message));
-    }
+    console.log('[createTransaction] created tx.id:', tx.id, '| created_by:', tx.created_by, '| user.id:', user.id);
 
     return Response.json(tx);
   } catch (error) {

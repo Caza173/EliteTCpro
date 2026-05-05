@@ -4,14 +4,12 @@ Deno.serve(async (req) => {
   try {
     const base44 = createClientFromRequest(req);
 
-    // CRITICAL: Require authenticated user — transactions must be owned by the calling user
     const user = await base44.auth.me();
     if (!user) return Response.json({ error: 'Unauthorized' }, { status: 401 });
 
     const body = await req.json();
     const { extracted, file_url, file_name } = body;
 
-    // Use only the user's own brokerage_id — never fall back to another brokerage
     const brokerage_id = user.data?.brokerage_id || null;
 
     // --- 1. Build buyer/seller arrays ---
@@ -21,9 +19,8 @@ Deno.serve(async (req) => {
       .split(/[,&]/).map(s => s.trim()).filter(Boolean);
 
     // --- 2. Create Transaction ---
-    // CRITICAL: Use user-scoped client (base44.entities, NOT asServiceRole)
-    // Platform auto-stamps created_by = user.id (UUID) from auth token
-    const tx = await base44.entities.Transaction.create({
+    // Use asServiceRole + explicit created_by = user.id (UUID) so RLS filter matches
+    const tx = await base44.asServiceRole.entities.Transaction.create({
       brokerage_id,
       address: extracted.property_address,
       buyer: buyerList.join(" & "),
@@ -52,12 +49,13 @@ Deno.serve(async (req) => {
       phases_completed: [1, 2],
       tasks: [],
       last_activity_at: new Date().toISOString(),
+      created_by: user.id, // CRITICAL: explicit UUID so RLS filter matches
     });
     console.log('[createTransactionFromContract] created tx.id:', tx.id, '| created_by:', tx.created_by, '| user.id:', user.id);
 
     const txId = tx.id;
 
-    // --- 3. Create Contacts + Participants (service role OK for secondary records) ---
+    // --- 3. Create Contacts + Participants ---
     const participantDefs = [
       ...buyerList.map(name => ({ name, role: "buyer" })),
       ...sellerList.map(name => ({ name, role: "seller" })),
