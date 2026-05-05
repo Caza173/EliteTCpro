@@ -14,11 +14,11 @@ Deno.serve(async (req) => {
 
     const isSuper = user.email === SUPER_ADMIN_EMAIL;
 
-    // Verify ownership — check by UUID (new) or email (legacy)
     if (!isSuper) {
-      let existing = await base44.asServiceRole.entities.Transaction.filter({ id: transaction_id, created_by: user.id });
+      // Verify ownership with user-scoped client (UUID or legacy email)
+      let existing = await base44.entities.Transaction.filter({ id: transaction_id, created_by: user.id });
       if (!existing.length) {
-        existing = await base44.asServiceRole.entities.Transaction.filter({ id: transaction_id, created_by: user.email });
+        existing = await base44.entities.Transaction.filter({ id: transaction_id, created_by: user.email });
       }
       if (!existing.length) {
         console.warn('[updateTransaction] ownership check failed for user:', user.id, 'tx:', transaction_id);
@@ -26,6 +26,7 @@ Deno.serve(async (req) => {
       }
     }
 
+    // Use service role only for the actual write (user-scoped update isn't always reliable for partial updates)
     const updated = await base44.asServiceRole.entities.Transaction.update(transaction_id, data);
     return Response.json({ success: true, data: updated });
   } catch (error) {

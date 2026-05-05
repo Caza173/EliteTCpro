@@ -21,16 +21,16 @@ Deno.serve(async (req) => {
         const tx = results[0] || null;
         return Response.json({ transactions: tx ? [tx] : [], transaction: tx });
       }
-      // Try by UUID first, then by email (legacy records)
-      let results = await base44.asServiceRole.entities.Transaction.filter({ id: transaction_id, created_by: user.id });
+      // User-scoped: try UUID first, then email (legacy records)
+      let results = await base44.entities.Transaction.filter({ id: transaction_id, created_by: user.id });
       if (!results.length) {
-        results = await base44.asServiceRole.entities.Transaction.filter({ id: transaction_id, created_by: user.email });
+        results = await base44.entities.Transaction.filter({ id: transaction_id, created_by: user.email });
       }
       const tx = results[0] || null;
       return Response.json({ transactions: tx ? [tx] : [], transaction: tx });
     }
 
-    // ── SUPER ADMIN: sees all transactions ───────────────────────────────────
+    // ── SUPER ADMIN: sees all ────────────────────────────────────────────────
     if (isSuper) {
       const transactions = status
         ? await base44.asServiceRole.entities.Transaction.filter({ status }, sort, limit)
@@ -38,15 +38,16 @@ Deno.serve(async (req) => {
       return Response.json({ transactions });
     }
 
-    // ── REGULAR USER: fetch by UUID (new) + by email (legacy) and merge ──────
+    // ── REGULAR USER: strictly user-scoped reads ─────────────────────────────
+    // Fetch by UUID (new records) and by email (legacy records), then merge
     const baseFilter = status ? { status } : {};
 
     const [byId, byEmail] = await Promise.all([
-      base44.asServiceRole.entities.Transaction.filter({ ...baseFilter, created_by: user.id }, sort, limit),
-      base44.asServiceRole.entities.Transaction.filter({ ...baseFilter, created_by: user.email }, sort, limit),
+      base44.entities.Transaction.filter({ ...baseFilter, created_by: user.id }, sort, limit),
+      base44.entities.Transaction.filter({ ...baseFilter, created_by: user.email }, sort, limit),
     ]);
 
-    // Deduplicate by id
+    // Deduplicate
     const seen = new Set();
     const transactions = [];
     for (const tx of [...byId, ...byEmail]) {
@@ -55,8 +56,6 @@ Deno.serve(async (req) => {
         transactions.push(tx);
       }
     }
-
-    // Sort merged results
     transactions.sort((a, b) => new Date(b.created_date) - new Date(a.created_date));
 
     console.log('[getTeamTransactions] fetched:', transactions.length, '(byId:', byId.length, 'byEmail:', byEmail.length, ') for user.id:', user.id);
