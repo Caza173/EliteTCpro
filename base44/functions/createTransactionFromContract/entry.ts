@@ -25,8 +25,8 @@ Deno.serve(async (req) => {
       .split(/[,&]/).map(s => s.trim()).filter(Boolean);
 
     // --- 2. Create Transaction ---
-    // Use user-scoped client so Base44 auto-stamps created_by = user.id
-    const tx = await base44.entities.Transaction.create({
+    // Explicitly set created_by = user.id (UUID) so getTeamTransactions can filter reliably
+    const tx = await base44.asServiceRole.entities.Transaction.create({
       brokerage_id,
       address: extracted.property_address,
       buyer: buyerList.join(" & "),
@@ -50,6 +50,7 @@ Deno.serve(async (req) => {
       transaction_type: extracted.transaction_type || "buyer",
       agent: user.full_name || user.email,
       agent_email: user.email,
+      created_by: user.id,
       status: "active",
       phase: 3,
       phases_completed: [1, 2],
