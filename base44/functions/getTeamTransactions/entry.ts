@@ -12,7 +12,7 @@ Deno.serve(async (req) => {
     try { body = await req.json(); } catch (_) {}
     const { status, sort = '-created_date', limit = 200, transaction_id } = body;
 
-    const isSuper = user.email === SUPER_ADMIN_EMAIL || user.role === 'admin' || user.role === 'owner';
+    const isSuper = user.email === SUPER_ADMIN_EMAIL;
 
     // ── SINGLE TRANSACTION LOOKUP ────────────────────────────────────────────
     if (transaction_id) {
@@ -25,9 +25,9 @@ Deno.serve(async (req) => {
       return Response.json({ transactions: tx ? [tx] : [], transaction: tx });
     }
 
-    console.log('[getTeamTransactions] user:', user.email, 'role:', user.role, 'id:', user.id);
+    console.log('[getTeamTransactions] user:', user.email, 'id:', user.id);
 
-    // ── SUPER ADMIN: sees everything ─────────────────────────────────────────
+    // ── SUPER ADMIN: sees all transactions ───────────────────────────────────
     if (isSuper) {
       const transactions = status
         ? await base44.asServiceRole.entities.Transaction.filter({ status }, sort, limit)
@@ -36,7 +36,7 @@ Deno.serve(async (req) => {
       return Response.json({ transactions });
     }
 
-    // ── REGULAR USER: explicitly filter by created_by = user.id ─────────────
+    // ── REGULAR USER: only their own transactions ────────────────────────────
     const filter = status
       ? { created_by: user.id, status }
       : { created_by: user.id };
