@@ -123,7 +123,7 @@ export default function ContractIntakeModal({ open, onClose }) {
 
   const goToTransaction = () => {
     handleClose();
-    navigate(createPageUrl("TransactionDetail") + `?id=${txId}`);
+    navigate(`/transactions/${txId}`);
   };
 
   return (

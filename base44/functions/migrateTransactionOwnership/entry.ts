@@ -34,11 +34,15 @@ Deno.serve(async (req) => {
     const needsMigration = allTx.filter(tx => tx.created_by && tx.created_by.includes('@'));
     console.log(`[migrate] Transactions needing migration: ${needsMigration.length}`);
 
+    // Admin/owner user to use as fallback for service-role-created transactions
+    const FALLBACK_OWNER_ID = '69a9cd0677a8832ab0cc59bd'; // nhcazateam@gmail.com
+
     const results = { migrated: [], skipped: [], notFound: [] };
 
     for (const tx of needsMigration) {
       const email = tx.created_by.toLowerCase();
-      const userId = emailToId[email];
+      // Real user match first, otherwise fall back to admin for service emails
+      const userId = emailToId[email] || (email.includes('service+') ? FALLBACK_OWNER_ID : null);
 
       if (!userId) {
         console.warn(`[migrate] No user found for email: ${tx.created_by} (tx: ${tx.id})`);

@@ -9,13 +9,14 @@ Deno.serve(async (req) => {
     const body = await req.json();
     const { extracted, file_url, file_name } = body;
 
-    // Resolve brokerage_id
-    let brokerage_id = user.data?.brokerage_id;
+    // Resolve brokerage_id — optional, new users may not have one yet
+    let brokerage_id = user.data?.brokerage_id || null;
     if (!brokerage_id) {
-      const brokerages = await base44.asServiceRole.entities.Brokerage.list();
-      brokerage_id = brokerages[0]?.id;
+      try {
+        const brokerages = await base44.asServiceRole.entities.Brokerage.list();
+        brokerage_id = brokerages[0]?.id || null;
+      } catch (_) {}
     }
-    if (!brokerage_id) return Response.json({ error: 'No brokerage found' }, { status: 400 });
 
     // --- 1. Build buyer/seller arrays ---
     const buyerList = (extracted.buyer_names || "")
