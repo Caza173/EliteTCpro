@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input";
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
-import { Search, ChevronLeft, ChevronRight, Star, LayoutGrid, List, Columns } from "lucide-react";
+import { Search, ChevronLeft, ChevronRight, Star, LayoutGrid, List, Columns, Trash2, CheckSquare, Square, X } from "lucide-react";
 import StatusBoardView from "../components/transactions/StatusBoardView";
 import { Skeleton } from "@/components/ui/skeleton";
 import TransactionTable from "../components/transactions/TransactionTable";
@@ -34,6 +34,9 @@ export default function Transactions() {
   const [showIntake, setShowIntake] = useState(false);
   const [dealTab, setDealTab] = useState("all"); // "all" | "pending" | "my"
   const [viewMode, setViewMode] = useState(() => localStorage.getItem("tx_view") || "table"); // "table" | "cards" | "board"
+  const [selectMode, setSelectMode] = useState(false);
+  const [selectedIds, setSelectedIds] = useState(new Set());
+  const [deleting, setDeleting] = useState(false);
   // Role-based deal access — filters to only deals the user may see
   const { transactions, pendingDeals, myDeals, isLoading, currentUser, isSuperAdmin, isTC } = useDealAccess();
 
@@ -65,6 +68,38 @@ export default function Transactions() {
 
   useEffect(() => { setPage(1); }, [search, statusFilter, phaseFilter, monthFilter, transactions, dealTab]);
 
+  const toggleSelect = (id) => {
+    setSelectedIds(prev => {
+      const next = new Set(prev);
+      next.has(id) ? next.delete(id) : next.add(id);
+      return next;
+    });
+  };
+
+  const toggleSelectAll = () => {
+    if (selectedIds.size === filtered.length) {
+      setSelectedIds(new Set());
+    } else {
+      setSelectedIds(new Set(filtered.map(tx => tx.id)));
+    }
+  };
+
+  const handleDeleteSelected = async () => {
+    if (!selectedIds.size) return;
+    if (!window.confirm(`Delete ${selectedIds.size} transaction(s)? This cannot be undone.`)) return;
+    setDeleting(true);
+    await Promise.allSettled(
+      Array.from(selectedIds).map(id =>
+        base44.functions.invoke("deleteTransaction", { transaction_id: id })
+      )
+    );
+    setDeleting(false);
+    setSelectedIds(new Set());
+    setSelectMode(false);
+    // Refresh by reloading the page data via the existing query
+    window.location.reload();
+  };
+
   // Build month options from available transactions
   const monthOptions = useMemo(() => {
     const seen = new Set();
@@ -93,6 +128,29 @@ export default function Transactions() {
             <p className="text-sm mt-0.5" style={{ color: "var(--text-muted)" }}>
               {filtered.length} of {baseList.length} transactions
             </p>
+          </div>
+          <div className="flex items-center gap-2">
+            {selectMode ? (
+              <>
+                <Button variant="outline" size="sm" onClick={toggleSelectAll}>
+                  {selectedIds.size === filtered.length ? <CheckSquare className="w-4 h-4 mr-1.5" /> : <Square className="w-4 h-4 mr-1.5" />}
+                  {selectedIds.size === filtered.length ? "Deselect All" : "Select All"}
+                </Button>
+                {selectedIds.size > 0 && (
+                  <Button size="sm" variant="destructive" onClick={handleDeleteSelected} disabled={deleting}>
+                    <Trash2 className="w-4 h-4 mr-1.5" />
+                    {deleting ? "Deleting..." : `Delete ${selectedIds.size}`}
+                  </Button>
+                )}
+                <Button variant="ghost" size="sm" onClick={() => { setSelectMode(false); setSelectedIds(new Set()); }}>
+                  <X className="w-4 h-4 mr-1" /> Cancel
+                </Button>
+              </>
+            ) : (
+              <Button variant="outline" size="sm" onClick={() => setSelectMode(true)}>
+                <CheckSquare className="w-4 h-4 mr-1.5" /> Select
+              </Button>
+            )}
           </div>
         </div>
 
@@ -231,11 +289,45 @@ export default function Transactions() {
             ) : viewMode === "board" ? (
               <StatusBoardView transactions={filtered} />
             ) : viewMode === "cards" ? (
-              <TransactionCardGrid transactions={paginated} />
+              <div className="space-y-2">
+                {selectMode && (
+                  <div className="grid gap-2">
+                    {paginated.map(tx => (
+                      <div key={tx.id} className="flex items-center gap-3 px-3 py-2 rounded-lg border cursor-pointer"
+                        style={{ background: selectedIds.has(tx.id) ? "var(--accent-subtle)" : "var(--card-bg)", borderColor: selectedIds.has(tx.id) ? "var(--accent)" : "var(--card-border)" }}
+                        onClick={() => toggleSelect(tx.id)}>
+                        {selectedIds.has(tx.id)
+                          ? <CheckSquare className="w-5 h-5 flex-shrink-0" style={{ color: "var(--accent)" }} />
+                          : <Square className="w-5 h-5 flex-shrink-0" style={{ color: "var(--text-muted)" }} />}
+                        <span className="text-sm font-medium truncate" style={{ color: "var(--text-primary)" }}>{tx.address}</span>
+                        <span className="text-xs ml-auto" style={{ color: "var(--text-muted)" }}>{tx.status}</span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+                {!selectMode && <TransactionCardGrid transactions={paginated} />}
+              </div>
             ) : (
               <Card className="shadow-sm border-gray-100">
                 <CardContent className="px-0 pb-0 pt-0">
-                  <TransactionTable transactions={paginated} />
+                  {selectMode ? (
+                    <div className="divide-y" style={{ borderColor: "var(--border)" }}>
+                      {paginated.map(tx => (
+                        <div key={tx.id} className="flex items-center gap-3 px-4 py-3 cursor-pointer hover:opacity-80 transition-opacity"
+                          style={{ background: selectedIds.has(tx.id) ? "var(--accent-subtle)" : "transparent" }}
+                          onClick={() => toggleSelect(tx.id)}>
+                          {selectedIds.has(tx.id)
+                            ? <CheckSquare className="w-5 h-5 flex-shrink-0" style={{ color: "var(--accent)" }} />
+                            : <Square className="w-5 h-5 flex-shrink-0" style={{ color: "var(--text-muted)" }} />}
+                          <span className="text-sm font-medium flex-1 truncate" style={{ color: "var(--text-primary)" }}>{tx.address}</span>
+                          <span className="text-xs px-2 py-0.5 rounded-full" style={{ background: "var(--bg-tertiary)", color: "var(--text-muted)" }}>{tx.status}</span>
+                          <span className="text-xs" style={{ color: "var(--text-muted)" }}>{tx.closing_date || tx.contract_date || ""}</span>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <TransactionTable transactions={paginated} />
+                  )}
                 </CardContent>
               </Card>
             )}
