@@ -1,7 +1,5 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.25';
 
-const OWNER_ID = '69a9cd0677a8832ab0cc59bd';
-
 Deno.serve(async (req) => {
   try {
     const base44 = createClientFromRequest(req);
@@ -10,22 +8,43 @@ Deno.serve(async (req) => {
       return Response.json({ error: 'Forbidden' }, { status: 403 });
     }
 
-    const all = await base44.asServiceRole.entities.Transaction.list('-created_date', 500);
-    let updated = 0;
+    // Load all users and build email → id map
+    const allUsers = await base44.asServiceRole.entities.User.list('-created_date', 500);
+    const emailToId = {};
+    for (const u of allUsers) {
+      if (u.email) emailToId[u.email.toLowerCase()] = u.id;
+    }
+    console.log('[backfill] loaded users:', allUsers.length);
+
+    // Load all transactions
+    const all = await base44.asServiceRole.entities.Transaction.list('-created_date', 1000);
+    console.log('[backfill] total transactions:', all.length);
+
+    let fixed = 0;
+    let skipped = 0;
+    const notFound = [];
 
     for (const tx of all) {
-      const needsUpdate = !tx.created_by || !tx.assigned_tc_id;
-      if (needsUpdate) {
-        await base44.asServiceRole.entities.Transaction.update(tx.id, {
-          created_by: tx.created_by || OWNER_ID,
-          assigned_tc_id: tx.assigned_tc_id || OWNER_ID,
-        });
-        updated++;
+      const cb = tx.created_by || '';
+      // If already a UUID (no @ sign), skip
+      if (cb && !cb.includes('@')) {
+        skipped++;
+        continue;
       }
+      // Map email to user.id
+      const userId = emailToId[cb.toLowerCase()] || null;
+      if (!userId) {
+        notFound.push({ id: tx.id, address: tx.address, created_by: cb });
+        continue;
+      }
+      await base44.asServiceRole.entities.Transaction.update(tx.id, { created_by: userId });
+      fixed++;
+      console.log('[backfill] fixed tx', tx.id, cb, '→', userId);
     }
 
-    return Response.json({ ok: true, total: all.length, updated });
+    return Response.json({ ok: true, total: all.length, fixed, skipped, notFound });
   } catch (error) {
+    console.error('[backfill] error:', error);
     return Response.json({ error: error.message }, { status: 500 });
   }
 });

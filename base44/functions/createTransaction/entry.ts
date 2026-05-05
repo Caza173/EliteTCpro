@@ -25,15 +25,15 @@ Deno.serve(async (req) => {
     // Ensure agent field is always populated — required by schema
     const agent = body.agent || user.full_name || user.email || '';
 
-    // Create via service role but explicitly set created_by = user.id (UUID)
-    // so that getTeamTransactions can reliably filter by user.id
-    const tx = await base44.asServiceRole.entities.Transaction.create({
-      ...body,
+    // Use user-scoped client so Base44 auto-stamps created_by = user.id (system field)
+    // Explicitly strip created_by from body to prevent email override
+    const { created_by: _stripped, ...safeBody } = body;
+    const tx = await base44.entities.Transaction.create({
+      ...safeBody,
       agent,
       brokerage_id: brokerage_id || undefined,
       team_id: team_id || undefined,
-      agent_email: body.agent_email || user.email || undefined,
-      created_by: user.id,
+      agent_email: safeBody.agent_email || user.email || undefined,
     });
 
     console.log('[createTransaction] created tx.id:', tx.id, '| created_by:', tx.created_by, '| agent:', tx.agent);

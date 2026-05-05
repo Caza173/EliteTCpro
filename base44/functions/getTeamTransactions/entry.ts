@@ -12,23 +12,21 @@ Deno.serve(async (req) => {
     try { body = await req.json(); } catch (_) {}
     const { status, sort = '-created_date', limit = 200, transaction_id } = body;
 
-    const filterBase = status ? { status } : {};
+    const isSuper = user.email === SUPER_ADMIN_EMAIL || user.role === 'admin' || user.role === 'owner';
 
-    // ── SINGLE TRANSACTION LOOKUP ─────────────────────────────────────────────
+    // ── SINGLE TRANSACTION LOOKUP ────────────────────────────────────────────
     if (transaction_id) {
-      const results = await Promise.all([
-        base44.asServiceRole.entities.Transaction.filter({ id: transaction_id, created_by: user.id }),
-        base44.asServiceRole.entities.Transaction.filter({ id: transaction_id, created_by: user.email }),
-      ]);
-      const tx = results.flat().find(t => t.id === transaction_id) || null;
+      // Admins use service role; regular users use their own scoped client
+      const client = isSuper ? base44.asServiceRole : base44;
+      const results = await client.entities.Transaction.filter({ id: transaction_id });
+      const tx = results[0] || null;
       console.log('[getTeamTransactions] single lookup', transaction_id, '→', tx ? 'found' : 'not found');
       return Response.json({ transactions: tx ? [tx] : [], transaction: tx });
     }
 
     console.log('[getTeamTransactions] user:', user.email, 'role:', user.role, 'id:', user.id);
 
-    // ── SUPER ADMIN: sees everything ──────────────────────────────────────────
-    const isSuper = user.email === SUPER_ADMIN_EMAIL || user.role === 'admin' || user.role === 'owner';
+    // ── SUPER ADMIN: sees everything ─────────────────────────────────────────
     if (isSuper) {
       const transactions = status
         ? await base44.asServiceRole.entities.Transaction.filter({ status }, sort, limit)
@@ -37,26 +35,13 @@ Deno.serve(async (req) => {
       return Response.json({ transactions });
     }
 
-    // ── REGULAR USER: only their own transactions ─────────────────────────────
-    // created_by may be stamped as user.id (UUID) or user.email depending on how it was created
-    const [byId, byEmail] = await Promise.all([
-      base44.asServiceRole.entities.Transaction.filter({ ...filterBase, created_by: user.id }, sort, limit),
-      base44.asServiceRole.entities.Transaction.filter({ ...filterBase, created_by: user.email }, sort, limit),
-    ]);
+    // ── REGULAR USER: user-scoped client returns only their own records ───────
+    // Base44 auto-stamped created_by = user.id at creation time
+    const transactions = status
+      ? await base44.entities.Transaction.filter({ status }, sort, limit)
+      : await base44.entities.Transaction.list(sort, limit);
 
-    // Deduplicate
-    const seen = new Set();
-    const transactions = [];
-    for (const tx of [...byId, ...byEmail]) {
-      if (!seen.has(tx.id)) {
-        seen.add(tx.id);
-        transactions.push(tx);
-      }
-    }
-    transactions.sort((a, b) => new Date(b.created_date || 0) - new Date(a.created_date || 0));
-
-    console.log('[getTeamTransactions] fetched:', transactions.length, '| byId:', byId.length, '| byEmail:', byEmail.length);
-
+    console.log('[getTeamTransactions] fetched:', transactions.length, 'for user.id:', user.id);
     return Response.json({ transactions });
 
   } catch (error) {
