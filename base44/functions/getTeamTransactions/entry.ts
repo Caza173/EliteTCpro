@@ -16,10 +16,16 @@ Deno.serve(async (req) => {
 
     // ── SINGLE TRANSACTION LOOKUP ────────────────────────────────────────────
     if (transaction_id) {
-      const filter = isSuper
-        ? { id: transaction_id }
-        : { id: transaction_id, created_by: user.id };
-      const results = await base44.asServiceRole.entities.Transaction.filter(filter);
+      if (isSuper) {
+        const results = await base44.asServiceRole.entities.Transaction.filter({ id: transaction_id });
+        const tx = results[0] || null;
+        return Response.json({ transactions: tx ? [tx] : [], transaction: tx });
+      }
+      // Try by UUID first, then by email (legacy records)
+      let results = await base44.asServiceRole.entities.Transaction.filter({ id: transaction_id, created_by: user.id });
+      if (!results.length) {
+        results = await base44.asServiceRole.entities.Transaction.filter({ id: transaction_id, created_by: user.email });
+      }
       const tx = results[0] || null;
       return Response.json({ transactions: tx ? [tx] : [], transaction: tx });
     }
@@ -32,13 +38,28 @@ Deno.serve(async (req) => {
       return Response.json({ transactions });
     }
 
-    // ── REGULAR USER: only their own transactions (created_by = user.id) ────
-    const filter = status
-      ? { created_by: user.id, status }
-      : { created_by: user.id };
-    const transactions = await base44.asServiceRole.entities.Transaction.filter(filter, sort, limit);
+    // ── REGULAR USER: fetch by UUID (new) + by email (legacy) and merge ──────
+    const baseFilter = status ? { status } : {};
 
-    console.log('[getTeamTransactions] fetched:', transactions.length, 'for user.id:', user.id);
+    const [byId, byEmail] = await Promise.all([
+      base44.asServiceRole.entities.Transaction.filter({ ...baseFilter, created_by: user.id }, sort, limit),
+      base44.asServiceRole.entities.Transaction.filter({ ...baseFilter, created_by: user.email }, sort, limit),
+    ]);
+
+    // Deduplicate by id
+    const seen = new Set();
+    const transactions = [];
+    for (const tx of [...byId, ...byEmail]) {
+      if (!seen.has(tx.id)) {
+        seen.add(tx.id);
+        transactions.push(tx);
+      }
+    }
+
+    // Sort merged results
+    transactions.sort((a, b) => new Date(b.created_date) - new Date(a.created_date));
+
+    console.log('[getTeamTransactions] fetched:', transactions.length, '(byId:', byId.length, 'byEmail:', byEmail.length, ') for user.id:', user.id);
     return Response.json({ transactions });
 
   } catch (error) {

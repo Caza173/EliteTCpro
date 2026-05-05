@@ -13,9 +13,12 @@ Deno.serve(async (req) => {
 
     const isSuper = user.email === SUPER_ADMIN_EMAIL;
 
-    // Verify ownership — every user is fully isolated except super admin
+    // Verify ownership — check by UUID (new) or email (legacy)
     if (!isSuper) {
-      const existing = await base44.asServiceRole.entities.Transaction.filter({ id: transaction_id, created_by: user.id });
+      let existing = await base44.asServiceRole.entities.Transaction.filter({ id: transaction_id, created_by: user.id });
+      if (!existing.length) {
+        existing = await base44.asServiceRole.entities.Transaction.filter({ id: transaction_id, created_by: user.email });
+      }
       if (!existing.length) {
         console.warn('[deleteTransaction] ownership check failed for user:', user.id, 'tx:', transaction_id);
         return Response.json({ error: 'Forbidden' }, { status: 403 });
