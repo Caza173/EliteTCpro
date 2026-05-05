@@ -35,11 +35,11 @@ Deno.serve(async (req) => {
       return Response.json({ transactions });
     }
 
-    // ── REGULAR USER: user-scoped client returns only their own records ───────
-    // Base44 auto-stamped created_by = user.id at creation time
-    const transactions = status
-      ? await base44.entities.Transaction.filter({ status }, sort, limit)
-      : await base44.entities.Transaction.list(sort, limit);
+    // ── REGULAR USER: explicitly filter by created_by = user.id ─────────────
+    const filter = status
+      ? { created_by: user.id, status }
+      : { created_by: user.id };
+    const transactions = await base44.asServiceRole.entities.Transaction.filter(filter, sort, limit);
 
     console.log('[getTeamTransactions] fetched:', transactions.length, 'for user.id:', user.id);
     return Response.json({ transactions });
