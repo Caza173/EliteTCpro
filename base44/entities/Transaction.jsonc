@@ -609,27 +609,10 @@
     "read": {
       "$or": [
         {
-          "user_condition": {
-            "role": {
-              "$in": [
-                "owner",
-                "admin"
-              ]
-            }
-          }
-        },
-        {
-          "data.created_by": "{{user.id}}"
-        },
-        {
           "data.assigned_tc_id": "{{user.id}}"
         },
         {
-          "data.team_id": {
-            "$in": [
-              "{{user.data.member_team_ids}}"
-            ]
-          }
+          "data.assigned_tc_id": "{{user.id}}"
         },
         {
           "data.agent_email": "{{user.email}}"
@@ -639,46 +622,19 @@
     "update": {
       "$or": [
         {
-          "user_condition": {
-            "role": {
-              "$in": [
-                "owner",
-                "admin"
-              ]
-            }
-          }
-        },
-        {
           "data.created_by": "{{user.id}}"
         },
         {
           "data.assigned_tc_id": "{{user.id}}"
         },
         {
-          "data.team_id": {
-            "$in": [
-              "{{user.data.member_team_ids}}"
-            ]
-          }
+          "data.assigned_tc_id": "{{user.id}}"
         }
       ]
     },
     "delete": {
-      "$or": [
-        {
-          "user_condition": {
-            "role": {
-              "$in": [
-                "owner",
-                "admin"
-              ]
-            }
-          }
-        },
-        {
-          "data.created_by": "{{user.id}}"
-        }
-      ]
-    }
+      "created_by": "{{user.id}}"
+    },
+    "create": {}
   }
 }
