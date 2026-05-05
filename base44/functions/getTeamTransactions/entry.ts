@@ -21,22 +21,18 @@ Deno.serve(async (req) => {
         : { id: transaction_id, created_by: user.id };
       const results = await base44.asServiceRole.entities.Transaction.filter(filter);
       const tx = results[0] || null;
-      console.log('[getTeamTransactions] single lookup', transaction_id, '→', tx ? 'found' : 'not found');
       return Response.json({ transactions: tx ? [tx] : [], transaction: tx });
     }
-
-    console.log('[getTeamTransactions] user:', user.email, 'id:', user.id);
 
     // ── SUPER ADMIN: sees all transactions ───────────────────────────────────
     if (isSuper) {
       const transactions = status
         ? await base44.asServiceRole.entities.Transaction.filter({ status }, sort, limit)
         : await base44.asServiceRole.entities.Transaction.list(sort, limit);
-      console.log('[getTeamTransactions] super admin fetched:', transactions.length);
       return Response.json({ transactions });
     }
 
-    // ── REGULAR USER: only their own transactions ────────────────────────────
+    // ── REGULAR USER: only their own transactions (created_by = user.id) ────
     const filter = status
       ? { created_by: user.id, status }
       : { created_by: user.id };

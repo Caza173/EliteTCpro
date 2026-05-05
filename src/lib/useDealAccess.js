@@ -1,12 +1,8 @@
 /**
- * useDealAccess — Ownership-based deal access control.
+ * useDealAccess — Per-user isolated deal access.
  *
- * A user can see a deal if:
- *   - deal.created_by === currentUser.id
- *   - OR deal.assigned_tc_id === currentUser.id
- *   - OR user is super_admin (owner/admin/master email)
- *
- * All filtering is enforced server-side via getTeamTransactions.
+ * Each user only sees transactions where created_by === user.id.
+ * Super admin (nhcazateam@gmail.com) sees all transactions.
  */
 import { useQuery } from "@tanstack/react-query";
 import { base44 } from "@/api/base44Client";
@@ -41,18 +37,12 @@ export function useDealAccess() {
   const isLoading = userLoading || txLoading;
   const accessibleDealIds = new Set(allTransactions.map(t => t.id));
 
-  // Pending = unassigned deals the user created (they're waiting for a TC)
   const pendingDeals = allTransactions.filter(t => t.status === "pending" && !t.assigned_tc_id);
-  const myDeals = allTransactions.filter(t =>
-    t.assigned_tc_id === currentUser?.id || t.created_by === currentUser?.id
-  );
+  const myDeals = allTransactions; // All returned deals are already the user's own
 
   function canAccess(dealId) {
     if (!currentUser || !dealId) return false;
-    // If transactions failed to load (network error), fail open — don't deny access
-    if (txError) return true;
-    // If still loading, fail open
-    if (isLoading) return true;
+    if (txError || isLoading) return true; // fail open on error/loading
     return accessibleDealIds.has(dealId);
   }
 
@@ -66,7 +56,6 @@ export function useDealAccess() {
     canAccess,
     currentUser,
     isSuperAdmin: isSuperAdmin(currentUser),
-    // Keep isTC as a helper but base it on ownership/role
     isTC: currentUser?.role === "tc" || currentUser?.role === "tc_lead",
   };
 }
