@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { base44 } from "@/api/base44Client";
+import { emailApi } from "@/api/email";
 import { Button } from "@/components/ui/button";
 import { X, Send, Loader2, Plus, Trash2, Paperclip, FileText, Check, Eye } from "lucide-react";
 import { toast } from "sonner";
@@ -149,18 +149,15 @@ export default function EmailComposerModal({
 
     setSending(true);
     try {
-      const res = await base44.functions.invoke("sendGmailEmail", {
+      const res = await emailApi.send({
         to: validTo,
         cc: ccList,
         subject,
         ...(htmlBody ? { htmlBody } : { body }),
         transaction_id: transaction?.id,
-        brokerage_id: transaction?.brokerage_id,
         attachment_document_ids: selectedDocIds,
       });
-
-      if (res.data?.error) throw new Error(res.data.error);
-      toast.success(`Email sent to ${res.data.sent} recipient(s)`);
+      toast.success(`Email sent to ${res.sent} recipient(s)`);
       onClose();
     } catch (err) {
       toast.error(err.message || "Failed to send email");

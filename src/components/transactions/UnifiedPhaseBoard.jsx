@@ -5,6 +5,7 @@ import {
   Plus, Trash2, Pencil, BookOpen, ChevronDown, ChevronUp, Check,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import { tasksApi } from "@/api/tasks";
 import { base44 } from "@/api/base44Client";
 import { useQueryClient } from "@tanstack/react-query";
 import { getPhasesForType, isTaskIncompatible, SUB_PHASE_MAP } from "@/lib/taskLibrary";
@@ -213,7 +214,7 @@ function PhaseCard({
     const title = newTitle.trim();
     if (!title) { setAddingTask(false); return; }
     const maxOrder = phaseTasks.length > 0 ? Math.max(...phaseTasks.map(t => t.order_index ?? 0)) + 1 : 0;
-    await base44.entities.TransactionTask.create({
+    await tasksApi.create({
       transaction_id: transactionId,
       brokerage_id: brokerageId,
       phase: phase.phaseNum,
@@ -372,9 +373,9 @@ function PhaseCard({
           onApply={async (items, replaceExisting = false) => {
             if (replaceExisting) {
               // Template apply: delete existing phase tasks first, then create template tasks
-              await Promise.all(phaseTasks.map(t => base44.entities.TransactionTask.delete(t.id)));
+              await Promise.all(phaseTasks.map((task) => tasksApi.delete(task.id)));
               await Promise.all(items.map((item, i) =>
-                base44.entities.TransactionTask.create({
+                tasksApi.create({
                   transaction_id: transactionId,
                   brokerage_id: brokerageId,
                   phase: phase.phaseNum,
@@ -388,7 +389,7 @@ function PhaseCard({
             } else {
               const maxOrder = phaseTasks.length > 0 ? Math.max(...phaseTasks.map(t => t.order_index ?? 0)) + 1 : 0;
               await Promise.all(items.map((item, i) =>
-                base44.entities.TransactionTask.create({
+                tasksApi.create({
                   transaction_id: transactionId,
                   brokerage_id: brokerageId,
                   phase: phase.phaseNum,
@@ -527,20 +528,20 @@ export default function UnifiedPhaseBoard({
     await Promise.all(updates.map(u => {
       const payload = { order_index: u.order_index };
       if (u.id === dragged.id && dstPhase !== srcPhase) payload.phase = u.phase;
-      return base44.entities.TransactionTask.update(u.id, payload);
+      return tasksApi.update(u.id, payload);
     }));
     setLocalTasks(null);
     onTasksChanged?.();
   }, [localTasks, tasks, onTasksChanged]);
 
   const handleSaveEdit = async (taskId, newTitle) => {
-    await base44.entities.TransactionTask.update(taskId, { title: newTitle });
+    await tasksApi.update(taskId, { title: newTitle });
     onTasksChanged?.();
   };
 
   const handleDelete = async (taskId) => {
     const task = activeTasks.find(t => t.id === taskId);
-    await base44.entities.TransactionTask.delete(taskId);
+    await tasksApi.delete(taskId);
     if (task?.is_custom && brokerageId) {
       const libraryItems = await base44.entities.TaskLibraryItem.filter({ brokerage_id: brokerageId, title: task.title });
       await Promise.all(libraryItems.map(i => base44.entities.TaskLibraryItem.delete(i.id)));
@@ -554,7 +555,7 @@ export default function UnifiedPhaseBoard({
     const targetTasks = activeTasks.filter(t => t.phase === targetPhaseNum);
     const newOrder = targetTasks.length > 0 ? Math.max(...targetTasks.map(t => t.order_index ?? 0)) + 1 : 0;
     setLocalTasks(activeTasks.map(t => t.id === taskId ? { ...t, phase: targetPhaseNum, order_index: newOrder } : t));
-    await base44.entities.TransactionTask.update(taskId, { phase: targetPhaseNum, order_index: newOrder });
+    await tasksApi.update(taskId, { phase: targetPhaseNum, order_index: newOrder });
     setLocalTasks(null);
     onTasksChanged?.();
   };

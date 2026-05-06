@@ -57,7 +57,7 @@ router.get('/', async (request, response) => {
     )
     .orderBy(desc(signatureRequests.createdAt));
 
-  return response.json({ signature_requests: rows.map(serializeSignatureRequest) });
+  return response.json({ signature_requests: await Promise.all(rows.map(serializeSignatureRequest)) });
 });
 
 router.post('/placement-preview', async (request, response) => {
@@ -113,11 +113,11 @@ router.post('/', async (request, response) => {
     })
     .returning();
 
-  return response.status(201).json({ signature_request: serializeSignatureRequest(record) });
+  return response.status(201).json({ signature_request: await serializeSignatureRequest(record) });
 });
 
 router.get('/:id', requireSignatureRequestOwnership, async (request, response) => {
-  return response.json({ signature_request: serializeSignatureRequest(request.signatureRequestRecord!) });
+  return response.json({ signature_request: await serializeSignatureRequest(request.signatureRequestRecord!) });
 });
 
 router.get('/:id/audit-trail', requireSignatureRequestOwnership, async (request, response) => {
@@ -150,7 +150,7 @@ router.post('/:id/refresh', requireSignatureRequestOwnership, async (request, re
     .where(and(eq(signatureRequests.id, current.id), eq(signatureRequests.ownerId, request.user.id)))
     .returning();
 
-  return response.json({ signature_request: serializeSignatureRequest(record) });
+  return response.json({ signature_request: await serializeSignatureRequest(record) });
 });
 
 router.post('/:id/resend', requireSignatureRequestOwnership, async (request, response) => {
@@ -177,7 +177,7 @@ router.post('/:id/resend', requireSignatureRequestOwnership, async (request, res
     .where(and(eq(signatureRequests.id, current.id), eq(signatureRequests.ownerId, request.user.id)))
     .returning();
 
-  return response.json({ signature_request: serializeSignatureRequest(record) });
+  return response.json({ signature_request: await serializeSignatureRequest(record) });
 });
 
 router.post('/:id/cancel', requireSignatureRequestOwnership, async (request, response) => {
@@ -204,7 +204,7 @@ router.post('/:id/cancel', requireSignatureRequestOwnership, async (request, res
     .where(and(eq(signatureRequests.id, current.id), eq(signatureRequests.ownerId, request.user.id)))
     .returning();
 
-  return response.json({ signature_request: serializeSignatureRequest(record) });
+  return response.json({ signature_request: await serializeSignatureRequest(record) });
 });
 
 router.post('/:id/mark-completed', requireSignatureRequestOwnership, async (request, response) => {
@@ -234,7 +234,7 @@ router.post('/:id/mark-completed', requireSignatureRequestOwnership, async (requ
     .where(and(eq(signatureRequests.id, current.id), eq(signatureRequests.ownerId, request.user.id)))
     .returning();
 
-  return response.json({ signature_request: serializeSignatureRequest(record) });
+  return response.json({ signature_request: await serializeSignatureRequest(record) });
 });
 
 router.post('/mark-completed', async (request, response) => {
@@ -274,7 +274,7 @@ router.post('/mark-completed', async (request, response) => {
     })
     .returning();
 
-  return response.status(201).json({ signature_request: serializeSignatureRequest(record) });
+  return response.status(201).json({ signature_request: await serializeSignatureRequest(record) });
 });
 
 export default router;

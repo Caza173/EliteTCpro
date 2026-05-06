@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { base44 } from "@/api/base44Client";
+import { authApi } from "@/api/auth";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -60,7 +61,7 @@ export default function BrokerageSetup() {
       });
 
       // 5. Update current user with brokerage_id + owner role
-      await base44.auth.updateMe({ brokerage_id: brokerage.id, role: "owner", status: "active" });
+      await authApi.updateMe({ brokerage_id: brokerage.id, role: "owner", status: "active" });
 
       return brokerage;
     },

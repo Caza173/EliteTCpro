@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { base44 } from "@/api/base44Client";
+import { authApi } from "@/api/auth";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { X, AlertTriangle, Loader2, Trash2 } from "lucide-react";
@@ -17,8 +18,8 @@ export default function DeleteAccountModal({ onClose, onExportFirst }) {
     setError(null);
     try {
       await base44.functions.invoke("deleteUserAccount", {});
-      // Force logout and redirect
-      base44.auth.logout("/");
+      await authApi.logout();
+      window.location.href = "/";
     } catch (err) {
       setError(err?.response?.data?.error || err.message || "Deletion failed. Please try again.");
       setDeleting(false);

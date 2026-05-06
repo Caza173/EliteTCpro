@@ -1,6 +1,7 @@
-import React, { useState, useEffect, useRef } from "react";
-import { base44 } from "@/api/base44Client";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import React, { useState, useEffect } from "react";
+import { complianceReportsApi } from "@/api/complianceReports";
+import { tasksApi } from "@/api/tasks";
+import { useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -15,6 +16,7 @@ import { format } from "date-fns";
 import { toast } from "sonner";
 import EmailGeneratorModal from "./EmailGeneratorModal";
 import DocumentViewerModal from "../transactions/DocumentViewerModal";
+import { useTransactionComplianceReports, useTransactionDocuments } from "@/hooks/useTransactionResources";
 
 const SEVERITY_CONFIG = {
   critical: { icon: ShieldX,      bg: "bg-red-50 border-red-200",       iconCls: "text-red-500",    badgeCls: "bg-red-100 text-red-700",       titleCls: "text-red-900",    label: "Critical" },
@@ -443,7 +445,6 @@ export default function ComplianceScanPanel({ transaction, currentUser }) {
   const [viewingDoc, setViewingDoc] = useState(null);
   const [jobStatus, setJobStatus] = useState(null);
   const [scanning, setScanning] = useState(false);
-  const pollRef = useRef(null);
 
   const storageKey = `dismissed_issues_${transaction.id}`;
   const [dismissedIds, setDismissedIds] = useState(() => {
@@ -461,51 +462,22 @@ export default function ComplianceScanPanel({ transaction, currentUser }) {
     });
   };
 
-  const { data: reports = [], isLoading } = useQuery({
-    queryKey: ["compliance-reports", transaction.id],
-    queryFn: () => base44.entities.ComplianceReport.filter({ transaction_id: transaction.id }, "-created_date"),
-    enabled: !!transaction.id,
-  });
-
-  const { data: documents = [] } = useQuery({
-    queryKey: ["tx-documents", transaction.id],
-    queryFn: () => base44.entities.Document.filter({ transaction_id: transaction.id }, "-created_date"),
-    enabled: !!transaction.id,
-  });
-
-  const updateTxMutation = useMutation({
-    mutationFn: (data) => base44.functions.invoke("updateTransaction", { transaction_id: transaction.id, data }),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["transactions"] }),
-  });
+  const { data: reports = [], isLoading } = useTransactionComplianceReports(transaction.id, { enabled: !!transaction.id });
+  const { data: documents = [] } = useTransactionDocuments(transaction.id, { enabled: !!transaction.id });
 
   useEffect(() => {
     checkJobStatus(true);
-    return () => stopPolling();
   }, [transaction.id]);
-
-  useEffect(() => { return () => stopPolling(); }, []);
-
-  const stopPolling = () => {
-    if (pollRef.current) { clearInterval(pollRef.current); pollRef.current = null; }
-  };
-
-  const startPolling = () => {
-    stopPolling();
-    pollRef.current = setInterval(() => checkJobStatus(false), 4000);
-  };
 
   const checkJobStatus = async (silent = false) => {
     try {
-      const res = await base44.functions.invoke("scanDocuments", { transaction_id: transaction.id, action: "status" });
-      const s = res.data;
-      if (!s || s.status === "none") { setJobStatus(null); setScanning(false); stopPolling(); return; }
+      const s = await complianceReportsApi.getScanStatus(transaction.id);
+      if (!s || s.status === "none") { setJobStatus(null); setScanning(false); return; }
       setJobStatus(s);
       if (s.status === "in_progress" || s.status === "pending") {
         setScanning(true);
-        if (!pollRef.current) startPolling();
       } else if (s.status === "complete" || s.status === "error") {
         setScanning(false);
-        stopPolling();
         if (!silent) {
           queryClient.invalidateQueries({ queryKey: ["compliance-reports", transaction.id] });
           if (s.status === "complete") {
@@ -528,31 +500,42 @@ export default function ComplianceScanPanel({ transaction, currentUser }) {
     if ("Notification" in window && Notification.permission === "default") Notification.requestPermission();
     setScanning(true);
     setJobStatus({ status: "in_progress", processed_docs: 0, total_docs: documents.length });
-    base44.functions.invoke("scanDocuments", { transaction_id: transaction.id, action: "start" })
-      .then(res => { if (res.data?.error) { toast.error(res.data.error); setScanning(false); stopPolling(); } })
-      .catch(() => {});
-    startPolling();
+    try {
+      const res = await complianceReportsApi.scan({ transaction_id: transaction.id });
+      setJobStatus(res);
+      setScanning(false);
+      queryClient.invalidateQueries({ queryKey: ["compliance-reports", transaction.id] });
+      toast.success(`Scan complete — ${res.processed_docs} document${res.processed_docs !== 1 ? "s" : ""} processed`);
+    } catch (error) {
+      toast.error(error?.message || "Scan failed");
+      setScanning(false);
+    }
   };
 
-  const handleRescanDoc = async () => {
+  const handleRescanDoc = async (report) => {
     setScanning(true);
     setJobStatus({ status: "in_progress", processed_docs: 0, total_docs: 1 });
-    base44.functions.invoke("scanDocuments", { transaction_id: transaction.id, action: "start" }).catch(() => {});
-    startPolling();
+    try {
+      const res = await complianceReportsApi.scan({ transaction_id: transaction.id, document_id: report.document_id });
+      setJobStatus(res);
+      setScanning(false);
+      queryClient.invalidateQueries({ queryKey: ["compliance-reports", transaction.id] });
+    } catch (error) {
+      toast.error(error?.message || "Rescan failed");
+      setScanning(false);
+    }
   };
 
   const handleAddTask = async (issue) => {
-    const newTask = {
-      id: `compliance_${Date.now()}_${Math.random().toString(36).substr(2, 5)}`,
-      name: issue.action_required || issue.suggested_task || issue.message,
-      completed: false,
+    await tasksApi.create({
+      transaction_id: transaction.id,
+      title: issue.action_required || issue.suggested_task || issue.message || issue.description,
       phase: transaction.phase || 1,
-      required: issue.severity === "critical" || issue.severity === "blocker",
-      due_date: null,
-      assigned_to: "tc",
-    };
-    const updatedTasks = [...(transaction.tasks || []), newTask];
-    updateTxMutation.mutate({ tasks: updatedTasks, last_activity_at: new Date().toISOString() });
+      is_completed: false,
+      priority: issue.severity,
+      assigned_to: currentUser?.email || transaction.agent_email || "tc",
+    });
+    toast.success("Task created from compliance issue");
   };
 
   const isDismissed = (issue) => dismissedIds.has(issue.id || issue.description || JSON.stringify(issue));

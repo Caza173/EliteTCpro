@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from "react";
-import { base44 } from "@/api/base44Client";
+import { authApi } from "@/api/auth";
+import { uploadsApi } from "@/api/uploads";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useCurrentUser as useCurrentUserCtx } from "@/lib/CurrentUserContext.jsx";
 import { Button } from "@/components/ui/button";
@@ -19,8 +20,8 @@ function AvatarUpload({ currentUrl, onUploaded, label, icon: Icon, round }) {
     if (!file) return;
     setUploading(true);
     try {
-      const { file_url } = await base44.integrations.Core.UploadFile({ file });
-      onUploaded(file_url);
+      const upload = await uploadsApi.uploadImage(file, { namespace: round ? "profiles/photos" : "profiles/company-logos" });
+      onUploaded(upload.signed_url);
     } catch {
       toast.error("Upload failed");
     }
@@ -127,7 +128,7 @@ export default function ProfileTab({ currentUser }) {
   const set = (key, val) => setForm(f => ({ ...f, [key]: val }));
 
   const mutation = useMutation({
-    mutationFn: (data) => base44.auth.updateMe(data),
+    mutationFn: (data) => authApi.updateMe(data),
     onSuccess: () => {
       refreshUser();
       queryClient.invalidateQueries({ queryKey: ["currentUser"] });

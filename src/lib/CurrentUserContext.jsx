@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useEffect, useCallback, useRef } from "react";
-import { base44 } from "@/api/base44Client";
+import { authApi } from "@/api/auth";
 
 const CurrentUserContext = createContext(null);
 
@@ -9,11 +9,10 @@ export function CurrentUserProvider({ children }) {
   const hasFetched = useRef(false);
 
   useEffect(() => {
-    // Only fetch once on mount — never re-fetch due to dependency changes
     if (hasFetched.current) return;
     hasFetched.current = true;
 
-    base44.auth.me()
+    authApi.me()
       .then(authUser => {
         setCurrentUser(authUser || null);
       })
@@ -28,10 +27,11 @@ export function CurrentUserProvider({ children }) {
 
   const refreshUser = useCallback(async () => {
     try {
-      const authUser = await base44.auth.me();
+      const authUser = await authApi.me();
       setCurrentUser(authUser || null);
     } catch (err) {
       console.error("refreshUser error:", err);
+      setCurrentUser(null);
     }
   }, []);
 

@@ -1,12 +1,13 @@
 import React, { useState } from "react";
-import { base44 } from "@/api/base44Client";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { complianceReportsApi } from "@/api/complianceReports";
+import { useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
   ShieldCheck, ShieldX, AlertTriangle, Loader2, RefreshCw,
-  Info, CheckCircle2, ChevronRight, Scan,
+  Info, ChevronRight,
 } from "lucide-react";
+import { useTransactionComplianceReports } from "@/hooks/useTransactionResources";
 
 const SEV_CONFIG = {
   blocker: { icon: ShieldX, cls: "text-red-600", bg: "bg-red-50 border-red-100", badge: "bg-red-100 text-red-700" },
@@ -17,55 +18,26 @@ const SEV_CONFIG = {
 export default function ComplianceMonitorWidget({ transaction, onNavigateToCompliance }) {
   const queryClient = useQueryClient();
   const [scanning, setScanning] = useState(false);
+  const [resolvedIds, setResolvedIds] = useState(() => new Set());
 
-  const { data: issues = [], isLoading } = useQuery({
-    queryKey: ["compliance-issues", transaction.id],
-    queryFn: () => base44.entities.ComplianceIssue.filter(
-      { transaction_id: transaction.id, status: "open" },
-      "-created_date"
-    ),
-    enabled: !!transaction.id,
-  });
+  const { data: reports = [], isLoading } = useTransactionComplianceReports(transaction.id, { enabled: !!transaction.id });
 
-  const resolveIssueMutation = useMutation({
-    mutationFn: (id) => base44.entities.ComplianceIssue.update(id, { status: "resolved" }),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["compliance-issues", transaction.id] }),
-  });
+  const issues = reports
+    .flatMap((report) => (report.all_issues || []).map((issue) => ({ ...issue, report_id: report.id })))
+    .filter((issue) => !resolvedIds.has(issue.id));
 
   const blockers = issues.filter(i => i.severity === "blocker");
-  const warnings = issues.filter(i => i.severity === "warning");
-  const infos = issues.filter(i => i.severity === "info");
+  const warnings = issues.filter(i => ["warning", "high", "medium"].includes(i.severity));
+  const infos = issues.filter(i => ["info", "low"].includes(i.severity));
 
   const runDeadlineCheck = async () => {
     setScanning(true);
-    const financeData = await base44.entities.TransactionFinance.filter({ transaction_id: transaction.id });
-    const finance = Array.isArray(financeData) ? (financeData[0] || {}) : {};
-    const checklistItems = await base44.entities.DocumentChecklistItem.filter({ transaction_id: transaction.id });
-
-    await base44.functions.invoke("complianceEngine", {
-      transaction_id: transaction.id,
-      brokerage_id: transaction.brokerage_id,
-      transaction_data: {
-        address: transaction.address,
-        transaction_type: transaction.transaction_type,
-        is_cash_transaction: transaction.is_cash_transaction,
-        sale_price: finance.sale_price || transaction.sale_price,
-        seller_concession_amount: finance.seller_concession_amount,
-        professional_fee_amount: finance.professional_fee_amount,
-        phase: transaction.phase,
-        brokerage_id: transaction.brokerage_id,
-        inspection_deadline: transaction.inspection_deadline,
-        appraisal_deadline: transaction.appraisal_deadline,
-        financing_deadline: transaction.financing_deadline,
-        earnest_money_deadline: transaction.earnest_money_deadline,
-        due_diligence_deadline: transaction.due_diligence_deadline,
-        closing_date: transaction.closing_date,
-        ctc_target: transaction.ctc_target,
-        checklist_items: checklistItems,
-      },
-    });
-    queryClient.invalidateQueries({ queryKey: ["compliance-issues", transaction.id] });
-    setScanning(false);
+    try {
+      await complianceReportsApi.scan({ transaction_id: transaction.id });
+      queryClient.invalidateQueries({ queryKey: ["compliance-reports", transaction.id] });
+    } finally {
+      setScanning(false);
+    }
   };
 
   const allOpen = [...blockers, ...warnings, ...infos];
@@ -134,20 +106,20 @@ export default function ComplianceMonitorWidget({ transaction, onNavigateToCompl
                   <Icon className={`w-3.5 h-3.5 mt-0.5 flex-shrink-0 ${cfg.cls}`} />
                   <div className="flex-1 min-w-0">
                     <p className="text-xs font-medium leading-snug" style={{ color: "var(--text-primary)" }}>
-                      {issue.message}
+                      {issue.description || issue.message}
                     </p>
                     <div className="flex items-center gap-2 mt-1">
                       <Badge className={`text-[10px] capitalize ${cfg.badge}`}>{issue.severity}</Badge>
-                      {issue.issue_type && (
+                      {issue.type && (
                         <span className="text-[10px]" style={{ color: "var(--text-muted)" }}>
-                          {issue.issue_type.replace(/_/g, " ")}
+                          {issue.type.replace(/_/g, " ")}
                         </span>
                       )}
                     </div>
                   </div>
                   <button
                     className="flex-shrink-0 text-[10px] font-medium text-emerald-600 hover:text-emerald-800 whitespace-nowrap"
-                    onClick={() => resolveIssueMutation.mutate(issue.id)}
+                    onClick={() => setResolvedIds((current) => new Set([...current, issue.id]))}
                   >
                     Resolve
                   </button>

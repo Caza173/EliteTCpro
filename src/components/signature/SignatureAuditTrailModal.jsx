@@ -1,6 +1,6 @@
 import React from "react";
 import { useQuery } from "@tanstack/react-query";
-import { base44 } from "@/api/base44Client";
+import { signatureRequestsApi } from "@/api/signatureRequests";
 import { X, Shield, Clock, User, Globe } from "lucide-react";
 import { format, parseISO } from "date-fns";
 
@@ -17,8 +17,7 @@ const EVENT_ICONS = {
 export default function SignatureAuditTrailModal({ requestId, documentName, onClose }) {
   const { data, isLoading } = useQuery({
     queryKey: ["sig-audit", requestId],
-    queryFn: () => base44.functions.invoke("signatureService", { action: "audit", request_id: requestId })
-      .then(r => r.data?.events || []),
+    queryFn: () => signatureRequestsApi.getAuditTrail(requestId),
     enabled: !!requestId,
   });
 

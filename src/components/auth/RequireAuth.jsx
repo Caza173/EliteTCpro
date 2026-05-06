@@ -1,20 +1,18 @@
-import React, { useEffect } from "react";
-import { base44 } from "@/api/base44Client";
+import React from "react";
+import { Navigate, useLocation } from "react-router-dom";
 import { useAuth } from "@/lib/AuthContext";
+import { buildLoginPath } from "@/lib/authRouting";
 
-/**
- * RequireAuth wrapper - uses Base44 built-in auth. Redirects to Base44 login if not authenticated.
- */
 export default function RequireAuth({ children }) {
   const { user, isLoadingAuth } = useAuth();
-
-  useEffect(() => {
-    if (!isLoadingAuth && !user) {
-      base44.auth.redirectToLogin(window.location.href);
-    }
-  }, [isLoadingAuth, user]);
+  const location = useLocation();
 
   if (isLoadingAuth || !user) {
+    if (!isLoadingAuth && !user) {
+      const next = `${location.pathname}${location.search}${location.hash}`;
+      return <Navigate to={buildLoginPath(next)} replace />;
+    }
+
     return (
       <div className="fixed inset-0 flex items-center justify-center">
         <div className="w-8 h-8 border-4 border-slate-200 border-t-slate-800 rounded-full animate-spin"></div>

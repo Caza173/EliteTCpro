@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { base44 } from "@/api/base44Client";
+import { checklistItemsApi } from "@/api/checklistItems";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -26,7 +26,7 @@ export default function DocChecklistPanel({ items = [], currentUser, transaction
   const [approvingId, setApprovingId] = useState(null);
 
   const updateMutation = useMutation({
-    mutationFn: ({ id, data }) => base44.entities.DocumentChecklistItem.update(id, data),
+    mutationFn: ({ id, data }) => checklistItemsApi.update(id, data),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["checklist", transactionId] }),
   });
 

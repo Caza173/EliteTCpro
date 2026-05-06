@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { base44 } from "@/api/base44Client";
+import { authApi } from "@/api/auth";
 import { X, Bug, Lightbulb, Puzzle, CheckCircle, Loader2, Upload } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -24,7 +25,7 @@ export default function FeedbackModal({ open, onClose, defaultType = "bug", cont
   const handleSubmit = async (formData) => {
     setSubmitting(true);
     try {
-      const user = await base44.auth.me().catch(() => null);
+      const user = await authApi.me().catch(() => null);
       const payload = {
         ...formData,
         type: activeType,

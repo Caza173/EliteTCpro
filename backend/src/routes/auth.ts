@@ -41,7 +41,7 @@ router.post('/register', async (request, response) => {
     .returning();
 
   const token = await signAccessToken(user.id, user.email);
-  return response.status(201).json({ token, user: serializeUser(user) });
+  return response.status(201).json({ token, user: await serializeUser(user) });
 });
 
 router.post('/login', async (request, response) => {
@@ -59,12 +59,12 @@ router.post('/login', async (request, response) => {
   }
 
   const token = await signAccessToken(user.id, user.email);
-  return response.json({ token, user: serializeUser(user) });
+  return response.json({ token, user: await serializeUser(user) });
 });
 
 router.get('/me', requireAuth, async (request, response) => {
   const [user] = await db.select().from(users).where(eq(users.id, request.user.id)).limit(1);
-  return response.json({ user: user ? serializeUser(user) : null });
+  return response.json({ user: user ? await serializeUser(user) : null });
 });
 
 export default router;

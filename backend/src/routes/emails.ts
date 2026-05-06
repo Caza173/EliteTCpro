@@ -6,6 +6,7 @@ import { documents, transactions } from '../db/schema.js';
 import { requireAuth } from '../middleware/auth.js';
 import { getOwnedTransaction } from '../middleware/ownership.js';
 import { sendEmail } from '../services/email/index.js';
+import { generateSignedDownloadUrl } from '../services/storage/index.js';
 
 const router = Router();
 
@@ -84,7 +85,10 @@ router.post('/send', async (request, response) => {
         );
 
       if (ownedDocuments.length > 0) {
-        attachmentLinks = `\n\nDocuments:\n${ownedDocuments.map((document) => `- ${document.fileName}: ${document.fileUrl}`).join('\n')}`;
+        const documentLinks = await Promise.all(
+          ownedDocuments.map(async (document) => `- ${document.fileName}: ${await generateSignedDownloadUrl(document.storageKey)}`)
+        );
+        attachmentLinks = `\n\nDocuments:\n${documentLinks.join('\n')}`;
       }
     }
   }

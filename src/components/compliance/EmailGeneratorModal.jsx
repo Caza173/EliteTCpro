@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { base44 } from "@/api/base44Client";
+import { emailApi } from "@/api/email";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
@@ -336,15 +337,13 @@ Return JSON:
                       if (tcEmail && !cc.includes(tcEmail)) { toast.error("TC email must remain in CC"); return; }
                       setSending(true);
                       try {
-                        const res = await base44.functions.invoke("sendGmailEmail", {
+                        await emailApi.send({
                           to,
                           cc,
                           subject,
                           body,
                           transaction_id: transaction?.id,
-                          brokerage_id: transaction?.brokerage_id,
                         });
-                        if (res.data?.error) throw new Error(res.data.error);
                         toast.success("Email sent!");
                         onClose();
                       } catch (e) {

@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { base44 } from "@/api/base44Client";
+import { emailApi } from "@/api/email";
 import { useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { CheckCircle2, Send, Eye, Loader2, AlertTriangle, X, Edit2 } from "lucide-react";
@@ -67,11 +67,10 @@ export default function FinancialCommitmentEmail({ transaction, currentUser }) {
     if (!canSend) return;
     setSending(true);
     try {
-      const res = await base44.functions.invoke("financialCommitmentEmail", {
+      await emailApi.sendFinancialCommitment({
         transaction_id: transaction.id,
         body_override: bodyOverride || null,
       });
-      if (res.data?.error) throw new Error(res.data.error);
       setSent(true);
       toast.success("Financial Commitment email sent!");
       queryClient.invalidateQueries({ queryKey: ["transactions"] });

@@ -1,5 +1,6 @@
 import React, { useMemo } from "react";
 import { base44 } from "@/api/base44Client";
+import { transactionsApi } from "@/api/transactions";
 import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -21,11 +22,7 @@ export default function Deadlines() {
 
   const { data: rawTransactions = [], isLoading } = useQuery({
     queryKey: ["transactions", currentUser?.email, currentUser?.role],
-    queryFn: () => {
-      if (!currentUser) return [];
-      if (isOwnerOrAdmin(currentUser)) return base44.entities.Transaction.list("-created_date");
-      return base44.entities.Transaction.filter({ agent_email: currentUser.email }, "-created_date");
-    },
+    queryFn: () => transactionsApi.list(),
     enabled: !!currentUser,
   });
 

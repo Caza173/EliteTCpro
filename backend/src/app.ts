@@ -1,4 +1,3 @@
-import path from 'node:path';
 import cors from 'cors';
 import express from 'express';
 import { env } from './config/env.js';
@@ -13,6 +12,7 @@ import portalRoutes from './routes/portal.js';
 import signatureRequestRoutes from './routes/signature-requests.js';
 import taskRoutes from './routes/tasks.js';
 import transactionRoutes from './routes/transactions.js';
+import uploadRoutes from './routes/uploads.js';
 import userRoutes from './routes/users.js';
 
 export const app = express();
@@ -25,13 +25,13 @@ app.use(
   })
 );
 app.use(express.json({ limit: '2mb' }));
-app.use('/uploads', express.static(path.resolve(process.cwd(), env.STORAGE_LOCAL_ROOT)));
 
 app.get('/health', (_request, response) => {
   response.json({ ok: true });
 });
 
 app.use('/api/auth', authRoutes);
+app.use('/api/uploads', uploadRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/transactions', transactionRoutes);
 app.use('/api/documents', documentRoutes);

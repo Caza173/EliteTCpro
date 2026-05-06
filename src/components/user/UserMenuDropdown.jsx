@@ -8,12 +8,13 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { createPageUrl } from '@/utils';
-import { base44 } from '@/api/base44Client';
 import { useCurrentUser } from '@/lib/CurrentUserContext.jsx';
+import { useAuth } from '@/lib/AuthContext';
 import { User, Settings, LogOut, ChevronDown } from 'lucide-react';
 
 export default function UserMenuDropdown() {
   const { currentUser } = useCurrentUser();
+  const { logout } = useAuth();
   const [open, setOpen] = useState(false);
   const ref = useRef(null);
   const navigate = useNavigate();
@@ -25,9 +26,9 @@ export default function UserMenuDropdown() {
     return () => document.removeEventListener('mousedown', handler);
   }, []);
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
     setOpen(false);
-    base44.auth.logout();
+    await logout();
   };
 
   if (!currentUser) return null;

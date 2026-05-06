@@ -1,5 +1,6 @@
 import React, { useState, useRef } from "react";
 import { base44 } from "@/api/base44Client";
+import { uploadsApi } from "@/api/uploads";
 import { Button } from "@/components/ui/button";
 import { Upload, FileText, CheckCircle2, AlertCircle, Loader2, X, Zap } from "lucide-react";
 import PSReviewModal from "./PSReviewModal";
@@ -103,7 +104,7 @@ export default function PurchaseAgreementUpload({ onParsed, transactionId, broke
     // Step 1: Upload
     setStatus("uploading");
     setStageLabel(STAGE_LABELS.uploading);
-    const { file_url } = await base44.integrations.Core.UploadFile({ file });
+    const upload = await uploadsApi.uploadTemporary(file, { namespace: "purchase-agreements" });
 
     // Step 2: Extract text from PDF via AI vision (Claude reads the file natively)
     setStatus("extracting");
@@ -121,7 +122,8 @@ export default function PurchaseAgreementUpload({ onParsed, transactionId, broke
 
     // Call the new V2 function — it handles text extraction + section splitting + parallel AI
     const response = await base44.functions.invoke("parsePurchaseAgreementV2", {
-      file_url,
+      file_url: upload.signed_url,
+      file_key: upload.object_key,
       transaction_id: transactionId || null,
       brokerage_id: brokerageId || null,
     });

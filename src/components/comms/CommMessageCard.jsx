@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { base44 } from "@/api/base44Client";
+import { commAutomationsApi } from "@/api/commAutomations";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Eye, Send, ChevronDown, ChevronUp, Mail, MessageSquare, CheckCircle2, AlertTriangle, Clock, X, Pencil, Save } from "lucide-react";
@@ -39,7 +39,7 @@ export default function CommMessageCard({ comm, onSend, onRegenerate, sending, o
 
   const handleSaveEdit = async () => {
     setSaving(true);
-    await base44.entities.CommAutomation.update(comm.id, {
+    await commAutomationsApi.update(comm.id, {
       subject: editSubject,
       generated_content: editBody,
     });

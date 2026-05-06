@@ -1,6 +1,8 @@
 import React, { useState } from "react";
-import { base44 } from "@/api/base44Client";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { commAutomationsApi } from "@/api/commAutomations";
+import { transactionsApi } from "@/api/transactions";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useTransactionCommAutomations } from "@/hooks/useTransactionResources";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
@@ -43,15 +45,13 @@ export default function UnderContractCommsPanel({ transaction, currentUser }) {
 
   const SMS_TYPES = ["buyer_sms", "seller_sms"];
 
-  const { data: comms = [], isLoading } = useQuery({
-    queryKey: ["comm-automations", transaction.id],
-    queryFn: () => base44.entities.CommAutomation.filter({ transaction_id: transaction.id }, "-created_date"),
+  const { data: comms = [], isLoading, error: commsError } = useTransactionCommAutomations(transaction.id, {
     enabled: !!transaction.id,
     staleTime: 10_000,
   });
 
   const updateTxMutation = useMutation({
-    mutationFn: (data) => base44.functions.invoke("updateTransaction", { transaction_id: transaction.id, data }),
+    mutationFn: (data) => transactionsApi.update(transaction.id, data),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["transactions"] }),
   });
 
@@ -73,16 +73,8 @@ export default function UnderContractCommsPanel({ transaction, currentUser }) {
     setGenerating(true);
     setError(null);
     try {
-      const res = await base44.functions.invoke("underContractAutomation", {
-        action: isRegen ? "regenerate" : "generate",
-        transaction_id: transaction.id,
-        transaction_data: transaction,
-      });
-      if (res.data?.error) {
-        setError(res.data.error);
-      } else {
-        queryClient.invalidateQueries({ queryKey: ["comm-automations", transaction.id] });
-      }
+      await commAutomationsApi.generate(transaction.id, isRegen ? "regenerate" : "generate");
+      queryClient.invalidateQueries({ queryKey: ["comm-automations", transaction.id] });
     } catch (e) {
       setError(e?.response?.data?.error || e?.message || "Failed to generate communications. Please try again.");
     } finally {
@@ -94,16 +86,8 @@ export default function UnderContractCommsPanel({ transaction, currentUser }) {
     setSending(commId);
     setError(null);
     try {
-      const res = await base44.functions.invoke("underContractAutomation", {
-        action: "send",
-        transaction_id: transaction.id,
-        comm_id: commId,
-      });
-      if (res.data?.error) {
-        setError(res.data.error);
-      } else {
-        queryClient.invalidateQueries({ queryKey: ["comm-automations", transaction.id] });
-      }
+      await commAutomationsApi.send(commId);
+      queryClient.invalidateQueries({ queryKey: ["comm-automations", transaction.id] });
     } catch (e) {
       setError(e?.response?.data?.error || e?.message || "Failed to send communication.");
     } finally {
@@ -133,6 +117,12 @@ export default function UnderContractCommsPanel({ transaction, currentUser }) {
 
   return (
     <div className="space-y-4">
+      {commsError && (
+        <div className="flex items-start gap-2 p-3 rounded-xl bg-red-50 border border-red-200 text-red-700 text-sm">
+          <AlertTriangle className="w-4 h-4 flex-shrink-0 mt-0.5" />
+          <span>{commsError.message || "Failed to load communications."}</span>
+        </div>
+      )}
       {error && (
         <div className="flex items-start gap-2 p-3 rounded-xl bg-red-50 border border-red-200 text-red-700 text-sm">
           <AlertTriangle className="w-4 h-4 flex-shrink-0 mt-0.5" />

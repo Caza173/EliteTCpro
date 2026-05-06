@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { base44 } from "@/api/base44Client";
+import { buildLoginPath } from "@/lib/authRouting";
 import {
   Building2, ArrowRight, Upload, Clock, ShieldCheck, Send,
   Users, LayoutDashboard, CheckCircle2, Bell, AlertTriangle,
@@ -43,7 +44,7 @@ export default function Landing() {
 
         <div className="flex items-center gap-3">
           <button
-            onClick={() => base44.auth.redirectToLogin("/Dashboard")}
+            onClick={() => navigate(buildLoginPath("/Dashboard"))}
             className="text-sm text-gray-600 hover:text-gray-900 font-medium transition-colors"
           >
             Log in
@@ -294,7 +295,7 @@ export default function Landing() {
               Start a Transaction <ArrowRight className="w-4 h-4" />
             </button>
             <button
-              onClick={() => base44.auth.redirectToLogin("/Dashboard")}
+              onClick={() => navigate(buildLoginPath("/Dashboard"))}
               className="flex items-center gap-2 px-6 py-3 rounded-lg text-sm font-semibold text-white border border-white/30 hover:border-white/60 hover:bg-white/10 transition-colors"
             >
               <Lock className="w-4 h-4" /> TC / Staff Login

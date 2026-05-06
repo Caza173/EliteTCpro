@@ -5,7 +5,7 @@
  * Super admin (nhcazateam@gmail.com) sees all transactions.
  */
 import { useQuery } from "@tanstack/react-query";
-import { base44 } from "@/api/base44Client";
+import { transactionsApi } from "@/api/transactions";
 import { useCurrentUser } from "@/components/auth/useCurrentUser";
 
 const SUPER_ADMIN_EMAIL = "nhcazateam@gmail.com";
@@ -20,12 +20,7 @@ export function useDealAccess() {
 
   const { data: serverData, isLoading: txLoading, error: txError } = useQuery({
     queryKey: ["transactions", currentUser?.id],
-    queryFn: async () => {
-      const r = await base44.functions.invoke("getTeamTransactions", { sort: "-created_date", limit: 200 });
-      const txs = r.data?.transactions;
-      if (!Array.isArray(txs)) throw new Error("Invalid response from getTeamTransactions");
-      return txs;
-    },
+    queryFn: () => transactionsApi.list({ limit: 200 }),
     enabled: !!currentUser,
     staleTime: 30_000,
     retry: 2,
@@ -42,7 +37,7 @@ export function useDealAccess() {
 
   function canAccess(dealId) {
     if (!currentUser || !dealId) return false;
-    if (txError || isLoading) return true; // fail open on error/loading
+    if (txError || isLoading) return false;
     return accessibleDealIds.has(dealId);
   }
 

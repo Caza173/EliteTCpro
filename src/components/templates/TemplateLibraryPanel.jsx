@@ -1,5 +1,6 @@
 import React, { useState, useRef } from "react";
 import { base44 } from "@/api/base44Client";
+import { uploadsApi } from "@/api/uploads";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useCurrentUser } from "@/components/auth/useCurrentUser";
 import { Button } from "@/components/ui/button";
@@ -59,12 +60,13 @@ export default function TemplateLibraryPanel() {
     }
 
     setUploading(true);
-    const { file_url } = await base44.integrations.Core.UploadFile({ file });
+    const upload = await uploadsApi.uploadTemporary(file, { namespace: "pdf-templates" });
     const created = await base44.entities.PDFTemplate.create({
       brokerage_id: brokerageId,
       name: newName.trim(),
       type: newType,
-      file_url,
+      file_url: upload.signed_url,
+      file_key: upload.object_key,
       file_name: file.name,
       field_map: {},
       is_mapped: false,

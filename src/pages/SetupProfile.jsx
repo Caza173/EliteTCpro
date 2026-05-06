@@ -1,6 +1,7 @@
 import React, { useState, useRef } from "react";
 import { useNavigate } from "react-router-dom";
-import { base44 } from "@/api/base44Client";
+import { authApi } from "@/api/auth";
+import { uploadsApi } from "@/api/uploads";
 import { useCurrentUser } from "@/lib/CurrentUserContext.jsx";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -141,8 +142,8 @@ export default function SetupProfile() {
   const handleUploadPhoto = async (file) => {
     if (!file) return;
     setUploading(true);
-    const { file_url } = await base44.integrations.Core.UploadFile({ file });
-    set("profile_photo_url", file_url);
+    const upload = await uploadsApi.uploadImage(file, { namespace: "profiles/photos" });
+    set("profile_photo_url", upload.signed_url);
     setUploading(false);
   };
 
@@ -150,15 +151,15 @@ export default function SetupProfile() {
     const file = e.target.files?.[0];
     if (!file) return;
     setUploadingSig(true);
-    const { file_url } = await base44.integrations.Core.UploadFile({ file });
-    set("signature_block_url", file_url);
+    const upload = await uploadsApi.uploadImage(file, { namespace: "profiles/signatures" });
+    set("signature_block_url", upload.signed_url);
     setUploadingSig(false);
     e.target.value = "";
   };
 
   const handleSubmit = async () => {
     setSaving(true);
-    await base44.auth.updateMe({
+    await authApi.updateMe({
       first_name: form.first_name.trim(),
       last_name: form.last_name.trim(),
       phone: form.phone.trim(),

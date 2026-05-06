@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { base44 } from "@/api/base44Client";
+import { authApi } from "@/api/auth";
 import { Button } from "@/components/ui/button";
 import { Loader2, CheckCircle, Calendar, Shield, ClipboardList, Mail, Zap } from "lucide-react";
 import { useQueryClient } from "@tanstack/react-query";
@@ -48,7 +48,7 @@ export default function Step5Value({ parsedData, onComplete }) {
 
   const handleFinish = async () => {
     setSaving(true);
-    await base44.auth.updateMe({
+    await authApi.updateMe({
       onboarding_complete: true,
       onboarding_step: 5,
     });

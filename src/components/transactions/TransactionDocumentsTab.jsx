@@ -1,6 +1,11 @@
 import React, { useState, useRef } from "react";
-import { base44 } from "@/api/base44Client";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { complianceReportsApi } from "@/api/complianceReports";
+import { documentsApi } from "@/api/documents";
+import { checklistItemsApi } from "@/api/checklistItems";
+import { signatureRequestsApi } from "@/api/signatureRequests";
+import { transactionsApi } from "@/api/transactions";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useTransactionChecklistItems, useTransactionDocuments } from "@/hooks/useTransactionResources";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -79,21 +84,14 @@ export default function TransactionDocumentsTab({ transaction, currentUser }) {
   const [confirmBulkDelete, setConfirmBulkDelete] = useState(false);
   const fileInputRef = useRef(null);
 
-  const { data: documents = [], isLoading } = useQuery({
-    queryKey: ["tx-documents", transaction.id],
-    queryFn: () => base44.entities.Document.filter({ transaction_id: transaction.id, is_deleted: { $ne: true } }, "-created_date"),
-    enabled: !!transaction.id,
-  });
+  const { data: allDocuments = [], isLoading } = useTransactionDocuments(transaction.id, { enabled: !!transaction.id });
+  const documents = allDocuments.filter((document) => document.is_deleted !== true);
 
-  const { data: checklistItems = [] } = useQuery({
-    queryKey: ["checklist", transaction.id],
-    queryFn: () => base44.entities.DocumentChecklistItem.filter({ transaction_id: transaction.id }),
-    enabled: !!transaction.id,
-  });
+  const { data: checklistItems = [] } = useTransactionChecklistItems(transaction.id, { enabled: !!transaction.id });
 
   const { data: signatureRequests = [] } = useQuery({
     queryKey: ["signatures", transaction.id],
-    queryFn: () => base44.entities.SignatureRequest.filter({ transaction_id: transaction.id }),
+    queryFn: () => signatureRequestsApi.list({ transaction_id: transaction.id }),
     staleTime: 30_000,
     enabled: !!transaction.id,
   });
@@ -102,7 +100,7 @@ export default function TransactionDocumentsTab({ transaction, currentUser }) {
 
   const handleAutoSendToggle = async () => {
     const newVal = !transaction.auto_send_signatures;
-    await base44.entities.Transaction.update(transaction.id, { auto_send_signatures: newVal });
+    await transactionsApi.update(transaction.id, { auto_send_signatures: newVal });
     queryClient.invalidateQueries({ queryKey: ["transaction", transaction.id] });
     toast.success(newVal ? "Auto-send signatures enabled" : "Auto-send signatures disabled");
   };
@@ -111,10 +109,7 @@ export default function TransactionDocumentsTab({ transaction, currentUser }) {
     setDeleteError(null);
     setDeletingId(id);
     try {
-      await base44.functions.invoke("deleteDocument", {
-        document_id: id,
-        transaction_id: transaction.id,
-      });
+      await documentsApi.delete(id);
     } catch (err) {
       // Show error but still remove from local cache and refetch
       setDeleteError('Delete may have partially failed. Refreshing list...');
@@ -143,7 +138,7 @@ export default function TransactionDocumentsTab({ transaction, currentUser }) {
     }
     if (toDelete.length === 0) return;
     for (const id of toDelete) {
-      try { await base44.functions.invoke("deleteDocument", { document_id: id, transaction_id: transaction.id }); } catch (_) {}
+      try { await documentsApi.delete(id); } catch (_) {}
     }
     // Force fresh fetch
     await queryClient.invalidateQueries({ queryKey: ["tx-documents", transaction.id] });
@@ -175,27 +170,18 @@ export default function TransactionDocumentsTab({ transaction, currentUser }) {
     }
     const autoType = classifyDocType(file.name);
     const docType = autoType || selectedDocType;
-    const { file_url } = await base44.integrations.Core.UploadFile({ file });
-    const response = await base44.functions.invoke('createDocument', {
-      brokerage_id: transaction.brokerage_id,
+    const doc = await documentsApi.upload(file, {
       transaction_id: transaction.id,
       doc_type: docType,
-      file_url,
       file_name: file.name,
       uploaded_by: currentUser?.email || "unknown",
       uploaded_by_role: currentUser?.role || "agent",
     });
-    // Backend duplicate check — response.data.duplicate means blocked
-    if (response.data?.duplicate || response.data?.error) {
-      setUploadError(response.data.error || `"${file.name}" already exists.`);
-      return;
-    }
-    const doc = response.data;
     const matchingItem = checklistItems.find(
       (ci) => ci.doc_type === selectedDocType && ci.status === "missing"
     );
     if (matchingItem) {
-      await base44.entities.DocumentChecklistItem.update(matchingItem.id, {
+      await checklistItemsApi.update(matchingItem.id, {
         status: "uploaded",
         uploaded_document_id: doc.id,
       });
@@ -213,33 +199,16 @@ export default function TransactionDocumentsTab({ transaction, currentUser }) {
 
     // Auto-trigger compliance scan in the background
     toast.info("Compliance scan started in background…", { icon: "🔍", duration: 3000 });
-    base44.functions.invoke('complianceEngine', {
-      document_url: file_url,
-      file_name: file.name,
-      document_id: doc.id,
+    complianceReportsApi.scan({
       transaction_id: transaction.id,
-      brokerage_id: transaction.brokerage_id,
-      transaction_data: {
-        address: transaction.address,
-        transaction_type: transaction.transaction_type,
-        is_cash_transaction: transaction.is_cash_transaction,
-        sale_price: transaction.sale_price,
-        agent_email: transaction.agent_email,
-        phase: transaction.phase,
-        inspection_deadline: transaction.inspection_deadline,
-        appraisal_deadline: transaction.appraisal_deadline,
-        financing_deadline: transaction.financing_deadline,
-        earnest_money_deadline: transaction.earnest_money_deadline,
-        due_diligence_deadline: transaction.due_diligence_deadline,
-        closing_date: transaction.closing_date,
-        ctc_target: transaction.ctc_target,
-      }
+      document_id: doc.id,
     }).then((res) => {
       queryClient.invalidateQueries({ queryKey: ["compliance-reports", transaction.id] });
       queryClient.invalidateQueries({ queryKey: ["transactions"] });
-      if (res?.data?.blockers_count > 0) {
-        toast.error(`Compliance scan found ${res.data.blockers_count} blocker(s) — check Compliance tab`, { duration: 6000 });
-      } else if (res?.data?.status === "compliant") {
+      const blockerCount = res?.compliance_reports?.reduce((count, report) => count + (report.blockers_count || 0), 0) || 0;
+      if (blockerCount > 0) {
+        toast.error(`Compliance scan found ${blockerCount} blocker(s) — check Compliance tab`, { duration: 6000 });
+      } else if (res?.status === "complete") {
         toast.success("Document passed compliance check", { icon: "✅", duration: 4000 });
       }
     }).catch(() => {});
@@ -295,7 +264,7 @@ export default function TransactionDocumentsTab({ transaction, currentUser }) {
     const ids = [...selectedIds];
     for (const id of ids) {
       try {
-        await base44.functions.invoke("deleteDocument", { document_id: id, transaction_id: transaction.id });
+        await documentsApi.delete(id);
       } catch (_) {}
     }
     const deleteSet = new Set(ids);
@@ -334,7 +303,7 @@ export default function TransactionDocumentsTab({ transaction, currentUser }) {
           document={sigModalDoc}
           transaction={transaction}
           onClose={() => { setSigModalOpen(false); setSigModalDoc(null); }}
-          onSuccess={() => queryClient.invalidateQueries({ queryKey: ["tx-signatures", transaction.id] })}
+          onSent={() => queryClient.invalidateQueries({ queryKey: ["signatures", transaction.id] })}
         />
       )}
       {generateModalOpen && (

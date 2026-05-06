@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { base44 } from "@/api/base44Client";
+import { documentsApi } from "@/api/documents";
 import { useCurrentUser } from "@/lib/CurrentUserContext.jsx";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -146,15 +147,6 @@ export default function AgentSubmitTransaction() {
   const handleSubmit = async () => {
     setSubmitting(true);
 
-    // Upload files
-    const uploadedDocs = {};
-    for (const [key, file] of Object.entries(files)) {
-      if (file) {
-        const { file_url } = await base44.integrations.Core.UploadFile({ file });
-        uploadedDocs[key] = { file_url, file_name: file.name };
-      }
-    }
-
     // Map tx type
     const typeMap = { buyer: "buyer", listing_under_contract: "seller", listing_only: "seller" };
     const transactionType = typeMap[txType] || "buyer";
@@ -170,7 +162,7 @@ export default function AgentSubmitTransaction() {
       brokerage_id: currentUser.brokerage_id || "",
     });
 
-    // Create document records
+    const uploadedDocs = {};
     const docTypeMap = {
       purchase_sale: "purchase_and_sale",
       buyer_agency: "buyer_agency_agreement",
@@ -178,16 +170,19 @@ export default function AgentSubmitTransaction() {
       mls_form: "other",
     };
 
-    for (const [key, docData] of Object.entries(uploadedDocs)) {
-      await base44.entities.Document.create({
+    for (const [key, file] of Object.entries(files)) {
+      if (!file) {
+        continue;
+      }
+
+      const document = await documentsApi.upload(file, {
         transaction_id: tx.id,
-        brokerage_id: currentUser.brokerage_id || "",
-        file_url: docData.file_url,
-        file_name: docData.file_name,
+        file_name: file.name,
         doc_type: docTypeMap[key] || "other",
         uploaded_by: currentUser.email,
         uploaded_by_role: "agent",
       });
+      uploadedDocs[key] = document;
     }
 
     // Trigger parsing for purchase & sales if present
@@ -195,12 +190,14 @@ export default function AgentSubmitTransaction() {
       base44.functions.invoke("parsePurchaseAgreementV2", {
         transaction_id: tx.id,
         file_url: uploadedDocs.purchase_sale.file_url,
+        file_key: uploadedDocs.purchase_sale.storage_key,
       }).catch(() => {});
     }
     if (uploadedDocs.listing_agreement) {
       base44.functions.invoke("parseListingAgreement", {
         transaction_id: tx.id,
         file_url: uploadedDocs.listing_agreement.file_url,
+        file_key: uploadedDocs.listing_agreement.storage_key,
       }).catch(() => {});
     }
 

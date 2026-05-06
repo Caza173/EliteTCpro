@@ -1,5 +1,7 @@
 import React, { useState, useRef } from "react";
-import { base44 } from "@/api/base44Client";
+import { documentsApi } from "@/api/documents";
+import { checklistItemsApi } from "@/api/checklistItems";
+import { transactionsApi } from "@/api/transactions";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -34,21 +36,21 @@ export default function Documents() {
 
   const { data: transactions = [] } = useQuery({
     queryKey: ["transactions"],
-    queryFn: () => base44.entities.Transaction.list("-created_date"),
+    queryFn: () => transactionsApi.list(),
   });
 
   const { data: documents = [], isLoading } = useQuery({
     queryKey: ["documents"],
-    queryFn: () => base44.entities.Document.list("-created_date"),
+    queryFn: () => documentsApi.list(),
   });
 
   const { data: checklistItems = [] } = useQuery({
     queryKey: ["allChecklist"],
-    queryFn: () => base44.entities.DocumentChecklistItem.list(),
+    queryFn: () => checklistItemsApi.list(),
   });
 
   const deleteMutation = useMutation({
-    mutationFn: (id) => base44.entities.Document.delete(id),
+    mutationFn: (id) => documentsApi.delete(id),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["documents"] }),
   });
 
@@ -60,45 +62,42 @@ export default function Documents() {
     }
     setUploading(true);
 
-    const { file_url } = await base44.integrations.Core.UploadFile({ file });
-
-    const doc = await base44.entities.Document.create({
-      brokerage_id: currentUser?.brokerage_id,
-      transaction_id: selectedTxId,
-      doc_type: selectedDocType,
-      file_url,
-      file_name: file.name,
-      uploaded_by: currentUser?.email || "unknown",
-      uploaded_by_role: currentUser?.role || "agent",
-    });
-
-    // Auto-link to checklist item if matching doc type + transaction
-    const matchingItem = checklistItems.find(
-      (ci) => ci.transaction_id === selectedTxId && ci.doc_type === selectedDocType && ci.status === "missing"
-    );
-    if (matchingItem) {
-      await base44.entities.DocumentChecklistItem.update(matchingItem.id, {
-        status: "uploaded",
-        uploaded_document_id: doc.id,
+    try {
+      const doc = await documentsApi.upload(file, {
+        transaction_id: selectedTxId,
+        doc_type: selectedDocType,
+        file_name: file.name,
+        uploaded_by: currentUser?.email || "unknown",
+        uploaded_by_role: currentUser?.role || "agent",
       });
-      queryClient.invalidateQueries({ queryKey: ["checklist"] });
-      queryClient.invalidateQueries({ queryKey: ["allChecklist"] });
+
+      const matchingItem = checklistItems.find(
+        (ci) => ci.transaction_id === selectedTxId && ci.doc_type === selectedDocType && ci.status === "missing"
+      );
+      if (matchingItem) {
+        await checklistItemsApi.update(matchingItem.id, {
+          status: "uploaded",
+          uploaded_document_id: doc.id,
+        });
+        queryClient.invalidateQueries({ queryKey: ["checklist"] });
+        queryClient.invalidateQueries({ queryKey: ["allChecklist"] });
+      }
+
+      await writeAuditLog({
+        brokerageId: currentUser?.brokerage_id,
+        transactionId: selectedTxId,
+        actorEmail: currentUser?.email,
+        action: "doc_uploaded",
+        entityType: "document",
+        entityId: doc.id,
+        description: `${currentUser?.email} uploaded ${file.name} (${selectedDocType})`,
+      });
+
+      queryClient.invalidateQueries({ queryKey: ["documents"] });
+    } finally {
+      setUploading(false);
+      if (fileInputRef.current) fileInputRef.current.value = "";
     }
-
-    // Audit log
-    await writeAuditLog({
-      brokerageId: currentUser?.brokerage_id,
-      transactionId: selectedTxId,
-      actorEmail: currentUser?.email,
-      action: "doc_uploaded",
-      entityType: "document",
-      entityId: doc.id,
-      description: `${currentUser?.email} uploaded ${file.name} (${selectedDocType})`,
-    });
-
-    queryClient.invalidateQueries({ queryKey: ["documents"] });
-    setUploading(false);
-    if (fileInputRef.current) fileInputRef.current.value = "";
   };
 
   const filtered = selectedTxId === "all"

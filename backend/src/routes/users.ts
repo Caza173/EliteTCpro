@@ -5,13 +5,36 @@ import { db } from '../db/client.js';
 import { users } from '../db/schema.js';
 import { serializeUser } from '../lib/serializers.js';
 import { requireAuth } from '../middleware/auth.js';
+import { resolveStorageKey } from '../services/storage/index.js';
 
 const router = Router();
 
 const adminRoles = new Set(['admin', 'owner', 'tc_lead']);
 
-function asRecord(value: ReturnType<typeof serializeUser>) {
+function asRecord(value: Awaited<ReturnType<typeof serializeUser>>) {
   return value as Record<string, unknown>;
+}
+
+function normalizeProfilePatch(profilePatch: Record<string, unknown>) {
+  const next = { ...profilePatch };
+  const storageFields = [
+    ['profile_photo_storage_key', 'profile_photo_url'],
+    ['signature_block_storage_key', 'signature_block_url'],
+    ['company_logo_storage_key', 'company_logo_url'],
+  ] as const;
+
+  for (const [storageKeyField, legacyUrlField] of storageFields) {
+    const resolved = resolveStorageKey(next[storageKeyField] ?? next[legacyUrlField] ?? null);
+    if (resolved) {
+      next[storageKeyField] = resolved;
+    } else if (next[storageKeyField] === '' || next[legacyUrlField] === '') {
+      next[storageKeyField] = '';
+    }
+
+    delete next[legacyUrlField];
+  }
+
+  return next;
 }
 
 function getUserRole(request: Parameters<typeof requireAuth>[0]) {
@@ -40,29 +63,31 @@ router.get('/', async (request, response) => {
 
   if (!canListAll) {
     const [user] = await db.select().from(users).where(eq(users.id, request.user.id)).limit(1);
-    return response.json({ users: user ? [serializeUser(user)] : [] });
+    return response.json({ users: user ? [await serializeUser(user)] : [] });
   }
 
   const rows = await db.select().from(users).where(eq(users.isActive, true));
-  const filteredRows = rows.filter((user) => {
+  const serializedRows = await Promise.all(rows.map(serializeUser));
+  const filteredRows = serializedRows.filter((user) => {
     return Object.entries(filters).every(([key, value]) => {
       if (typeof value !== 'string' || value.length === 0) return true;
-      const serialized = asRecord(serializeUser(user));
+      const serialized = asRecord(user);
       return String(serialized[key] ?? '') === value;
     });
   });
 
-  return response.json({ users: filteredRows.map(serializeUser) });
+  return response.json({ users: filteredRows });
 });
 
 router.get('/me', async (request, response) => {
   const [user] = await db.select().from(users).where(eq(users.id, request.user.id)).limit(1);
-  return response.json({ user: user ? serializeUser(user) : null });
+  return response.json({ user: user ? await serializeUser(user) : null });
 });
 
 router.patch('/me', async (request, response) => {
   const payload = updateMeSchema.parse(request.body ?? {});
-  const { full_name, ...profilePatch } = payload;
+  const { full_name, ...rawProfilePatch } = payload;
+  const profilePatch = normalizeProfilePatch(rawProfilePatch as Record<string, unknown>);
 
   const [current] = await db.select().from(users).where(eq(users.id, request.user.id)).limit(1);
   if (!current) {
@@ -81,7 +106,7 @@ router.patch('/me', async (request, response) => {
     .where(eq(users.id, request.user.id))
     .returning();
 
-  return response.json({ user: serializeUser(user) });
+  return response.json({ user: await serializeUser(user) });
 });
 
 router.patch('/:id', async (request, response) => {
@@ -96,7 +121,8 @@ router.patch('/:id', async (request, response) => {
   }
 
   const payload = updateUserSchema.parse(request.body ?? {});
-  const { full_name, ...profilePatch } = payload;
+  const { full_name, ...rawProfilePatch } = payload;
+  const profilePatch = normalizeProfilePatch(rawProfilePatch as Record<string, unknown>);
 
   const [current] = await db.select().from(users).where(eq(users.id, targetUserId)).limit(1);
   if (!current) {
@@ -115,7 +141,7 @@ router.patch('/:id', async (request, response) => {
     .where(eq(users.id, targetUserId))
     .returning();
 
-  return response.json({ user: serializeUser(user) });
+  return response.json({ user: await serializeUser(user) });
 });
 
 router.delete('/:id', async (request, response) => {

@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { base44 } from "@/api/base44Client";
+import { authApi } from "@/api/auth";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -15,7 +15,7 @@ export default function Step1Profile({ user, onComplete }) {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setSaving(true);
-    await base44.auth.updateMe({
+    await authApi.updateMe({
       first_name: form.full_name.split(" ")[0] || form.full_name,
       last_name: form.full_name.split(" ").slice(1).join(" ") || "",
       company_name: form.company_name,

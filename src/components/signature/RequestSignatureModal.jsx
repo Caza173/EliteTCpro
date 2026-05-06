@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { base44 } from "@/api/base44Client";
+import { signatureRequestsApi } from "@/api/signatureRequests";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { X, Plus, Trash2, Send, PenLine, FileText, User, ChevronRight, ChevronLeft, Loader2 } from "lucide-react";
@@ -43,24 +43,18 @@ export default function RequestSignatureModal({ transaction, documents, onClose,
 
     setSending(true);
     try {
-      // Step 1: create the request
-      const createRes = await base44.functions.invoke("signatureService", {
-        action: "create",
+      await signatureRequestsApi.create({
         transaction_id: transaction.id,
-        brokerage_id: transaction.brokerage_id,
         document_id: selectedDoc.id,
-        document_name: selectedDoc.file_name,
-        document_url: selectedDoc.file_url,
-        signers,
-        signature_fields: [],
-      });
-
-      if (!createRes.data?.success) throw new Error("Failed to create request");
-
-      // Step 2: send emails
-      await base44.functions.invoke("signatureService", {
-        action: "send",
-        request_id: createRes.data.request.id,
+        title: selectedDoc.file_name || "Signature Request",
+        subject: `Signature Request: ${transaction.address || selectedDoc.file_name || "Document"}`,
+        message: `Please review and sign ${selectedDoc.file_name || "this document"}.`,
+        recipients: signers.map((signer, index) => ({
+          name: signer.name,
+          email: signer.email,
+          role: signer.role.toLowerCase(),
+          routing_order: index + 1,
+        })),
       });
 
       toast.success("Signature request sent!");

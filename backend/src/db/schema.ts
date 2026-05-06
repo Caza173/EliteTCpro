@@ -36,7 +36,7 @@ export const documents = pgTable('documents', {
   ownerId: uuid('owner_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
   transactionId: uuid('transaction_id').notNull().references(() => transactions.id, { onDelete: 'cascade' }),
   fileName: text('file_name').default('').notNull(),
-  fileUrl: text('file_url').default('').notNull(),
+  storageKey: text('storage_key').default('').notNull(),
   docType: text('doc_type').default('other').notNull(),
   data: jsonb('data').$type<Record<string, unknown>>().default(sql`'{}'::jsonb`).notNull(),
   ...timestamps,
@@ -108,7 +108,7 @@ export const signatureRequests = pgTable('signature_requests', {
   completedAt: timestamp('completed_at', { withTimezone: true }),
   declinedAt: timestamp('declined_at', { withTimezone: true }),
   cancelledAt: timestamp('cancelled_at', { withTimezone: true }),
-  signedDocumentUrl: text('signed_document_url'),
+  signedDocumentStorageKey: text('signed_document_storage_key'),
   data: jsonb('data').$type<Record<string, unknown>>().default(sql`'{}'::jsonb`).notNull(),
   ...timestamps,
 });

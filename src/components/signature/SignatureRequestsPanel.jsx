@@ -1,6 +1,6 @@
 import React, { useState } from "react";
-import { base44 } from "@/api/base44Client";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { signatureRequestsApi } from "@/api/signatureRequests";
+import { useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import {
   RefreshCw, Send, X, Download, ChevronDown, ChevronRight,
@@ -32,12 +32,7 @@ const RECIPIENT_STATUS = {
 
 function SignatureRow({ sig, onRefresh, onResend, onCancel }) {
   const [expanded, setExpanded] = useState(false);
-
-  const { data: recipients = [] } = useQuery({
-    queryKey: ["sig_recipients", sig.id],
-    queryFn: () => base44.entities.SignatureRecipient.filter({ signature_id: sig.id }),
-    staleTime: 30_000,
-  });
+  const recipients = Array.isArray(sig.recipients) ? sig.recipients : [];
 
   const statusCfg = STATUS_CONFIG[sig.status] || STATUS_CONFIG.sent;
   const ChevronIcon = expanded ? ChevronDown : ChevronRight;
@@ -183,33 +178,33 @@ function SignatureRow({ sig, onRefresh, onResend, onCancel }) {
 }
 
 export default function SignatureRequestsPanel({ transactionId, documents = [], onSendNew }) {
-  const queryClient = useQueryClient();
   const [actionLoading, setActionLoading] = useState(null);
 
   const { data: signatures = [], refetch } = useQuery({
     queryKey: ["signatures", transactionId],
-    queryFn: () => base44.entities.SignatureRequest.filter({ transaction_id: transactionId }),
+    queryFn: () => signatureRequestsApi.list({ transaction_id: transactionId }),
     staleTime: 30_000,
     enabled: !!transactionId,
   });
 
   const handleRefresh = async (sigId) => {
     setActionLoading(sigId + "_refresh");
-    await base44.functions.invoke("getSignatureStatus", { signature_id: sigId });
+    await signatureRequestsApi.refresh(sigId);
     await refetch();
     setActionLoading(null);
   };
 
   const handleResend = async (sigId) => {
     setActionLoading(sigId + "_resend");
-    await base44.functions.invoke("resendSignatureRequest", { signature_id: sigId });
+    await signatureRequestsApi.resend(sigId);
+    await refetch();
     setActionLoading(null);
   };
 
   const handleCancel = async (sigId) => {
     if (!confirm("Cancel this signature request? This cannot be undone.")) return;
     setActionLoading(sigId + "_cancel");
-    await base44.functions.invoke("cancelSignatureRequest", { signature_id: sigId });
+    await signatureRequestsApi.cancel(sigId);
     await refetch();
     setActionLoading(null);
   };

@@ -1,9 +1,8 @@
 import React, { useState, useEffect } from "react";
-import { base44 } from "@/api/base44Client";
+import { signatureRequestsApi } from "@/api/signatureRequests";
 import { Button } from "@/components/ui/button";
 import { X, Plus, Trash2, Send, Loader2, ExternalLink } from "lucide-react";
 import AutoPlacementBadge from "./AutoPlacementBadge";
-import { buildPlacementConfig, validateRecipientsForDocType, describePlacementConfig } from "@/lib/signaturePlacementService";
 
 const ROLES = ["buyer", "seller", "agent", "attorney", "lender", "title", "other"];
 
@@ -34,15 +33,12 @@ export default function SendForSignatureModal({ transaction, document: doc, onCl
     let cancelled = false;
     setPlacementStatus("detecting");
 
-    base44.functions.invoke("autoPlaceSignatures", {
-      document_url: doc.file_url,
+    signatureRequestsApi.previewPlacement({
       document_type: doc.doc_type || "other",
-      file_name: doc.file_name,
-      transaction_id: transaction?.id,
       recipients: validRecipients,
     }).then(res => {
-      if (!cancelled && res?.data?.success) {
-        setPlacementStatus(res.data);
+      if (!cancelled && res?.success) {
+        setPlacementStatus(res);
       } else if (!cancelled) {
         setPlacementStatus(null);
       }
@@ -74,21 +70,21 @@ export default function SendForSignatureModal({ transaction, document: doc, onCl
     }
 
     setSending(true);
-    const res = await base44.functions.invoke("createSignatureRequest", {
-      transaction_id: transaction.id,
-      document_id: doc.id,
-      title: doc.file_name || "Signature Request",
-      subject,
-      message,
-      recipients,
-    });
-
-    setSending(false);
-    if (res.data?.success) {
+    try {
+      await signatureRequestsApi.create({
+        transaction_id: transaction.id,
+        document_id: doc.id,
+        title: doc.file_name || "Signature Request",
+        subject,
+        message,
+        recipients,
+      });
       onSent?.();
       onClose();
-    } else {
-      setError(res.data?.error || "Failed to send signature request.");
+    } catch (requestError) {
+      setError(requestError?.message || "Failed to send signature request.");
+    } finally {
+      setSending(false);
     }
   };
 

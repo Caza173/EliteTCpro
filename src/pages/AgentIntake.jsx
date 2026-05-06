@@ -1,5 +1,8 @@
 import React, { useState, useRef } from "react";
 import { base44 } from "@/api/base44Client";
+import { authApi } from "@/api/auth";
+import { documentsApi } from "@/api/documents";
+import { uploadsApi } from "@/api/uploads";
 import { useQuery } from "@tanstack/react-query";
 import { Link, useNavigate } from "react-router-dom";
 import { createPageUrl } from "@/utils";
@@ -90,12 +93,12 @@ function RequiredDocUpload({ docType, onUploaded, onParsed, required = true }) {
   const handleFile = async (f) => {
     if (!f) return;
     setFile(f); setErrorMsg(""); setStatus("uploading");
-    const { file_url } = await base44.integrations.Core.UploadFile({ file: f });
-    setFileUrl(file_url);
-    onUploaded(file_url, f.name);
+    const upload = await uploadsApi.uploadTemporary(f, { namespace: `intake/${docType}` });
+    setFileUrl(upload.signed_url);
+    onUploaded(upload.signed_url, f.name, upload.object_key);
     setStatus("parsing");
     try {
-      const res = await base44.functions.invoke(fnName, { file_url });
+      const res = await base44.functions.invoke(fnName, { file_url: upload.signed_url, file_key: upload.object_key });
       const data = res?.data;
       if (!data || data.error) { setStatus("done"); return; } // parse fail is non-blocking
       setStatus("done");
@@ -159,7 +162,7 @@ function F({ label, id, children }) {
 // ── Main Component ────────────────────────────────────────────────────────────
 
 export default function AgentIntake() {
-  const { data: currentUser } = useQuery({ queryKey: ["currentUser"], queryFn: () => base44.auth.me(), retry: false });
+  const { data: currentUser } = useQuery({ queryKey: ["currentUser"], queryFn: () => authApi.me(), retry: false });
   const navigate = useNavigate();
 
   // Hide TC features when accessed via the public agent intake link (?agent=1)
@@ -180,6 +183,7 @@ export default function AgentIntake() {
   const [parsedData, setParsedData] = useState(null);
   const [documentUrl, setDocumentUrl] = useState(null);
   const [documentName, setDocumentName] = useState(null);
+  const [documentKey, setDocumentKey] = useState(null);
 
   // Submission state
   const [submitting, setSubmitting] = useState(false);
@@ -190,7 +194,7 @@ export default function AgentIntake() {
 
   const selectDealType = (type) => {
     setDealType(type); setDocType("ps"); setParsedData(null);
-    setDocumentUrl(null); setDocumentName(null);
+    setDocumentUrl(null); setDocumentName(null); setDocumentKey(null);
     setBuyers([""]); setSellers([""]); setClientEmails([""]); setClientPhones([""]);
     if (type === "listing") setForm({ ...initialListing });
     else if (type === "both") setForm({ ...initialBoth });
@@ -200,7 +204,7 @@ export default function AgentIntake() {
 
   const handleDocTypeChange = (newDocType) => {
     setDocType(newDocType); setParsedData(null);
-    setDocumentUrl(null); setDocumentName(null);
+    setDocumentUrl(null); setDocumentName(null); setDocumentKey(null);
     if (newDocType === "buyer_agency") {
       setForm({ ...initialBuyerAgency, agent: form.agent || "", agent_email: form.agent_email || "", agent_phone: form.agent_phone || "" });
       setBuyers([""]);
@@ -336,11 +340,20 @@ export default function AgentIntake() {
           status: "pending",
           document_url: documentUrl || undefined,
           document_name: documentName || undefined,
+          document_key: documentKey || undefined,
           inspection_deadline: form.inspections_waived ? null : form.inspection_deadline,
         };
         const res = await base44.functions.invoke("createTransaction", { ...txPayload, status: "active" });
         if (res.data?.error) throw new Error(res.data.error);
         if (!res.data?.id) throw new Error("Transaction was not created. Please try again.");
+        if (documentKey && documentName) {
+          await documentsApi.create({
+            transaction_id: res.data.id,
+            file_name: documentName,
+            storage_key: documentKey,
+            doc_type: docType === "buyer_agency" ? "buyer_agency_agreement" : docType === "listing" ? "listing_agreement" : "purchase_and_sale",
+          });
+        }
         console.log('[AgentIntake] transaction created:', res.data.id, '| created_by:', res.data.created_by);
         navigate(`/transactions/${res.data.id}`);
       } else {
@@ -366,6 +379,7 @@ export default function AgentIntake() {
           property_address: isBuyerAgency ? "Pre-Transaction — Buyer Representation" : (form.address || ""),
           document_url: documentUrl,
           document_name: documentName,
+          document_key: documentKey,
           _honey: "",
         });
         if (res.data?.error) throw new Error(res.data.error);
@@ -526,16 +540,16 @@ export default function AgentIntake() {
         <CardContent>
           {isListing ? (
             <RequiredDocUpload docType="listing" required={false}
-              onUploaded={(url, name) => { setDocumentUrl(url); setDocumentName(name); }}
+              onUploaded={(url, name, key) => { setDocumentUrl(url); setDocumentName(name); setDocumentKey(key); }}
               onParsed={handleListingParsed} />
           ) : isBuyerAgency ? (
             <RequiredDocUpload docType="buyer_agency" required={false}
-              onUploaded={(url, name) => { setDocumentUrl(url); setDocumentName(name); }}
+              onUploaded={(url, name, key) => { setDocumentUrl(url); setDocumentName(name); setDocumentKey(key); }}
               onParsed={handleBuyerAgencyParsed} />
           ) : (
             <>
               <RequiredDocUpload docType="ps" required={true}
-                onUploaded={(url, name) => { setDocumentUrl(url); setDocumentName(name); }}
+                onUploaded={(url, name, key) => { setDocumentUrl(url); setDocumentName(name); setDocumentKey(key); }}
                 onParsed={handleParsed} />
               {parsedData && <div className="mt-3"><ParsedDeadlinesPreview parsed={parsedData} isCash={form.is_cash_transaction} /></div>}
             </>

@@ -4,6 +4,7 @@
  */
 import React, { useState, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
+import { transactionsApi } from "@/api/transactions";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -165,8 +166,7 @@ export default function PendingDeals() {
 
   const { data: allDeals = [], isLoading, refetch } = useQuery({
     queryKey: ["pending-deals-page"],
-    queryFn: () => base44.functions.invoke("getTeamTransactions", { status: "pending", sort: "-created_date" })
-      .then(r => r.data?.transactions || []),
+    queryFn: () => transactionsApi.list({ status: "pending" }),
     enabled: !!currentUser,
     staleTime: 10_000,
     refetchInterval: 30_000,

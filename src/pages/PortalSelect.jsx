@@ -1,6 +1,6 @@
 import React, { useState } from "react";
-import { base44 } from "@/api/base44Client";
 import { createPageUrl } from "@/utils";
+import { buildLoginPath } from "@/lib/authRouting";
 import {
   Building2,
   Brain,
@@ -69,7 +69,7 @@ export default function PortalSelect() {
   const [showUpdate, setShowUpdate] = useState(false);
 
   const handleTCLogin = () => {
-    base44.auth.redirectToLogin(createPageUrl("Dashboard"));
+    window.location.href = buildLoginPath(createPageUrl("Dashboard"));
   };
 
   return (

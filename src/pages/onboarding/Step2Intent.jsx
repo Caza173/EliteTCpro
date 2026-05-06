@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { base44 } from "@/api/base44Client";
+import { authApi } from "@/api/auth";
 import { Button } from "@/components/ui/button";
 import { Loader2, FileText, Compass } from "lucide-react";
 
@@ -27,7 +27,7 @@ export default function Step2Intent({ onComplete }) {
   const handleContinue = async () => {
     if (!selected) return;
     setSaving(true);
-    await base44.auth.updateMe({
+    await authApi.updateMe({
       onboarding_intent: selected,
       onboarding_step: selected === "explore_demo" ? 5 : 3,
     });

@@ -9,14 +9,47 @@ import type {
   TransactionTaskRow,
   UserRow,
 } from '../db/schema.js';
+import { generateSignedDownloadUrl, resolveStorageKey } from '../services/storage/index.js';
 
-export function serializeUser(user: UserRow) {
+const userAssetFieldMap = [
+  { storageKeyField: 'profile_photo_storage_key', urlField: 'profile_photo_url' },
+  { storageKeyField: 'signature_block_storage_key', urlField: 'signature_block_url' },
+  { storageKeyField: 'company_logo_storage_key', urlField: 'company_logo_url' },
+] as const;
+
+function omitStorageUrlFields(record: Record<string, unknown>, fields: readonly { storageKeyField: string; urlField: string }[]) {
+  const next = { ...record };
+  for (const field of fields) {
+    delete next[field.urlField];
+  }
+  return next;
+}
+
+export async function serializeUser(user: UserRow) {
+  const profile = omitStorageUrlFields((user.profile ?? {}) as Record<string, unknown>, userAssetFieldMap);
+  const resolvedEntries = await Promise.all(
+    userAssetFieldMap.map(async ({ storageKeyField, urlField }) => {
+      const storageKey = resolveStorageKey(profile[storageKeyField] ?? null);
+      return [storageKeyField, storageKey, urlField, storageKey ? await generateSignedDownloadUrl(storageKey) : null] as const;
+    })
+  );
+
+  for (const [storageKeyField, storageKey, urlField, signedUrl] of resolvedEntries) {
+    if (storageKey) {
+      profile[storageKeyField] = storageKey;
+      profile[urlField] = signedUrl;
+    } else {
+      delete profile[storageKeyField];
+      profile[urlField] = null;
+    }
+  }
+
   return {
     id: user.id,
     email: user.email,
     full_name: user.fullName,
     is_active: user.isActive,
-    ...user.profile,
+    ...profile,
     created_at: user.createdAt,
     updated_at: user.updatedAt,
   };
@@ -34,15 +67,26 @@ export function serializeTransaction(transaction: TransactionRow) {
   };
 }
 
-export function serializeDocument(document: DocumentRow) {
+export async function serializeDocument(document: DocumentRow) {
+  const data = (document.data ?? {}) as Record<string, unknown>;
+  const mimeType = typeof data.mime_type === 'string'
+    ? data.mime_type
+    : typeof data.content_type === 'string'
+      ? data.content_type
+      : null;
+  const sizeBytes = typeof data.size_bytes === 'number' ? data.size_bytes : null;
+  const storageKey = resolveStorageKey(document.storageKey);
   return {
     id: document.id,
     owner_id: document.ownerId,
     transaction_id: document.transactionId,
-    file_name: document.fileName,
-    file_url: document.fileUrl,
+    storage_key: storageKey,
+    signed_url: storageKey ? await generateSignedDownloadUrl(storageKey) : null,
+    original_filename: document.fileName,
+    mime_type: mimeType,
+    size_bytes: sizeBytes,
     doc_type: document.docType,
-    ...document.data,
+    ...data,
     created_at: document.createdAt,
     created_date: document.createdAt,
     updated_at: document.updatedAt,
@@ -114,7 +158,8 @@ export function serializeComplianceReport(report: ComplianceReportRow) {
   };
 }
 
-export function serializeSignatureRequest(request: SignatureRequestRow) {
+export async function serializeSignatureRequest(request: SignatureRequestRow) {
+  const storageKey = resolveStorageKey(request.signedDocumentStorageKey);
   return {
     id: request.id,
     owner_id: request.ownerId,
@@ -131,7 +176,8 @@ export function serializeSignatureRequest(request: SignatureRequestRow) {
     completed_at: request.completedAt,
     declined_at: request.declinedAt,
     cancelled_at: request.cancelledAt,
-    signed_document_url: request.signedDocumentUrl,
+    signed_document_storage_key: storageKey,
+    signed_document_signed_url: storageKey ? await generateSignedDownloadUrl(storageKey) : null,
     ...request.data,
     created_at: request.createdAt,
     created_date: request.createdAt,

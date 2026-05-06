@@ -1,6 +1,10 @@
 import React, { useState, useMemo } from "react";
-import { base44 } from "@/api/base44Client";
-import { useQuery } from "@tanstack/react-query";
+import {
+  useTransactionChecklistItems,
+  useTransactionComplianceReports,
+  useTransactionDocuments,
+  useTransactionTasks,
+} from "@/hooks/useTransactionResources";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -127,35 +131,13 @@ export default function IssueDetectionPanel({ transaction, currentUser }) {
     } catch { return new Set(); }
   });
 
-  const { data: checklistItems = [], isLoading: loadingChecklist } = useQuery({
-    queryKey: ["checklist", transaction.id],
-    queryFn: () => base44.entities.DocumentChecklistItem.filter({ transaction_id: transaction.id }),
-    enabled: !!transaction.id,
-    staleTime: 30_000,
-  });
-
-  const { data: complianceReports = [], isLoading: loadingReports } = useQuery({
-    queryKey: ["compliance-reports", transaction.id],
-    queryFn: () => base44.entities.ComplianceReport.filter({ transaction_id: transaction.id }, "-created_date"),
-    enabled: !!transaction.id,
-    staleTime: 30_000,
-  });
-
-  const { data: txTasks = [], isLoading: loadingTasks } = useQuery({
-    queryKey: ["txTasks", transaction.id],
-    queryFn: () => base44.entities.TransactionTask.filter({ transaction_id: transaction.id }),
-    enabled: !!transaction.id,
-    staleTime: 30_000,
-  });
-
-  const { data: documents = [] } = useQuery({
-    queryKey: ["tx-documents", transaction.id],
-    queryFn: () => base44.entities.Document.filter({ transaction_id: transaction.id }, "-created_date"),
-    enabled: !!transaction.id,
-    staleTime: 30_000,
-  });
+  const { data: checklistItems = [], isLoading: loadingChecklist, error: checklistError } = useTransactionChecklistItems(transaction.id, { enabled: !!transaction.id, staleTime: 30_000 });
+  const { data: complianceReports = [], isLoading: loadingReports, error: reportsError } = useTransactionComplianceReports(transaction.id, { enabled: !!transaction.id, staleTime: 30_000 });
+  const { data: txTasks = [], isLoading: loadingTasks, error: tasksError } = useTransactionTasks(transaction.id, { enabled: !!transaction.id, staleTime: 30_000 });
+  const { data: documents = [], error: documentsError } = useTransactionDocuments(transaction.id, { enabled: !!transaction.id, staleTime: 30_000 });
 
   const isLoading = loadingChecklist || loadingReports || loadingTasks;
+  const loadError = checklistError || reportsError || tasksError || documentsError;
 
   // Find a document matching an issue's document_reference (by report.document_name or file_name)
   const findMatchedDoc = (issue) => {
@@ -184,6 +166,14 @@ export default function IssueDetectionPanel({ transaction, currentUser }) {
 
   if (isLoading) {
     return <div className="space-y-3">{[1,2,3].map(i => <Skeleton key={i} className="h-16 rounded-xl" />)}</div>;
+  }
+
+  if (loadError) {
+    return (
+      <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+        {loadError.message || "Unable to load issue detection data."}
+      </div>
+    );
   }
 
   return (

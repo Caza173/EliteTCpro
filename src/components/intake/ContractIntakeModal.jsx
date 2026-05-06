@@ -1,6 +1,7 @@
 import React, { useState, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { base44 } from "@/api/base44Client";
+import { uploadsApi } from "@/api/uploads";
 import { createPageUrl } from "@/utils";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -45,6 +46,7 @@ export default function ContractIntakeModal({ open, onClose }) {
   const [step, setStep] = useState("upload");
   const [file, setFile] = useState(null);
   const [fileUrl, setFileUrl] = useState(null);
+  const [fileKey, setFileKey] = useState(null);
   const [extracted, setExtracted] = useState(null);
   const [error, setError] = useState(null);
   const [txId, setTxId] = useState(null);
@@ -55,6 +57,7 @@ export default function ContractIntakeModal({ open, onClose }) {
     setStep("upload");
     setFile(null);
     setFileUrl(null);
+    setFileKey(null);
     setExtracted(null);
     setError(null);
     setTxId(null);
@@ -77,12 +80,12 @@ export default function ContractIntakeModal({ open, onClose }) {
     setStep("parsing");
 
     try {
-      // Upload file
-      const { file_url } = await base44.integrations.Core.UploadFile({ file: f });
-      setFileUrl(file_url);
+      const upload = await uploadsApi.uploadTemporary(f, { namespace: "contracts/intake" });
+      setFileUrl(upload.signed_url);
+      setFileKey(upload.object_key);
 
       // Run AI extraction (reuse existing parsePurchaseAgreementV2)
-      const res = await base44.functions.invoke("parsePurchaseAgreementV2", { file_url });
+      const res = await base44.functions.invoke("parsePurchaseAgreementV2", { file_url: upload.signed_url, file_key: upload.object_key });
       if (res.data?.error) throw new Error(res.data.error);
 
       setExtracted(res.data);
@@ -110,6 +113,7 @@ export default function ContractIntakeModal({ open, onClose }) {
       const res = await base44.functions.invoke("createTransactionFromContract", {
         extracted,
         file_url: fileUrl,
+        file_key: fileKey,
         file_name: file?.name || "Purchase and Sale Agreement.pdf",
       });
       if (res.data?.error) throw new Error(res.data.error);

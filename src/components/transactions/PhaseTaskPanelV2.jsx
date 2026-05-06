@@ -6,6 +6,7 @@ import {
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { getPhasesForType } from "@/lib/taskLibrary";
+import { tasksApi } from "@/api/tasks";
 import { base44 } from "@/api/base44Client";
 import { useQueryClient, useQuery } from "@tanstack/react-query";
 import TaskLibraryModal from "@/components/tasks/TaskLibraryModal";
@@ -187,7 +188,7 @@ export default function PhaseTaskPanelV2({
     const patch = collab
       ? { assigned_to_email: collab.user_email, assigned_to_name: collab.user_name || collab.user_email, assigned_by_email: currentUser?.email, last_updated_by_email: currentUser?.email }
       : { assigned_to_email: null, assigned_to_name: null, assigned_by_email: currentUser?.email, last_updated_by_email: currentUser?.email };
-    await base44.entities.TransactionTask.update(taskId, patch);
+    await tasksApi.update(taskId, patch);
     onTasksChanged?.();
   };
 
@@ -272,7 +273,7 @@ export default function PhaseTaskPanelV2({
       updates.map(u => {
         const payload = { order_index: u.order_index };
         if (u.id === draggedTask.id && dstPhaseNum !== srcPhaseNum) payload.phase = u.phase;
-        return base44.entities.TransactionTask.update(u.id, payload);
+        return tasksApi.update(u.id, payload);
       })
     );
 
@@ -288,7 +289,7 @@ export default function PhaseTaskPanelV2({
 
   const saveEdit = async (taskId) => {
     if (editDraft.trim()) {
-      await base44.entities.TransactionTask.update(taskId, { title: editDraft.trim() });
+      await tasksApi.update(taskId, { title: editDraft.trim() });
       onTasksChanged?.();
     }
     setEditingId(null);
@@ -316,7 +317,7 @@ export default function PhaseTaskPanelV2({
       : 0;
 
     await Promise.all([
-      base44.entities.TransactionTask.create({
+      tasksApi.create({
         transaction_id: transactionId,
         brokerage_id: brokerageId,
         phase: phaseNum,
@@ -343,7 +344,7 @@ export default function PhaseTaskPanelV2({
   // ── Delete ────────────────────────────────────────────────────────────────
   const handleDelete = async (taskId) => {
     const task = allTasks.find(t => t.id === taskId);
-    await base44.entities.TransactionTask.delete(taskId);
+    await tasksApi.delete(taskId);
     if (task?.is_custom && brokerageId) {
       const libraryItems = await base44.entities.TaskLibraryItem.filter({
         brokerage_id: brokerageId,
@@ -370,7 +371,7 @@ export default function PhaseTaskPanelV2({
     ));
     setExpandedPhases(prev => new Set([...prev, targetPhaseNum]));
 
-    await base44.entities.TransactionTask.update(taskId, { phase: targetPhaseNum, order_index: newOrder });
+    await tasksApi.update(taskId, { phase: targetPhaseNum, order_index: newOrder });
     setLocalTasks(null);
     onTasksChanged?.();
   };
@@ -532,7 +533,7 @@ export default function PhaseTaskPanelV2({
               : 0;
             await Promise.all(
               items.map((item, i) =>
-                base44.entities.TransactionTask.create({
+                tasksApi.create({
                   transaction_id: transactionId,
                   brokerage_id: brokerageId,
                   phase: phaseNum,

@@ -1,4 +1,3 @@
-import multer from 'multer';
 import { and, desc, eq } from 'drizzle-orm';
 import { Router } from 'express';
 import { z } from 'zod';
@@ -6,16 +5,16 @@ import { db } from '../db/client.js';
 import { documents, transactions } from '../db/schema.js';
 import { serializeDocument } from '../lib/serializers.js';
 import { requireAuth } from '../middleware/auth.js';
+import { documentUploadMiddleware } from '../middleware/upload.js';
 import { requireDocumentOwnership } from '../middleware/ownership.js';
-import { deleteStoredObject, storeUploadedFile } from '../services/storage/index.js';
+import { deleteStoredObject, getStoredObjectSignedUrl, storeUploadedFile } from '../services/storage/index.js';
 
 const router = Router();
-const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 25 * 1024 * 1024 } });
 
 const documentPayloadSchema = z.object({
   transaction_id: z.string().uuid(),
   file_name: z.string().min(1),
-  file_url: z.string().min(1),
+  storage_key: z.string().min(1),
   doc_type: z.string().default('other'),
 }).catchall(z.unknown());
 
@@ -29,7 +28,7 @@ const uploadPayloadSchema = z.object({
 
 router.use(requireAuth);
 
-router.post('/upload', upload.single('file'), async (request, response) => {
+router.post('/upload', documentUploadMiddleware.single('file'), async (request, response) => {
   const payload = uploadPayloadSchema.parse(request.body ?? {});
   const file = request.file;
 
@@ -50,6 +49,7 @@ router.post('/upload', upload.single('file'), async (request, response) => {
   const stored = await storeUploadedFile({
     ownerId: request.user.id,
     transactionId: payload.transaction_id,
+    namespace: 'documents',
     originalFileName: payload.file_name ?? file.originalname,
     mimeType: file.mimetype,
     buffer: file.buffer,
@@ -61,18 +61,18 @@ router.post('/upload', upload.single('file'), async (request, response) => {
       ownerId: request.user.id,
       transactionId: payload.transaction_id,
       fileName: payload.file_name ?? file.originalname,
-      fileUrl: stored.url,
+      storageKey: stored.storageKey,
       docType: payload.doc_type,
       data: {
         ...payload,
-        content_type: file.mimetype,
-        size_bytes: file.size,
-        storage_key: stored.key,
+        mime_type: stored.mimeType,
+        size_bytes: stored.sizeBytes,
+        storage_key: stored.storageKey,
       },
     })
     .returning();
 
-  return response.status(201).json({ document: serializeDocument(documentRecord) });
+  return response.status(201).json({ document: await serializeDocument(documentRecord) });
 });
 
 router.get('/', async (request, response) => {
@@ -87,7 +87,7 @@ router.get('/', async (request, response) => {
     )
     .orderBy(desc(documents.createdAt));
 
-  return response.json({ documents: rows.map(serializeDocument) });
+  return response.json({ documents: await Promise.all(rows.map(serializeDocument)) });
 });
 
 router.post('/', async (request, response) => {
@@ -108,17 +108,28 @@ router.post('/', async (request, response) => {
       ownerId: request.user.id,
       transactionId: payload.transaction_id,
       fileName: payload.file_name,
-      fileUrl: payload.file_url,
+      storageKey: payload.storage_key,
       docType: payload.doc_type,
-      data: payload,
+      data: {
+        ...payload,
+        storage_key: payload.storage_key,
+      },
     })
     .returning();
 
-  return response.status(201).json({ document: serializeDocument(documentRecord) });
+  return response.status(201).json({ document: await serializeDocument(documentRecord) });
+});
+
+router.get('/:id/signed-url', requireDocumentOwnership, async (request, response) => {
+  const storageKey = request.documentRecord!.storageKey;
+  return response.json({
+    storage_key: storageKey,
+    signed_url: await getStoredObjectSignedUrl(storageKey),
+  });
 });
 
 router.get('/:id', requireDocumentOwnership, async (request, response) => {
-  return response.json({ document: serializeDocument(request.documentRecord!) });
+  return response.json({ document: await serializeDocument(request.documentRecord!) });
 });
 
 router.patch('/:id', requireDocumentOwnership, async (request, response) => {
@@ -142,24 +153,22 @@ router.patch('/:id', requireDocumentOwnership, async (request, response) => {
     .set({
       transactionId: payload.transaction_id ?? current.transactionId,
       fileName: payload.file_name ?? current.fileName,
-      fileUrl: payload.file_url ?? current.fileUrl,
+      storageKey: payload.storage_key ?? current.storageKey,
       docType: payload.doc_type ?? current.docType,
       data: {
         ...current.data,
         ...payload,
+        storage_key: payload.storage_key ?? current.storageKey,
       },
     })
     .where(and(eq(documents.id, current.id), eq(documents.ownerId, request.user.id)))
     .returning();
 
-  return response.json({ document: serializeDocument(documentRecord) });
+  return response.json({ document: await serializeDocument(documentRecord) });
 });
 
 router.delete('/:id', requireDocumentOwnership, async (request, response) => {
-  const storageKey = typeof request.documentRecord!.data.storage_key === 'string' ? request.documentRecord!.data.storage_key : null;
-  if (storageKey) {
-    await deleteStoredObject(storageKey);
-  }
+  await deleteStoredObject(request.documentRecord!.storageKey);
 
   await db
     .delete(documents)

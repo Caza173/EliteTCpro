@@ -5,7 +5,7 @@
  */
 import React, { useState } from "react";
 import { AlertTriangle, PenLine, ChevronRight, CheckCircle2, X } from "lucide-react";
-import { base44 } from "@/api/base44Client";
+import { signatureRequestsApi } from "@/api/signatureRequests";
 import { useQueryClient } from "@tanstack/react-query";
 
 export default function SignatureBlockBanner({ blockingDocuments = [], onSendSignature, transaction }) {
@@ -18,22 +18,10 @@ export default function SignatureBlockBanner({ blockingDocuments = [], onSendSig
   const handleMarkSigned = async (doc) => {
     setMarkingId(doc.document_id);
     try {
-      // Create a completed signature request record to mark as externally signed
-      await base44.entities.SignatureRequest.create({
+      await signatureRequestsApi.markCompletedExternal({
         transaction_id: transaction?.id,
         document_id: doc.document_id,
-        provider: "internal",
-        status: "completed",
         title: doc.document_name,
-        completed_at: new Date().toISOString(),
-        progress_completed: 1,
-        progress_total: 1,
-      });
-
-      // Unblock the transaction
-      await base44.entities.Transaction.update(transaction?.id, {
-        blocked_by_signature: false,
-        compliance_status: "compliant",
       });
 
       queryClient.invalidateQueries({ queryKey: ["signatures", transaction?.id] });

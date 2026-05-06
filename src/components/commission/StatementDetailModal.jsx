@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { base44 } from "@/api/base44Client";
+import { uploadsApi } from "@/api/uploads";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { X, Download, Send, CheckCircle, Building2, Loader2, Pencil, RotateCcw, Trash2 } from "lucide-react";
@@ -175,7 +176,7 @@ export default function StatementDetailModal({ statement: s, onClose, onEdit, on
     // Also upload for download link
     const blob = doc.output("blob");
     const file = new File([blob], pdfFileName, { type: "application/pdf" });
-    const { file_url } = await base44.integrations.Core.UploadFile({ file });
+    const upload = await uploadsApi.uploadTemporary(file, { namespace: "commission-statements" });
 
     if (type === "agent") {
       await base44.functions.invoke("sendCommissionEmail", {
@@ -194,7 +195,7 @@ export default function StatementDetailModal({ statement: s, onClose, onEdit, on
         pdfBase64,
         pdfFileName,
       });
-      await updateMutation.mutateAsync({ status: "sent_to_agent", pdf_url: file_url });
+      await updateMutation.mutateAsync({ status: "sent_to_agent", pdf_url: upload.signed_url, pdf_key: upload.object_key });
     } else {
       await base44.functions.invoke("sendCommissionEmail", {
         to: s.title_company_email,
@@ -214,7 +215,7 @@ export default function StatementDetailModal({ statement: s, onClose, onEdit, on
         pdfBase64,
         pdfFileName,
       });
-      await updateMutation.mutateAsync({ status: "sent_to_title", sent_to_title_at: new Date().toISOString(), pdf_url: file_url });
+      await updateMutation.mutateAsync({ status: "sent_to_title", sent_to_title_at: new Date().toISOString(), pdf_url: upload.signed_url, pdf_key: upload.object_key });
     }
     setSending(null);
   };

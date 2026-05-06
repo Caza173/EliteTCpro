@@ -1,6 +1,5 @@
 import React, { useState, useMemo, useEffect } from "react";
 import { Link } from "react-router-dom";
-import { base44 } from "@/api/base44Client";
 import { createPageUrl } from "@/utils";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -14,7 +13,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import TransactionTable from "../components/transactions/TransactionTable";
 import TransactionCardGrid from "../components/transactions/TransactionCardGrid";
 import ContractIntakeModal from "../components/intake/ContractIntakeModal";
-import { useDealAccess } from "../lib/useDealAccess";
+import { useDeleteTransaction, useTransactions } from "@/hooks/useTransactions";
 
 const PAGE_SIZE = 25;
 
@@ -37,11 +36,11 @@ export default function Transactions() {
   const [selectMode, setSelectMode] = useState(false);
   const [selectedIds, setSelectedIds] = useState(new Set());
   const [deleting, setDeleting] = useState(false);
-  // Role-based deal access — filters to only deals the user may see
-  const { transactions, pendingDeals, myDeals, isLoading, currentUser, isSuperAdmin, isTC } = useDealAccess();
+  const { data: transactions = [], isLoading, error, refetch } = useTransactions();
+  const deleteTransaction = useDeleteTransaction();
 
   // The base list for the "all" tab respects access control
-  const baseList = dealTab === "my" ? myDeals : transactions;
+  const baseList = transactions;
 
   const filtered = useMemo(() => (baseList || []).filter((tx) => {
     const q = search.toLowerCase();
@@ -61,7 +60,7 @@ export default function Transactions() {
       return `${dt.getFullYear()}-${String(dt.getMonth() + 1).padStart(2, "0")}` === monthFilter;
     })();
     return matchesSearch && matchesStatus && matchesPhase && matchesMonth;
-  }), [transactions, search, statusFilter, phaseFilter, monthFilter]);
+  }), [baseList, search, statusFilter, phaseFilter, monthFilter]);
 
   const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
   const paginated = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
@@ -90,14 +89,12 @@ export default function Transactions() {
     setDeleting(true);
     await Promise.allSettled(
       Array.from(selectedIds).map(id =>
-        base44.functions.invoke("deleteTransaction", { transaction_id: id })
+        deleteTransaction.mutateAsync(id)
       )
     );
     setDeleting(false);
     setSelectedIds(new Set());
     setSelectMode(false);
-    // Refresh by reloading the page data via the existing query
-    window.location.reload();
   };
 
   // Build month options from available transactions
@@ -282,7 +279,17 @@ export default function Transactions() {
         {(() => {
           return (
           <>
-            {isLoading ? (
+            {error ? (
+              <Card className="shadow-sm border-red-200 bg-red-50">
+                <CardContent className="p-4 flex items-center justify-between gap-4">
+                  <div>
+                    <p className="text-sm font-semibold text-red-700">Unable to load transactions</p>
+                    <p className="text-sm text-red-600">{error.message || "The transaction list request failed."}</p>
+                  </div>
+                  <Button variant="outline" size="sm" onClick={() => refetch()}>Retry</Button>
+                </CardContent>
+              </Card>
+            ) : isLoading ? (
               <div className="space-y-3 p-2">
                 {[1,2,3,4,5].map(i => <Skeleton key={i} className="h-12 rounded" />)}
               </div>

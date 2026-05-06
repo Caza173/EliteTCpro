@@ -7,7 +7,7 @@ import Step2Intent from "./onboarding/Step2Intent";
 import Step3Transaction from "./onboarding/Step3Transaction";
 import Step4Document from "./onboarding/Step4Document";
 import Step5Value from "./onboarding/Step5Value";
-import { base44 } from "@/api/base44Client";
+import { authApi } from "@/api/auth";
 
 export default function Onboarding() {
   const { currentUser, refreshUser } = useCurrentUser();
@@ -45,7 +45,7 @@ export default function Onboarding() {
   };
 
   const handleStep3Skip = async () => {
-    await base44.auth.updateMe({ onboarding_step: 4 });
+    await authApi.updateMe({ onboarding_step: 4 });
     refreshUser();
     setStep(4);
   };
@@ -58,7 +58,7 @@ export default function Onboarding() {
   };
 
   const handleStep4Skip = async () => {
-    await base44.auth.updateMe({ onboarding_step: 5 });
+    await authApi.updateMe({ onboarding_step: 5 });
     refreshUser();
     setStep(5);
   };

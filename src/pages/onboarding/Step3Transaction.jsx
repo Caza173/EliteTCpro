@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { base44 } from "@/api/base44Client";
+import { authApi } from "@/api/auth";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -26,7 +27,7 @@ export default function Step3Transaction({ user, onComplete, onSkip }) {
       closing_date: form.closing_date || undefined,
       status: "active",
     });
-    await base44.auth.updateMe({ onboarding_step: 4 });
+    await authApi.updateMe({ onboarding_step: 4 });
     setSaving(false);
     onComplete(tx.id);
   };

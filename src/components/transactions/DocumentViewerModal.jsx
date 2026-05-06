@@ -1,4 +1,5 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
+import { documentsApi } from "@/api/documents";
 import { X, Download, ExternalLink, FileText, AlertCircle, Mail } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -31,10 +32,46 @@ const TYPE_COLORS = {
 
 export default function DocumentViewerModal({ doc, onClose, onAttachToEmail }) {
   const [iframeError, setIframeError] = useState(false);
+  const [resolvedUrl, setResolvedUrl] = useState(null);
+
+  useEffect(() => {
+    if (!doc) {
+      setIframeError(false);
+      setResolvedUrl(null);
+      return undefined;
+    }
+
+    let cancelled = false;
+    setIframeError(false);
+    setResolvedUrl(doc.file_url || null);
+
+    if (!doc.id) {
+      return () => {
+        cancelled = true;
+      };
+    }
+
+    documentsApi.getSignedUrl(doc.id)
+      .then((result) => {
+        if (!cancelled) {
+          setResolvedUrl(result.signed_url);
+        }
+      })
+      .catch(() => {
+        if (!cancelled) {
+          setResolvedUrl(doc.file_url || null);
+        }
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [doc]);
 
   if (!doc) return null;
 
-  const isPdf = doc.file_name?.toLowerCase().endsWith(".pdf") || doc.file_url?.toLowerCase().includes(".pdf");
+  const fileUrl = resolvedUrl || doc.file_url;
+  const isPdf = doc.file_name?.toLowerCase().endsWith(".pdf") || fileUrl?.toLowerCase().includes(".pdf");
   const docTypeLabel = DOC_LABELS[doc.doc_type] || doc.doc_type || "Other";
   const docTypeColor = TYPE_COLORS[doc.doc_type] || TYPE_COLORS.other;
 
@@ -59,12 +96,12 @@ export default function DocumentViewerModal({ doc, onClose, onAttachToEmail }) {
                 <Mail className="w-3.5 h-3.5" /> Attach to Email
               </Button>
             )}
-            <a href={doc.file_url} download={doc.file_name} target="_blank" rel="noopener noreferrer">
+            <a href={fileUrl} download={doc.file_name} target="_blank" rel="noopener noreferrer">
               <Button variant="outline" size="sm" className="text-xs gap-1.5">
                 <Download className="w-3.5 h-3.5" /> Download
               </Button>
             </a>
-            <a href={doc.file_url} target="_blank" rel="noopener noreferrer">
+            <a href={fileUrl} target="_blank" rel="noopener noreferrer">
               <Button variant="outline" size="sm" className="text-xs gap-1.5">
                 <ExternalLink className="w-3.5 h-3.5" /> Open in Tab
               </Button>
@@ -81,7 +118,7 @@ export default function DocumentViewerModal({ doc, onClose, onAttachToEmail }) {
             <div className="flex flex-col items-center justify-center h-full gap-4 text-gray-500">
               <AlertCircle className="w-10 h-10 text-gray-300" />
               <p className="text-sm text-gray-500">Preview not available for this file type.</p>
-              <a href={doc.file_url} target="_blank" rel="noopener noreferrer">
+              <a href={fileUrl} target="_blank" rel="noopener noreferrer">
                 <Button className="bg-blue-600 hover:bg-blue-700 gap-2">
                   <ExternalLink className="w-4 h-4" /> Open File
                 </Button>
@@ -89,7 +126,7 @@ export default function DocumentViewerModal({ doc, onClose, onAttachToEmail }) {
             </div>
           ) : (
             <iframe
-              src={doc.file_url}
+              src={fileUrl}
               className="w-full h-full rounded-b-xl border-0"
               title={doc.file_name}
               onError={() => setIframeError(true)}

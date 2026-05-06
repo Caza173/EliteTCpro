@@ -1,8 +1,18 @@
 import React, { useState, useRef, useEffect, useCallback, useMemo } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { base44 } from "@/api/base44Client";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-// useQuery still used for checklist, tasks, documents, compliance, comms
+import { useQueryClient } from "@tanstack/react-query";
+import { emailApi } from "@/api/email";
+import { portalApi } from "@/api/portal";
+import { tasksApi } from "@/api/tasks";
+import { useDeleteTransaction, useTransaction, useUpdateTransaction } from "@/hooks/useTransactions";
+import {
+  useTransactionChecklistItems,
+  useTransactionCommAutomations,
+  useTransactionComplianceReports,
+  useTransactionDocuments,
+  useTransactionTasks,
+} from "@/hooks/useTransactionResources";
 import { createPageUrl } from "@/utils";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -27,7 +37,6 @@ import { generateTasksForPhase, isPhaseComplete, getPhasesForType, normalizeTran
 import DocChecklistPanel from "../components/transactions/DocChecklistPanel";
 import HealthScoreBadge from "../components/dashboard/HealthScoreBadge";
 import { useCurrentUser } from "../components/auth/useCurrentUser";
-import { useDealAccess } from "../lib/useDealAccess";
 import { evaluateDeadline, getAlertableDeadlines } from "../utils/dateUtils";
 import { writeAuditLog, computeHealthScore } from "../components/utils/tenantUtils";
 import FinanceTab from "../components/finance/FinanceTab";
@@ -94,7 +103,12 @@ export default function TransactionDetail() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const { data: currentUser } = useCurrentUser();
-  const { transactions: allTransactions, canAccess, isLoading: accessLoading } = useDealAccess();
+  const {
+    data: transaction,
+    isLoading: isLoadingTransaction,
+    error: transactionError,
+    refetch: refetchTransaction,
+  } = useTransaction(id);
 
   const urlSearch = new URLSearchParams(window.location.search);
   const urlTab = urlSearch.get("tab");
@@ -187,45 +201,41 @@ export default function TransactionDetail() {
     };
   }, []);
 
-  // Use the shared useDealAccess list — same cache key, no duplicate fetch
-  const transactions = allTransactions;
-  const isLoadingList = accessLoading;
+  const {
+    data: checklistItems = [],
+    isLoading: isLoadingChecklist,
+    error: checklistError,
+    refetch: refetchChecklistItems,
+  } = useTransactionChecklistItems(id, { enabled: !!transaction?.id });
 
-  const transaction = transactions.find((t) => t.id === id) || null;
+  const {
+    data: txTasks = [],
+    isLoading: isLoadingTasks,
+    error: tasksError,
+    refetch: refetchTxTasks,
+  } = useTransactionTasks(id, { enabled: !!transaction?.id });
 
-  const { data: checklistItems = [] } = useQuery({
-    queryKey: ["checklist", id],
-    queryFn: () => base44.entities.DocumentChecklistItem.filter({ transaction_id: id }),
-    enabled: !!id,
-  });
+  const {
+    data: rawDocuments = [],
+    isLoading: isLoadingDocuments,
+    error: documentsError,
+    refetch: refetchDocuments,
+  } = useTransactionDocuments(id, { enabled: !!transaction?.id });
+  const documents = rawDocuments.filter((document) => document.is_deleted !== true);
 
-  const { data: txTasks = [], refetch: refetchTxTasks } = useQuery({
-    queryKey: ["txTasks", id],
-    queryFn: () => base44.entities.TransactionTask.filter({ transaction_id: id }),
-    enabled: !!id,
-  });
+  const {
+    data: complianceReports = [],
+    isLoading: isLoadingComplianceReports,
+    error: complianceReportsError,
+    refetch: refetchComplianceReports,
+  } = useTransactionComplianceReports(id, { enabled: !!transaction?.id, staleTime: 60_000 });
 
-  const { data: documents = [] } = useQuery({
-    queryKey: ["tx-documents", id],
-    queryFn: () => base44.entities.Document.filter({ transaction_id: id }, "-created_date"),
-    enabled: !!id,
-  });
-
-  // Fetch compliance reports for badge count (must be before early returns)
-  const { data: complianceReports = [] } = useQuery({
-    queryKey: ["compliance-reports", id],
-    queryFn: () => base44.entities.ComplianceReport.filter({ transaction_id: id }, "-created_date"),
-    enabled: !!id,
-    staleTime: 60_000,
-  });
-
-  // Fetch comms for badge count (must be before early returns)
-  const { data: commAutomations = [] } = useQuery({
-    queryKey: ["comm-automations", id],
-    queryFn: () => base44.entities.CommAutomation.filter({ transaction_id: id }),
-    enabled: !!id,
-    staleTime: 30_000,
-  });
+  const {
+    data: commAutomations = [],
+    isLoading: isLoadingCommAutomations,
+    error: commAutomationsError,
+    refetch: refetchCommAutomations,
+  } = useTransactionCommAutomations(id, { enabled: !!transaction?.id, staleTime: 30_000 });
 
   // Auto-switch to listing_intake tab for seller transactions
   useEffect(() => {
@@ -266,7 +276,7 @@ export default function TransactionDetail() {
         })
       ));
       // Delete incompatible tasks
-      await Promise.all(incompatible.map(t => base44.entities.TransactionTask.delete(t.id)));
+      await Promise.all(incompatible.map((taskToDelete) => tasksApi.delete(taskToDelete.id)));
       refetchTxTasks();
     })();
   }, [transaction?.id, txTasks?.length]);
@@ -285,7 +295,7 @@ export default function TransactionDetail() {
     seededPhasesRef.current.add(key);
 
     // Fetch fresh tasks to avoid stale closure issues
-    const fresh = await base44.entities.TransactionTask.filter({ transaction_id: id });
+    const fresh = (await refetchTxTasks()).data || [];
     const existing = fresh.filter(t => t.phase === phaseNum);
     if (existing.length > 0) {
       // Deduplicate: keep first occurrence of each title, delete the rest
@@ -299,7 +309,7 @@ export default function TransactionDetail() {
         }
       });
       if (toDelete.length > 0) {
-        await Promise.all(toDelete.map(tid => base44.entities.TransactionTask.delete(tid)));
+        await Promise.all(toDelete.map((taskIdToDelete) => tasksApi.delete(taskIdToDelete)));
         refetchTxTasks();
       }
       return;
@@ -307,7 +317,7 @@ export default function TransactionDetail() {
 
     const libTasks = generateTasksForPhase(phaseNum, id, normalizeTransactionType(transaction?.transaction_type));
     await Promise.all(libTasks.map((t, i) =>
-      base44.entities.TransactionTask.create({
+      tasksApi.create({
         transaction_id: id,
         brokerage_id: transaction?.brokerage_id,
         phase: phaseNum,
@@ -335,7 +345,7 @@ export default function TransactionDetail() {
     queryClient.setQueryData(["txTasks", id], (old = []) =>
       old.map(t => t.id === taskId ? { ...t, is_completed: !t.is_completed } : t)
     );
-    await base44.entities.TransactionTask.update(taskId, { is_completed: !task.is_completed });
+    await tasksApi.update(taskId, { is_completed: !task.is_completed });
     refetchTxTasks();
     
     await writeAuditLog({
@@ -358,31 +368,17 @@ export default function TransactionDetail() {
     }
   };
 
-  const updateMutation = useMutation({
-    mutationFn: ({ id, data }) => base44.functions.invoke("updateTransaction", { transaction_id: id, data }),
-    onMutate: ({ id: txId, data }) => {
-      queryClient.cancelQueries({ queryKey: ["transactions"] });
-      // Update both possible cache keys
-      queryClient.setQueriesData({ queryKey: ["transactions"] }, (old = []) =>
-        Array.isArray(old) ? old.map((t) => (t.id === txId ? { ...t, ...data } : t)) : old
-      );
-    },
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["transactions"] }),
-  });
+  const updateMutation = useUpdateTransaction();
 
-  const deleteMutation = useMutation({
-    mutationFn: (txId) => base44.functions.invoke("deleteTransaction", { transaction_id: txId }),
+  const deleteMutation = useDeleteTransaction({
     onSuccess: () => {
       setConfirmDelete(false);
-      queryClient.removeQueries({ queryKey: ["transactions"] });
       navigate(createPageUrl("Transactions"));
     },
     onError: (err) => {
       setConfirmDelete(false);
-      // If the response says success or 404, treat as success
       const msg = err?.message || "";
       if (msg.includes("404") || msg.toLowerCase().includes("not found")) {
-        queryClient.removeQueries({ queryKey: ["transactions"] });
         navigate(createPageUrl("Transactions"));
         return;
       }
@@ -421,7 +417,14 @@ export default function TransactionDetail() {
       const subject = `Transaction Update: ${phaseName} Completed — ${transaction.address}`;
       const body = `Hello,\n\nThe <strong>${phaseName}</strong> phase has been completed for <strong>${transaction.address}</strong>.\n\n${nextPhaseName ? `Next up: <strong>${nextPhaseName}</strong>` : "This transaction is nearing its final stages."}\n\nBest regards,\nTC Manager`.trim();
       const recipients = [transaction.client_email, transaction.agent_email].filter(Boolean);
-      await Promise.allSettled(recipients.map((to) => base44.integrations.Core.SendEmail({ to, subject, body })));
+      if (recipients.length > 0) {
+        await emailApi.send({
+          to: recipients,
+          subject,
+          body,
+          transaction_id: transaction.id,
+        });
+      }
     }
   };
 
@@ -435,12 +438,9 @@ export default function TransactionDetail() {
     setInviteModalOpen(false);
 
     // Generate / retrieve both codes
-    const codesRes = await base44.functions.invoke("portalLookup", {
-      action: "generate_codes",
-      transaction_id: transaction.id,
-    });
-    const clientCode = codesRes.data?.client_code || transaction.client_code || transaction.client_access_code;
-    const agentCode  = codesRes.data?.agent_code  || transaction.agent_code;
+    const codesRes = await portalApi.generateCodes(transaction.id);
+    const clientCode = codesRes.client_code || transaction.client_code || transaction.client_access_code;
+    const agentCode  = codesRes.agent_code  || transaction.agent_code;
 
     queryClient.invalidateQueries({ queryKey: ["transactions"] });
 
@@ -456,13 +456,12 @@ export default function TransactionDetail() {
 <p style="color:#666;font-size:13px;">Keep this code handy — you'll use it each time you check your status.</p>
 <p>Best regards,<br/>TC Manager</p>`;
 
-    await Promise.allSettled(selectedEmails.map(to =>
-      base44.functions.invoke("sendGmailEmail", {
+    await Promise.allSettled(selectedEmails.map((to) =>
+      emailApi.send({
         to: [to],
         subject: `Your Transaction Portal Access — ${transaction.address}`,
-        body: clientEmailBody,
+        htmlBody: clientEmailBody,
         transaction_id: transaction.id,
-        brokerage_id: transaction.brokerage_id,
       })
     ));
 
@@ -479,12 +478,11 @@ export default function TransactionDetail() {
 <p style="color:#666;font-size:13px;">This code gives you agent-level access including timeline, shared notes, and the ability to leave notes for your TC.</p>
 <p>Best regards,<br/>TC Manager</p>`;
 
-      await base44.functions.invoke("sendGmailEmail", {
+      await emailApi.send({
         to: [agentEmail],
         subject: `Agent Portal Access — ${transaction.address}`,
-        body: agentEmailBody,
+        htmlBody: agentEmailBody,
         transaction_id: transaction.id,
-        brokerage_id: transaction.brokerage_id,
       }).catch(() => {});
     }
 
@@ -513,13 +511,14 @@ export default function TransactionDetail() {
       ? deadlines.map((d) => `<tr><td style="padding:6px 12px;border-bottom:1px solid #f0f0f0;">${d.label}</td><td style="padding:6px 12px;border-bottom:1px solid #f0f0f0;font-weight:600;">${formatSafe(d.date)}</td></tr>`).join("")
       : "<tr><td colspan='2' style='padding:8px 12px;color:#999;'>No deadlines set.</td></tr>";
     const body = `<p>Hello,</p><p>Here is the key deadline timeline for <strong>${transaction.address}</strong>:</p><table style="border-collapse:collapse;width:100%;max-width:480px;">${deadlineRows}</table><p>Best regards,<br/>TC Manager</p>`;
-    const results = await Promise.allSettled(recipients.map((to) => base44.functions.invoke("sendEmail", {
-      to,
-      subject: `Key Deadlines — ${transaction.address}`,
-      body,
-      transaction_id: transaction.id,
-      brokerage_id: transaction.brokerage_id,
-    })));
+    const results = await Promise.allSettled(recipients.map((to) =>
+      emailApi.send({
+        to: [to],
+        subject: `Key Deadlines — ${transaction.address}`,
+        htmlBody: body,
+        transaction_id: transaction.id,
+      })
+    ));
     setSendingTimeline(false);
     const sent = recipients.filter((_, i) => results[i].status === "fulfilled");
     setAlertDialog({
@@ -592,7 +591,8 @@ export default function TransactionDetail() {
     [transaction, checklistItems, complianceReports, txTasks]
   );
 
-  const isLoading = isLoadingList;
+  const isLoading = isLoadingTransaction || isLoadingChecklist || isLoadingTasks || isLoadingDocuments || isLoadingComplianceReports || isLoadingCommAutomations;
+  const relatedDataError = checklistError || tasksError || documentsError || complianceReportsError || commAutomationsError;
 
   if (isLoading) {
     return (
@@ -604,10 +604,20 @@ export default function TransactionDetail() {
     );
   }
 
-  if (!transaction) {
+  if (transactionError) {
+    const isAccessError = transactionError.status === 404 || transactionError.status === 403;
     return (
       <div className="max-w-5xl mx-auto text-center py-20 w-full min-w-0">
-        <p className="text-gray-500 mb-4">Transaction not found (ID: {id}).</p>
+        <p className="text-gray-500 mb-4">
+          {isAccessError
+            ? "This transaction was not found or you do not have permission to view it."
+            : (transactionError.message || `Unable to load transaction ${id}.`)}
+        </p>
+        {!isAccessError && (
+          <div className="mb-4">
+            <Button variant="outline" onClick={() => refetchTransaction()}>Retry</Button>
+          </div>
+        )}
         <Link to={createPageUrl("Transactions")}>
           <Button variant="outline"><ArrowLeft className="w-4 h-4 mr-2" /> Back to Transactions</Button>
         </Link>
@@ -615,16 +625,10 @@ export default function TransactionDetail() {
     );
   }
 
-  // Access control gate — only deny if fully loaded and explicitly not accessible
-  // Never deny if transactions list had errors (network issues) or is still loading
-  if (!accessLoading && !isLoading && transaction && !canAccess(transaction.id)) {
+  if (!transaction) {
     return (
       <div className="max-w-5xl mx-auto text-center py-20 w-full min-w-0">
-        <div className="w-16 h-16 rounded-full bg-red-50 flex items-center justify-center mx-auto mb-4">
-          <ShieldCheck className="w-8 h-8 text-red-400" />
-        </div>
-        <h2 className="text-xl font-bold text-gray-900 mb-2">Access Denied</h2>
-        <p className="text-gray-500 mb-6">You do not have permission to view this transaction.</p>
+        <p className="text-gray-500 mb-4">Transaction not found (ID: {id}).</p>
         <Link to={createPageUrl("Transactions")}>
           <Button variant="outline"><ArrowLeft className="w-4 h-4 mr-2" /> Back to Transactions</Button>
         </Link>
@@ -710,6 +714,32 @@ export default function TransactionDetail() {
         onConfirm={() => setAlertDialog({ open: false, title: "", message: "" })}
         onCancel={() => setAlertDialog({ open: false, title: "", message: "" })}
       />
+
+      {relatedDataError && (
+        <div className="px-4 lg:px-5 pt-4">
+          <Card className="border-red-200 bg-red-50 shadow-sm">
+            <CardContent className="p-4 flex items-center justify-between gap-4">
+              <div>
+                <p className="text-sm font-semibold text-red-700">Some transaction data failed to load</p>
+                <p className="text-sm text-red-600">{relatedDataError.message || "One or more related resource requests failed."}</p>
+              </div>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => Promise.allSettled([
+                  refetchChecklistItems(),
+                  refetchTxTasks(),
+                  refetchDocuments(),
+                  refetchComplianceReports(),
+                  refetchCommAutomations(),
+                ])}
+              >
+                Retry
+              </Button>
+            </CardContent>
+          </Card>
+        </div>
+      )}
 
       {/* Mobile AI Drawer */}
       {mobileAIOpen && (

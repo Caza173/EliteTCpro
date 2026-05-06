@@ -1,5 +1,6 @@
 import React, { useState, useRef } from "react";
 import { base44 } from "@/api/base44Client";
+import { uploadsApi } from "@/api/uploads";
 import { Button } from "@/components/ui/button";
 import { Upload, FileText, X, Loader2, CheckCircle2, AlertTriangle } from "lucide-react";
 import { toast } from "sonner";
@@ -36,14 +37,15 @@ export default function TemplateUploadModal({ open, onClose, brokerageId, onSave
     setErrorMsg("");
 
     // 1. Upload file
-    const { file_url } = await base44.integrations.Core.UploadFile({ file });
+    const upload = await uploadsApi.uploadTemporary(file, { namespace: "workflow-templates" });
 
     setStep("parsing");
 
     // 2. Parse via backend
     const res = await base44.functions.invoke("parseTemplateDocument", {
       action: "parse",
-      file_url,
+      file_url: upload.signed_url,
+      file_key: upload.object_key,
       file_name: file.name,
       brokerage_id: brokerageId,
     });
@@ -62,7 +64,8 @@ export default function TemplateUploadModal({ open, onClose, brokerageId, onSave
       name: parsed.template_name,
       transaction_type: parsed.transaction_type || "buyer",
       source: "uploaded",
-      original_file_url: file_url,
+      original_file_url: upload.signed_url,
+      original_file_key: upload.object_key,
       original_file_name: file.name,
       phases: parsed.phases || [],
       tasks: parsed.tasks || [],

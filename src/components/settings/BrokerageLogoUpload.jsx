@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { base44 } from "@/api/base44Client";
+import { uploadsApi } from "@/api/uploads";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Building2, Upload, CheckCircle, Loader2, X } from "lucide-react";
@@ -12,8 +13,8 @@ export default function BrokerageLogoUpload({ brokerage, onSaved }) {
     const file = e.target.files?.[0];
     if (!file) return;
     setUploading(true);
-    const { file_url } = await base44.integrations.Core.UploadFile({ file });
-    await base44.functions.invoke("updateBrokerage", { brokerage_id: brokerage.id, data: { branding_logo: file_url } });
+    const upload = await uploadsApi.uploadImage(file, { namespace: "brokerages/logos" });
+    await base44.functions.invoke("updateBrokerage", { brokerage_id: brokerage.id, data: { branding_logo: upload.signed_url, branding_logo_key: upload.object_key } });
     setUploading(false);
     setSaved(true);
     setTimeout(() => setSaved(false), 2500);

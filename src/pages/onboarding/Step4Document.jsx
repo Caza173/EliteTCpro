@@ -1,5 +1,8 @@
 import React, { useState, useRef } from "react";
 import { base44 } from "@/api/base44Client";
+import { authApi } from "@/api/auth";
+import { documentsApi } from "@/api/documents";
+import { uploadsApi } from "@/api/uploads";
 import { Button } from "@/components/ui/button";
 import { Loader2, Upload, FileText, CheckCircle, Sparkles } from "lucide-react";
 
@@ -19,25 +22,22 @@ export default function Step4Document({ transactionId, onComplete, onSkip }) {
   const handleUpload = async () => {
     if (!file) return;
     setUploading(true);
-    const { file_url } = await base44.integrations.Core.UploadFile({ file });
-    setUploading(false);
-
-    // Save document record
-    const doc = transactionId
-      ? await base44.entities.Document.create({
+    const uploadResult = transactionId
+      ? await documentsApi.upload(file, {
           transaction_id: transactionId,
-          file_url,
           file_name: file.name,
           doc_type: "purchase_and_sale",
         })
-      : null;
+      : await uploadsApi.uploadTemporary(file, { namespace: "onboarding/purchase-and-sale" });
+    setUploading(false);
 
     // Trigger AI parse
     setParsing(true);
     let parsed = null;
     try {
       const res = await base44.functions.invoke("parsePurchaseAgreementV2", {
-        file_url,
+        file_url: uploadResult.file_url || uploadResult.signed_url,
+        file_key: uploadResult.storage_key || uploadResult.object_key,
         transaction_id: transactionId,
       });
       parsed = res.data;
@@ -46,7 +46,7 @@ export default function Step4Document({ transactionId, onComplete, onSkip }) {
     setParsedData(parsed);
     setDone(true);
 
-    await base44.auth.updateMe({ onboarding_step: 5 });
+    await authApi.updateMe({ onboarding_step: 5 });
   };
 
   if (done) {
