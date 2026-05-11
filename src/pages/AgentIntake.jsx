@@ -338,11 +338,10 @@ export default function AgentIntake() {
           document_name: documentName || undefined,
           inspection_deadline: form.inspections_waived ? null : form.inspection_deadline,
         };
-        const res = await base44.functions.invoke("createTransaction", { ...txPayload, status: "active" });
-        if (res.data?.error) throw new Error(res.data.error);
-        if (!res.data?.id) throw new Error("Transaction was not created. Please try again.");
-        console.log('[AgentIntake] transaction created:', res.data.id, '| created_by:', res.data.created_by);
-        navigate(`/transactions/${res.data.id}`);
+        // Use SDK directly from frontend so Base44 stamps created_by = user.id (UUID)
+        const tx = await base44.entities.Transaction.create({ ...txPayload, status: "active" });
+        if (!tx?.id) throw new Error("Transaction was not created. Please try again.");
+        navigate(`/transactions/${tx.id}`);
       } else {
         // Public/unauthenticated: go through intake submission queue
         const res = await base44.functions.invoke("submitIntake", {
