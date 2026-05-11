@@ -215,20 +215,6 @@ export function detectIssues(transaction, checklistItems = [], complianceReports
     });
   }
 
-  // ── 6. WORKFLOW INCOMPLETE ─────────────────────────────────────────────────
-  const currentPhaseTasks = txTasks.filter(t => t.phase === phase && t.is_required && !t.is_completed);
-  if (currentPhaseTasks.length > 0) {
-    add({
-      key: `workflow_incomplete_phase_${phase}`,
-      issue_type: "workflow_incomplete",
-      severity: "low",
-      description: `${currentPhaseTasks.length} required task${currentPhaseTasks.length > 1 ? "s" : ""} incomplete in current phase: ${currentPhaseTasks.slice(0, 2).map(t => t.title).join(", ")}${currentPhaseTasks.length > 2 ? "…" : ""}.`,
-      deadline: null,
-      deadline_label: null,
-      document_reference: null,
-    });
-  }
-
   // Sort: high → medium → low
   const ORDER = { high: 0, medium: 1, low: 2 };
   return issues.sort((a, b) => ORDER[a.severity] - ORDER[b.severity]);
