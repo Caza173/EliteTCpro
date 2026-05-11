@@ -18,17 +18,9 @@ import { useDealAccess } from "../lib/useDealAccess";
 
 const PAGE_SIZE = 25;
 
-const PHASE_LABELS = {
-  1: "Pre-Contract", 2: "Offer Drafting", 3: "Offer Accepted & Escrow",
-  4: "Escrow Opened", 5: "Inspection & Repair", 6: "Repair Negotiation",
-  7: "Appraisal Ordered", 8: "Loan Processing", 9: "Clear to Close",
-  10: "Final Walkthrough", 11: "Closing", 12: "Post Closing",
-};
-
 export default function Transactions() {
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
-  const [phaseFilter, setPhaseFilter] = useState("all");
   const [monthFilter, setMonthFilter] = useState("all");
   const [page, setPage] = useState(1);
   const [showIntake, setShowIntake] = useState(false);
@@ -53,20 +45,19 @@ export default function Transactions() {
       tx.agent?.toLowerCase().includes(q) ||
       tx.mls_number?.toLowerCase().includes(q);
     const matchesStatus = statusFilter === "all" || tx.status === statusFilter;
-    const matchesPhase = phaseFilter === "all" || String(tx.phase || 1) === phaseFilter;
     const matchesMonth = monthFilter === "all" || (() => {
       const d = tx.closing_date || tx.contract_date;
       if (!d) return false;
       const dt = new Date(d);
       return `${dt.getFullYear()}-${String(dt.getMonth() + 1).padStart(2, "0")}` === monthFilter;
     })();
-    return matchesSearch && matchesStatus && matchesPhase && matchesMonth;
-  }), [transactions, search, statusFilter, phaseFilter, monthFilter]);
+    return matchesSearch && matchesStatus && matchesMonth;
+  }), [transactions, search, statusFilter, monthFilter]);
 
   const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
   const paginated = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
 
-  useEffect(() => { setPage(1); }, [search, statusFilter, phaseFilter, monthFilter, transactions, dealTab]);
+  useEffect(() => { setPage(1); }, [search, statusFilter, monthFilter, transactions, dealTab]);
 
   const toggleSelect = (id) => {
     setSelectedIds(prev => {
@@ -236,15 +227,6 @@ export default function Transactions() {
               <SelectItem value="withdrawn">Withdraw</SelectItem>
               <SelectItem value="expired">Expired</SelectItem>
               <SelectItem value="terminated">Terminated</SelectItem>
-            </SelectContent>
-          </Select>
-          <Select value={phaseFilter} onValueChange={setPhaseFilter}>
-            <SelectTrigger className="w-48"><SelectValue placeholder="All Phases" /></SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All Phases</SelectItem>
-              {Object.entries(PHASE_LABELS).map(([num, label]) => (
-                <SelectItem key={num} value={num}>Phase {num} — {label}</SelectItem>
-              ))}
             </SelectContent>
           </Select>
           <Select value={monthFilter} onValueChange={setMonthFilter}>
