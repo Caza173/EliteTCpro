@@ -251,7 +251,6 @@ export default function TransactionTable({ transactions, sorted = false }) {
               <TableHead className="text-xs font-semibold uppercase tracking-wider" style={{ color: "var(--muted-foreground)" }}>Client</TableHead>
               <TableHead className="text-xs font-semibold uppercase tracking-wider hidden md:table-cell" style={{ color: "var(--muted-foreground)" }}>Agent</TableHead>
               <TableHead className="text-xs font-semibold uppercase tracking-wider hidden lg:table-cell" style={{ color: "var(--muted-foreground)" }}>Contract Date</TableHead>
-              <TableHead className="text-xs font-semibold uppercase tracking-wider" style={{ color: "var(--muted-foreground)" }}>Transaction Phase</TableHead>
               <TableHead className="text-xs font-semibold uppercase tracking-wider hidden sm:table-cell" style={{ color: "var(--muted-foreground)" }}>Status</TableHead>
             </TableRow>
          </TableHeader>
@@ -309,11 +308,6 @@ export default function TransactionTable({ transactions, sorted = false }) {
                    {tx.contract_date ? format(new Date(tx.contract_date), "MMM d, yyyy") : "—"}
                  </div>
                </TableCell>
-               <TableCell>
-                  <span className={`text-xs font-medium px-2 py-1 rounded-md whitespace-nowrap ${TX_PHASE_STYLES[tx.transaction_phase] || TX_PHASE_STYLES.intake}`}>
-                    {TX_PHASE_LABELS[tx.transaction_phase] || "Under Contract"}
-                  </span>
-                </TableCell>
                <TableCell className="hidden sm:table-cell">
                  <div className="flex items-center justify-between gap-2">
                    <Badge variant="outline" className={`text-xs font-medium capitalize ${statusStyles[tx.status] || statusStyles.active}`}>
