@@ -139,7 +139,7 @@ export default function ContactCard({
           />
         </div>
       ) : email ? (
-        <div className="flex items-center gap-2 mb-1">
+        <div className="flex items-center gap-2 mb-0">
           <Mail className="w-3 h-3 flex-shrink-0 text-gray-300" />
           {onEmailClick ? (
             <button
