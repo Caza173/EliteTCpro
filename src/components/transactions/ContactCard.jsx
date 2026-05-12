@@ -118,7 +118,7 @@ export default function ContactCard({
           />
         </div>
       ) : phone ? (
-        <div className="flex items-center gap-2 mb-1">
+        <div className="flex items-center gap-2 mb-0">
           <Phone className="w-3 h-3 flex-shrink-0 text-gray-300" />
           <a href={`tel:${phone}`} className="text-xs text-gray-600 hover:text-blue-600 transition-colors truncate">
             {formatPhone(phone)}
