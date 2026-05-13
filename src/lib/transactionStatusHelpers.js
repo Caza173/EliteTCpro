@@ -23,7 +23,12 @@ export function isTransactionClosed(status) {
     "closed",
     "closed successfully",
     "closed & funded",
-    "archived"
+    "archived",
+    "expired",
+    "withdrawn",
+    "cancelled",
+    "canceled",
+    "terminated"
   ].includes(normalized);
 }
 

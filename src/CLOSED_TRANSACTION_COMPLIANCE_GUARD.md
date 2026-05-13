@@ -135,15 +135,23 @@ const dbAlerts = accessibleDealIds.size > 0
 
 ---
 
-## Status Values Recognized as Closed
+## Status Values Excluded from Compliance Reporting
 
-The system recognizes these exact (case-insensitive) status values as closed:
+The system recognizes these exact (case-insensitive) status values as inactive and excludes them from compliance, deadline, and alert generation:
+
+**Completed Deals**:
 - `closed`
 - `closed successfully`
 - `closed & funded`
 - `archived`
 
-Any other status value (e.g., `active`, `pending`, `withdrawn`, `cancelled`) will generate alerts normally.
+**Inactive/Terminated Deals**:
+- `expired` — listing or offer expiration
+- `withdrawn` — withdrawn from market
+- `cancelled` / `canceled` — deal fell through
+- `terminated` — manually terminated
+
+Any other status value (e.g., `active`, `pending`) will generate compliance alerts normally.
 
 ---
 
