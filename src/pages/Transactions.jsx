@@ -190,15 +190,6 @@ export default function Transactions() {
             }
           }
         `}</style>
-        <div className="tabs-container">
-          <button
-            onClick={() => setDealTab("all")}
-            className={`tab ${dealTab === "all" ? "active" : ""}`}
-          >
-            All Deals
-          </button>
-        </div>
-
         <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-center">
           <div className="relative flex-1 max-w-sm">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
