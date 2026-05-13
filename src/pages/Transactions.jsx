@@ -191,19 +191,12 @@ export default function Transactions() {
           }
         `}</style>
         <div className="tabs-container">
-          {[
-            { id: "all", label: "All Deals" },
-            { id: "my", label: "My Deals", icon: Star },
-          ].map(tab => (
-            <button
-              key={tab.id}
-              onClick={() => setDealTab(tab.id)}
-              className={`tab ${dealTab === tab.id ? "active" : ""}`}
-            >
-              {tab.icon && <tab.icon className="w-3 h-3" />}
-              {tab.label}
-            </button>
-          ))}
+          <button
+            onClick={() => setDealTab("all")}
+            className={`tab ${dealTab === "all" ? "active" : ""}`}
+          >
+            All Deals
+          </button>
         </div>
 
         <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-center">
