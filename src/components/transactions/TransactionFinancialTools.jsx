@@ -2,11 +2,14 @@ import React, { useState } from "react";
 import { base44 } from "@/api/base44Client";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
-import { Plus, Receipt, Droplets } from "lucide-react";
+import { Plus, Receipt, Droplets, TrendingUp } from "lucide-react";
 import StatementFormModal from "../commission/StatementFormModal";
 import StatementDetailModal from "../commission/StatementDetailModal";
 import FuelProrationFormModal from "../fuel/FuelProrationFormModal";
 import FuelProrationDetailModal from "../fuel/FuelProrationDetailModal";
+import CommissionStructurePanel from "../finance/CommissionStructurePanel";
+import CreditsProrationSection from "../finance/CreditsProrationSection";
+import AgentCompensationSummary from "../finance/AgentCompensationSummary";
 
 const fmt$ = (v) => v != null ? `$${Number(v).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : "—";
 
@@ -23,6 +26,27 @@ export default function TransactionFinancialTools({ transaction, currentUser }) 
   const [fuelForm, setFuelForm] = useState(false);
   const [fuelDetail, setFuelDetail] = useState(null);
   const queryClient = useQueryClient();
+
+  const { data: financeRecords = [] } = useQuery({
+    queryKey: ["finance", transaction.id],
+    queryFn: () => base44.entities.TransactionFinance.filter({ transaction_id: transaction.id }),
+    enabled: !!transaction.id,
+  });
+  const finance = financeRecords[0];
+
+  const handleStructureSave = async (patch) => {
+    if (finance?.id) {
+      await base44.entities.TransactionFinance.update(finance.id, patch);
+    } else {
+      await base44.entities.TransactionFinance.create({
+        transaction_id: transaction.id,
+        brokerage_id: transaction.brokerage_id,
+        sale_price: transaction.sale_price || 0,
+        ...patch,
+      });
+    }
+    queryClient.invalidateQueries({ queryKey: ["finance", transaction.id] });
+  };
 
   const { data: statements = [] } = useQuery({
     queryKey: ["commissionStatements", transaction.id],
@@ -47,6 +71,23 @@ export default function TransactionFinancialTools({ transaction, currentUser }) 
 
   return (
     <div className="space-y-5">
+
+      {/* Commission Structure */}
+      <CommissionStructurePanel
+        transaction={transaction}
+        financeData={finance}
+        onSave={handleStructureSave}
+      />
+
+      {/* Credits & Prorations */}
+      <CreditsProrationSection
+        financeData={finance}
+        onSave={handleStructureSave}
+      />
+
+      {/* Agent Compensation Summary */}
+      <AgentCompensationSummary transaction={transaction} financeData={finance} />
+
       {/* Commission Statements */}
       <div className="theme-card overflow-hidden">
         <div className="flex items-center justify-between px-4 py-3 border-b" style={{ borderColor: "var(--border)" }}>

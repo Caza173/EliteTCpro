@@ -31,6 +31,7 @@ import { useDealAccess } from "../lib/useDealAccess";
 import { evaluateDeadline, getAlertableDeadlines } from "../utils/dateUtils";
 import { writeAuditLog, computeHealthScore } from "../components/utils/tenantUtils";
 import FinanceTab from "../components/finance/FinanceTab";
+import FinancialSummaryWidget from "../components/finance/FinancialSummaryWidget";
 import TransactionActivityFeed from "../components/transactions/TransactionActivityFeed";
 import TransactionDocumentsTab from "../components/transactions/TransactionDocumentsTab";
 import ContractTimeline from "../components/transactions/ContractTimeline";
@@ -947,6 +948,7 @@ export default function TransactionDetail() {
                 transaction={transaction}
                 currentUser={currentUser}
               />
+              <FinancialSummaryWidget transaction={transaction} />
               {checklistItems.length > 0 && (
                 <Card className="shadow-sm border-gray-100">
                   <CardHeader className="pb-2">

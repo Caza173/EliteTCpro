@@ -1,0 +1,102 @@
+{
+  "name": "TransactionFinance",
+  "type": "object",
+  "properties": {
+    "transaction_id": {
+      "type": "string"
+    },
+    "brokerage_id": {
+      "type": "string"
+    },
+    "sale_price": {
+      "type": "number"
+    },
+    "commission_percent": {
+      "type": "number"
+    },
+    "commission_side": {
+      "type": "string",
+      "enum": [
+        "buyer",
+        "listing",
+        "both"
+      ],
+      "default": "buyer"
+    },
+    "commission_structure": {
+      "type": "object",
+      "description": "Structured commission config: listing_side, buyer_side, credits",
+      "additionalProperties": true
+    },
+    "adjustments_json": {
+      "type": "object",
+      "description": "Credits and prorations: seller_credit, repair_credit, hoa_proration, etc.",
+      "additionalProperties": true
+    },
+    "gross_commission": {
+      "type": "number"
+    },
+    "referral_percent": {
+      "type": "number",
+      "default": 0
+    },
+    "referral_amount": {
+      "type": "number",
+      "default": 0
+    },
+    "broker_split_percent": {
+      "type": "number",
+      "default": 20
+    },
+    "broker_cap": {
+      "type": "number",
+      "default": 0
+    },
+    "franchise_fee_percent": {
+      "type": "number",
+      "default": 0
+    },
+    "transaction_fee": {
+      "type": "number",
+      "default": 0
+    },
+    "eo_fee": {
+      "type": "number",
+      "default": 0
+    },
+    "other_brokerage_fees": {
+      "type": "number",
+      "default": 0
+    },
+    "professional_fee_type": {
+      "type": "string",
+      "enum": [
+        "percent",
+        "flat"
+      ],
+      "default": "percent"
+    },
+    "professional_fee_value": {
+      "type": "number",
+      "default": 0
+    },
+    "professional_fee_amount": {
+      "type": "number",
+      "default": 0
+    },
+    "seller_concession_amount": {
+      "type": "number",
+      "default": 0
+    },
+    "expenses_total": {
+      "type": "number",
+      "default": 0
+    },
+    "net_commission": {
+      "type": "number"
+    }
+  },
+  "required": [
+    "transaction_id"
+  ]
+}

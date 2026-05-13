@@ -10,6 +10,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { DollarSign, TrendingUp, PieChart, Minus, Save, RefreshCw, FileSearch } from "lucide-react";
 import CommissionStatementButton from "./CommissionStatementButton";
 import CommissionBreakdown from "./CommissionBreakdown";
+import CommissionStructurePanel from "./CommissionStructurePanel";
+import CreditsProrationSection from "./CreditsProrationSection";
+import AgentCompensationSummary from "./AgentCompensationSummary";
 import Section20ReviewPanel from "./Section20ReviewPanel";
 import { isOwnerOrAdmin } from "../auth/useCurrentUser";
 
@@ -136,6 +139,19 @@ export default function FinanceTab({ transaction, currentUser, parsedPsData }) {
       professional_fee_amount: computed.professionalFeeAmt,
       seller_concession_amount: computed.sellerConcessionAmt,
     });
+  };
+
+  const handleStructureSave = (patch) => {
+    if (finance?.id) {
+      saveMutation.mutate({ ...patch });
+    } else {
+      saveMutation.mutate({
+        transaction_id: transaction.id,
+        brokerage_id: transaction.brokerage_id,
+        sale_price: form.sale_price || transaction.sale_price || 0,
+        ...patch,
+      });
+    }
   };
 
   if (isLoading) return <div className="py-8 text-center text-gray-400 text-sm">Loading finance data...</div>;
@@ -309,6 +325,24 @@ export default function FinanceTab({ transaction, currentUser, parsedPsData }) {
           </CardContent>
         </Card>
       )}
+
+      {/* Commission Structure Panel */}
+      <CommissionStructurePanel
+        transaction={transaction}
+        financeData={finance}
+        onSave={handleStructureSave}
+        disabled={!canEditCommission}
+      />
+
+      {/* Credits & Prorations */}
+      <CreditsProrationSection
+        financeData={finance}
+        onSave={handleStructureSave}
+        disabled={!canEditCommission}
+      />
+
+      {/* Agent Compensation Summary */}
+      <AgentCompensationSummary transaction={transaction} financeData={finance} />
 
       {/* Commission Breakdown */}
       <CommissionBreakdown computed={computed} form={form} />
