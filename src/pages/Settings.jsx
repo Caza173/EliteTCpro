@@ -27,7 +27,7 @@ import BrokerageLogoUpload from "../components/settings/BrokerageLogoUpload";
 import FeedbackModal from "../components/feedback/FeedbackModal";
 import MyFeedbackSection from "../components/feedback/MyFeedbackSection";
 import ProfileTab from "../components/settings/ProfileTab";
-import NotificationRulesPanel from "../components/notifications/NotificationRulesPanel";
+import NotificationRulesPanel from "@/components/notifications/NotificationRulesPanel";
 import { Skeleton } from "@/components/ui/skeleton";
 import { format } from "date-fns";
 
