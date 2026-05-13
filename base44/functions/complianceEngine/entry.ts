@@ -599,17 +599,16 @@ OUTPUT — return this exact JSON structure:
       }
 
       // Cap by actual party count — don't over-flag unused template lines
-      const roleLimits = { buyer: buyerCount, seller: sellerCount, agent: 1, unknown: 1 };
+      const roleLimits = { buyer: buyerCount, seller: sellerCount, agent: 1, unknown: 0 };
       for (const [role, fields] of Object.entries(missingSigsByRole)) {
         const limit = roleLimits[role] ?? 0;
-        // Only flag signatures if we have actual parties for this role and the field count exceeds our party count
-        // This prevents flagging empty lines in multi-signature templates when we have fewer parties
-        if (fields.length <= limit) {
-          // Field count matches or is less than party count — don't flag extra empty lines
-          continue;
-        }
+        // Don't flag "unknown" role or any fields beyond the party limit
+        if (limit === 0 || fields.length === 0) continue;
+        
+        // Only flag up to the party count — extra template lines are irrelevant
         const toFlag = fields.slice(0, limit);
         const namesForRole = role === "buyer" ? buyerNames : role === "seller" ? sellerNames : [];
+        
         toFlag.forEach((f, idx) => {
           const partyName = namesForRole[idx] || null;
           pdfDerivedIssues.push({
