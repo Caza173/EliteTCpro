@@ -44,6 +44,7 @@ const TC_NAV = [
   { label: "Deal Intake",     page: "AgentIntake",     icon: UserPlus, path: "/AgentIntake" },
 
   { label: "Addendum Builder", page: "AddendumBuilder", icon: ClipboardList, path: "/AddendumBuilder" },
+  { label: "Contacts",        page: "Contacts",         icon: BookUser, path: "/Contacts" },
   { label: "Invoices",        page: "Invoices",         icon: Receipt, path: "/invoices" },
   { label: "Billing",         page: "Billing",          icon: CreditCard, path: "/Billing" },
   { label: "Settings",        page: "Settings",         icon: Settings, path: "/Settings" },
@@ -55,6 +56,7 @@ const OWNER_NAV = [
   { label: "Deal Intake",    page: "AgentIntake",    icon: UserPlus, path: "/AgentIntake" },
 
   { label: "Addendum Builder",page: "AddendumBuilder",  icon: ClipboardList, path: "/AddendumBuilder" },
+  { label: "Contacts",       page: "Contacts",       icon: BookUser, path: "/Contacts" },
   { label: "Invoices",       page: "Invoices",       icon: Receipt, path: "/invoices" },
   { label: "Settings",       page: "Settings",       icon: Settings, path: "/Settings" },
 ];
@@ -87,6 +89,8 @@ const PAGE_TITLES = {
   AddendumBuilder: "Addendum Builder",
   PendingDeals: "Pending Deal Queue",
   TemplateManager: "Templates",
+  Contacts: "Contacts",
+
   Contacts: "Contacts",
   Invoices: "Invoices",
   TutorialFAQPage: "Help & Training",

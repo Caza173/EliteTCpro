@@ -26,6 +26,7 @@ import TCSignIn from './pages/TCSignIn.jsx'
 import AgentSubmitTransaction from './pages/AgentSubmitTransaction.jsx'
 import TransactionDetail from './pages/TransactionDetail'
 import PendingDeals from './pages/PendingDeals'
+import Contacts from './pages/Contacts'
 import Invoices from './pages/Invoices'
 import { QueryClientProvider } from '@tanstack/react-query'
 import { queryClientInstance } from '@/lib/query-client'
@@ -201,6 +202,13 @@ const AuthenticatedApp = () => {
         <RequireAuth>
           <LayoutWrapper currentPageName="Invoices">
             <Invoices />
+          </LayoutWrapper>
+        </RequireAuth>
+      } />
+      <Route path="/Contacts" element={
+        <RequireAuth>
+          <LayoutWrapper currentPageName="Contacts">
+            <Contacts />
           </LayoutWrapper>
         </RequireAuth>
       } />

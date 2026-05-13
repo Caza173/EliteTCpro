@@ -1,0 +1,55 @@
+{
+  "name": "TransactionContact",
+  "type": "object",
+  "properties": {
+    "transaction_id": {
+      "type": "string"
+    },
+    "contact_id": {
+      "type": "string"
+    },
+    "owner_id": {
+      "type": "string",
+      "description": "User ID of the owner"
+    },
+    "role": {
+      "type": "string",
+      "enum": [
+        "buyer",
+        "seller",
+        "agent",
+        "lender",
+        "title",
+        "inspector",
+        "attorney",
+        "vendor",
+        "tc",
+        "other"
+      ],
+      "default": "other"
+    },
+    "is_primary": {
+      "type": "boolean",
+      "default": false
+    },
+    "notes": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "transaction_id",
+    "contact_id"
+  ],
+  "rls": {
+    "create": true,
+    "read": {
+      "data.owner_id": "{{user.id}}"
+    },
+    "update": {
+      "data.owner_id": "{{user.id}}"
+    },
+    "delete": {
+      "data.owner_id": "{{user.id}}"
+    }
+  }
+}
