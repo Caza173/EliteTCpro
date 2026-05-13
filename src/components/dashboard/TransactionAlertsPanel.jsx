@@ -144,47 +144,38 @@ export default function TransactionAlertsPanel({ brokerageId }) {
             const Icon = cfg.icon;
             return (
               <Link
-                key={alert.id}
-                to={`/transactions/${alert.transaction_id}`}
-                className="flex items-start gap-3 p-3 rounded-lg border hover:opacity-90 transition-opacity"
-                style={{ ...cfg.bgStyle, borderColor: cfg.borderColor }}
-              >
-                <Icon className="w-4 h-4 mt-0.5 flex-shrink-0" style={{ color: cfg.iconColor }} />
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2 mb-0.5 flex-wrap">
-                    <span
-                      className="text-[10px] px-1.5 py-0 rounded-full border font-semibold"
-                      style={{ ...PRIORITY_BADGE_STYLE[alert.priority], borderColor: PRIORITY_BADGE_STYLE[alert.priority]?.color }}
-                    >
-                      {alert.priority}
-                    </span>
-                    <span className="text-[10px] font-medium uppercase tracking-wide" style={{ color: "var(--text-muted)" }}>{cfg.label}</span>
-                  </div>
-                  <p className="text-xs font-medium leading-snug" style={{ color: "var(--text-primary)" }}>{alert.message}</p>
-                  <p className="text-[11px] mt-0.5 truncate" style={{ color: "var(--accent)" }}>{alert.transaction_address}</p>
-                </div>
-                {/* Action buttons */}
-                <div className="flex flex-col gap-1 flex-shrink-0 ml-1" onClick={e => e.preventDefault()}>
-                  <button
-                    onClick={(e) => handleResolved(e, alert)}
-                    disabled={updateAlertMutation.isPending}
-                    title="Mark resolved"
-                    className="flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-semibold border transition-colors disabled:opacity-50"
-                    style={{ backgroundColor: "var(--success-bg)", color: "var(--success)", borderColor: "var(--success)" }}
-                  >
-                    {updateAlertMutation.isPending ? <Loader2 className="w-3 h-3 animate-spin" /> : <CheckCircle2 className="w-3 h-3" />} Resolved
-                  </button>
-                  <button
-                    onClick={(e) => handleDismiss(e, alert)}
-                    disabled={updateAlertMutation.isPending}
-                    title="Dismiss alert"
-                    className="flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-semibold border transition-colors disabled:opacity-50"
-                    style={{ backgroundColor: "var(--card-bg)", color: "var(--text-secondary)", borderColor: "var(--border)" }}
-                  >
-                    <X className="w-3 h-3" /> Dismiss
-                  </button>
-                </div>
-              </Link>
+                 key={alert.id}
+                 to={`/transactions/${alert.transaction_id}`}
+                 className="flex items-center gap-2 p-2 rounded-lg border hover:opacity-90 transition-opacity"
+                 style={{ ...cfg.bgStyle, borderColor: cfg.borderColor }}
+               >
+                 <Icon className="w-4 h-4 flex-shrink-0" style={{ color: cfg.iconColor }} />
+                 <div className="flex-1 min-w-0">
+                   <p className="text-xs font-semibold leading-tight" style={{ color: "var(--text-primary)" }}>{alert.title || alert.message}</p>
+                   <p className="text-[10px] truncate" style={{ color: "var(--accent)" }}>{alert.transaction_address}</p>
+                 </div>
+                 {/* Action buttons */}
+                 <div className="flex gap-1 flex-shrink-0" onClick={e => e.preventDefault()}>
+                   <button
+                     onClick={(e) => handleResolved(e, alert)}
+                     disabled={updateAlertMutation.isPending}
+                     title="Mark resolved"
+                     className="flex items-center gap-0.5 px-2 py-1 rounded text-[9px] font-semibold border transition-colors disabled:opacity-50 whitespace-nowrap"
+                     style={{ backgroundColor: "var(--success-bg)", color: "var(--success)", borderColor: "var(--success)" }}
+                   >
+                     {updateAlertMutation.isPending ? <Loader2 className="w-3 h-3 animate-spin" /> : <CheckCircle2 className="w-3 h-3" />} Resolved
+                   </button>
+                   <button
+                     onClick={(e) => handleDismiss(e, alert)}
+                     disabled={updateAlertMutation.isPending}
+                     title="Dismiss alert"
+                     className="flex items-center gap-0.5 px-2 py-1 rounded text-[9px] font-semibold border transition-colors disabled:opacity-50 whitespace-nowrap"
+                     style={{ backgroundColor: "var(--card-bg)", color: "var(--text-secondary)", borderColor: "var(--border)" }}
+                   >
+                     <X className="w-3 h-3" /> Dismiss
+                   </button>
+                 </div>
+               </Link>
             );
           })}
         </div>
