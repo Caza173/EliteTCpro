@@ -1,10 +1,10 @@
 /**
  * ToggleSwitch — Backwards compatibility wrapper
- * Now uses ModernToggle for premium fintech/SaaS aesthetic
+ * Now uses CyberToggle for holographic sci-fi aesthetic
  */
 import React from "react";
-import ModernToggle from "./ModernToggle";
+import CyberToggle from "./CyberToggle";
 
 export default function ToggleSwitch({ checked, onChange, disabled = false, id }) {
-  return <ModernToggle checked={checked} onChange={onChange} disabled={disabled} id={id} />;
+  return <CyberToggle checked={checked} onChange={onChange} disabled={disabled} id={id} />;
 }
