@@ -99,9 +99,6 @@ function buildPDF(s, logoDataUrl) {
     row(`Buyer Commission (${s.buyer_commission_percent}%):`, amt);
   }
   row("Gross Commission:", fmt$(s.gross_commission));
-  if (s.referral_fee) row("Referral Fee:", `-${fmt$(s.referral_fee)}`);
-  if (s.tc_fee) row("TC Fee:", `-${fmt$(s.tc_fee)}`);
-  if (s.transaction_fee) row("Transaction Fee:", `-${fmt$(s.transaction_fee)}`);
 
   y += 2;
   doc.setDrawColor(220, 220, 220);
@@ -111,8 +108,14 @@ function buildPDF(s, logoDataUrl) {
   doc.setFontSize(13);
   doc.setFont("helvetica", "bold");
   doc.setTextColor(22, 163, 74);
-  doc.text("Agent Net Commission:", 20, y);
-  doc.text(fmt$(s.agent_net), 120, y);
+  doc.text("Commission Due at Closing:", 20, y);
+  doc.text(fmt$(s.gross_commission), 120, y);
+
+  y += 7;
+  doc.setFontSize(8);
+  doc.setFont("helvetica", "italic");
+  doc.setTextColor(148, 163, 184);
+  doc.text("Internal brokerage deductions are not reflected in this statement.", 20, y);
 
   if (s.notes) {
     y += 14;
@@ -186,8 +189,7 @@ export default function StatementDetailModal({ statement: s, onClose, onEdit, on
 <table style="border-collapse:collapse;width:100%;max-width:460px;font-family:sans-serif;font-size:14px;">
   <tr><td style="padding:6px 0;color:#666;">Purchase Price</td><td style="padding:6px 0;font-weight:600;">${fmt$(s.purchase_price)}</td></tr>
   <tr><td style="padding:6px 0;color:#666;">Gross Commission</td><td style="padding:6px 0;font-weight:600;">${fmt$(s.gross_commission)}</td></tr>
-  <tr><td style="padding:6px 0;color:#666;">Brokerage Split</td><td style="padding:6px 0;font-weight:600;">−${fmt$(s.brokerage_split_amount)}</td></tr>
-  <tr style="background:#f0fdf4;"><td style="padding:8px;font-weight:700;">Your Net Commission</td><td style="padding:8px;font-weight:700;color:#16a34a;">${fmt$(s.agent_net)}</td></tr>
+  <tr style="background:#f0fdf4;"><td style="padding:8px;font-weight:700;">Commission Due at Closing</td><td style="padding:8px;font-weight:700;color:#16a34a;">${fmt$(s.gross_commission)}</td></tr>
 </table>
 <br/><p>Please reply <strong>Approved</strong> if this looks correct, or let us know if any changes are needed.</p>
 <p>Best regards,<br/>Transaction Coordinator</p>`,
@@ -207,9 +209,9 @@ export default function StatementDetailModal({ statement: s, onClose, onEdit, on
 <table style="border-collapse:collapse;width:100%;max-width:460px;font-family:sans-serif;font-size:14px;">
   <tr><td style="padding:6px 0;color:#666;">Purchase Price</td><td style="padding:6px 0;font-weight:600;">${fmt$(s.purchase_price)}</td></tr>
   <tr><td style="padding:6px 0;color:#666;">Gross Commission</td><td style="padding:6px 0;font-weight:600;">${fmt$(s.gross_commission)}</td></tr>
-  <tr style="background:#f0fdf4;"><td style="padding:8px;font-weight:700;">Agent Net Payout</td><td style="padding:8px;font-weight:700;color:#16a34a;">${fmt$(s.agent_net)}</td></tr>
+  <tr style="background:#f0fdf4;"><td style="padding:8px;font-weight:700;">Commission Due at Closing</td><td style="padding:8px;font-weight:700;color:#16a34a;">${fmt$(s.gross_commission)}</td></tr>
 </table>
-<br/><p>Please disburse agent net commission as per the attached statement at closing.</p>
+<br/><p>Please disburse the commission due at closing as per the attached statement.</p>
 <p>Best regards,<br/>Transaction Coordinator</p>`,
         pdfBase64,
         pdfFileName,
@@ -223,9 +225,6 @@ export default function StatementDetailModal({ statement: s, onClose, onEdit, on
     s.listing_commission_percent ? { label: `Listing Commission (${s.listing_commission_percent}%)`, value: fmt$((s.purchase_price || 0) * s.listing_commission_percent / 100) } : null,
     s.buyer_commission_percent ? { label: `Buyer Commission (${s.buyer_commission_percent}%)`, value: fmt$((s.purchase_price || 0) * s.buyer_commission_percent / 100) } : null,
     { label: "Gross Commission", value: fmt$(s.gross_commission), bold: true },
-    s.referral_fee ? { label: "Referral Fee", value: `-${fmt$(s.referral_fee)}`, negative: true } : null,
-    s.tc_fee ? { label: "TC Fee", value: `-${fmt$(s.tc_fee)}`, negative: true } : null,
-    s.transaction_fee ? { label: "Transaction Fee", value: `-${fmt$(s.transaction_fee)}`, negative: true } : null,
   ].filter(Boolean);
 
   return (
@@ -300,8 +299,11 @@ export default function StatementDetailModal({ statement: s, onClose, onEdit, on
                  </div>
                ))}
                <div className="flex items-center justify-between px-4 py-3" style={{ background: "rgba(34, 197, 94, 0.1)" }}>
-                 <span className="text-sm font-bold" style={{ color: "var(--text-primary)" }}>Agent Net Commission</span>
-                 <span className="text-lg font-bold" style={{ color: "#22C55E" }}>{fmt$(s.agent_net)}</span>
+                 <div>
+                   <span className="text-sm font-bold" style={{ color: "var(--text-primary)" }}>Commission Due at Closing</span>
+                   <p className="text-xs mt-0.5" style={{ color: "var(--text-muted)" }}>Internal brokerage deductions are not reflected in this statement.</p>
+                 </div>
+                 <span className="text-lg font-bold" style={{ color: "#22C55E" }}>{fmt$(s.gross_commission)}</span>
                </div>
              </div>
            </div>

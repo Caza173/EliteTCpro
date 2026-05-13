@@ -149,26 +149,19 @@ Deno.serve(async (req) => {
     row(`Commission Rate`, fmtPct(commissionPct));
     row(`Gross Commission (${fmtPct(commissionPct)} of ${fmt(salePrice)})`, fmt(grossCommission), true);
 
-    if (fin) {
-      if (fin.referral_amount > 0) row(`Referral Fee (${fin.referral_percent}%)`, `-${fmt(fin.referral_amount)}`, false, true);
-      if (fin.gross_commission > 0) {
-        const brokerAmt = (fin.gross_commission - (fin.referral_amount || 0)) * ((fin.broker_split_percent || 20) / 100);
-        row(`Broker Split (${fin.broker_split_percent || 20}%)`, `-${fmt(brokerAmt)}`, false, true);
-      }
-      if (fin.transaction_fee > 0) row("Transaction Fee", `-${fmt(fin.transaction_fee)}`, false, true);
-      if (fin.eo_fee > 0) row("E&O Fee", `-${fmt(fin.eo_fee)}`, false, true);
-      if (fin.franchise_fee_percent > 0) row(`Franchise Fee (${fin.franchise_fee_percent}%)`, `-${fmt(fin.gross_commission * fin.franchise_fee_percent / 100)}`, false, true);
-      if (fin.professional_fee_amount > 0) row("Professional Fee (Sec. 20)", `-${fmt(fin.professional_fee_amount)}`, false, true);
-      if (fin.seller_concession_amount > 0) row("Seller Concession", `-${fmt(fin.seller_concession_amount)}`, false, true);
-    }
-
     y += 2;
     doc.setDrawColor(59, 130, 246);
     doc.setLineWidth(0.6);
     doc.line(tableLeft, y, tableRight, y);
     y += 5;
 
-    row(`Net Commission`, fmt(fin?.net_commission || agentShare), true);
+    row(`Commission Due at Closing`, fmt(grossCommission), true);
+
+    y += 4;
+    doc.setFontSize(8);
+    doc.setFont("helvetica", "italic");
+    doc.setTextColor(148, 163, 184);
+    doc.text("Internal brokerage deductions are not reflected in this statement.", tableLeft + 2, y);
 
     y += 5;
 
