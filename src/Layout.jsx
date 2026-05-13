@@ -11,7 +11,6 @@ import {
   Settings,
   Menu,
   X,
-  ChevronRight,
   Building2,
   UserPlus,
   FolderOpen,
@@ -39,6 +38,7 @@ import LogoutButton from "./components/auth/LogoutButton";
 import { useCurrentUser as useCurrentUserCtx } from "./lib/CurrentUserContext.jsx";
 import FloatingAIButton from "./components/ai/FloatingAIButton";
 import AIModal from "./components/ai/AIModal";
+import SidebarNavButton from "./components/navigation/SidebarNavButton";
 
 const TC_NAV = [
   { label: "Dashboard",       page: "Dashboard",       icon: LayoutDashboard, path: "/Dashboard" },
@@ -211,46 +211,18 @@ export default function Layout({ children, currentPageName }) {
             {navItems.map((item) => {
               const isActive = currentPageName === item.page;
               const isLocked = currentUser?.profile_completed !== true;
-              const Icon = item.icon;
               return (
-                <Link
+                <SidebarNavButton
                   key={item.page}
+                  icon={item.icon}
+                  label={item.label}
                   to={item.path || createPageUrl(item.page)}
+                  active={isActive}
+                  collapsed={sidebarCollapsed}
+                  disabled={isLocked}
                   onClick={() => setSidebarOpen(false)}
-                  title={isLocked ? "Complete your profile to access this page" : (sidebarCollapsed ? item.label : undefined)}
-                  className={`sidebar-nav-item flex items-center gap-2.5 px-2.5 py-2 rounded-lg text-xs font-medium ${
-                    sidebarCollapsed ? "justify-center" : ""
-                  } ${isLocked ? "opacity-40 cursor-not-allowed" : ""}`}
-                  style={isActive
-                    ? { backgroundColor: "var(--sidebar-item-active)", color: "var(--sidebar-accent)" }
-                    : { color: "var(--sidebar-text)" }
-                  }
-                  onMouseEnter={e => {
-                    if (!isActive && !isLocked) {
-                      e.currentTarget.style.backgroundColor = "var(--sidebar-item-hover)";
-                      e.currentTarget.style.color = "var(--sidebar-text-active)";
-                    }
-                  }}
-                  onMouseLeave={e => {
-                    if (!isActive) {
-                      e.currentTarget.style.backgroundColor = "";
-                      e.currentTarget.style.color = "var(--sidebar-text)";
-                    }
-                  }}
-                >
-                  <Icon
-                    className="w-4 h-4 flex-shrink-0"
-                    style={{ color: isActive ? "var(--sidebar-accent)" : "inherit" }}
-                  />
-                  {!sidebarCollapsed && (
-                    <>
-                      <span className="truncate">{item.label}</span>
-                      {isActive && (
-                        <ChevronRight className="w-3 h-3 ml-auto opacity-40 flex-shrink-0" />
-                      )}
-                    </>
-                  )}
-                </Link>
+                  accentClass="text-sidebar-accent"
+                />
               );
             })}
           </nav>
