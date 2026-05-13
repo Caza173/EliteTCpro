@@ -11,6 +11,13 @@ import { createClientFromRequest } from 'npm:@base44/sdk@0.8.25';
 
 const TZ = 'America/New_York';
 
+// ─── Centralized transaction status helper ──────────────────────────────────
+function isTransactionClosed(status) {
+  if (!status) return false;
+  const normalized = status.trim().toLowerCase();
+  return ["closed", "closed successfully", "closed & funded", "archived"].includes(normalized);
+}
+
 const DEADLINE_FIELDS = [
   { key: "earnest_money_deadline", label: "Earnest Money Deposit",       type: "earnest_money",  completedKey: "earnest_money_received" },
   { key: "inspection_deadline",    label: "Inspection Deadline",         type: "inspection",     completedKey: "inspection_completed" },
@@ -92,9 +99,11 @@ Deno.serve(async (req) => {
 
     let transactions;
     if (transaction_id) {
-      transactions = await base44.asServiceRole.entities.Transaction.filter({ id: transaction_id, status: 'active' });
+      const tx = await base44.asServiceRole.entities.Transaction.filter({ id: transaction_id });
+      transactions = tx.filter(t => !isTransactionClosed(t.status));
     } else {
-      transactions = await base44.asServiceRole.entities.Transaction.filter({ status: 'active' });
+      const allTx = await base44.asServiceRole.entities.Transaction.filter({ status: 'active' });
+      transactions = allTx.filter(t => !isTransactionClosed(t.status));
     }
 
     console.log(`[deadlineEngine] Evaluating ${transactions.length} transaction(s) — today: ${getTodayStr()}`);

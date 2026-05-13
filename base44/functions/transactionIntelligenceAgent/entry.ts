@@ -1,5 +1,12 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.20';
 
+// ─── Centralized transaction status helper ──────────────────────────────────
+function isTransactionClosed(status) {
+  if (!status) return false;
+  const normalized = status.trim().toLowerCase();
+  return ["closed", "closed successfully", "closed & funded", "archived"].includes(normalized);
+}
+
 function addDays(isoDate, days) {
   if (!isoDate || days == null) return null;
   try {
@@ -58,6 +65,12 @@ async function handleDocumentUploaded(base44, doc, docId) {
   const txList = await base44.asServiceRole.entities.Transaction.filter({ id: transaction_id });
   const tx = txList[0];
   if (!tx) return;
+
+  // CLOSED TRANSACTIONS DO NOT GENERATE COMPLIANCE REPORTS
+  if (isTransactionClosed(tx.status)) {
+    console.log(`[TIA] Transaction ${tx.id} is ${tx.status} — skipping document processing`);
+    return;
+  }
 
   console.log(`[TIA] Document uploaded: "${file_name}" (${doc_type}) for TX: ${tx.address}`);
   const brokerageId = brokerage_id || tx.brokerage_id;

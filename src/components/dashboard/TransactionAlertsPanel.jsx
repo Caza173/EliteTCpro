@@ -9,6 +9,7 @@ import { base44 } from "@/api/base44Client";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useCurrentUser } from "../auth/useCurrentUser";
 import { useAccessibleDealIds } from "../../lib/useDealAccess";
+import { isTransactionClosed } from "../../lib/transactionStatusHelpers";
 
 const ALERT_CONFIG = {
   deadline_overdue:     { icon: AlertTriangle, iconColor: "var(--danger)",   bgStyle: { backgroundColor: "var(--danger-bg)" },  borderColor: "var(--danger)",   label: "Overdue" },
@@ -32,16 +33,34 @@ export default function TransactionAlertsPanel({ brokerageId }) {
   const { accessibleDealIds } = useAccessibleDealIds();
 
   // Fetch active alerts from database
-  const { data: rawAlerts = [], isLoading } = useQuery({
+  const { data: rawAlerts = [], isLoading: alertsLoading } = useQuery({
     queryKey: ["monitorAlerts", brokerageId],
     queryFn: () => base44.entities.MonitorAlert.filter({ brokerage_id: brokerageId, alert_state: "active" }),
     enabled: !!brokerageId,
   });
 
-  // Filter alerts to only deals the current user can access, exclude closing_risk
+  // Fetch transactions to check if they're closed
+  const { data: transactionsData = [], isLoading: txLoading } = useQuery({
+    queryKey: ["transactionsForAlerts", brokerageId],
+    queryFn: () => base44.entities.Transaction.filter({ brokerage_id: brokerageId }),
+    enabled: !!brokerageId,
+  });
+
+  const txStatusMap = new Map(transactionsData.map(tx => [tx.id, tx.status]));
+
+  // Filter alerts to only deals the current user can access, exclude closing_risk and closed transactions
   const dbAlerts = accessibleDealIds.size > 0
-    ? rawAlerts.filter(a => accessibleDealIds.has(a.transaction_id) && a.alert_type !== 'closing_risk')
-    : rawAlerts.filter(a => a.alert_type !== 'closing_risk');
+    ? rawAlerts.filter(a => 
+        accessibleDealIds.has(a.transaction_id) && 
+        a.alert_type !== 'closing_risk' &&
+        !isTransactionClosed(txStatusMap.get(a.transaction_id))
+      )
+    : rawAlerts.filter(a => 
+        a.alert_type !== 'closing_risk' &&
+        !isTransactionClosed(txStatusMap.get(a.transaction_id))
+      );
+
+  const isLoading = alertsLoading || txLoading;
 
   // Update alert state (resolve or dismiss)
   const updateAlertMutation = useMutation({

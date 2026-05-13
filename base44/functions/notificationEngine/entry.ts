@@ -32,6 +32,13 @@ import { SNSClient, PublishCommand } from 'npm:@aws-sdk/client-sns@3';
 
 const TZ = 'America/New_York';
 
+// ─── Centralized transaction status helper ──────────────────────────────────
+function isTransactionClosed(status) {
+  if (!status) return false;
+  const normalized = status.trim().toLowerCase();
+  return ["closed", "closed successfully", "closed & funded", "archived"].includes(normalized);
+}
+
 // ─── Deadline definitions ─────────────────────────────────────────────────────
 
 const DEADLINE_FIELDS = [
@@ -193,18 +200,15 @@ Deno.serve(async (req) => {
     console.log(`[notificationEngine] Starting run — today: ${today}, dry_run: ${dry_run}`);
 
     // Load transactions — exclude closed/cancelled deals
-    const txFilter = filterTxId
-      ? { id: filterTxId, status: 'active' }
-      : { status: 'active' };
-    const allTx = await base44.asServiceRole.entities.Transaction.filter(txFilter);
-    // Belt-and-suspenders: also exclude any that slipped through as closed/dead phase
-    const EXCLUDED_STATUSES = new Set(['closed', 'cancelled', 'withdrawn', 'expired', 'terminated']);
-    const EXCLUDED_PHASES = new Set(['closed', 'withdrawn', 'expired', 'terminated']);
-    const transactions = allTx.filter(tx =>
-      !EXCLUDED_STATUSES.has(tx.status) &&
-      !EXCLUDED_PHASES.has(tx.transaction_phase) &&
-      !EXCLUDED_STATUSES.has(tx.propertyStatus)
-    );
+    let allTx;
+    if (filterTxId) {
+      allTx = await base44.asServiceRole.entities.Transaction.filter({ id: filterTxId });
+    } else {
+      allTx = await base44.asServiceRole.entities.Transaction.filter({});
+    }
+    
+    // SINGLE SOURCE OF TRUTH: closed transactions do not generate notifications
+    const transactions = allTx.filter(tx => !isTransactionClosed(tx.status));
     console.log(`[notificationEngine] Evaluating ${transactions.length} transaction(s)`);
 
     if (transactions.length === 0) {

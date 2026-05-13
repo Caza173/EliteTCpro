@@ -9,6 +9,13 @@ import { createClientFromRequest } from 'npm:@base44/sdk@0.8.25';
 
 const TZ = 'America/New_York';
 
+// ─── Centralized transaction status helper ──────────────────────────────────
+function isTransactionClosed(status) {
+  if (!status) return false;
+  const normalized = status.trim().toLowerCase();
+  return ["closed", "closed successfully", "closed & funded", "archived"].includes(normalized);
+}
+
 const DEADLINE_FIELDS = [
   { key: "earnest_money_deadline", label: "Earnest Money Deposit",       completedKey: "earnest_money_received" },
   { key: "inspection_deadline",    label: "Inspection Deadline",         completedKey: "inspection_completed" },
@@ -69,9 +76,11 @@ function buildEmailBody(label, dateStr, days, tx) {
 Deno.serve(async (req) => {
   try {
     const base44 = createClientFromRequest(req);
-    const allTransactions = await base44.asServiceRole.entities.Transaction.filter({ status: 'active' });
+    const rawTransactions = await base44.asServiceRole.entities.Transaction.filter({});
+    // CLOSED TRANSACTIONS DO NOT GENERATE DEADLINE ALERTS
+    const allTransactions = rawTransactions.filter(tx => !isTransactionClosed(tx.status));
 
-    console.log(`[sendDeadlineAlerts] Running for ${allTransactions.length} transactions — today: ${getTodayStr()}`);
+    console.log(`[sendDeadlineAlerts] Running for ${allTransactions.length} active transaction(s) — today: ${getTodayStr()}`);
     let totalSent = 0;
 
     for (const tx of allTransactions) {

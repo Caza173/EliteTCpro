@@ -1,6 +1,13 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.25';
 import { PDFDocument } from 'npm:pdf-lib@1.17.1';
 
+// ─── Centralized transaction status helper ──────────────────────────────────
+function isTransactionClosed(status) {
+  if (!status) return false;
+  const normalized = status.trim().toLowerCase();
+  return ["closed", "closed successfully", "closed & funded", "archived"].includes(normalized);
+}
+
 // ─── NHAR Document Templates ─────────────────────────────────────────────────
 const NHAR_TEMPLATES = {
   "Purchase and Sales Agreement": {
@@ -273,6 +280,16 @@ Deno.serve(async (req) => {
 
     if (!transaction_id) {
       return Response.json({ error: 'transaction_id required' }, { status: 400 });
+    }
+
+    // CLOSED TRANSACTIONS DO NOT GENERATE COMPLIANCE WARNINGS
+    if (isTransactionClosed(transaction_data?.status)) {
+      console.log(`[complianceEngine] Transaction ${transaction_id} is ${transaction_data.status} — skipping compliance evaluation`);
+      return Response.json({ 
+        success: true, 
+        message: "Closed transactions do not generate compliance warnings",
+        skipped: true 
+      });
     }
 
     // ─── STEP 1: Determine actual party counts from transaction data ──────────
