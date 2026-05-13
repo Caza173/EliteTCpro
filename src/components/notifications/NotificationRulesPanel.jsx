@@ -76,7 +76,7 @@ function SettingsRow({ label, desc, checked, onToggle, disabled }) {
         alignItems: "center",
         justifyContent: "space-between",
         width: "100%",
-        padding: "10px 0",
+        padding: "8px 0",
         background: "none",
         border: "none",
         cursor: disabled ? "default" : "pointer",
@@ -88,9 +88,10 @@ function SettingsRow({ label, desc, checked, onToggle, disabled }) {
         <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
           <span style={{
             fontSize: 13,
-            fontWeight: 500,
+            fontWeight: 600,
             color: disabled ? "var(--text-muted)" : "var(--text-primary)",
             lineHeight: 1.4,
+            letterSpacing: "-0.01em",
           }}>
             {label}
           </span>
@@ -111,8 +112,8 @@ function SettingsRow({ label, desc, checked, onToggle, disabled }) {
         <p style={{
           fontSize: 12,
           color: "var(--text-muted)",
-          marginTop: 1,
-          lineHeight: 1.4,
+          marginTop: 2,
+          lineHeight: 1.45,
         }}>
           {desc}
         </p>
@@ -136,14 +137,14 @@ function SectionCard({ group, rules, toggle }) {
         display: "flex",
         alignItems: "center",
         gap: 8,
-        padding: "12px 16px 8px",
+        padding: "10px 16px",
         borderBottom: "1px solid var(--card-border)",
       }}>
-        <Icon style={{ width: 13, height: 13, color: group.iconColor, flexShrink: 0 }} />
+        <Icon style={{ width: 14, height: 14, color: group.iconColor, flexShrink: 0 }} />
         <span style={{
           fontSize: 11,
           fontWeight: 600,
-          letterSpacing: "0.06em",
+          letterSpacing: "0.07em",
           textTransform: "uppercase",
           color: "var(--text-muted)",
         }}>
@@ -152,7 +153,7 @@ function SectionCard({ group, rules, toggle }) {
       </div>
 
       {/* Rows */}
-      <div style={{ padding: "0 16px" }}>
+      <div style={{ padding: "2px 16px" }}>
         {group.rules.map((rule, i) => (
           <div
             key={rule.key}
@@ -230,7 +231,7 @@ export default function NotificationRulesPanel({ currentUser }) {
   const toggle = (key) => setRules((r) => ({ ...r, [key]: !r[key] }));
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 12, maxWidth: 560 }}>
+    <div style={{ display: "flex", flexDirection: "column", gap: 10, maxWidth: 560 }}>
 
       {/* Engine status card */}
       <div style={{
