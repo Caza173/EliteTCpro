@@ -192,11 +192,17 @@ Deno.serve(async (req) => {
 
     console.log(`[notificationEngine] Starting run — today: ${today}, dry_run: ${dry_run}`);
 
-    // Load transactions
+    // Load transactions — exclude closed/cancelled deals
     const txFilter = filterTxId
       ? { id: filterTxId, status: 'active' }
       : { status: 'active' };
-    const transactions = await base44.asServiceRole.entities.Transaction.filter(txFilter);
+    const allTx = await base44.asServiceRole.entities.Transaction.filter(txFilter);
+    // Belt-and-suspenders: also exclude any that slipped through as closed phase
+    const transactions = allTx.filter(tx =>
+      tx.status !== 'closed' &&
+      tx.status !== 'cancelled' &&
+      tx.transaction_phase !== 'closed'
+    );
     console.log(`[notificationEngine] Evaluating ${transactions.length} transaction(s)`);
 
     if (transactions.length === 0) {
