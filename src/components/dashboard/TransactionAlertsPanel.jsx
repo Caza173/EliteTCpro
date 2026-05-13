@@ -151,7 +151,7 @@ export default function TransactionAlertsPanel({ brokerageId }) {
                >
                  <Icon className="w-4 h-4 flex-shrink-0" style={{ color: cfg.iconColor }} />
                  <div className="flex-1 min-w-0">
-                   <p className="text-xs font-semibold leading-tight" style={{ color: "var(--text-primary)" }}>{alert.title || alert.message}</p>
+                   <p className="text-xs font-semibold leading-tight" style={{ color: "var(--text-primary)" }}>{alert.deadline_label}</p>
                    <p className="text-[10px] truncate" style={{ color: "var(--accent)" }}>{alert.transaction_address}</p>
                  </div>
                  {/* Action buttons */}
