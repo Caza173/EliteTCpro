@@ -18,7 +18,7 @@ function calcCommission(form) {
   const gross = price * sidePercent / 100;
   const brokerageSplit = gross * parse(form.brokerage_split_percent) / 100;
   const referralAmount = gross * parse(form.referral_fee) / 100;
-  const agentNet = gross - brokerageSplit - referralAmount - parse(form.tc_fee) - parse(form.transaction_fee);
+  const agentNet = gross - referralAmount - parse(form.tc_fee) - parse(form.transaction_fee);
   return { gross, brokerageSplit, referralAmount, agentNet };
 }
 
@@ -247,10 +247,7 @@ export default function StatementFormModal({ statement, currentUser, onClose, on
                     <p className="text-xs text-gray-500">Gross Commission</p>
                     <p className="text-base font-bold text-gray-900">${gross.toLocaleString("en-US", { minimumFractionDigits: 2 })}</p>
                   </div>
-                  <div>
-                    <p className="text-xs text-gray-500">Brokerage Split</p>
-                    <p className="text-base font-bold text-gray-900">−${brokerageSplit.toLocaleString("en-US", { minimumFractionDigits: 2 })}</p>
-                  </div>
+
                   {referralAmount > 0 && (
                     <div>
                       <p className="text-xs text-gray-500">Referral Fee ({parse(form.referral_fee)}%)</p>
