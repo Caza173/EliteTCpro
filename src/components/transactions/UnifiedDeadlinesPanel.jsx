@@ -63,7 +63,7 @@ function formatTime(t) {
 
 function fmtDate(d) {
   if (!d) return null;
-  try { return format(parseISO(d), "MMM d, yyyy"); } catch { return d; }
+  try { return format(new Date(d + "T12:00:00"), "MMM d, yyyy"); } catch { return d; }
 }
 
 function getDaysLabel(dateStr, opts = {}) {
