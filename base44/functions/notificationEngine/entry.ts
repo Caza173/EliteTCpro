@@ -197,11 +197,13 @@ Deno.serve(async (req) => {
       ? { id: filterTxId, status: 'active' }
       : { status: 'active' };
     const allTx = await base44.asServiceRole.entities.Transaction.filter(txFilter);
-    // Belt-and-suspenders: also exclude any that slipped through as closed phase
+    // Belt-and-suspenders: also exclude any that slipped through as closed/dead phase
+    const EXCLUDED_STATUSES = new Set(['closed', 'cancelled', 'withdrawn', 'expired', 'terminated']);
+    const EXCLUDED_PHASES = new Set(['closed', 'withdrawn', 'expired', 'terminated']);
     const transactions = allTx.filter(tx =>
-      tx.status !== 'closed' &&
-      tx.status !== 'cancelled' &&
-      tx.transaction_phase !== 'closed'
+      !EXCLUDED_STATUSES.has(tx.status) &&
+      !EXCLUDED_PHASES.has(tx.transaction_phase) &&
+      !EXCLUDED_STATUSES.has(tx.propertyStatus)
     );
     console.log(`[notificationEngine] Evaluating ${transactions.length} transaction(s)`);
 
