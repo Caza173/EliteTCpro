@@ -67,7 +67,21 @@
   ],
   "rls": {
     "create": {
-      "data.brokerage_id": "{{user.data.brokerage_id}}"
+      "$or": [
+        {
+          "user_condition": {
+            "role": {
+              "$in": [
+                "admin",
+                "owner"
+              ]
+            }
+          }
+        },
+        {
+          "data.brokerage_id": "{{user.data.brokerage_id}}"
+        }
+      ]
     },
     "read": {
       "$or": [
