@@ -12,13 +12,12 @@ import { Separator } from "@/components/ui/separator";
 import {
   Loader2, Send, CheckCircle, FileSearch, Plus, X, Upload,
   FileText, Zap, Home, FileSignature, UserCheck,
-  ClipboardList, AlertTriangle, ArrowLeft,
+  AlertTriangle, ArrowLeft,
 } from "lucide-react";
 import { generateSmartTasks } from "../components/transactions/defaultTasks";
 import PurchaseAgreementUpload from "../components/forms/PurchaseAgreementUpload";
 import ParsedDeadlinesPreview from "../components/forms/ParsedDeadlinesPreview";
 import { generateTasksForPhase } from "../lib/taskLibrary";
-import IntakePendingReviews from "../components/intake/IntakePendingReviews";
 import InspectionContingencySection from "../components/intake/InspectionContingencySection";
 
 // ── Deal Type Config ──────────────────────────────────────────────────────────
@@ -169,7 +168,6 @@ export default function AgentIntake() {
   // Authenticated user — create transaction directly instead of going through intake queue
   const isAuthenticatedUser = !!currentUser && !isAgentPublicFlow;
 
-  const [activeTab, setActiveTab] = useState("submit"); // "submit" | "review"
   const [dealType, setDealType] = useState(null);
   const [docType, setDocType] = useState("ps");
   const [form, setForm] = useState({});
@@ -409,65 +407,32 @@ export default function AgentIntake() {
   if (!dealType) {
     return (
       <div className="max-w-2xl mx-auto space-y-6">
-        {/* TC tab switcher */}
-        {isTC && (
-          <div className="flex gap-1 p-1 rounded-xl" style={{ background: "var(--bg-tertiary)" }}>
-            {[{ id: "submit", label: "Submit Deal", icon: Send }, { id: "review", label: "Pending Reviews", icon: ClipboardList }].map(tab => (
-              <button key={tab.id} onClick={() => setActiveTab(tab.id)}
-                className={`flex-1 flex items-center justify-center gap-2 py-2 px-4 rounded-lg text-sm font-medium transition-all ${activeTab === tab.id ? "shadow-sm" : ""}`}
-                style={activeTab === tab.id ? { background: "var(--card-bg)", color: "var(--text-primary)" } : { color: "var(--text-muted)" }}>
-                <tab.icon className="w-4 h-4" /> {tab.label}
-              </button>
-            ))}
-          </div>
-        )}
-
-        {activeTab === "review" && isTC ? (
-           <div className="space-y-4">
-             <Link to={createPageUrl("Dashboard")}>
-               <Button variant="ghost" size="sm" className="text-gray-500 hover:text-gray-800 -ml-2 h-8 gap-1">
-                 <ArrowLeft className="w-4 h-4" /> Back
-               </Button>
-             </Link>
-             <div>
-               <h1 className="text-2xl font-bold text-gray-900">Pending Intake Reviews</h1>
-               <p className="text-sm text-gray-500 mt-0.5">Approve or reject agent deal submissions below.</p>
-             </div>
-             <IntakePendingReviews currentUser={currentUser} />
-           </div>
-         ) : (
-           <>
-             <Link to={createPageUrl("Dashboard")}>
-               <Button variant="ghost" size="sm" className="text-gray-500 hover:text-gray-800 -ml-2 h-8 gap-1">
-                 <ArrowLeft className="w-4 h-4" /> Back
-               </Button>
-             </Link>
-             <div>
-               <h1 className="text-2xl font-bold text-gray-900 tracking-tight">Deal Intake</h1>
-               <p className="text-sm text-gray-500 mt-0.5">What are you creating today?</p>
-             </div>
-
-
-
-            <div className="grid grid-cols-1 gap-3">
-              {DEAL_TYPES.map(({ id, label, desc, icon: Icon, color, bg }) => (
-                <button key={id} onClick={() => selectDealType(id)}
-                  className="flex items-center gap-4 p-5 rounded-2xl border-2 text-left transition-all hover:shadow-md"
-                  style={{ borderColor: "var(--border)", background: "var(--card-bg)" }}
-                  onMouseEnter={e => { e.currentTarget.style.borderColor = color; e.currentTarget.style.background = bg; }}
-                  onMouseLeave={e => { e.currentTarget.style.borderColor = "var(--border)"; e.currentTarget.style.background = "var(--card-bg)"; }}>
-                  <div className="w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0" style={{ background: bg }}>
-                    <Icon className="w-6 h-6" style={{ color }} />
-                  </div>
-                  <div>
-                    <p className="text-base font-semibold" style={{ color: "var(--text-primary)" }}>{label}</p>
-                    <p className="text-sm mt-0.5" style={{ color: "var(--text-secondary)" }}>{desc}</p>
-                  </div>
-                </button>
-              ))}
-            </div>
-          </>
-        )}
+        <Link to={createPageUrl("Dashboard")}>
+          <Button variant="ghost" size="sm" className="text-gray-500 hover:text-gray-800 -ml-2 h-8 gap-1">
+            <ArrowLeft className="w-4 h-4" /> Back
+          </Button>
+        </Link>
+        <div>
+          <h1 className="text-2xl font-bold text-gray-900 tracking-tight">Deal Intake</h1>
+          <p className="text-sm text-gray-500 mt-0.5">What are you creating today?</p>
+        </div>
+        <div className="grid grid-cols-1 gap-3">
+          {DEAL_TYPES.map(({ id, label, desc, icon: Icon, color, bg }) => (
+            <button key={id} onClick={() => selectDealType(id)}
+              className="flex items-center gap-4 p-5 rounded-2xl border-2 text-left transition-all hover:shadow-md"
+              style={{ borderColor: "var(--border)", background: "var(--card-bg)" }}
+              onMouseEnter={e => { e.currentTarget.style.borderColor = color; e.currentTarget.style.background = bg; }}
+              onMouseLeave={e => { e.currentTarget.style.borderColor = "var(--border)"; e.currentTarget.style.background = "var(--card-bg)"; }}>
+              <div className="w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0" style={{ background: bg }}>
+                <Icon className="w-6 h-6" style={{ color }} />
+              </div>
+              <div>
+                <p className="text-base font-semibold" style={{ color: "var(--text-primary)" }}>{label}</p>
+                <p className="text-sm mt-0.5" style={{ color: "var(--text-secondary)" }}>{desc}</p>
+              </div>
+            </button>
+          ))}
+        </div>
       </div>
     );
   }
