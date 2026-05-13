@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { createPortal } from "react-dom";
 import { base44 } from "@/api/base44Client";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
@@ -227,7 +228,7 @@ export default function StatementDetailModal({ statement: s, onClose, onEdit, on
     { label: "Gross Commission", value: fmt$(s.gross_commission), bold: true },
   ].filter(Boolean);
 
-  return (
+  return createPortal(
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={onClose} />
       <div className="relative rounded-xl shadow-2xl w-full max-w-2xl max-h-[90vh] flex flex-col overflow-hidden" style={{ background: "var(--card-bg)", borderColor: "var(--card-border)", border: "1px solid var(--card-border)" }}>
@@ -365,6 +366,7 @@ export default function StatementDetailModal({ statement: s, onClose, onEdit, on
           )}
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }

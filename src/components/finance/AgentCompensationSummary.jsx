@@ -61,9 +61,9 @@ export default function AgentCompensationSummary({ transaction, financeData }) {
     },
   ].filter(a => a.amount > 0 || a.name);
 
-  if (agents.length === 0) return null;
-
   const total = listingAmt + buyerAmt;
+
+  if (agents.length === 0 && total === 0) return null;
 
   return (
     <Card className="border shadow-sm" style={{ borderColor: "var(--card-border)", background: "var(--card-bg)" }}>
