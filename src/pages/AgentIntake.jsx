@@ -19,6 +19,7 @@ import PurchaseAgreementUpload from "../components/forms/PurchaseAgreementUpload
 import ParsedDeadlinesPreview from "../components/forms/ParsedDeadlinesPreview";
 import { generateTasksForPhase } from "../lib/taskLibrary";
 import InspectionContingencySection from "../components/intake/InspectionContingencySection";
+import ContractScannerLoader from "../components/loaders/ContractScannerLoader";
 
 // ── Deal Type Config ──────────────────────────────────────────────────────────
 
@@ -138,7 +139,7 @@ function RequiredDocUpload({ docType, onUploaded, onParsed, required = true }) {
         </div>
       )}
       {status === "uploading" && <p className="text-xs text-blue-600 flex items-center gap-1"><Loader2 className="w-3 h-3 animate-spin" /> Uploading…</p>}
-      {status === "parsing" && <p className="text-xs text-blue-600 flex items-center gap-1"><Loader2 className="w-3 h-3 animate-spin" /> AI reading {label}…</p>}
+      {status === "parsing" && <div className="flex justify-center py-2"><ContractScannerLoader isLoading={true} /></div>}
       {status === "done" && fileUrl && <p className="text-xs text-emerald-600 flex items-center gap-1"><CheckCircle className="w-3 h-3" /> Document uploaded — fields auto-filled.</p>}
       {errorMsg && <p className="text-xs text-red-500">{errorMsg}</p>}
     </div>
