@@ -195,7 +195,7 @@ export default function Dashboard() {
           <StatCard label="Closed" value={closed.length} sub="all time" icon={CheckCircle2} accent="green" />
           <StatCard
             label="Total Volume"
-            value={totalVolume > 0 ? `$${(totalVolume / 1_000_000).toFixed(1)}M` : "—"}
+            value={totalVolume > 0 ? `$${totalVolume.toLocaleString('en-US', { maximumFractionDigits: 0 })}` : "—"}
             sub="closed deals"
             icon={DollarSign}
             accent="green"
