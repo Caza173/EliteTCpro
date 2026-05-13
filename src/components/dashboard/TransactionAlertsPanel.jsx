@@ -14,7 +14,7 @@ const ALERT_CONFIG = {
   deadline_overdue:     { icon: AlertTriangle, iconColor: "var(--danger)",   bgStyle: { backgroundColor: "var(--danger-bg)" },  borderColor: "var(--danger)",   label: "Overdue" },
   deadline_approaching: { icon: Clock,         iconColor: "var(--warning)",  bgStyle: { backgroundColor: "var(--warning-bg)" }, borderColor: "var(--warning)",  label: "Deadline" },
   tasks_overdue:        { icon: ListX,         iconColor: "var(--warning)",  bgStyle: { backgroundColor: "var(--warning-bg)" }, borderColor: "var(--warning)",  label: "Tasks" },
-  closing_risk:         { icon: Zap,           iconColor: "var(--danger)",   bgStyle: { backgroundColor: "var(--danger-bg)" },  borderColor: "var(--danger)",   label: "Closing Risk" },
+  closing_risk:         { icon: Zap,           iconColor: "var(--accent)",   bgStyle: { backgroundColor: "var(--accent-subtle)" }, borderColor: "var(--accent)",   label: "Closing" },
   missing_documents:    { icon: AlertCircle,   iconColor: "var(--warning)",  bgStyle: { backgroundColor: "var(--warning-bg)" }, borderColor: "var(--warning)",  label: "Documents" },
   compliance_blockers:  { icon: AlertTriangle, iconColor: "var(--danger)",   bgStyle: { backgroundColor: "var(--danger-bg)" },  borderColor: "var(--danger)",   label: "Compliance" },
 };
