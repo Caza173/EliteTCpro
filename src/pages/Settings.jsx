@@ -27,6 +27,7 @@ import BrokerageLogoUpload from "../components/settings/BrokerageLogoUpload";
 import FeedbackModal from "../components/feedback/FeedbackModal";
 import MyFeedbackSection from "../components/feedback/MyFeedbackSection";
 import ProfileTab from "../components/settings/ProfileTab";
+import NotificationRulesPanel from "../components/notifications/NotificationRulesPanel";
 import { Skeleton } from "@/components/ui/skeleton";
 import { format } from "date-fns";
 
@@ -679,12 +680,10 @@ export default function Settings() {
               </CardHeader>
             </Card>
           </Link>
-          <Card className="shadow-sm border-gray-100 opacity-70">
-            <CardHeader className="flex flex-row items-center gap-4 py-4">
-              <div className="w-9 h-9 rounded-lg bg-gray-50 flex items-center justify-center"><Bell className="w-4 h-4 text-gray-400" /></div>
-              <div><p className="font-semibold text-sm text-gray-700">Notification Rules</p><p className="text-xs text-gray-400">Configure deadline alerts, task reminders, and doc checklist notifications.</p></div>
-            </CardHeader>
-          </Card>
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-wide mb-3" style={{ color: "var(--text-muted)" }}>Notification Rules</p>
+            <NotificationRulesPanel currentUser={currentUser} />
+          </div>
 
           {/* SNS Infrastructure Test — Admin only, temporary */}
           {isOwnerOrAdmin(currentUser) && (
