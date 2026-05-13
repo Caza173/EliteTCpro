@@ -295,38 +295,7 @@ Deno.serve(async (req) => {
       }
 
       // ---- 5. Closing Risk ----
-      if (tx.closing_date) {
-        const closingDate = new Date(tx.closing_date);
-        const daysToClose = Math.ceil((closingDate - today) / (1000 * 60 * 60 * 24));
-        if (daysToClose >= 0 && daysToClose <= 7) {
-          const hasOpenIssues = missingRequired.length > 0 || blockers.length > 0 || incompleteTasks.length > 0;
-          if (hasOpenIssues) {
-            const key = `${txId}|closing_risk`;
-            const existing = existingAlertMap.get(key);
-            if (!existing) {
-              const riskDetails = [
-                missingRequired.length > 0 ? `${missingRequired.length} missing docs` : null,
-                incompleteTasks.length > 0 ? `${incompleteTasks.length} incomplete tasks` : null,
-                blockers.length > 0 ? `${blockers.length} compliance blockers` : null,
-              ].filter(Boolean).join(", ");
-
-              alertsToCreate.push({
-                transaction_id: txId,
-                brokerage_id: txBrokerageId,
-                transaction_address: tx.address,
-                deadline_id: "closing_risk",
-                deadline_label: "Closing Risk",
-                deadline_date: tx.closing_date,
-                severity: "critical",
-                days_remaining: daysToClose,
-                alert_state: "active",
-                generated_at: new Date().toISOString(),
-              });
-            }
-            // dismissed/resolved — do not recreate
-          }
-        }
-      }
+      // REMOVED: Closing is a normal phase, not a risk. No longer generated.
     }
 
     // --- Batch create alerts ---

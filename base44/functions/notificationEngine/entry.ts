@@ -36,7 +36,17 @@ const TZ = 'America/New_York';
 function isTransactionClosed(status) {
   if (!status) return false;
   const normalized = status.trim().toLowerCase();
-  return ["closed", "closed successfully", "closed & funded", "archived"].includes(normalized);
+  return [
+    "closed",
+    "closed successfully",
+    "closed & funded",
+    "archived",
+    "expired",
+    "withdrawn",
+    "cancelled",
+    "canceled",
+    "terminated"
+  ].includes(normalized);
 }
 
 // ─── Deadline definitions ─────────────────────────────────────────────────────

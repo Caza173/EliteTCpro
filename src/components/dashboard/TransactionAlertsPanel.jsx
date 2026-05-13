@@ -48,15 +48,13 @@ export default function TransactionAlertsPanel({ brokerageId }) {
 
   const txStatusMap = new Map(transactionsData.map(tx => [tx.id, tx.status]));
 
-  // Filter alerts to only deals the current user can access, exclude closing_risk and closed transactions
+  // Filter alerts to only deals the current user can access and exclude closed transactions
   const dbAlerts = accessibleDealIds.size > 0
     ? rawAlerts.filter(a => 
         accessibleDealIds.has(a.transaction_id) && 
-        a.alert_type !== 'closing_risk' &&
         !isTransactionClosed(txStatusMap.get(a.transaction_id))
       )
     : rawAlerts.filter(a => 
-        a.alert_type !== 'closing_risk' &&
         !isTransactionClosed(txStatusMap.get(a.transaction_id))
       );
 
