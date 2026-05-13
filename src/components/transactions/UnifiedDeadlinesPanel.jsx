@@ -132,7 +132,7 @@ function DeadlineRow({ item, calendarMaps, transactionId, onUpdateContingency, o
           onUpdateTransaction({ completed_deadlines: [...current, item.key] });
         }
       } else {
-        await onUpdateContingency(item.id, { status: "Completed", completed_date: new Date().toISOString().split("T")[0] });
+        await onUpdateContingency(item.id, { status: "Completed", completed_date: new Date().toLocaleDateString("en-CA", { timeZone: "America/New_York" }) });
       }
     } catch (e) {
       toast.error("Failed to mark complete");
@@ -317,7 +317,7 @@ function DeadlineRow({ item, calendarMaps, transactionId, onUpdateContingency, o
                     disabled={markingReceived}
                     onClick={async () => {
                       setMarkingReceived(true);
-                      onUpdateTransaction({ earnest_money_received: true, earnest_money_received_date: new Date().toISOString().split("T")[0] });
+                      onUpdateTransaction({ earnest_money_received: true, earnest_money_received_date: new Date().toLocaleDateString("en-CA", { timeZone: "America/New_York" }) });
                       setMarkingReceived(false);
                     }}
                     title="Mark earnest money as received"
