@@ -97,47 +97,50 @@ async function publishSystemAlert(client, payload) {
 // ─── Handler ──────────────────────────────────────────────────────────────────
 
 Deno.serve(async (req) => {
-  const base44 = createClientFromRequest(req);
+  try {
+    const base44 = createClientFromRequest(req);
 
-  // Admin-only guard
-  const user = await base44.auth.me();
-  if (!user || user.role !== "admin") {
-    return Response.json({ error: "Forbidden: Admin access required" }, { status: 403 });
-  }
+    // Admin/owner guard
+    const user = await base44.auth.me();
+    if (!user || !["admin", "owner"].includes(user.role)) {
+      return Response.json({ error: "Forbidden: Admin access required" }, { status: 403 });
+    }
 
-  // Validate environment
-  const { valid, missing } = validateSNSEnv();
-  if (!valid) {
+    // Validate environment
+    const { valid, missing } = validateSNSEnv();
+    if (!valid) {
+      return Response.json({
+        success: false,
+        error: "SNS environment not configured",
+        missing,
+      }, { status: 503 });
+    }
+
+    const client = createSNSClient();
+
+    const testPayload = {
+      transactionId: "TEST-001",
+      propertyAddress: "123 EliteTC Test Lane, NH",
+      deadlineType: "inspection",
+      dueDate: new Date(Date.now() + 86400000).toISOString().split("T")[0],
+      severity: "notice",
+      assignedUser: user.email,
+      createdAt: new Date().toISOString(),
+      _note: "Infrastructure test message — not a live alert",
+    };
+
+    const result = await publishDeadlineAlert(client, testPayload);
+
     return Response.json({
-      success: false,
-      error: "SNS environment not configured",
-      missing,
-    }, { status: 503 });
+      success: result.success,
+      messageId: result.messageId ?? null,
+      testedBy: user.email,
+      testedAt: new Date().toISOString(),
+      region: Deno.env.get("AWS_REGION"),
+      topicArn: Deno.env.get("SNS_TOPIC_ARN"),
+    });
+  } catch (error) {
+    console.error("[SNS Test] Error:", error);
+    return Response.json({ success: false, error: error.message }, { status: 500 });
   }
-
-  const client = createSNSClient();
-
-  // Structured test payload — matches the documented payload format
-  const testPayload = {
-    transactionId: "TEST-001",
-    propertyAddress: "123 EliteTC Test Lane, NH",
-    deadlineType: "inspection",
-    dueDate: new Date(Date.now() + 86400000).toISOString().split("T")[0],
-    severity: "notice",
-    assignedUser: user.email,
-    createdAt: new Date().toISOString(),
-    _note: "Infrastructure test message — not a live alert",
-  };
-
-  const result = await publishDeadlineAlert(client, testPayload);
-
-  return Response.json({
-    success: result.success,
-    messageId: result.messageId ?? null,
-    error: result.error ?? null,
-    testedBy: user.email,
-    testedAt: new Date().toISOString(),
-    region: Deno.env.get("AWS_REGION"),
-    topicArn: Deno.env.get("SNS_TOPIC_ARN"),
-  });
 });
