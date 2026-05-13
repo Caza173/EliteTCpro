@@ -3,7 +3,7 @@ import { base44 } from "@/api/base44Client";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Search, Plus, Star, Users, Filter } from "lucide-react";
+import { Search, Plus, Star, Users, Download, Loader2 } from "lucide-react";
 import ContactCard from "@/components/contacts/ContactCard";
 import ContactFormModal from "@/components/contacts/ContactFormModal";
 import { useCurrentUser } from "@/components/auth/useCurrentUser";
@@ -19,6 +19,17 @@ export default function Contacts() {
   const [formContact, setFormContact] = useState(null); // null=closed, {}=new, contact=edit
   const [formOpen, setFormOpen] = useState(false);
   const [deleteConfirm, setDeleteConfirm] = useState(null);
+  const [importing, setImporting] = useState(false);
+  const [importResult, setImportResult] = useState(null);
+
+  const handleImport = async () => {
+    setImporting(true);
+    setImportResult(null);
+    const res = await base44.functions.invoke("importContactsFromTransactions", {});
+    setImporting(false);
+    setImportResult(res.data);
+    queryClient.invalidateQueries({ queryKey: ["contacts", currentUser?.id] });
+  };
 
   const { data: contacts = [], isLoading } = useQuery({
     queryKey: ["contacts", currentUser?.id],
@@ -63,10 +74,24 @@ export default function Contacts() {
           <h1 className="text-xl font-bold" style={{ color: "var(--text-primary)" }}>Contacts</h1>
           <p className="text-sm mt-0.5" style={{ color: "var(--text-muted)" }}>{contacts.length} total contacts</p>
         </div>
-        <Button onClick={() => { setFormContact({}); setFormOpen(true); }} className="gap-2 bg-blue-600 hover:bg-blue-700 text-white">
-          <Plus className="w-4 h-4" /> New Contact
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button variant="outline" onClick={handleImport} disabled={importing} className="gap-2">
+            {importing ? <Loader2 className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4" />}
+            {importing ? "Importing…" : "Import from Transactions"}
+          </Button>
+          <Button onClick={() => { setFormContact({}); setFormOpen(true); }} className="gap-2 bg-blue-600 hover:bg-blue-700 text-white">
+            <Plus className="w-4 h-4" /> New Contact
+          </Button>
+        </div>
       </div>
+
+      {/* Import result banner */}
+      {importResult && (
+        <div className="rounded-lg bg-green-50 border border-green-200 px-4 py-3 text-sm text-green-800 flex items-center justify-between">
+          <span>✓ Imported <strong>{importResult.imported}</strong> contacts from transactions{importResult.skipped > 0 ? ` (${importResult.skipped} already existed)` : ""}.</span>
+          <button onClick={() => setImportResult(null)} className="text-green-600 hover:text-green-800 font-medium ml-4">Dismiss</button>
+        </div>
+      )}
 
       {/* Favorites strip */}
       {favorites.length > 0 && (
