@@ -305,7 +305,17 @@ Deno.serve(async (req) => {
         if (userDismissed) continue;
 
         const activeNotifs = fieldNotifs.filter(n => !n.dismissed);
-        const recipient = tx.agent_email;
+        
+        // Get transaction owner's email (not agent email)
+        let recipient = null;
+        if (tx.created_by) {
+          try {
+            const owner = await base44.asServiceRole.entities.User.filter({ id: tx.created_by });
+            recipient = owner[0]?.email;
+          } catch (e) {
+            console.warn(`[notificationEngine] Could not fetch owner email for user=${tx.created_by}`);
+          }
+        }
         if (!recipient) continue;
 
         if (activeNotifs.length >= 1) {
@@ -387,7 +397,17 @@ Deno.serve(async (req) => {
 
         if (!existingComplianceNotif && !dry_run) {
           const issuesSummary = criticalIssues.slice(0, 3).map(i => i.message).join('; ');
-          const recipient = tx.agent_email;
+          
+          // Get transaction owner's email (not agent email)
+          let recipient = null;
+          if (tx.created_by) {
+            try {
+              const owner = await base44.asServiceRole.entities.User.filter({ id: tx.created_by });
+              recipient = owner[0]?.email;
+            } catch (e) {
+              console.warn(`[notificationEngine] Could not fetch owner email for user=${tx.created_by}`);
+            }
+          }
           if (recipient) {
             try {
               const notif = await base44.asServiceRole.entities.InAppNotification.create({
