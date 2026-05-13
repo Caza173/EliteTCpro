@@ -8,7 +8,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Settings as SettingsIcon, Users, Bell, Palette, Loader2, UserPlus, CheckCircle, Building2, DollarSign, FileText, Pencil, X, Bug, Lightbulb, Puzzle, MessageSquarePlus, Activity, Mail, UserCircle, Trash2, Shield, Search, HelpCircle, BookOpen, Globe, Plus, Upload, CreditCard, AlertTriangle, ArrowUpRight, Plug, Zap, BarChart3, Workflow, Calendar, FileSignature, Home, Download } from "lucide-react";
+import { Settings as SettingsIcon, Users, Bell, Palette, Loader2, UserPlus, CheckCircle, Building2, DollarSign, FileText, Pencil, X, Bug, Lightbulb, Puzzle, MessageSquarePlus, Activity, Mail, UserCircle, Trash2, Shield, Search, HelpCircle, BookOpen, Globe, Plus, Upload, CreditCard, AlertTriangle, ArrowUpRight, Plug, Zap, BarChart3, Workflow, Calendar, FileSignature, Home, Download, Radio } from "lucide-react";
+import { useToast } from "@/components/ui/use-toast";
 import DeleteAccountModal from "@/components/settings/DeleteAccountModal";
 import ExportDataModal from "@/components/settings/ExportDataModal";
 import { createPageUrl } from "@/utils";
@@ -180,6 +181,24 @@ export default function Settings() {
     setHelpActiveSectionId(id);
     const el = document.getElementById(id);
     if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
+  };
+
+  const { toast } = useToast();
+  const [snsTestLoading, setSnsTestLoading] = useState(false);
+
+  const handleTestSNS = async () => {
+    setSnsTestLoading(true);
+    try {
+      const res = await base44.functions.invoke("testSNS", {});
+      const { messageId } = res.data || {};
+      console.log("[SNS Test] MessageId:", messageId);
+      toast({ title: "SNS message sent", description: `Message ID: ${messageId}`, variant: "default" });
+    } catch (err) {
+      console.error("[SNS Test] Error:", err);
+      toast({ title: "SNS test failed", description: err?.message || "Unknown error", variant: "destructive" });
+    } finally {
+      setSnsTestLoading(false);
+    }
   };
 
   const [auditSearch, setAuditSearch] = useState("");
@@ -666,6 +685,32 @@ export default function Settings() {
               <div><p className="font-semibold text-sm text-gray-700">Notification Rules</p><p className="text-xs text-gray-400">Configure deadline alerts, task reminders, and doc checklist notifications.</p></div>
             </CardHeader>
           </Card>
+
+          {/* SNS Infrastructure Test — Admin only, temporary */}
+          {isOwnerOrAdmin(currentUser) && (
+            <Card className="shadow-sm" style={{ borderColor: "var(--card-border)", background: "var(--card-bg)" }}>
+              <CardHeader className="flex flex-row items-center gap-4 py-4">
+                <div className="w-9 h-9 rounded-lg flex items-center justify-center" style={{ background: "rgba(37,99,235,0.1)" }}>
+                  <Radio className="w-4 h-4 text-blue-500" />
+                </div>
+                <div className="flex-1">
+                  <p className="font-semibold text-sm" style={{ color: "var(--text-primary)" }}>SNS Infrastructure Test</p>
+                  <p className="text-xs" style={{ color: "var(--text-muted)" }}>Publish a test message to the AWS SNS topic. Admin only — temporary.</p>
+                </div>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="gap-2 flex-shrink-0"
+                  onClick={handleTestSNS}
+                  disabled={snsTestLoading}
+                  style={{ borderColor: "var(--border)", color: "var(--text-primary)" }}
+                >
+                  {snsTestLoading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Radio className="w-3.5 h-3.5" />}
+                  {snsTestLoading ? "Sending…" : "Test SNS"}
+                </Button>
+              </CardHeader>
+            </Card>
+          )}
           <Card className="shadow-sm border-gray-100 opacity-70">
             <CardHeader className="flex flex-row items-center gap-4 py-4">
               <div className="w-9 h-9 rounded-lg bg-gray-50 flex items-center justify-center"><Palette className="w-4 h-4 text-gray-400" /></div>
