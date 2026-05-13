@@ -8,10 +8,33 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { Bell, CheckCircle, Loader2, Radio, Smartphone, MessageSquare, Mail, Zap, Clock } from "lucide-react";
 import { useToast } from "@/components/ui/use-toast";
+
+function Toggle({ checked, onChange, disabled }) {
+  return (
+    <button
+      type="button"
+      onClick={() => !disabled && onChange()}
+      disabled={disabled}
+      className="relative inline-flex h-6 w-11 flex-shrink-0 rounded-full border-2 border-transparent transition-colors duration-200 focus:outline-none"
+      style={{
+        backgroundColor: disabled ? "var(--bg-tertiary)" : checked ? "var(--accent)" : "var(--border)",
+        cursor: disabled ? "not-allowed" : "pointer",
+      }}
+    >
+      <span
+        className="pointer-events-none inline-block h-5 w-5 transform rounded-full shadow-sm transition-transform duration-200"
+        style={{
+          backgroundColor: "#fff",
+          transform: checked ? "translateX(20px)" : "translateX(0px)",
+          boxShadow: "0 1px 3px rgba(0,0,0,0.2)",
+        }}
+      />
+    </button>
+  );
+}
 
 const DEFAULT_RULES = {
   deadline_notice_enabled: true,     // 72h
@@ -181,11 +204,10 @@ export default function NotificationRulesPanel({ currentUser }) {
                       </div>
                       <p className="text-xs mt-0.5" style={{ color: "var(--text-muted)" }}>{rule.desc}</p>
                     </div>
-                    <Switch
-                      id={rule.key}
-                      checked={!!rules[rule.key]}
-                      onCheckedChange={() => !rule.disabled && toggle(rule.key)}
-                      disabled={!!rule.disabled}
+                    <Toggle
+                     checked={!!rules[rule.key]}
+                     onChange={() => toggle(rule.key)}
+                     disabled={!!rule.disabled}
                     />
                   </div>
                 ))}
