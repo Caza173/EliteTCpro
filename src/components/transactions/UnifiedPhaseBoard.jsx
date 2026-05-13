@@ -128,13 +128,20 @@ const TaskRow = memo(function TaskRow({
               onKeyDown={e => { if (e.key === "Enter") saveEdit(); if (e.key === "Escape") setEditing(false); }}
             />
           ) : (
-            <span
-               className={`flex-1 text-xs font-medium leading-tight ${task.is_completed ? "line-through opacity-50" : ""}`}
-               style={{ color: task.is_completed ? "var(--text-muted)" : "var(--text-primary)" }}
-               onDoubleClick={() => { setDraft(task.title); setEditing(true); }}
-             >
-               {task.title}
-             </span>
+            <div className="flex-1 min-w-0">
+              <span
+                 className={`text-xs font-medium leading-tight ${task.is_completed ? "line-through opacity-50" : ""}`}
+                 style={{ color: task.is_completed ? "var(--text-muted)" : "var(--text-primary)" }}
+                 onDoubleClick={() => { setDraft(task.title); setEditing(true); }}
+               >
+                 {task.title}
+               </span>
+              {task.is_completed && task.completed_date && (
+                <p className="text-[9px] mt-0.5" style={{ color: "var(--text-muted)" }}>
+                  ✓ {new Date(task.completed_date + "T12:00:00").toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
+                </p>
+              )}
+            </div>
           )}
 
           {task.is_required && !task.is_completed && (

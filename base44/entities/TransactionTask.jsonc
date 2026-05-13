@@ -33,6 +33,11 @@
     "created_by": {
       "type": "string"
     },
+    "completed_date": {
+      "type": "string",
+      "format": "date",
+      "description": "Date the task was marked complete (local NY date)"
+    },
     "assigned_to_user_id": {
       "type": "string"
     },

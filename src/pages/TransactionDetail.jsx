@@ -330,12 +330,15 @@ export default function TransactionDetail() {
     if (!task) return;
     
     const isCompleting = !task.is_completed;
+    const completedDate = isCompleting
+      ? new Date().toLocaleDateString("en-CA", { timeZone: "America/New_York" })
+      : null;
     
     // Optimistic update so PhaseChecklist re-renders immediately
     queryClient.setQueryData(["txTasks", id], (old = []) =>
-      old.map(t => t.id === taskId ? { ...t, is_completed: !t.is_completed } : t)
+      old.map(t => t.id === taskId ? { ...t, is_completed: !t.is_completed, completed_date: isCompleting ? completedDate : null } : t)
     );
-    await base44.entities.TransactionTask.update(taskId, { is_completed: !task.is_completed });
+    await base44.entities.TransactionTask.update(taskId, { is_completed: !task.is_completed, completed_date: completedDate });
     refetchTxTasks();
     
     await writeAuditLog({
