@@ -38,10 +38,10 @@ export default function TransactionAlertsPanel({ brokerageId }) {
     enabled: !!brokerageId,
   });
 
-  // Filter alerts to only deals the current user can access
+  // Filter alerts to only deals the current user can access, exclude closing_risk
   const dbAlerts = accessibleDealIds.size > 0
-    ? rawAlerts.filter(a => accessibleDealIds.has(a.transaction_id))
-    : rawAlerts;
+    ? rawAlerts.filter(a => accessibleDealIds.has(a.transaction_id) && a.alert_type !== 'closing_risk')
+    : rawAlerts.filter(a => a.alert_type !== 'closing_risk');
 
   // Update alert state (resolve or dismiss)
   const updateAlertMutation = useMutation({
