@@ -183,8 +183,30 @@ Deno.serve(async (req) => {
 
     // Scheduled (bulk) mode — no transaction_id provided
     if (!transaction_id) {
-      console.log('[CalendarSync] Bulk mode — syncing all active transactions');
-      const allTransactions = await base44.asServiceRole.entities.Transaction.filter({ status: 'active' });
+      console.log('[CalendarSync] Bulk mode — syncing active transactions');
+      
+      let user = null;
+      try { user = await base44.auth.me(); } catch {}
+      
+      // Only admin or super admin can bulk sync all transactions
+      const isAdmin = user?.role === 'admin' || user?.role === 'owner' || user?.email === 'nhcazateam@gmail.com';
+      
+      let allTransactions;
+      if (isAdmin) {
+        // Admin: sync all active transactions
+        console.log('[CalendarSync] Admin bulk sync — all active transactions');
+        allTransactions = await base44.asServiceRole.entities.Transaction.filter({ status: 'active' });
+      } else if (user?.id) {
+        // Non-admin: only sync their own active transactions
+        console.log(`[CalendarSync] User ${user.email} bulk sync — own transactions only`);
+        allTransactions = await base44.asServiceRole.entities.Transaction.filter({ 
+          created_by: user.id, 
+          status: 'active' 
+        });
+      } else {
+        return Response.json({ error: 'Unauthorized' }, { status: 401 });
+      }
+      
       let totalCreated = 0, totalUpdated = 0, totalErrors = 0;
       for (const tx of allTransactions) {
         try {
