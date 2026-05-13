@@ -21,6 +21,7 @@ export default function Contacts() {
   const [deleteConfirm, setDeleteConfirm] = useState(null);
   const [importing, setImporting] = useState(false);
   const [importResult, setImportResult] = useState(null);
+  const [emailingContact, setEmailingContact] = useState(null);
 
   const handleImport = async () => {
     setImporting(true);
@@ -175,6 +176,7 @@ export default function Contacts() {
               onEdit={(c) => { setFormContact(c); setFormOpen(true); }}
               onDelete={(c) => setDeleteConfirm(c)}
               onToggleFavorite={(c) => favoriteMutation.mutate({ id: c.id, is_favorite: !c.is_favorite })}
+              onEmail={(c) => setEmailingContact(c)}
             />
           ))}
         </div>
@@ -210,6 +212,85 @@ export default function Contacts() {
           }}
         />
       )}
+
+      {/* Email modal */}
+      {emailingContact && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-black/40" onClick={() => setEmailingContact(null)} />
+          <EmailToContactModal
+            contact={emailingContact}
+            onClose={() => setEmailingContact(null)}
+          />
+        </div>
+      )}
+    </div>
+  );
+}
+
+function EmailToContactModal({ contact, onClose }) {
+  const [subject, setSubject] = useState("");
+  const [body, setBody] = useState("");
+  const [sending, setSending] = useState(false);
+
+  const handleSend = async () => {
+    if (!subject.trim() || !body.trim()) return;
+    setSending(true);
+    try {
+      await base44.integrations.Core.SendEmail({
+        to: contact.email,
+        subject: subject.trim(),
+        body: body.trim(),
+      });
+      onClose();
+    } catch (err) {
+      console.error("Failed to send email:", err);
+      alert("Failed to send email. Please try again.");
+    } finally {
+      setSending(false);
+    }
+  };
+
+  return (
+    <div className="relative bg-white rounded-xl p-6 w-full max-w-md shadow-2xl">
+      <h3 className="text-base font-semibold text-gray-900 mb-1">Email {contact.first_name} {contact.last_name}</h3>
+      <p className="text-xs text-gray-500 mb-4">{contact.email}</p>
+      <div className="space-y-3">
+        <div>
+          <label className="block text-xs font-medium text-gray-700 mb-1">Subject</label>
+          <input
+            type="text"
+            value={subject}
+            onChange={(e) => setSubject(e.target.value)}
+            placeholder="Email subject"
+            className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+          />
+        </div>
+        <div>
+          <label className="block text-xs font-medium text-gray-700 mb-1">Message</label>
+          <textarea
+            value={body}
+            onChange={(e) => setBody(e.target.value)}
+            placeholder="Your message…"
+            rows={4}
+            className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-blue-500"
+          />
+        </div>
+        <div className="flex justify-end gap-2 pt-2">
+          <button
+            onClick={onClose}
+            className="px-4 py-2 rounded-lg border border-gray-300 text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors"
+          >
+            Cancel
+          </button>
+          <button
+            onClick={handleSend}
+            disabled={!subject.trim() || !body.trim() || sending}
+            className="px-4 py-2 rounded-lg bg-blue-600 text-white text-sm font-medium hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            {sending ? "Sending…" : "Send"}
+          </button>
+        </div>
+      </div>
     </div>
   );
 }

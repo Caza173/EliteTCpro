@@ -1,5 +1,5 @@
-import React from "react";
-import { Mail, Phone, Building2, Star, Pencil, Trash2 } from "lucide-react";
+import React, { useState, useRef, useEffect } from "react";
+import { Mail, Phone, Building2, Star, Pencil, Trash2, Copy, Send } from "lucide-react";
 
 const TYPE_COLORS = {
   buyer: "bg-blue-100 text-blue-700",
@@ -14,9 +14,28 @@ const TYPE_COLORS = {
   other: "bg-gray-100 text-gray-600",
 };
 
-export default function ContactCard({ contact, onEdit, onDelete, onToggleFavorite }) {
+export default function ContactCard({ contact, onEdit, onDelete, onToggleFavorite, onEmail }) {
   const initials = `${contact.first_name?.[0] || ""}${contact.last_name?.[0] || ""}`.toUpperCase();
   const typeColor = TYPE_COLORS[contact.contact_type] || TYPE_COLORS.other;
+  const [menuOpen, setMenuOpen] = useState(false);
+  const menuRef = useRef(null);
+
+  useEffect(() => {
+    const handler = (e) => { if (menuRef.current && !menuRef.current.contains(e.target)) setMenuOpen(false); };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, []);
+
+  const handleCopyContactInfo = () => {
+    const info = [
+      contact.first_name && contact.last_name ? `${contact.first_name} ${contact.last_name}` : "",
+      contact.email || "",
+      contact.phone || "",
+      contact.company_name || contact.brokerage_name || "",
+    ].filter(Boolean).join("\n");
+    navigator.clipboard.writeText(info);
+    setMenuOpen(false);
+  };
 
   return (
     <div className="theme-card p-4 hover:shadow-md transition-shadow">
@@ -41,10 +60,39 @@ export default function ContactCard({ contact, onEdit, onDelete, onToggleFavorit
             </p>
           )}
           {contact.email && (
-            <p className="text-xs mt-0.5 flex items-center gap-1" style={{ color: "var(--text-secondary)" }}>
-              <Mail className="w-3 h-3" />
-              {contact.email}
-            </p>
+            <div className="relative mt-0.5">
+              <button
+                onClick={() => setMenuOpen(!menuOpen)}
+                className="text-xs flex items-center gap-1 hover:text-blue-600 transition-colors cursor-pointer"
+                style={{ color: "var(--text-secondary)" }}
+                title="Click for email options"
+              >
+                <Mail className="w-3 h-3" />
+                {contact.email}
+              </button>
+              {menuOpen && (
+                <div
+                  ref={menuRef}
+                  className="absolute top-full left-0 mt-1 z-50 rounded-lg border shadow-lg py-1 w-48 text-xs"
+                  style={{ background: "var(--card-bg)", borderColor: "var(--card-border)" }}
+                >
+                  <button
+                    onClick={() => { onEmail?.(contact); setMenuOpen(false); }}
+                    className="flex items-center gap-2 w-full px-3 py-1.5 hover:bg-gray-50 transition-colors text-left"
+                    style={{ color: "var(--text-primary)" }}
+                  >
+                    <Send className="w-3.5 h-3.5" /> Email
+                  </button>
+                  <button
+                    onClick={handleCopyContactInfo}
+                    className="flex items-center gap-2 w-full px-3 py-1.5 hover:bg-gray-50 transition-colors text-left"
+                    style={{ color: "var(--text-primary)" }}
+                  >
+                    <Copy className="w-3.5 h-3.5" /> Copy Contact Info
+                  </button>
+                </div>
+              )}
+            </div>
           )}
           {contact.phone && (
             <p className="text-xs mt-0.5 flex items-center gap-1" style={{ color: "var(--text-secondary)" }}>
