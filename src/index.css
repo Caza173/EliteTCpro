@@ -90,7 +90,9 @@
 
 .checkbox-wrapper-10 .tgl-flip + .tgl-btn:after,
 .checkbox-wrapper-10 .tgl-flip + .tgl-btn:before {
-  display: inline-block;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   transition: all 0.4s ease;
   width: 100%;
   text-align: center;
