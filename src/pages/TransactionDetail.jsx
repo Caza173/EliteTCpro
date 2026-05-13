@@ -144,7 +144,7 @@ export default function TransactionDetail() {
     const saved = localStorage.getItem("notesPanelWidth");
     return saved ? Math.min(NOTES_MAX, Math.max(NOTES_MIN, parseInt(saved))) : NOTES_DEFAULT;
   });
-  const [notesCollapsed, setNotesCollapsed] = useState(false);
+  const [notesCollapsed, setNotesCollapsed] = useState(true);
   const isResizingNotes = useRef(false);
   const resizeStartX = useRef(0);
   const resizeStartWidth = useRef(0);
