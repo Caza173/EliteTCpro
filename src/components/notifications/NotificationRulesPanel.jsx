@@ -198,7 +198,7 @@ export default function NotificationRulesPanel({ currentUser }) {
   const saveMutation = useMutation({
     mutationFn: () =>
       base44.functions.invoke("updateBrokerage", {
-        brokerage_id: brokerage.id,
+        brokerage_id: currentUser?.brokerage_id,
         data: { notification_rules: rules },
       }),
     onSuccess: () => {
