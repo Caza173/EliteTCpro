@@ -36,6 +36,7 @@ import PageNotFound from './lib/PageNotFound';
 import { AuthProvider, useAuth } from '@/lib/AuthContext';
 import { CurrentUserProvider } from '@/lib/CurrentUserContext.jsx';
 import { PWAProvider } from '@/lib/PWAContext.jsx';
+import { AIConversationProvider } from '@/lib/AIConversationContext';
 import UserNotRegisteredError from '@/components/UserNotRegisteredError';
 import RequireAuth from '@/components/auth/RequireAuth';
 import AuthGate from '@/components/auth/AuthGate';
@@ -240,10 +241,12 @@ function App() {
       <QueryClientProvider client={queryClientInstance}>
         <CurrentUserProvider>
           <PWAProvider>
-            <Router>
-              <AuthenticatedApp />
-            </Router>
-            <Toaster />
+            <AIConversationProvider>
+              <Router>
+                <AuthenticatedApp />
+              </Router>
+              <Toaster />
+            </AIConversationProvider>
           </PWAProvider>
         </CurrentUserProvider>
       </QueryClientProvider>

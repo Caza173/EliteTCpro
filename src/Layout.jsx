@@ -37,6 +37,8 @@ import OfflineBanner from "./components/pwa/OfflineBanner";
 import UserMenuDropdown from "./components/user/UserMenuDropdown";
 import LogoutButton from "./components/auth/LogoutButton";
 import { useCurrentUser as useCurrentUserCtx } from "./lib/CurrentUserContext.jsx";
+import FloatingAIButton from "./components/ai/FloatingAIButton";
+import AIModal from "./components/ai/AIModal";
 
 const TC_NAV = [
   { label: "Dashboard",       page: "Dashboard",       icon: LayoutDashboard, path: "/Dashboard" },
@@ -338,6 +340,10 @@ export default function Layout({ children, currentPageName }) {
           </main>
           <InstallButtonFloat />
         </div>
+
+        {/* Global AI System — visible across entire app */}
+        <FloatingAIButton />
+        <AIModal />
       </div>
     </ThemeProvider>
   );
