@@ -8,46 +8,9 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Label } from "@/components/ui/label";
-import { Bell, CheckCircle, Loader2, Radio, Smartphone, MessageSquare, Mail, Zap, Clock } from "lucide-react";
+import { Bell, CheckCircle, Loader2, Radio, Zap, Clock } from "lucide-react";
 import { useToast } from "@/components/ui/use-toast";
-
-function Toggle({ checked, onChange, disabled }) {
-  return (
-    <button
-      type="button"
-      onClick={() => !disabled && onChange()}
-      disabled={disabled}
-      style={{
-        width: 26,
-        height: 14,
-        borderRadius: 7,
-        backgroundColor: disabled ? "#CBD5E1" : checked ? "var(--accent)" : "#94A3B8",
-        cursor: disabled ? "not-allowed" : "pointer",
-        transition: "background-color 0.15s",
-        padding: 2,
-        border: "none",
-        outline: "none",
-        display: "inline-flex",
-        alignItems: "center",
-        flexShrink: 0,
-      }}
-    >
-      <span
-        style={{
-          display: "block",
-          width: 10,
-          height: 10,
-          borderRadius: "50%",
-          backgroundColor: "#fff",
-          boxShadow: "0 1px 2px rgba(0,0,0,0.2)",
-          transform: checked ? "translateX(12px)" : "translateX(0px)",
-          transition: "transform 0.15s",
-        }}
-      />
-    </button>
-  );
-}
+import ToggleSwitch from "@/components/ui/ToggleSwitch";
 
 const DEFAULT_RULES = {
   deadline_notice_enabled: true,     // 72h
@@ -190,39 +153,45 @@ export default function NotificationRulesPanel({ currentUser }) {
         const Icon = group.icon;
         return (
           <Card key={group.label} style={{ borderColor: "var(--card-border)", background: "var(--card-bg)" }}>
-            <CardHeader className="pb-2 pt-4 px-5">
-              <CardTitle className="text-sm font-semibold flex items-center gap-2" style={{ color: "var(--text-primary)" }}>
-                <Icon className={`w-4 h-4 ${group.iconColor}`} />
+            <CardHeader className="pb-1 pt-4 px-5">
+              <CardTitle className="text-xs font-semibold uppercase tracking-wide flex items-center gap-2" style={{ color: "var(--text-muted)" }}>
+                <Icon className={`w-3.5 h-3.5 ${group.iconColor}`} />
                 {group.label}
               </CardTitle>
             </CardHeader>
-            <CardContent className="px-5 pb-4">
-              <div className="space-y-3">
+            <CardContent className="px-5 pb-3">
+              <div className="divide-y" style={{ borderColor: "var(--border)" }}>
                 {group.rules.map((rule) => (
-                  <div key={rule.key} className="flex items-center justify-between">
-                    <div className="flex-1 min-w-0 pr-4">
+                  <button
+                    key={rule.key}
+                    type="button"
+                    onClick={() => !rule.disabled && toggle(rule.key)}
+                    disabled={!!rule.disabled}
+                    className="w-full flex items-center justify-between py-2.5 text-left"
+                    style={{ background: "none", border: "none", cursor: rule.disabled ? "default" : "pointer" }}
+                  >
+                    <div className="flex-1 min-w-0 pr-6">
                       <div className="flex items-center gap-2">
-                        <Label
-                          htmlFor={rule.key}
-                          className="text-sm font-medium cursor-pointer"
+                        <span
+                          className="text-sm font-medium"
                           style={{ color: rule.disabled ? "var(--text-muted)" : "var(--text-primary)" }}
                         >
                           {rule.label}
-                        </Label>
+                        </span>
                         {rule.disabled && (
-                          <Badge variant="outline" className="text-xs px-1.5 py-0" style={{ color: "var(--text-muted)", borderColor: "var(--border)" }}>
+                          <Badge variant="outline" className="text-[10px] px-1.5 py-0 h-4" style={{ color: "var(--text-muted)", borderColor: "var(--border)" }}>
                             Soon
                           </Badge>
                         )}
                       </div>
                       <p className="text-xs mt-0.5" style={{ color: "var(--text-muted)" }}>{rule.desc}</p>
                     </div>
-                    <Toggle
-                     checked={!!rules[rule.key]}
-                     onChange={() => toggle(rule.key)}
-                     disabled={!!rule.disabled}
+                    <ToggleSwitch
+                      checked={!!rules[rule.key]}
+                      onChange={() => toggle(rule.key)}
+                      disabled={!!rule.disabled}
                     />
-                  </div>
+                  </button>
                 ))}
               </div>
             </CardContent>
