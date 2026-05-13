@@ -64,7 +64,7 @@ function TransactionRow({ tx }) {
 
   return (
     <Link
-      to={`${createPageUrl("TransactionDetail")}?id=${tx.id}`}
+      to={`/transactions/${tx.id}`}
       className="flex items-center gap-3 px-4 py-3 transition-colors hover:bg-gray-50 group border-b last:border-0"
       style={{ borderColor: "var(--border)" }}
     >
