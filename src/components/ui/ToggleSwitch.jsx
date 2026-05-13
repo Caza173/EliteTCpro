@@ -1,10 +1,24 @@
 /**
- * ToggleSwitch — Backwards compatibility wrapper
- * Now uses CyberToggle for holographic sci-fi aesthetic
+ * ToggleSwitch — Flip toggle component
+ * Compact 3D flip toggle with ON/OFF states
  */
-import React from "react";
-import CyberToggle from "./CyberToggle";
-
 export default function ToggleSwitch({ checked, onChange, disabled = false, id }) {
-  return <CyberToggle checked={checked} onChange={onChange} disabled={disabled} id={id} />;
+  return (
+    <div className="checkbox-wrapper-10">
+      <input
+        type="checkbox"
+        id={id}
+        className="tgl tgl-flip"
+        checked={checked}
+        onChange={onChange}
+        disabled={disabled}
+      />
+      <label
+        htmlFor={id}
+        className="tgl-btn"
+        data-tg-off="OFF"
+        data-tg-on="ON"
+      />
+    </div>
+  );
 }
