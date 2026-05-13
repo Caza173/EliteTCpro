@@ -128,7 +128,7 @@ export default function TransactionAlertsPanel({ brokerageId }) {
           <button
             key={key}
             onClick={() => setFilter(key)}
-            className="text-xs px-2.5 py-0.5 rounded border transition-colors font-medium"
+            className="text-xs px-2.5 py-px rounded border transition-colors font-medium"
             style={filter === key
               ? { backgroundColor: "var(--accent)", color: "#fff", borderColor: "var(--accent)" }
               : { backgroundColor: "var(--card-bg)", borderColor: "var(--border)", color: "var(--text-muted)" }
@@ -180,7 +180,7 @@ export default function TransactionAlertsPanel({ brokerageId }) {
                      onClick={(e) => handleResolved(e, alert)}
                      disabled={updateAlertMutation.isPending}
                      title="Mark resolved"
-                     className="flex items-center gap-0.5 px-2 py-0.5 rounded text-[9px] font-semibold border transition-colors disabled:opacity-50 whitespace-nowrap"
+                     className="flex items-center gap-0.5 px-2 py-px rounded text-[9px] font-semibold border transition-colors disabled:opacity-50 whitespace-nowrap"
                      style={{ backgroundColor: "var(--success-bg)", color: "var(--success)", borderColor: "var(--success)" }}
                    >
                      {updateAlertMutation.isPending ? <Loader2 className="w-3 h-3 animate-spin" /> : <CheckCircle2 className="w-3 h-3" />} Resolved
@@ -189,7 +189,7 @@ export default function TransactionAlertsPanel({ brokerageId }) {
                      onClick={(e) => handleDismiss(e, alert)}
                      disabled={updateAlertMutation.isPending}
                      title="Dismiss alert"
-                     className="flex items-center gap-0.5 px-2 py-0.5 rounded text-[9px] font-semibold border transition-colors disabled:opacity-50 whitespace-nowrap"
+                     className="flex items-center gap-0.5 px-2 py-px rounded text-[9px] font-semibold border transition-colors disabled:opacity-50 whitespace-nowrap"
                      style={{ backgroundColor: "var(--card-bg)", color: "var(--text-secondary)", borderColor: "var(--border)" }}
                    >
                      <X className="w-3 h-3" /> Dismiss
