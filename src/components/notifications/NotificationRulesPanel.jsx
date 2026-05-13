@@ -18,18 +18,27 @@ function Toggle({ checked, onChange, disabled }) {
       type="button"
       onClick={() => !disabled && onChange()}
       disabled={disabled}
-      className="relative inline-flex h-6 w-11 flex-shrink-0 rounded-full border-2 border-transparent transition-colors duration-200 focus:outline-none"
+      className="relative inline-flex flex-shrink-0 focus:outline-none"
       style={{
-        backgroundColor: disabled ? "var(--bg-tertiary)" : checked ? "var(--accent)" : "var(--border)",
+        width: 32,
+        height: 18,
+        borderRadius: 9,
+        backgroundColor: disabled ? "#E2E8F0" : checked ? "var(--accent)" : "#CBD5E1",
         cursor: disabled ? "not-allowed" : "pointer",
+        transition: "background-color 0.2s",
+        padding: 2,
       }}
     >
       <span
-        className="pointer-events-none inline-block h-5 w-5 transform rounded-full shadow-sm transition-transform duration-200"
         style={{
+          display: "block",
+          width: 14,
+          height: 14,
+          borderRadius: "50%",
           backgroundColor: "#fff",
-          transform: checked ? "translateX(20px)" : "translateX(0px)",
-          boxShadow: "0 1px 3px rgba(0,0,0,0.2)",
+          boxShadow: "0 1px 2px rgba(0,0,0,0.25)",
+          transform: checked ? "translateX(14px)" : "translateX(0px)",
+          transition: "transform 0.2s",
         }}
       />
     </button>
