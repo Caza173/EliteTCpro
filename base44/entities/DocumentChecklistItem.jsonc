@@ -1,69 +1,56 @@
 {
-  "name": "TransactionTask",
+  "name": "DocumentChecklistItem",
   "type": "object",
   "properties": {
-    "transaction_id": {
-      "type": "string"
-    },
     "brokerage_id": {
       "type": "string"
     },
-    "phase": {
-      "type": "number"
-    },
-    "title": {
+    "transaction_id": {
       "type": "string"
     },
-    "order_index": {
-      "type": "number",
-      "default": 0
+    "doc_type": {
+      "type": "string"
     },
-    "is_completed": {
-      "type": "boolean",
-      "default": false
+    "label": {
+      "type": "string"
     },
-    "is_required": {
+    "required": {
       "type": "boolean",
       "default": true
     },
-    "is_custom": {
+    "required_by_phase": {
+      "type": "number"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "missing",
+        "uploaded",
+        "approved",
+        "rejected"
+      ],
+      "default": "missing"
+    },
+    "uploaded_document_id": {
+      "type": "string"
+    },
+    "reviewed_by_user_id": {
+      "type": "string"
+    },
+    "reviewed_at": {
+      "type": "string"
+    },
+    "notes": {
+      "type": "string"
+    },
+    "visible_to_client": {
       "type": "boolean",
       "default": false
-    },
-    "created_by": {
-      "type": "string"
-    },
-    "completed_date": {
-      "type": "string",
-      "format": "date",
-      "description": "Date the task was marked complete (local NY date)"
-    },
-    "assigned_to_user_id": {
-      "type": "string"
-    },
-    "assigned_to_email": {
-      "type": "string"
-    },
-    "assigned_to_name": {
-      "type": "string"
-    },
-    "assigned_by_email": {
-      "type": "string"
-    },
-    "completed_by_email": {
-      "type": "string"
-    },
-    "completed_by_name": {
-      "type": "string"
-    },
-    "last_updated_by_email": {
-      "type": "string"
     }
   },
   "required": [
     "transaction_id",
-    "phase",
-    "title"
+    "doc_type"
   ],
   "rls": {
     "create": {
