@@ -27,12 +27,13 @@ export default function SidebarNavButton({
 }) {
   const baseClasses = cn(
     // Layout
-    "flex items-center justify-center",
+    "flex items-center",
     "transition-all duration-200 ease-out",
     "rounded-lg",
     "relative",
     "group",
-    collapsed ? "h-9 w-9" : "h-9 px-2.5 gap-2.5"
+    "w-full",
+    collapsed ? "justify-center h-9" : "h-9 px-2.5 gap-2.5"
   );
 
   const buttonClasses = cn(
@@ -84,11 +85,10 @@ export default function SidebarNavButton({
     return (
       <Link
         to={href || to}
-        {...sharedProps}
-        onClick={(e) => {
-          onClick?.();
-          // Don't prevent default for link navigation
-        }}
+        className={buttonClasses}
+        title={collapsed ? label : undefined}
+        aria-label={label}
+        onClick={onClick}
       >
         {content}
       </Link>
