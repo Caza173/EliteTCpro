@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from "react";
-import { Mail, Phone, Building2, Star, Pencil, Trash2, Copy, Send } from "lucide-react";
+import { Mail, Phone, Building2, Star, Pencil, Trash2, Copy, Send, MapPin } from "lucide-react";
 
 const TYPE_COLORS = {
   buyer: "bg-blue-100 text-blue-700",
@@ -98,6 +98,14 @@ export default function ContactCard({ contact, onEdit, onDelete, onToggleFavorit
             <p className="text-xs mt-0.5 flex items-center gap-1" style={{ color: "var(--text-secondary)" }}>
               <Phone className="w-3 h-3" />
               {contact.phone}
+            </p>
+          )}
+          {(contact.street || contact.city || contact.state) && (
+            <p className="text-xs mt-0.5 flex items-center gap-1" style={{ color: "var(--text-secondary)" }}>
+              <MapPin className="w-3 h-3 flex-shrink-0" />
+              <span>
+                {[contact.street, contact.city, contact.state].filter(Boolean).join(", ")}
+              </span>
             </p>
           )}
           {contact.transaction_count > 0 && (
