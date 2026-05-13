@@ -11,7 +11,7 @@ import { useCurrentUser } from "@/components/auth/useCurrentUser";
 const CONTACT_TYPES = ["all", "buyer", "seller", "agent", "lender", "title", "inspector", "attorney", "vendor", "tc", "other"];
 
 export default function Contacts() {
-  const { currentUser } = useCurrentUser();
+  const { data: currentUser } = useCurrentUser();
   const queryClient = useQueryClient();
   const [search, setSearch] = useState("");
   const [typeFilter, setTypeFilter] = useState("all");
