@@ -22,17 +22,17 @@ Deno.serve(async (req) => {
     const today = new Date();
 
     // --- Fetch all needed data in parallel ---
-    const [transactions, checklistItems, complianceIssues, financeRecords] = await Promise.all([
+    const [allTransactions, checklistItems, complianceIssues, financeRecords] = await Promise.all([
       targetTransactionId
         ? base44.asServiceRole.entities.Transaction.filter({ id: targetTransactionId })
-        : base44.asServiceRole.entities.Transaction.filter({ status: "active" }),
+        : base44.asServiceRole.entities.Transaction.list(),
       base44.asServiceRole.entities.DocumentChecklistItem.list(),
       base44.asServiceRole.entities.ComplianceIssue.filter({ status: "open" }),
       base44.asServiceRole.entities.TransactionFinance.list(),
     ]);
 
-    // Filter to active transactions only (skip closed/cancelled)
-    const activeTransactions = transactions.filter(tx =>
+    // Filter to active & pending transactions only for monitoring (skip closed/cancelled)
+    const activeTransactions = allTransactions.filter(tx =>
       tx.status === "active" || tx.status === "pending"
     );
 
@@ -55,7 +55,7 @@ Deno.serve(async (req) => {
 
     // Back-fill deadline_value on old dismissed/resolved alerts that are missing it,
     // so they are not incorrectly recreated on subsequent runs.
-    const txMap = new Map(transactions.map(tx => [tx.id, tx]));
+    const txMap = new Map(allTransactions.map(tx => [tx.id, tx]));
     // No backfill needed with new schema
 
     // ---- Fetch TransactionTasks (separate entity) in one go ----
