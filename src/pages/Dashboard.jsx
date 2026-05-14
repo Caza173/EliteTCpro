@@ -35,12 +35,43 @@ const STATUS_STYLES = {
 };
 
 function StatCard({ label, value, sub, icon: Icon, accent }) {
+  const [theme, setTheme] = React.useState("light");
+
+  React.useEffect(() => {
+    const currentTheme = document.documentElement.getAttribute("data-theme") || "light";
+    setTheme(currentTheme);
+    
+    const observer = new MutationObserver(() => {
+      const newTheme = document.documentElement.getAttribute("data-theme") || "light";
+      setTheme(newTheme);
+    });
+    
+    observer.observe(document.documentElement, { attributes: true, attributeFilter: ["data-theme"] });
+    return () => observer.disconnect();
+  }, []);
+
+  const isLightTheme = theme === "light";
   const colors = {
     blue:   { bg: "bg-blue-500" },
     green:  { bg: "bg-emerald-500" },
     amber:  { bg: "bg-amber-500" },
     red:    { bg: "bg-red-500" },
   }[accent] || { bg: "bg-blue-500" };
+
+  if (!isLightTheme) {
+    return (
+      <div className="theme-card p-4 flex items-start gap-3">
+        <div className={`w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 ${colors.bg}`}>
+          <Icon className="w-4 h-4 text-white" />
+        </div>
+        <div className="min-w-0">
+          <p className="text-xs font-medium" style={{ color: "var(--text-muted)" }}>{label}</p>
+          <p className="text-2xl font-bold mt-1" style={{ color: "var(--text-primary)" }}>{value}</p>
+          {sub && <p className="text-xs mt-0.5" style={{ color: "var(--text-secondary)" }}>{sub}</p>}
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="relative overflow-hidden rounded-xl p-4 flex flex-col gap-3" style={{
