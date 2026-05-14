@@ -58,7 +58,7 @@ function StatCard({ label, value, sub, icon: Icon, accent }) {
     red:    { bg: "bg-red-500" },
   }[accent] || { bg: "bg-blue-500" };
 
-  if (!isLightTheme) {
+  if (isLightTheme) {
     return (
       <div className="theme-card p-4 flex items-start gap-3">
         <div className={`w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 ${colors.bg}`}>
