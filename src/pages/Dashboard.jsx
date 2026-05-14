@@ -36,22 +36,36 @@ const STATUS_STYLES = {
 
 function StatCard({ label, value, sub, icon: Icon, accent }) {
   const colors = {
-    blue:   { bg: "bg-blue-50",   icon: "text-blue-600",   border: "border-blue-100" },
-    green:  { bg: "bg-emerald-50",icon: "text-emerald-600",border: "border-emerald-100" },
-    amber:  { bg: "bg-amber-50",  icon: "text-amber-600",  border: "border-amber-100" },
-    red:    { bg: "bg-red-50",    icon: "text-red-600",    border: "border-red-100" },
-  }[accent] || {};
+    blue:   { bg: "bg-blue-500" },
+    green:  { bg: "bg-emerald-500" },
+    amber:  { bg: "bg-amber-500" },
+    red:    { bg: "bg-red-500" },
+  }[accent] || { bg: "bg-blue-500" };
 
   return (
-    <div className="theme-card p-4 flex items-start gap-3 hover:shadow-md transition-shadow">
-      <div className={`w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0 ${colors.bg} ${colors.border} border`}>
-        <Icon className={`w-4 h-4 ${colors.icon}`} />
+    <div className="relative overflow-hidden rounded-xl p-4 flex flex-col gap-3" style={{
+      backgroundColor: "hsla(240, 15%, 9%, 1)",
+      backgroundImage: `
+        radial-gradient(at 88% 40%, hsla(240, 15%, 9%, 1) 0px, transparent 85%),
+        radial-gradient(at 49% 30%, hsla(240, 15%, 9%, 1) 0px, transparent 85%),
+        radial-gradient(at 14% 26%, hsla(240, 15%, 9%, 1) 0px, transparent 85%),
+        radial-gradient(at 0% 64%, hsl(189, 99%, 26%) 0px, transparent 85%),
+        radial-gradient(at 41% 94%, hsl(189, 97%, 36%) 0px, transparent 85%),
+        radial-gradient(at 100% 99%, hsl(188, 94%, 13%) 0px, transparent 85%)
+      `,
+      boxShadow: "0px -16px 24px 0px rgba(255, 255, 255, 0.25) inset",
+      border: "1px solid hsl(189, 92%, 58%)"
+    }}>
+      <div className="flex items-start gap-3">
+        <div className={`w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 ${colors.bg}`}>
+          <Icon className="w-4 h-4 text-white" />
+        </div>
+        <div className="min-w-0">
+          <p className="text-xs font-medium text-gray-300">{label}</p>
+          <p className="text-2xl font-bold mt-1 text-white">{value}</p>
+        </div>
       </div>
-      <div className="min-w-0">
-        <p className="text-xs font-medium" style={{ color: "var(--text-muted)" }}>{label}</p>
-        <p className="text-xl font-bold mt-0.5" style={{ color: "var(--text-primary)" }}>{value}</p>
-        {sub && <p className="text-xs mt-0.5" style={{ color: "var(--text-secondary)" }}>{sub}</p>}
-      </div>
+      {sub && <p className="text-xs text-gray-400">{sub}</p>}
     </div>
   );
 }
