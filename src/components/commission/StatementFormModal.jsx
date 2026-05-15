@@ -15,11 +15,13 @@ function calcCommission(form) {
     form.side === "buyer" ? parse(form.buyer_commission_percent)
     : form.side === "listing" ? parse(form.listing_commission_percent)
     : parse(form.listing_commission_percent) + parse(form.buyer_commission_percent);
-  const gross = price * sidePercent / 100;
+  const commissionGross = price * sidePercent / 100;
+  const buyerComp = parse(form.buyer_compensation_amount);
+  const gross = commissionGross + buyerComp;
   const brokerageSplit = gross * parse(form.brokerage_split_percent) / 100;
   const referralAmount = gross * parse(form.referral_fee) / 100;
   const agentNet = gross - referralAmount - parse(form.tc_fee) - parse(form.transaction_fee);
-  return { gross, brokerageSplit, referralAmount, agentNet };
+  return { gross, commissionGross, buyerComp, brokerageSplit, referralAmount, agentNet };
 }
 
 const BLANK = {
@@ -32,6 +34,7 @@ const BLANK = {
   side: "buyer",
   listing_commission_percent: "",
   buyer_commission_percent: "",
+  buyer_compensation_amount: "",
   brokerage_split_percent: 20,
   referral_fee: 0,
   tc_fee: 0,
@@ -53,7 +56,7 @@ export default function StatementFormModal({ statement, currentUser, onClose, on
     queryFn: () => base44.entities.Transaction.list("-created_date", 100),
   });
 
-  const { gross, brokerageSplit, referralAmount, agentNet } = calcCommission(form);
+  const { gross, commissionGross, buyerComp, brokerageSplit, referralAmount, agentNet } = calcCommission(form);
   const set = (k, v) => setForm(p => ({ ...p, [k]: v }));
 
   const handleTxSelect = (txId) => {
@@ -94,6 +97,7 @@ export default function StatementFormModal({ statement, currentUser, onClose, on
         brokerage_split_percent: parse(data.brokerage_split_percent),
         listing_commission_percent: parse(data.listing_commission_percent),
         buyer_commission_percent: parse(data.buyer_commission_percent),
+        buyer_compensation_amount: parse(data.buyer_compensation_amount),
         referral_fee: referralAmount,
         tc_fee: parse(data.tc_fee),
         transaction_fee: parse(data.transaction_fee),
@@ -195,6 +199,13 @@ export default function StatementFormModal({ statement, currentUser, onClose, on
                   <Input type="number" step="0.01" className="mt-1.5" value={form.buyer_commission_percent} onChange={e => set("buyer_commission_percent", e.target.value)} placeholder="2.5" />
                 </div>
               )}
+              {(form.side === "buyer" || form.side === "dual") && (
+                <div>
+                  <Label className="text-sm font-medium text-gray-700">Buyer Compensation ($)</Label>
+                  <Input type="number" step="0.01" className="mt-1.5" value={form.buyer_compensation_amount} onChange={e => set("buyer_compensation_amount", e.target.value)} placeholder="0" />
+                  <p className="text-[11px] text-gray-400 mt-1">Compensation received directly from buyer</p>
+                </div>
+              )}
               <div>
                 <Label className="text-sm font-medium text-gray-700">Referral Fee (%)</Label>
                 <Input type="number" step="0.01" className="mt-1.5" value={form.referral_fee} onChange={e => set("referral_fee", e.target.value)} placeholder="0" />
@@ -245,7 +256,8 @@ export default function StatementFormModal({ statement, currentUser, onClose, on
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-center">
                   <div>
                     <p className="text-xs text-gray-500">Gross Commission</p>
-                    <p className="text-base font-bold text-gray-900">${gross.toLocaleString("en-US", { minimumFractionDigits: 2 })}</p>
+                    <p className="text-base font-bold text-gray-900">${commissionGross.toLocaleString("en-US", { minimumFractionDigits: 2 })}</p>
+                    {buyerComp > 0 && <p className="text-[11px] text-emerald-600">+${buyerComp.toLocaleString("en-US", { minimumFractionDigits: 2 })} buyer comp</p>}
                   </div>
 
                   {referralAmount > 0 && (
