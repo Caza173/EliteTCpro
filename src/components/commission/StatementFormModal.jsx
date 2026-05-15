@@ -52,8 +52,13 @@ export default function StatementFormModal({ statement, currentUser, onClose, on
   const [form, setForm] = useState(statement ? { ...BLANK, ...statement } : BLANK);
 
   const { data: transactions = [] } = useQuery({
-    queryKey: ["transactions"],
-    queryFn: () => base44.entities.Transaction.list("-created_date", 100),
+    queryKey: ["transactions", "mine"],
+    queryFn: () => base44.entities.Transaction.filter(
+      { created_by: currentUser?.id },
+      "-created_date",
+      100
+    ),
+    enabled: !!currentUser?.id,
   });
 
   const { gross, commissionGross, buyerComp, brokerageSplit, referralAmount, agentNet } = calcCommission(form);
@@ -103,7 +108,11 @@ export default function StatementFormModal({ statement, currentUser, onClose, on
         transaction_fee: parse(data.transaction_fee),
       };
       if (statement?.id) return base44.entities.CommissionStatement.update(statement.id, payload);
-      return base44.entities.CommissionStatement.create({ ...payload, status: "draft" });
+      return base44.entities.CommissionStatement.create({
+        ...payload,
+        status: "draft",
+        owner_id: currentUser?.id,
+      });
     },
     onSuccess: onSaved,
     onError: (err) => setSaveError(err?.message || "Failed to save. Please try again."),

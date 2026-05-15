@@ -39,13 +39,13 @@ export default function CommissionStatements() {
   const [viewStatement, setViewStatement] = useState(null);
 
   const { data: statements = [], isLoading } = useQuery({
-    queryKey: ["commissionStatements", currentUser?.data?.brokerage_id],
+    queryKey: ["commissionStatements", currentUser?.id],
     queryFn: () =>
       base44.entities.CommissionStatement.filter(
-        { brokerage_id: currentUser?.data?.brokerage_id },
+        { owner_id: currentUser?.id },
         "-updated_date"
       ),
-    enabled: !!currentUser?.data?.brokerage_id,
+    enabled: !!currentUser?.id,
   });
 
   const filtered = useMemo(
