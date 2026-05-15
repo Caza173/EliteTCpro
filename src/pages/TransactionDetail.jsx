@@ -196,14 +196,26 @@ export default function TransactionDetail() {
     enabled: !!id,
   });
 
-  const { data: txTasks = [], refetch: refetchTxTasks } = useQuery({
+  const { data: txTasks = [], refetch: refetchTxTasksRaw } = useQuery({
     queryKey: ["txTasks", id],
-    queryFn: () => base44.entities.TransactionTask.filter({ transaction_id: id }),
+    queryFn: async () => {
+      const result = await base44.entities.TransactionTask.filter({ transaction_id: id });
+      console.log("[TxDetail:refetch] txTasks query returned:", result.length, "tasks — ids:", result.map(t => t.id).join(", "));
+      return result;
+    },
     enabled: !!id,
     staleTime: 0,
     refetchOnMount: true,
     refetchOnWindowFocus: false,
   });
+
+  // Wrap refetch to log timing (Step 7/8)
+  const refetchTxTasks = async () => {
+    console.log("[TxDetail:7] refetchTxTasks called");
+    const res = await refetchTxTasksRaw();
+    console.log("[TxDetail:8] refetchTxTasks resolved — data count:", res?.data?.length ?? "N/A");
+    return res;
+  };
 
   const { data: documents = [] } = useQuery({
     queryKey: ["tx-documents", id],
@@ -248,6 +260,7 @@ export default function TransactionDetail() {
     if (!txType) return;
 
     const incompatible = txTasks.filter(t => !t.is_custom && isTaskIncompatible(t.title, txType));
+    console.log("[TxDetail:Step5-repair] repair check — txType:", txType, "incompatible count:", incompatible.length);
     if (incompatible.length === 0) return;
 
     (async () => {
@@ -272,6 +285,7 @@ export default function TransactionDetail() {
   // Auto-seed phase 1 once tasks are loaded — only if phase truly has 0 tasks in DB
   useEffect(() => {
     if (!transaction?.id || !txTasks || seedingInProgressRef.current) return;
+    console.log("[TxDetail:Step5-seed] seed check — txTasks.length:", txTasks.length, "selectedPhase:", selectedPhase);
     // Check localStorage to skip if already seeded this phase for this transaction
     const storageKey = `seeded_${transaction.id}_${selectedPhase}`;
     if (localStorage.getItem(storageKey)) return;
