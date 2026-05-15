@@ -177,9 +177,10 @@ export default function Dashboard() {
     .filter(t => t.status === "closed" && t.sale_price)
     .reduce((sum, t) => sum + (t.sale_price || 0), 0);
 
-  const closingSoon = active
+  const closingSoon = transactions
     .filter(t => {
       if (!t.closing_date) return false;
+      if (t.status === "closed" || t.status === "cancelled") return false;
       const days = (new Date(t.closing_date) - new Date()) / (1000 * 60 * 60 * 24);
       return days >= 0 && days <= 30;
     })
