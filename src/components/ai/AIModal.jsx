@@ -190,17 +190,23 @@ export default function AIModal({ transactions = [], checklistItems = [] }) {
 
       {/* Modal */}
       <div
-        className={`fixed z-50 transition-all duration-300 flex flex-col ${
+        className={`fixed z-50 transition-all duration-300 ease-out flex flex-col ${
           isMinimized
-            ? 'bottom-6 right-6 w-80 h-16'
-            : 'inset-0 sm:inset-auto sm:bottom-6 sm:right-6 sm:left-auto sm:top-auto w-full h-full sm:w-[700px] sm:h-[75vh] rounded-lg'
+            ? 'bottom-6 right-6 w-80 h-16 rounded-2xl'
+            : [
+                // Mobile: full-width, anchored to bottom, 90vh
+                'bottom-0 left-0 right-0 h-[90vh] rounded-t-[20px]',
+                // Tablet+: centered, 80vh, max 900px, max 92vw
+                'sm:inset-auto sm:left-1/2 sm:top-1/2 sm:-translate-x-1/2 sm:-translate-y-1/2',
+                'sm:w-[92vw] sm:max-w-[1100px] sm:h-[80vh] sm:max-h-[900px] sm:rounded-2xl',
+              ].join(' ')
         }`}
         style={{
           background: 'var(--card-bg)',
           border: '1px solid var(--card-border)',
           boxShadow: isMinimized
             ? '0 8px 32px rgba(0, 0, 0, 0.2)'
-            : '0 20px 60px rgba(0, 0, 0, 0.3)',
+            : '0 24px 80px rgba(0, 0, 0, 0.35)',
         }}
       >
         {/* Header */}
@@ -260,7 +266,7 @@ export default function AIModal({ transactions = [], checklistItems = [] }) {
             {/* Messages */}
             <div
               ref={messagesContainerRef}
-              className="flex-1 overflow-y-auto px-6 py-4 space-y-4"
+              className="flex-1 overflow-y-auto px-6 py-5 space-y-5"
               style={{ background: 'var(--card-bg)' }}
             >
               {messages.map((msg, i) => (
