@@ -15,10 +15,58 @@ const QUICK_PROMPTS = [
 
 function buildGlobalSystemPrompt(transactions, documents, checklistItems, complianceReports, monitorAlerts = []) {
   const today = new Date();
-  const active = transactions.filter((t) => t.status === 'active');
-  const pending = transactions.filter((t) => t.status === 'pending');
-  const closed = transactions.filter((t) => t.status === 'closed');
 
+  // === PIPELINE CLASSIFICATION ===
+  // "Active" in this system = listing input / not yet under contract (NOT a closing deal)
+  // Under-contract pipeline = pending, or transaction_phase indicates contract execution
+  const UNDER_CONTRACT_PHASES = ['under_contract', 'inspection', 'financing', 'appraisal', 'clear_to_close', 'closing'];
+  const EXCLUDE_STATUSES = ['closed', 'cancelled'];
+  const LISTING_ONLY_PROPERTY_STATUSES = ['pre-listing', 'coming-soon', 'active', 'expired', 'withdrawn'];
+
+  const isUnderContract = (tx) => {
+    if (EXCLUDE_STATUSES.includes(tx.status)) return false;
+    // Explicit phase signals contract execution
+    if (UNDER_CONTRACT_PHASES.includes(tx.transaction_phase)) return true;
+    // "pending" status = submitted, likely under contract
+    if (tx.status === 'pending') return true;
+    // Has a closing date AND is not a listing-only record
+    if (tx.closing_date && !LISTING_ONLY_PROPERTY_STATUSES.includes(tx.propertyStatus)) return true;
+    return false;
+  };
+
+  const isListingOnly = (tx) => {
+    return tx.status === 'active' && !UNDER_CONTRACT_PHASES.includes(tx.transaction_phase) && !tx.closing_date;
+  };
+
+  const underContractDeals = transactions.filter(isUnderContract);
+  const listingOnlyDeals = transactions.filter(isListingOnly);
+  const closedDeals = transactions.filter((t) => t.status === 'closed');
+  const cancelledDeals = transactions.filter((t) => t.status === 'cancelled');
+
+  // Flag inconsistent data: Active status but has a closing date (likely mis-tagged)
+  const inconsistentDeals = transactions.filter(
+    (tx) => tx.status === 'active' && tx.closing_date && !UNDER_CONTRACT_PHASES.includes(tx.transaction_phase)
+  );
+
+  // === UPCOMING CLOSINGS (next 30 days, under-contract only) ===
+  const upcomingClosings = underContractDeals
+    .filter((tx) => {
+      if (!tx.closing_date) return false;
+      const dt = new Date(tx.closing_date);
+      const daysLeft = Math.ceil((dt - today) / (1000 * 60 * 60 * 24));
+      return daysLeft >= 0 && daysLeft <= 30;
+    })
+    .map((tx) => {
+      const daysLeft = Math.ceil((new Date(tx.closing_date) - today) / (1000 * 60 * 60 * 24));
+      return { ...tx, daysLeft };
+    })
+    .sort((a, b) => a.daysLeft - b.daysLeft);
+
+  const upcomingClosingsText = upcomingClosings.slice(0, 20)
+    .map((tx) => `  - ${tx.address} | Closing in ${tx.daysLeft === 0 ? 'TODAY' : `${tx.daysLeft}d`} | Phase: ${tx.transaction_phase || 'N/A'} | Status: ${tx.status}`)
+    .join('\n') || '  None in next 30 days';
+
+  // === DEADLINE FIELDS (under-contract deals only) ===
   const DEADLINE_FIELDS = [
     { key: 'inspection_deadline', label: 'Inspection' },
     { key: 'earnest_money_deadline', label: 'Earnest Money' },
@@ -29,7 +77,7 @@ function buildGlobalSystemPrompt(transactions, documents, checklistItems, compli
   ];
 
   const allDeadlines = [];
-  transactions.forEach((tx) => {
+  underContractDeals.forEach((tx) => {
     DEADLINE_FIELDS.forEach(({ key, label }) => {
       if (tx[key]) {
         const dt = new Date(tx[key]);
@@ -50,11 +98,15 @@ function buildGlobalSystemPrompt(transactions, documents, checklistItems, compli
     .map((d) => `  - ${d.label} | ${d.address} | ${Math.abs(d.daysLeft)}d overdue`)
     .join('\n') || '  None';
 
+  // === MISSING DOCUMENTS (under-contract deals only) ===
+  const underContractIds = new Set(underContractDeals.map((t) => t.id));
   const missingByTx = {};
-  checklistItems.filter((ci) => ci.status === 'missing').forEach((ci) => {
-    if (!missingByTx[ci.transaction_id]) missingByTx[ci.transaction_id] = [];
-    missingByTx[ci.transaction_id].push(ci.label || ci.doc_type);
-  });
+  checklistItems
+    .filter((ci) => ci.status === 'missing' && underContractIds.has(ci.transaction_id))
+    .forEach((ci) => {
+      if (!missingByTx[ci.transaction_id]) missingByTx[ci.transaction_id] = [];
+      missingByTx[ci.transaction_id].push(ci.label || ci.doc_type);
+    });
 
   const missingDocsText = Object.entries(missingByTx).slice(0, 15)
     .map(([txId, docs]) => {
@@ -63,23 +115,42 @@ function buildGlobalSystemPrompt(transactions, documents, checklistItems, compli
     })
     .join('\n') || '  None';
 
-  return `You are an expert AI Transaction Coordinator Assistant. You have access to all transactions, deadlines, documents, and compliance data.
+  const inconsistentText = inconsistentDeals.length > 0
+    ? inconsistentDeals.map((tx) => `  - ${tx.address} (status=active but has closing_date=${tx.closing_date})`).join('\n')
+    : '  None';
+
+  return `You are an expert AI Transaction Coordinator Assistant with full visibility into the transaction pipeline.
 
 Today's date: ${today.toLocaleDateString()}
 
-=== PORTFOLIO OVERVIEW ===
-Active: ${active.length} | Pending: ${pending.length} | Closed: ${closed.length}
+=== PIPELINE TERMINOLOGY (IMPORTANT) ===
+- "Active" in this system means a LISTING that is NOT yet under contract. Do NOT include Active listings in closing analysis.
+- "Pending" = submitted/under contract — INCLUDE in closing analysis.
+- Under-contract phases: under_contract, inspection, financing, appraisal, clear_to_close, closing.
+- Closed/Cancelled = exclude from all pipeline analysis.
 
-=== UPCOMING DEADLINES (next 14 days) ===
+=== PORTFOLIO OVERVIEW ===
+Under Contract / Pending: ${underContractDeals.length}
+Listing Only (Active, not under contract): ${listingOnlyDeals.length}
+Closed: ${closedDeals.length} | Cancelled: ${cancelledDeals.length}
+Total transactions: ${transactions.length}
+
+=== UPCOMING CLOSINGS (next 30 days — under contract only) ===
+${upcomingClosingsText}
+
+=== UPCOMING DEADLINES (next 14 days — under contract only) ===
 ${deadlinesText}
 
 === OVERDUE DEADLINES ===
 ${overdueText}
 
-=== MISSING DOCUMENTS ===
+=== MISSING DOCUMENTS (under contract deals) ===
 ${missingDocsText}
 
-When asked about specific transactions, reference the actual address and data. Format responses clearly. If asked for a "daily briefing", provide a structured summary covering critical alerts, closing soon, upcoming deadlines, and missing documents.`;
+=== DATA INCONSISTENCIES (needs attention) ===
+${inconsistentText}
+
+When asked about specific transactions, reference the actual address and data. Format responses clearly with markdown. If asked for a "daily briefing", provide a structured summary: critical alerts → upcoming closings → overdue deadlines → upcoming deadlines → missing documents. Never include Active listing-only records in closing or deadline summaries.`;
 }
 
 function FormattedMessage({ content }) {
