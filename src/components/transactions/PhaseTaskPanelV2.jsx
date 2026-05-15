@@ -315,24 +315,26 @@ export default function PhaseTaskPanelV2({
       ? Math.max(...currentPhaseTasks.map(t => t.order_index ?? 0)) + 1
       : 0;
 
-    await Promise.all([
-      base44.entities.TransactionTask.create({
-        transaction_id: transactionId,
-        brokerage_id: brokerageId,
-        phase: phaseNum,
-        title,
-        order_index: maxOrder,
-        is_completed: false,
-        is_required: false,
-        is_custom: true,
-      }),
+    await base44.entities.TransactionTask.create({
+      transaction_id: transactionId,
+      brokerage_id: brokerageId,
+      phase: phaseNum,
+      title,
+      order_index: maxOrder,
+      is_completed: false,
+      is_required: false,
+      is_custom: true,
+    });
+
+    // Save to library in the background (non-blocking)
+    if (brokerageId) {
       base44.entities.TaskLibraryItem.create({
         brokerage_id: brokerageId,
         title,
         phase: phaseNum,
         is_required: false,
-      }),
-    ]);
+      }).catch(() => {});
+    }
 
     setNewTitle("");
     setAddingTask(false);
