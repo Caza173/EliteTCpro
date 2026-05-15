@@ -199,6 +199,7 @@ export default function PhaseTaskPanelV2({
   const [localTasks, setLocalTasks] = useState(null);
   const [incompatibleWarning, setIncompatibleWarning] = useState(null);
   const [expandedPhases, setExpandedPhases] = useState(new Set([phaseNum]));
+  const [addTaskError, setAddTaskError] = useState(null);
   const inputRef = useRef(null);
 
   if (!phaseDef) return null;
@@ -310,21 +311,30 @@ export default function PhaseTaskPanelV2({
   };
 
   const doAddTask = async (title) => {
+    setAddTaskError(null);
     const currentPhaseTasks = getPhaseTasksSorted(phaseNum);
     const maxOrder = currentPhaseTasks.length > 0
       ? Math.max(...currentPhaseTasks.map(t => t.order_index ?? 0)) + 1
       : 0;
 
-    await base44.entities.TransactionTask.create({
+    const payload = {
       transaction_id: transactionId,
-      brokerage_id: brokerageId,
+      brokerage_id: brokerageId || undefined,
       phase: phaseNum,
       title,
       order_index: maxOrder,
       is_completed: false,
       is_required: false,
       is_custom: true,
-    });
+    };
+
+    try {
+      await base44.entities.TransactionTask.create(payload);
+    } catch (err) {
+      console.error("[AddTask] create failed:", err?.message || err);
+      setAddTaskError(`Failed to add task: ${err?.message || "Unknown error"}`);
+      return;
+    }
 
     // Save to library in the background (non-blocking)
     if (brokerageId) {
@@ -338,6 +348,7 @@ export default function PhaseTaskPanelV2({
 
     setNewTitle("");
     setAddingTask(false);
+    queryClient.invalidateQueries({ queryKey: ["txTasks", transactionId] });
     queryClient.invalidateQueries({ queryKey: ["taskLibrary", brokerageId] });
     onTasksChanged?.();
   };
@@ -455,6 +466,13 @@ export default function PhaseTaskPanelV2({
           )}
         </Droppable>
       </DragDropContext>
+
+      {/* Add task error — visible red box */}
+      {addTaskError && (
+        <div className="mt-2 p-2 rounded border border-red-500 bg-red-50 text-red-700 text-xs font-mono break-all">
+          ❌ {addTaskError}
+        </div>
+      )}
 
       {/* Add task */}
       {addingTask ? (

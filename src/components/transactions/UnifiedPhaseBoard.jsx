@@ -203,6 +203,7 @@ function PhaseCard({
   const [addingTask, setAddingTask] = useState(false);
   const [newTitle, setNewTitle] = useState("");
   const [libraryOpen, setLibraryOpen] = useState(false);
+  const [addTaskError, setAddTaskError] = useState(null);
   const queryClient = useQueryClient();
 
   const phaseTasks = tasks
@@ -217,26 +218,31 @@ function PhaseCard({
   const pct = total > 0 ? Math.round((completed / total) * 100) : 0;
 
   const handleAddTask = async () => {
+    setAddTaskError(null);
     const title = newTitle.trim();
     if (!title) { setAddingTask(false); return; }
+
     const maxOrder = phaseTasks.length > 0 ? Math.max(...phaseTasks.map(t => t.order_index ?? 0)) + 1 : 0;
+    const payload = {
+      transaction_id: transactionId,
+      brokerage_id: brokerageId || undefined,
+      phase: phase.phaseNum,
+      title,
+      order_index: maxOrder,
+      is_completed: false,
+      is_required: false,
+      is_custom: true,
+    };
+
     try {
-      await base44.entities.TransactionTask.create({
-        transaction_id: transactionId,
-        brokerage_id: brokerageId || undefined,
-        phase: phase.phaseNum,
-        title,
-        order_index: maxOrder,
-        is_completed: false,
-        is_required: false,
-        is_custom: true,
-      });
+      await base44.entities.TransactionTask.create(payload);
       setNewTitle("");
       setAddingTask(false);
+      queryClient.invalidateQueries({ queryKey: ["txTasks", transactionId] });
       onTasksChanged?.();
     } catch (err) {
-      console.error("[handleAddTask] Failed to create task:", err?.message || err);
-      alert("Failed to add task: " + (err?.message || "Unknown error"));
+      console.error("[Board:AddTask] ERROR:", err?.message || err);
+      setAddTaskError(`Failed to add task: ${err?.message || "Unknown error"}`);
     }
   };
 
@@ -337,6 +343,11 @@ function PhaseCard({
       {/* Add task footer */}
       {(!isMobile || expanded) && (
         <div className="px-2 pb-2">
+          {addTaskError && (
+            <div className="mb-1 p-2 rounded border border-red-500 bg-red-50 text-red-700 text-xs font-mono break-all">
+              ❌ {addTaskError}
+            </div>
+          )}
           {addingTask ? (
             <div className="flex items-center gap-1 mt-1">
               <input
