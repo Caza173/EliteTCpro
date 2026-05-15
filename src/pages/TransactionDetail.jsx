@@ -204,6 +204,8 @@ export default function TransactionDetail() {
     queryKey: ["txTasks", id],
     queryFn: () => base44.entities.TransactionTask.filter({ transaction_id: id }),
     enabled: !!id,
+    staleTime: 0,
+    refetchOnMount: true,
   });
 
   const { data: documents = [] } = useQuery({
@@ -307,19 +309,22 @@ export default function TransactionDetail() {
     }
 
     const libTasks = generateTasksForPhase(phaseNum, id, normalizeTransactionType(transaction?.transaction_type));
-    await Promise.all(libTasks.map((t, i) =>
-      base44.entities.TransactionTask.create({
-        transaction_id: id,
-        brokerage_id: transaction?.brokerage_id,
-        phase: phaseNum,
-        title: t.name,
-        order_index: i,
-        is_completed: false,
-        is_required: t.required,
-        is_custom: false,
-        created_by: currentUser?.email,
-      })
-    ));
+    try {
+      await Promise.all(libTasks.map((t, i) =>
+        base44.entities.TransactionTask.create({
+          transaction_id: id,
+          brokerage_id: transaction?.brokerage_id || undefined,
+          phase: phaseNum,
+          title: t.name,
+          order_index: i,
+          is_completed: false,
+          is_required: t.required,
+          is_custom: false,
+        })
+      ));
+    } catch (err) {
+      console.error("[seedPhaseTasksIfNeeded] Failed to seed tasks:", err?.message || err);
+    }
     refetchTxTasks();
   };
 

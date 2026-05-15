@@ -220,19 +220,24 @@ function PhaseCard({
     const title = newTitle.trim();
     if (!title) { setAddingTask(false); return; }
     const maxOrder = phaseTasks.length > 0 ? Math.max(...phaseTasks.map(t => t.order_index ?? 0)) + 1 : 0;
-    await base44.entities.TransactionTask.create({
-      transaction_id: transactionId,
-      brokerage_id: brokerageId,
-      phase: phase.phaseNum,
-      title,
-      order_index: maxOrder,
-      is_completed: false,
-      is_required: false,
-      is_custom: true,
-    });
-    setNewTitle("");
-    setAddingTask(false);
-    onTasksChanged?.();
+    try {
+      await base44.entities.TransactionTask.create({
+        transaction_id: transactionId,
+        brokerage_id: brokerageId || undefined,
+        phase: phase.phaseNum,
+        title,
+        order_index: maxOrder,
+        is_completed: false,
+        is_required: false,
+        is_custom: true,
+      });
+      setNewTitle("");
+      setAddingTask(false);
+      onTasksChanged?.();
+    } catch (err) {
+      console.error("[handleAddTask] Failed to create task:", err?.message || err);
+      alert("Failed to add task: " + (err?.message || "Unknown error"));
+    }
   };
 
   const borderStyle = isComplete
