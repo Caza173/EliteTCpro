@@ -41,6 +41,22 @@ export function isOwnerOrAdmin(user) {
   return isMasterAccount(user) || user?.role === "admin";
 }
 
+export function isTCOrAdmin(user) {
+  return hasFullAccess(user);
+}
+
+export function isTC(user) {
+  return user?.role === "tc" || user?.role === "tc_lead";
+}
+
+export function isTCLead(user) {
+  return user?.role === "tc_lead";
+}
+
+export function canEdit(user) {
+  return !!user;
+}
+
 export function isAgent(user) {
   return user?.role === "agent";
 }
