@@ -197,7 +197,7 @@ const TaskRow = memo(function TaskRow({
 // ── Phase Card ───────────────────────────────────────────────────────────────
 function PhaseCard({
   phase, tasks, allPhases, isActive, isComplete, isMobile, defaultExpanded,
-  onToggleTask, onDelete, onMoveTo, onSaveEdit, onAddTask, brokerageId, transactionId, onTasksChanged, transaction,
+  onToggleTask, onDelete, onMoveTo, onSaveEdit, onAddTask, brokerageId, transactionId, onTasksChanged, transaction, currentUser,
 }) {
   const [expanded, setExpanded] = useState(defaultExpanded);
   const [addingTask, setAddingTask] = useState(false);
@@ -232,6 +232,7 @@ function PhaseCard({
       is_completed: false,
       is_required: false,
       is_custom: true,
+      created_by: currentUser?.id || undefined,
     };
 
     try {
@@ -404,13 +405,14 @@ function PhaseCard({
               await Promise.all(items.map((item, i) =>
                 base44.entities.TransactionTask.create({
                   transaction_id: transactionId,
-                  brokerage_id: brokerageId,
+                  brokerage_id: brokerageId || undefined,
                   phase: phase.phaseNum,
                   title: item.title,
                   order_index: i,
                   is_completed: false,
                   is_required: item.required || false,
                   is_custom: true,
+                  created_by: currentUser?.id || undefined,
                 })
               ));
             } else {
@@ -418,13 +420,14 @@ function PhaseCard({
               await Promise.all(items.map((item, i) =>
                 base44.entities.TransactionTask.create({
                   transaction_id: transactionId,
-                  brokerage_id: brokerageId,
+                  brokerage_id: brokerageId || undefined,
                   phase: phase.phaseNum,
-                  title: item.title || item.title,
+                  title: item.title,
                   order_index: maxOrder + i,
                   is_completed: false,
                   is_required: item.is_required || item.required || false,
                   is_custom: true,
+                  created_by: currentUser?.id || undefined,
                 })
               ));
             }
@@ -634,6 +637,7 @@ export default function UnifiedPhaseBoard({
                   transactionId={transactionId}
                   onTasksChanged={onTasksChanged}
                   transaction={transaction}
+                  currentUser={currentUser}
                 />
               </div>
             );

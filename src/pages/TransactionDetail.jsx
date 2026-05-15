@@ -200,8 +200,6 @@ export default function TransactionDetail() {
     queryKey: ["txTasks", id],
     queryFn: () => base44.entities.TransactionTask.filter({ transaction_id: id }),
     enabled: !!id,
-    staleTime: 5000,
-    refetchOnMount: true,
     refetchOnWindowFocus: false,
   });
 
@@ -316,6 +314,7 @@ export default function TransactionDetail() {
           is_completed: false,
           is_required: t.required,
           is_custom: false,
+          created_by: currentUser?.id || undefined,
         })
       ));
     } catch (err) {
