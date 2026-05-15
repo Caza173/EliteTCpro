@@ -149,10 +149,16 @@ export default function Dashboard() {
   // Role-based deal access — only shows deals the user is authorized to see
   const { transactions, isLoading, currentUser } = useDealAccess();
 
+  // Scoped to transactions the current user owns
+  const txIds = transactions.map(t => t.id);
   const { data: checklistItems = [] } = useQuery({
-    queryKey: ["allChecklist"],
-    queryFn: () => base44.entities.DocumentChecklistItem.list(),
-    enabled: !!currentUser,
+    queryKey: ["allChecklist", currentUser?.id],
+    queryFn: async () => {
+      if (!txIds.length) return [];
+      const items = await base44.entities.DocumentChecklistItem.filter({ created_by: currentUser.id });
+      return items;
+    },
+    enabled: !!currentUser && transactions.length > 0,
     staleTime: 30_000,
   });
 
@@ -290,7 +296,7 @@ export default function Dashboard() {
               <div className="p-4 space-y-6">
                 <div>
                   <h4 className="text-xs font-semibold uppercase mb-3" style={{ color: "var(--text-muted)" }}>Transaction Alerts</h4>
-                  <TransactionAlertsPanel brokerageId={currentUser?.brokerage_id} />
+                  <TransactionAlertsPanel />
                 </div>
               </div>
             </div>

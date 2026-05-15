@@ -26,39 +26,27 @@ const PRIORITY_BADGE_STYLE = {
   info:     { backgroundColor: "var(--accent-subtle)", color: "var(--accent)" },
 };
 
-export default function TransactionAlertsPanel({ brokerageId }) {
+export default function TransactionAlertsPanel() {
   const [filter, setFilter] = useState("all");
   const queryClient = useQueryClient();
   const { data: currentUser } = useCurrentUser();
   const { accessibleDealIds } = useAccessibleDealIds();
 
-  // Fetch active alerts from database
-  const { data: rawAlerts = [], isLoading: alertsLoading } = useQuery({
-    queryKey: ["monitorAlerts", brokerageId],
-    queryFn: () => base44.entities.MonitorAlert.filter({ brokerage_id: brokerageId, alert_state: "active" }),
-    enabled: !!brokerageId,
-  });
-
-  // Fetch transactions to check if they're closed
-  const { data: transactionsData = [], isLoading: txLoading } = useQuery({
-    queryKey: ["transactionsForAlerts", brokerageId],
-    queryFn: () => base44.entities.Transaction.filter({ brokerage_id: brokerageId }),
-    enabled: !!brokerageId,
-  });
-
-  const txStatusMap = new Map(transactionsData.map(tx => [tx.id, tx.status]));
-
-  // Filter alerts to only deals the current user can access and exclude closed transactions
-  const dbAlerts = accessibleDealIds.size > 0
-    ? rawAlerts.filter(a => 
-        accessibleDealIds.has(a.transaction_id) && 
-        !isTransactionClosed(txStatusMap.get(a.transaction_id))
-      )
-    : rawAlerts.filter(a => 
-        !isTransactionClosed(txStatusMap.get(a.transaction_id))
+  // Only fetch alerts for transactions this user can access
+  const { data: rawAlerts = [], isLoading } = useQuery({
+    queryKey: ["monitorAlerts", currentUser?.id],
+    queryFn: async () => {
+      if (!accessibleDealIds.size) return [];
+      const alerts = await base44.entities.MonitorAlert.filter({ alert_state: "active" });
+      return alerts.filter(a =>
+        accessibleDealIds.has(a.transaction_id) &&
+        !isTransactionClosed(a.transaction_status)
       );
+    },
+    enabled: !!currentUser,
+  });
 
-  const isLoading = alertsLoading || txLoading;
+  const dbAlerts = rawAlerts;
 
   // Update alert state (resolve or dismiss)
   const updateAlertMutation = useMutation({
@@ -69,7 +57,7 @@ export default function TransactionAlertsPanel({ brokerageId }) {
         ...(alertState === "resolved"  ? { resolved_at:  new Date().toISOString() } : {}),
       }),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["monitorAlerts", brokerageId] });
+      queryClient.invalidateQueries({ queryKey: ["monitorAlerts", currentUser?.id] });
     },
   });
 
@@ -77,7 +65,7 @@ export default function TransactionAlertsPanel({ brokerageId }) {
     await Promise.all(filtered.map(a =>
       base44.entities.MonitorAlert.update(a.id, { alert_state: "dismissed", dismissed_at: new Date().toISOString() })
     ));
-    queryClient.invalidateQueries({ queryKey: ["monitorAlerts", brokerageId] });
+    queryClient.invalidateQueries({ queryKey: ["monitorAlerts", currentUser?.id] });
   };
 
   const handleDismiss = async (e, alert) => {

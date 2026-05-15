@@ -173,7 +173,7 @@ async function publishComplianceAlert(snsClient, payload) {
 async function writeAuditLog(base44, brokerageId, transactionId, description, meta = {}) {
   try {
     await base44.asServiceRole.entities.AuditLog.create({
-      brokerage_id: brokerageId,
+      ...(brokerageId ? { brokerage_id: brokerageId } : {}),
       transaction_id: transactionId,
       actor_email: 'system:notificationEngine',
       action: 'notification_sent',
@@ -239,8 +239,6 @@ Deno.serve(async (req) => {
     };
 
     for (const tx of transactions) {
-      if (!tx.brokerage_id) continue;
-
       // Load per-transaction data in parallel
       const [existingNotifs, txTasks, complianceIssues] = await Promise.all([
         base44.asServiceRole.entities.InAppNotification.filter({ transaction_id: tx.id }),
@@ -337,7 +335,7 @@ Deno.serve(async (req) => {
         if (!dry_run) {
           try {
             const notif = await base44.asServiceRole.entities.InAppNotification.create({
-              brokerage_id: tx.brokerage_id,
+              ...(tx.brokerage_id ? { brokerage_id: tx.brokerage_id } : {}),
               transaction_id: tx.id,
               user_email: recipient,
               title: message,
@@ -411,7 +409,7 @@ Deno.serve(async (req) => {
           if (recipient) {
             try {
               const notif = await base44.asServiceRole.entities.InAppNotification.create({
-                brokerage_id: tx.brokerage_id,
+                ...(tx.brokerage_id ? { brokerage_id: tx.brokerage_id } : {}),
                 transaction_id: tx.id,
                 user_email: recipient,
                 title: `Compliance Alert — ${criticalIssues.length} blocker${criticalIssues.length !== 1 ? 's' : ''} require attention`,

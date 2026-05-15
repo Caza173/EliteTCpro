@@ -1,13 +1,19 @@
 import React from "react";
 import { LogOut } from "lucide-react";
 import { useAuth } from "@/lib/AuthContext";
+import { clearQueryCacheOnLogout } from "@/lib/query-client";
 
 export default function LogoutButton({ sidebarCollapsed }) {
   const { logout } = useAuth();
 
+  const handleLogout = () => {
+    clearQueryCacheOnLogout();
+    logout();
+  };
+
   return (
     <button
-      onClick={logout}
+      onClick={handleLogout}
       title={sidebarCollapsed ? "Sign Out" : undefined}
       className={`w-full flex items-center gap-2 px-2.5 py-2 rounded-lg text-xs font-medium transition-colors ${
         sidebarCollapsed ? "justify-center" : ""

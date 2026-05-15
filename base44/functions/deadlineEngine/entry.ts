@@ -127,8 +127,6 @@ Deno.serve(async (req) => {
     let totalResolved = 0;
 
     for (const tx of transactions) {
-      if (!tx.brokerage_id) continue;
-
       const txContingencies = allContingencies.filter(c => c.transaction_id === tx.id);
       const [existingForTx, txTasks] = await Promise.all([
         base44.asServiceRole.entities.InAppNotification.filter({ transaction_id: tx.id }),
@@ -220,31 +218,34 @@ Deno.serve(async (req) => {
           continue;
         }
 
-        // Create new notification
-        const recipients = [tx.agent_email].filter(Boolean);
-        if (!recipients.length) continue;
-
-        for (const email of recipients) {
+        // Create new notification — send to owner, fall back to agent_email
+        let ownerEmail = tx.agent_email || null;
+        if (tx.created_by) {
           try {
-            await base44.asServiceRole.entities.InAppNotification.create({
-              brokerage_id: tx.brokerage_id,
-              transaction_id: tx.id,
-              user_email: email,
-              title: message,
-              body: `${tx.address} — ${field.label} due: ${effectiveDate}`,
-              type: 'deadline',
-              deadline_field: field.key,
-              deadline_type: field.type,
-              severity,
-              addendum_status: 'suggested',
-              addendum_response: 'pending',
-              dismissed: false,
-            });
-            totalCreated++;
-            console.log(`[deadlineEngine] Created ${severity} alert for ${field.key} on tx ${tx.id} (${days}d away)`);
-          } catch (e) {
-            console.warn(`[deadlineEngine] Failed to create notification:`, e.message);
-          }
+            const ownerResults = await base44.asServiceRole.entities.User.filter({ id: tx.created_by });
+            if (ownerResults[0]?.email) ownerEmail = ownerResults[0].email;
+          } catch (_) {}
+        }
+        if (!ownerEmail) continue;
+
+        try {
+          await base44.asServiceRole.entities.InAppNotification.create({
+            transaction_id: tx.id,
+            user_email: ownerEmail,
+            title: message,
+            body: `${tx.address} — ${field.label} due: ${effectiveDate}`,
+            type: 'deadline',
+            deadline_field: field.key,
+            deadline_type: field.type,
+            severity,
+            addendum_status: 'suggested',
+            addendum_response: 'pending',
+            dismissed: false,
+          });
+          totalCreated++;
+          console.log(`[deadlineEngine] Created ${severity} alert for ${field.key} on tx ${tx.id} (${days}d away)`);
+        } catch (e) {
+          console.warn(`[deadlineEngine] Failed to create notification:`, e.message);
         }
       }
     }

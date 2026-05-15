@@ -22,8 +22,9 @@ Deno.serve(async (req) => {
     if (transaction_id) {
       const results = await svc.entities.Transaction.filter({ id: transaction_id });
       const tx = results[0] || null;
-      const canView = !tx || isSuperAdmin || _userOwnsTx(tx, user);
-      console.log(`[getTeamTransactions] single tx=${transaction_id} found=${!!tx} canView=${canView}`);
+      const userBrokerageId = user.data?.brokerage_id;
+      const canView = !tx || isSuperAdmin || _userOwnsTx(tx, user, userBrokerageId);
+      console.log(`[getTeamTransactions] single tx=${transaction_id} found=${!!tx} canView=${canView} created_by=${tx?.created_by} user.id=${user.id}`);
       if (!canView) return Response.json({ transactions: [], transaction: null });
       return Response.json({ transactions: tx ? [tx] : [], transaction: tx });
     }

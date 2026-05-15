@@ -71,7 +71,7 @@ Deno.serve(async (req) => {
 
       let contactId = null;
       try {
-        const existing = await base44.asServiceRole.entities.Contact.filter({ first_name, last_name });
+        const existing = await base44.entities.Contact.filter({ first_name, last_name, owner_id: user.id });
         if (existing.length > 0) contactId = existing[0].id;
       } catch (_) {}
 
@@ -80,16 +80,17 @@ Deno.serve(async (req) => {
           : p.role === "buyer" ? "buyer"
           : p.role === "seller" ? "seller"
           : "other";
-        const contact = await base44.asServiceRole.entities.Contact.create({
-          first_name, last_name, role_type: roleType,
+        const contact = await base44.entities.Contact.create({
+          first_name, last_name, role_type: roleType, owner_id: user.id,
         });
         contactId = contact.id;
       }
 
-      await base44.asServiceRole.entities.TransactionParticipant.create({
+      await base44.entities.TransactionParticipant.create({
         transaction_id: txId,
         contact_id: contactId,
         role: p.role,
+        owner_id: user.id,
       });
     }
 
