@@ -55,7 +55,6 @@ import CollaboratorsPanel from "../components/collaborators/CollaboratorsPanel";
 import SendTimelineModal from "../components/transactions/SendTimelineModal";
 import InspectionPanel from "../components/transactions/InspectionPanel";
 import InviteClientModal from "../components/transactions/InviteClientModal";
-import DebugTaskPanel from "../components/debug/DebugTaskPanel";
 
 const TX_TABS = [
   { id: "overview",      label: "Overview",      icon: LayoutDashboard, info: "Phase checklist, tasks, and compliance summary" },
@@ -102,10 +101,6 @@ export default function TransactionDetail() {
   const urlTab = urlSearch.get("tab");
   const [activeTab, setActiveTab] = useState(urlTab || "overview");
   
-  // Debug logging
-  useEffect(() => {
-    console.log("TransactionDetail - Route ID:", id);
-  }, [id]);
   const [selectedPhase, setSelectedPhase] = useState(1);
   const [mobileAIOpen, setMobileAIOpen] = useState(false);
 
@@ -938,7 +933,6 @@ export default function TransactionDetail() {
           {/* ── Tab: Overview ── */}
           {activeTab === "overview" && (
             <div className="space-y-4">
-              <DebugTaskPanel transactionId={transaction.id} />
               {txTasks.some(t => isTaskIncompatible(t.title, transaction.transaction_type)) && (
                 <div className="flex items-start gap-3 px-4 py-3 rounded-xl bg-amber-50 border border-amber-200 text-amber-800 text-sm">
                   <span className="text-lg">⚠️</span>
