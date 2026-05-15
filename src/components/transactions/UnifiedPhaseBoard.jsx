@@ -249,7 +249,7 @@ function PhaseCard({
 
   return (
     <div
-      className={`rounded-xl border flex-shrink-0 flex flex-col overflow-hidden transition-all ${borderStyle} ${
+      className={`rounded-xl border flex-shrink-0 flex flex-col transition-all ${borderStyle} ${
         isMobile ? "w-full" : "min-w-[220px] max-w-[280px]"
       }`}
       style={{ background: "var(--card-bg)", borderColor: borderStyle ? undefined : "var(--card-border)" }}
