@@ -953,7 +953,7 @@ export default function TransactionDetail() {
                 transaction={transaction}
                 currentUser={currentUser}
               />
-              <FinancialSummaryWidget transaction={transaction} />
+
               {checklistItems.length > 0 && (
                 <Card className="shadow-sm border-gray-100">
                   <CardHeader className="pb-2">
