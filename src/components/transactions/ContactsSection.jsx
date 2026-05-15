@@ -4,8 +4,9 @@ import { hasFullAccess } from "../auth/useCurrentUser";
 import { base44 } from "@/api/base44Client";
 import QuickEmailModal from "./QuickEmailModal";
 import AddContactModal from "./AddContactModal";
+import TCPickerSelect from "./TCPickerSelect";
 import { Button } from "@/components/ui/button";
-import { UserPlus, Trash2 } from "lucide-react";
+import { UserPlus, Trash2, Pencil, X, Check } from "lucide-react";
 
 const GRID = {
   display: "grid",
@@ -21,6 +22,63 @@ function SectionGroup({ title, children }) {
     <div>
       <p className="text-[11px] font-semibold uppercase tracking-wider text-gray-400 mb-2">{title}</p>
       <div style={GRID}>{cards}</div>
+    </div>
+  );
+}
+
+function TCContactCard({ tx, canEdit, onSave, onEmailClick }) {
+  const [editing, setEditing] = useState(false);
+  const [draft, setDraft] = useState({ name: tx.agent || "", email: tx.agent_email || "" });
+
+  const handleSave = () => {
+    onSave({ agent: draft.name, agent_email: draft.email });
+    setEditing(false);
+  };
+
+  if (!tx.agent && !editing && !canEdit) return null;
+
+  return (
+    <div className="rounded-xl border p-3 text-sm" style={{ borderColor: "var(--card-border)", background: "var(--card-bg)" }}>
+      <div className="flex items-center justify-between mb-1">
+        <span className="text-[11px] font-semibold uppercase tracking-wider" style={{ color: "#0891b2" }}>Transaction Coordinator</span>
+        {canEdit && !editing && (
+          <button onClick={() => { setDraft({ name: tx.agent || "", email: tx.agent_email || "" }); setEditing(true); }} className="p-1 rounded hover:bg-gray-100">
+            <Pencil className="w-3 h-3 text-gray-400" />
+          </button>
+        )}
+      </div>
+      {editing ? (
+        <div className="space-y-2 mt-1">
+          <TCPickerSelect
+            value={draft.name}
+            onSelect={({ name, email }) => setDraft({ name, email })}
+          />
+          {draft.name && <p className="text-xs text-gray-500">{draft.name} · {draft.email}</p>}
+          <div className="flex gap-2 pt-1">
+            <button onClick={handleSave} className="flex items-center gap-1 text-xs text-blue-600 font-semibold">
+              <Check className="w-3 h-3" /> Save
+            </button>
+            <button onClick={() => setEditing(false)} className="flex items-center gap-1 text-xs text-gray-400">
+              <X className="w-3 h-3" /> Cancel
+            </button>
+          </div>
+        </div>
+      ) : (
+        <div>
+          {tx.agent ? (
+            <>
+              <p className="font-medium" style={{ color: "var(--text-primary)" }}>{tx.agent}</p>
+              {tx.agent_email && (
+                <button onClick={() => onEmailClick(tx.agent_email, tx.agent)} className="text-xs text-blue-500 hover:underline mt-0.5 block">
+                  {tx.agent_email}
+                </button>
+              )}
+            </>
+          ) : canEdit ? (
+            <button onClick={() => setEditing(true)} className="text-xs text-blue-500 hover:underline">+ Assign TC</button>
+          ) : null}
+        </div>
+      )}
     </div>
   );
 }
@@ -207,7 +265,7 @@ export default function ContactsSection({ transaction, onUpdate, currentUser }) 
       )}
 
       {/* Service Providers */}
-      {(hasLender || hasTitle || hasInspector || hasAttorney || hasAppraiser) && (
+      {(hasLender || hasTitle || hasInspector || hasAttorney || hasAppraiser || canEdit || tx.agent) && (
         <SectionGroup title="Service Providers">
           {hasLender && (
             <ContactCard
@@ -304,23 +362,7 @@ export default function ContactsSection({ transaction, onUpdate, currentUser }) 
               })}
             />
           )}
-          {tx.agent && (
-            <ContactCard
-              name={tx.agent}
-              role="Transaction Coordinator"
-              email={tx.agent_email}
-              company={tx.agent_company}
-              accent="#0891b2"
-              canEdit={canEdit}
-              onEmailClick={openEmail}
-              fields={{ name: true, email: true, phone: false, company: true }}
-              onSave={({ name, email, company }) => save({
-                agent: name,
-                agent_email: email,
-                agent_company: company,
-              })}
-            />
-          )}
+          <TCContactCard tx={tx} canEdit={canEdit} onSave={save} onEmailClick={openEmail} />
           </SectionGroup>
           )}
 

@@ -16,6 +16,7 @@ import { Loader2, Plus, FileSearch, X, UserPlus } from "lucide-react";
 import PurchaseAgreementUpload from "../forms/PurchaseAgreementUpload";
 import ParsedDeadlinesPreview from "../forms/ParsedDeadlinesPreview";
 import AddressAutocomplete from "../forms/AddressAutocomplete";
+import TCPickerSelect from "./TCPickerSelect";
 
 const initialForm = {
   transaction_type: "",
@@ -270,8 +271,29 @@ export default function TransactionForm({ onSubmit, isSubmitting }) {
       <div>
         <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3">Coordinator &amp; Title</p>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {field("agent", "Transaction Coordinator *", "text", "TC Name", true)}
-          {field("agent_email", "TC Email", "email", "tc@office.com")}
+          <div>
+            <Label className="text-sm font-medium text-gray-700">Transaction Coordinator *</Label>
+            <TCPickerSelect
+              value={form.agent}
+              onSelect={({ name, email }) => {
+                setForm(prev => ({ ...prev, agent: name, agent_email: email }));
+              }}
+            />
+            {form.agent && (
+              <p className="text-xs text-gray-500 mt-1">{form.agent}{form.agent_email ? ` · ${form.agent_email}` : ""}</p>
+            )}
+          </div>
+          <div>
+            <Label className="text-sm font-medium text-gray-700">TC Email</Label>
+            <Input
+              type="email"
+              value={form.agent_email}
+              onChange={(e) => handleChange("agent_email", e.target.value)}
+              placeholder="tc@office.com"
+              className="mt-1.5"
+              readOnly={!!form.agent}
+            />
+          </div>
         </div>
         {field("closing_title_company", "Closing / Title Company Name", "text", "NH Title & Escrow Co.")}
       </div>
