@@ -66,7 +66,8 @@
     "title"
   ],
   "rls": {
-    "create": {
+    "create": true,
+    "read": {
       "$or": [
         {
           "user_condition": {
@@ -83,23 +84,6 @@
         }
       ]
     },
-    "read": {
-      "$or": [
-        {
-          "user_condition": {
-            "role": {
-              "$in": [
-                "admin",
-                "owner"
-              ]
-            }
-          }
-        },
-        {
-          "data.created_by": "{{user.id}}"
-        }
-      ]
-    },
     "update": {
       "$or": [
         {
@@ -113,7 +97,7 @@
           }
         },
         {
-          "data.created_by": "{{user.id}}"
+          "data.brokerage_id": "{{user.data.brokerage_id}}"
         }
       ]
     },
