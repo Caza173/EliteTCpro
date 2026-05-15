@@ -251,7 +251,7 @@ export default function TransactionDetail() {
     const txType = transaction.transaction_type;
     if (!txType) return;
 
-    const incompatible = txTasks.filter(t => isTaskIncompatible(t.title, txType));
+    const incompatible = txTasks.filter(t => !t.is_custom && isTaskIncompatible(t.title, txType));
     if (incompatible.length === 0) return;
 
     (async () => {
