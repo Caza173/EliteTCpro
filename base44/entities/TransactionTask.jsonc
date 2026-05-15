@@ -81,6 +81,9 @@
         },
         {
           "data.brokerage_id": "{{user.data.brokerage_id}}"
+        },
+        {
+          "data.created_by": "{{user.id}}"
         }
       ]
     },
@@ -98,6 +101,9 @@
         },
         {
           "data.brokerage_id": "{{user.data.brokerage_id}}"
+        },
+        {
+          "data.created_by": "{{user.id}}"
         }
       ]
     },

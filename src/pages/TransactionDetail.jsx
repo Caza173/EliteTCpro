@@ -238,24 +238,23 @@ export default function TransactionDetail() {
     }
   }, [transaction?.transaction_type, urlTab]);
 
-  // Track which phases have already been seeded this session
-  const seededPhasesRef = useRef(new Set());
+  // Track which phases have already been seeded — persisted in localStorage to survive page reloads
+  const seedingInProgressRef = useRef(false);
   const repairedRef = useRef(false);
 
-  // ── Repair routine: archive incompatible tasks, re-seed correct ones ────────
+  // ── Repair routine: archive incompatible tasks ───────────────────────────────
   useEffect(() => {
     if (!transaction?.id || !txTasks || txTasks.length === 0) return;
     if (repairedRef.current) return;
     repairedRef.current = true;
 
     const txType = transaction.transaction_type;
-    if (!txType) return; // no type set, skip repair
+    if (!txType) return;
 
     const incompatible = txTasks.filter(t => isTaskIncompatible(t.title, txType));
     if (incompatible.length === 0) return;
 
     (async () => {
-      // Log incompatible tasks to audit trail before removing
       await Promise.all(incompatible.map(t =>
         base44.entities.AuditLog.create({
           brokerage_id: transaction.brokerage_id,
@@ -269,43 +268,43 @@ export default function TransactionDetail() {
           description: `Task "${t.title}" archived — incompatible with ${txType} transaction type`,
         })
       ));
-      // Delete incompatible tasks
       await Promise.all(incompatible.map(t => base44.entities.TransactionTask.delete(t.id)));
       refetchTxTasks();
     })();
   }, [transaction?.id, txTasks?.length]);
 
-  // Auto-seed phase 1 once tasks are loaded (only once per transaction)
+  // Auto-seed phase 1 once tasks are loaded — only if phase truly has 0 tasks in DB
   useEffect(() => {
-    if (!transaction?.id || !txTasks) return;
-    if (seededPhasesRef.current.has(`${transaction.id}-${selectedPhase}`)) return;
+    if (!transaction?.id || !txTasks || seedingInProgressRef.current) return;
+    // Check localStorage to skip if already seeded this phase for this transaction
+    const storageKey = `seeded_${transaction.id}_${selectedPhase}`;
+    if (localStorage.getItem(storageKey)) return;
+    // Only seed if the loaded tasks show 0 tasks for this phase
+    const phaseHasTasks = txTasks.some(t => t.phase === selectedPhase);
+    if (phaseHasTasks) {
+      // Phase already has tasks — mark as seeded to prevent future attempts
+      localStorage.setItem(storageKey, "1");
+      return;
+    }
     seedPhaseTasksIfNeeded(selectedPhase);
-  }, [transaction?.id, txTasks]);
+  }, [transaction?.id, txTasks?.length]);
 
   // Seed TransactionTasks from library if none exist yet for a given phase
   const seedPhaseTasksIfNeeded = async (phaseNum) => {
-    const key = `${id}-${phaseNum}`;
-    if (seededPhasesRef.current.has(key)) return;
-    seededPhasesRef.current.add(key);
+    const storageKey = `seeded_${id}_${phaseNum}`;
+    if (localStorage.getItem(storageKey)) return;
+    if (seedingInProgressRef.current) return;
+    seedingInProgressRef.current = true;
 
-    // Fetch fresh tasks to avoid stale closure issues
+    // Fetch fresh tasks directly from DB to get true count
     const fresh = await base44.entities.TransactionTask.filter({ transaction_id: id });
     const existing = fresh.filter(t => t.phase === phaseNum);
+
+    // Mark seeded immediately to prevent any concurrent attempts
+    localStorage.setItem(storageKey, "1");
+
     if (existing.length > 0) {
-      // Deduplicate: keep first occurrence of each title, delete the rest
-      const seen = new Map();
-      const toDelete = [];
-      existing.forEach(t => {
-        if (seen.has(t.title)) {
-          toDelete.push(t.id);
-        } else {
-          seen.set(t.title, t);
-        }
-      });
-      if (toDelete.length > 0) {
-        await Promise.all(toDelete.map(tid => base44.entities.TransactionTask.delete(tid)));
-        refetchTxTasks();
-      }
+      seedingInProgressRef.current = false;
       return;
     }
 
@@ -325,7 +324,9 @@ export default function TransactionDetail() {
       ));
     } catch (err) {
       console.error("[seedPhaseTasksIfNeeded] Failed to seed tasks:", err?.message || err);
+      localStorage.removeItem(storageKey); // allow retry on next load if seeding failed
     }
+    seedingInProgressRef.current = false;
     refetchTxTasks();
   };
 

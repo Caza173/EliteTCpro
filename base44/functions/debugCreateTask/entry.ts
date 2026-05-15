@@ -63,7 +63,12 @@ Deno.serve(async (req) => {
   try {
     allTasks = await base44.asServiceRole.entities.TransactionTask.filter({ transaction_id });
     console.log("[debugCreateTask] fetched tasks count:", allTasks?.length);
-    console.log("[debugCreateTask] fetched tasks:", JSON.stringify(allTasks?.map(t => ({ id: t.id, title: t.title, phase: t.phase }))));
+    // Deduplicate report
+    const byTitle = {};
+    allTasks.forEach(t => { byTitle[t.title] = (byTitle[t.title] || 0) + 1; });
+    const dupes = Object.entries(byTitle).filter(([, c]) => c > 1);
+    if (dupes.length > 0) console.log("[debugCreateTask] DUPLICATES DETECTED:", JSON.stringify(dupes));
+    console.log("[debugCreateTask] fetched tasks:", JSON.stringify(allTasks?.map(t => ({ id: t.id, title: t.title, phase: t.phase, brokerage_id: t.brokerage_id }))));
   } catch (err) {
     console.error("[debugCreateTask] fetch tasks failed:", err.message);
     allTasks = [];
@@ -75,5 +80,6 @@ Deno.serve(async (req) => {
     tasks: allTasks,
     user_id: user.id,
     user_email: user.email,
+    transaction_brokerage_id: transaction.brokerage_id,
   });
 });

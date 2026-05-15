@@ -7,6 +7,24 @@ export default function DebugTaskPanel({ transactionId }) {
   const [result, setResult] = useState(null);
   const [error, setError] = useState(null);
   const [tasks, setTasks] = useState(null);
+  const [txBrokerageId, setTxBrokerageId] = useState(null);
+
+  // Check localStorage seed flags
+  const getSeedKeys = () => {
+    const keys = [];
+    for (let i = 0; i < localStorage.length; i++) {
+      const k = localStorage.key(i);
+      if (k && k.startsWith(`seeded_${transactionId}`)) keys.push(k);
+    }
+    return keys;
+  };
+
+  const [seedKeys, setSeedKeys] = useState(() => getSeedKeys());
+
+  const clearSeedFlags = () => {
+    getSeedKeys().forEach(k => localStorage.removeItem(k));
+    setSeedKeys([]);
+  };
 
   const handleCreate = async () => {
     if (!title.trim()) return;
@@ -14,13 +32,13 @@ export default function DebugTaskPanel({ transactionId }) {
     setResult(null);
     setError(null);
     setTasks(null);
+    setTxBrokerageId(null);
 
     const payload = {
       transaction_id: transactionId,
       title: title.trim(),
       phase: 1,
       status: "open",
-      created_by: "debug",
     };
 
     console.log("[DEBUG] transactionId:", transactionId);
@@ -36,9 +54,14 @@ export default function DebugTaskPanel({ transactionId }) {
       } else {
         setResult(res.data?.inserted);
         setTasks(res.data?.tasks || []);
+        setTxBrokerageId(res.data?.transaction_brokerage_id);
         console.log("[DEBUG] inserted task:", JSON.stringify(res.data?.inserted));
+        console.log("[DEBUG] transaction brokerage_id:", res.data?.transaction_brokerage_id);
         console.log("[DEBUG] fetched tasks count:", res.data?.tasks?.length);
-        console.log("[DEBUG] fetched tasks:", JSON.stringify(res.data?.tasks?.map(t => ({ id: t.id, title: t.title, phase: t.phase }))));
+        const dupes = {};
+        (res.data?.tasks || []).forEach(t => { dupes[t.title] = (dupes[t.title] || 0) + 1; });
+        const dupeList = Object.entries(dupes).filter(([, c]) => c > 1);
+        if (dupeList.length > 0) console.warn("[DEBUG] DUPLICATE TASKS:", dupeList);
       }
     } catch (err) {
       console.error("[DEBUG] invoke error:", err);
@@ -58,7 +81,29 @@ export default function DebugTaskPanel({ transactionId }) {
       fontFamily: "monospace",
     }}>
       <div style={{ fontWeight: "bold", fontSize: "13px", color: "#92400e", marginBottom: "10px" }}>
-        🐛 DEBUG TASK PANEL — transaction_id: <code style={{ background: "#fde68a", padding: "2px 6px", borderRadius: "4px" }}>{transactionId || "MISSING!"}</code>
+        🐛 TASK DEBUG PANEL — tx: <code style={{ background: "#fde68a", padding: "2px 6px", borderRadius: "4px" }}>{transactionId || "MISSING!"}</code>
+      </div>
+
+      {/* Seed flags status */}
+      <div style={{ fontSize: "11px", color: "#78350f", marginBottom: "10px", padding: "6px 10px", background: "#fef3c7", borderRadius: "6px" }}>
+        <strong>localStorage seed flags:</strong>{" "}
+        {seedKeys.length === 0 ? (
+          <span style={{ color: "#dc2626" }}>None set — seeding will trigger on next load</span>
+        ) : (
+          <span style={{ color: "#16a34a" }}>{seedKeys.join(", ")}</span>
+        )}
+        <button
+          onClick={clearSeedFlags}
+          style={{ marginLeft: "10px", padding: "2px 8px", background: "#dc2626", color: "white", border: "none", borderRadius: "4px", cursor: "pointer", fontSize: "10px" }}
+        >
+          Clear Seed Flags (force re-seed)
+        </button>
+        <button
+          onClick={() => setSeedKeys(getSeedKeys())}
+          style={{ marginLeft: "6px", padding: "2px 8px", background: "#6b7280", color: "white", border: "none", borderRadius: "4px", cursor: "pointer", fontSize: "10px" }}
+        >
+          Refresh
+        </button>
       </div>
 
       <div style={{ display: "flex", gap: "8px", alignItems: "center", marginBottom: "12px" }}>
@@ -67,7 +112,7 @@ export default function DebugTaskPanel({ transactionId }) {
           value={title}
           onChange={e => setTitle(e.target.value)}
           onKeyDown={e => e.key === "Enter" && handleCreate()}
-          placeholder="Task title..."
+          placeholder="Enter debug task title"
           style={{
             flex: 1,
             padding: "8px 12px",
@@ -98,15 +143,9 @@ export default function DebugTaskPanel({ transactionId }) {
 
       {error && (
         <div style={{
-          background: "#fee2e2",
-          border: "1px solid #ef4444",
-          borderRadius: "8px",
-          padding: "10px 14px",
-          marginBottom: "10px",
-          color: "#991b1b",
-          fontSize: "12px",
-          whiteSpace: "pre-wrap",
-          wordBreak: "break-all",
+          background: "#fee2e2", border: "1px solid #ef4444", borderRadius: "8px",
+          padding: "10px 14px", marginBottom: "10px", color: "#991b1b",
+          fontSize: "12px", whiteSpace: "pre-wrap", wordBreak: "break-all",
         }}>
           ❌ ERROR: {error}
         </div>
@@ -114,48 +153,53 @@ export default function DebugTaskPanel({ transactionId }) {
 
       {result && (
         <div style={{
-          background: "#dcfce7",
-          border: "1px solid #16a34a",
-          borderRadius: "8px",
-          padding: "10px 14px",
-          marginBottom: "10px",
-          color: "#14532d",
-          fontSize: "12px",
+          background: "#dcfce7", border: "1px solid #16a34a", borderRadius: "8px",
+          padding: "10px 14px", marginBottom: "10px", color: "#14532d", fontSize: "12px",
         }}>
-          ✅ INSERT SUCCESS:
-          <pre style={{ margin: "6px 0 0", whiteSpace: "pre-wrap", wordBreak: "break-all" }}>
-            {JSON.stringify(result, null, 2)}
-          </pre>
+          ✅ INSERT SUCCESS — id: <strong>{result.id?.slice(0, 12)}</strong> · brokerage_id on task: <strong style={{ color: txBrokerageId ? "#16a34a" : "#dc2626" }}>{String(result.brokerage_id)}</strong>
+          {txBrokerageId === null && (
+            <div style={{ marginTop: "6px", color: "#dc2626", fontWeight: "bold" }}>
+              ⚠️ Transaction has NO brokerage_id — tasks will have brokerage_id=null. RLS reads may fail for non-admin users.
+            </div>
+          )}
         </div>
       )}
 
       {tasks !== null && (
         <div style={{
-          background: "#eff6ff",
-          border: "1px solid #3b82f6",
-          borderRadius: "8px",
-          padding: "10px 14px",
-          fontSize: "12px",
-          color: "#1e3a8a",
+          background: "#eff6ff", border: "1px solid #3b82f6", borderRadius: "8px",
+          padding: "10px 14px", fontSize: "12px", color: "#1e3a8a",
         }}>
-          <strong>📋 ALL TASKS for this transaction ({tasks.length} total):</strong>
+          <strong>📋 ALL TASKS ({tasks.length} total)</strong>
+          {(() => {
+            const dupes = {};
+            tasks.forEach(t => { dupes[t.title] = (dupes[t.title] || 0) + 1; });
+            const dupeList = Object.entries(dupes).filter(([, c]) => c > 1);
+            return dupeList.length > 0 ? (
+              <div style={{ marginTop: "6px", color: "#dc2626", fontWeight: "bold" }}>
+                ⚠️ {dupeList.length} DUPLICATE TITLES: {dupeList.map(([t, c]) => `"${t}" ×${c}`).join(", ")}
+              </div>
+            ) : null;
+          })()}
           {tasks.length === 0 ? (
-            <div style={{ marginTop: "6px", color: "#ef4444" }}>⚠️ NO TASKS RETURNED — insert may have failed silently or RLS is blocking reads</div>
+            <div style={{ marginTop: "6px", color: "#ef4444" }}>⚠️ NO TASKS RETURNED</div>
           ) : (
             <table style={{ marginTop: "8px", width: "100%", borderCollapse: "collapse" }}>
               <thead>
                 <tr>
-                  <th style={{ textAlign: "left", padding: "4px 8px", borderBottom: "1px solid #bfdbfe", fontSize: "11px" }}>id</th>
                   <th style={{ textAlign: "left", padding: "4px 8px", borderBottom: "1px solid #bfdbfe", fontSize: "11px" }}>title</th>
                   <th style={{ textAlign: "left", padding: "4px 8px", borderBottom: "1px solid #bfdbfe", fontSize: "11px" }}>phase</th>
+                  <th style={{ textAlign: "left", padding: "4px 8px", borderBottom: "1px solid #bfdbfe", fontSize: "11px" }}>brokerage_id</th>
+                  <th style={{ textAlign: "left", padding: "4px 8px", borderBottom: "1px solid #bfdbfe", fontSize: "11px" }}>id</th>
                 </tr>
               </thead>
               <tbody>
                 {tasks.map(t => (
-                  <tr key={t.id}>
-                    <td style={{ padding: "3px 8px", fontSize: "10px", color: "#6b7280" }}>{t.id?.slice(0, 8)}…</td>
+                  <tr key={t.id} style={{ background: t.brokerage_id ? undefined : "#fff7ed" }}>
                     <td style={{ padding: "3px 8px", fontWeight: "500" }}>{t.title}</td>
                     <td style={{ padding: "3px 8px" }}>{t.phase}</td>
+                    <td style={{ padding: "3px 8px", color: t.brokerage_id ? "#16a34a" : "#dc2626" }}>{String(t.brokerage_id)}</td>
+                    <td style={{ padding: "3px 8px", fontSize: "10px", color: "#6b7280" }}>{t.id?.slice(0, 8)}…</td>
                   </tr>
                 ))}
               </tbody>
