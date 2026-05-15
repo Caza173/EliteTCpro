@@ -235,10 +235,13 @@ function PhaseCard({
     };
 
     try {
-      await base44.entities.TransactionTask.create(payload);
+      const created = await base44.entities.TransactionTask.create(payload);
       setNewTitle("");
       setAddingTask(false);
-      queryClient.invalidateQueries({ queryKey: ["txTasks", transactionId] });
+      // Optimistic update — inject new task directly into cache so board re-renders immediately
+      queryClient.setQueryData(["txTasks", transactionId], (old = []) => [...old, created]);
+      // Then trigger full refetch to get server-authoritative state
+      await queryClient.invalidateQueries({ queryKey: ["txTasks", transactionId] });
       onTasksChanged?.();
     } catch (err) {
       console.error("[Board:AddTask] ERROR:", err?.message || err);
@@ -496,6 +499,15 @@ export default function UnifiedPhaseBoard({
   const queryClient = useQueryClient();
   const [localTasks, setLocalTasks] = useState(null);
   const boardRef = useRef(null);
+
+  // Clear local (drag) state whenever parent tasks prop changes — prevents stale override
+  const prevTasksRef = useRef(tasks);
+  React.useEffect(() => {
+    if (tasks !== prevTasksRef.current) {
+      prevTasksRef.current = tasks;
+      setLocalTasks(null);
+    }
+  }, [tasks]);
 
   const activeTasks = localTasks || tasks;
   const activePhaseNum = getActivePhaseNum(allPhases, activeTasks, phasesCompleted);
