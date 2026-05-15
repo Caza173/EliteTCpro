@@ -210,9 +210,6 @@ function PhaseCard({
     .filter(t => t.phase === phase.phaseNum)
     .sort((a, b) => (a.order_index ?? 0) - (b.order_index ?? 0));
 
-  // STEP 10 — per-phase task count
-  console.log("[PhaseCard:10] phase:", phase.phaseNum, phase.label, "— task count:", phaseTasks.length, "| titles:", phaseTasks.map(t => t.title).join(", ") || "(none)");
-
   // For parent phases, include sub-phase tasks in progress calculation
   const subPhaseNums = SUB_PHASE_MAP[phase.phaseNum] || [];
   const allProgressTasks = tasks.filter(t => t.phase === phase.phaseNum || subPhaseNums.includes(t.phase));
@@ -237,33 +234,17 @@ function PhaseCard({
       is_custom: true,
     };
 
-    // STEP 1 — log start + payload
-    console.log("[AddTask:1] START — phase:", phase.phaseNum, "title:", title);
-    console.log("[AddTask:2] payload:", JSON.stringify(payload));
-    // STEP 4 — cache before
-    const cacheBefore = queryClient.getQueryData(["txTasks", transactionId]);
-    console.log("[AddTask:4] cache BEFORE:", cacheBefore?.length ?? "undefined", "tasks");
-
     try {
       const created = await base44.entities.TransactionTask.create(payload);
-      // STEP 3 — success response
-      console.log("[AddTask:3] create SUCCESS — returned id:", created?.id, "title:", created?.title);
 
       setNewTitle("");
       setAddingTask(false);
 
-      // STEP 5 — optimistic update
-      queryClient.setQueryData(["txTasks", transactionId], (old = []) => {
-        const next = [...(old || []), created];
-        console.log("[AddTask:5] optimistic cache update — new count:", next.length, "titles:", next.map(t => t.title));
-        return next;
-      });
+      // Optimistic update — inject into cache immediately so UI reflects the new task
+      queryClient.setQueryData(["txTasks", transactionId], (old = []) => [...(old || []), created]);
 
-      // STEP 6 — invoke refetch
-      console.log("[AddTask:6] invoking onTasksChanged (refetchTxTasks)...");
-      const refetchResult = await onTasksChanged?.();
-      // STEP 7/8 — refetch result
-      console.log("[AddTask:7-8] refetch done — result:", refetchResult?.data?.length ?? "N/A", "tasks returned");
+      // Refetch to sync with server
+      await onTasksChanged?.();
     } catch (err) {
       console.error("[AddTask:ERROR]", err?.message || err);
       setAddTaskError(`Failed to add task: ${err?.message || "Unknown error"}`);
@@ -520,11 +501,6 @@ export default function UnifiedPhaseBoard({
   const queryClient = useQueryClient();
   const [localTasks, setLocalTasks] = useState(null);
   const boardRef = useRef(null);
-  const renderCountRef = useRef(0);
-  renderCountRef.current += 1;
-
-  // STEP 9 — board render count + task counts
-  console.log("[Board:9] RENDER #" + renderCountRef.current + " — tasks.length:", tasks.length, "| titles:", tasks.map(t => t.title).join(", ") || "(none)");
 
   // Clear local (drag) state whenever parent tasks prop changes — prevents stale override
   const prevTasksRef = useRef(tasks);
