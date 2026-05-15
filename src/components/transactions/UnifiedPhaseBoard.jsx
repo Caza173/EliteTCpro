@@ -238,11 +238,10 @@ function PhaseCard({
       const created = await base44.entities.TransactionTask.create(payload);
       setNewTitle("");
       setAddingTask(false);
-      // Optimistic update — inject new task directly into cache so board re-renders immediately
-      queryClient.setQueryData(["txTasks", transactionId], (old = []) => [...old, created]);
-      // Then trigger full refetch to get server-authoritative state
-      await queryClient.invalidateQueries({ queryKey: ["txTasks", transactionId] });
-      onTasksChanged?.();
+      // Optimistic update — show new task immediately before refetch
+      queryClient.setQueryData(["txTasks", transactionId], (old = []) => [...(old || []), created]);
+      // Await refetch so board re-renders with server state
+      await onTasksChanged?.();
     } catch (err) {
       console.error("[Board:AddTask] ERROR:", err?.message || err);
       setAddTaskError(`Failed to add task: ${err?.message || "Unknown error"}`);

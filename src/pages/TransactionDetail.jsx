@@ -201,7 +201,6 @@ export default function TransactionDetail() {
     queryFn: () => base44.entities.TransactionTask.filter({ transaction_id: id }),
     enabled: !!id,
     staleTime: 0,
-    gcTime: 0,
     refetchOnMount: true,
     refetchOnWindowFocus: false,
   });
