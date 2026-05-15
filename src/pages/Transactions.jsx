@@ -1,19 +1,17 @@
 import React, { useState, useMemo, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { base44 } from "@/api/base44Client";
-import { createPageUrl } from "@/utils";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
-import { Search, ChevronLeft, ChevronRight, Star, LayoutGrid, List, Columns, Trash2, CheckSquare, Square, X } from "lucide-react";
+import { Search, ChevronLeft, ChevronRight, LayoutGrid, List, Columns, Trash2, CheckSquare, Square, X } from "lucide-react";
 import StatusBoardView from "../components/transactions/StatusBoardView";
 import { Skeleton } from "@/components/ui/skeleton";
 import TransactionTable from "../components/transactions/TransactionTable";
 import TransactionCardGrid from "../components/transactions/TransactionCardGrid";
-import ContractIntakeModal from "../components/intake/ContractIntakeModal";
 import { useDealAccess } from "../lib/useDealAccess";
 
 const PAGE_SIZE = 25;
@@ -23,17 +21,13 @@ export default function Transactions() {
   const [statusFilter, setStatusFilter] = useState("all");
   const [monthFilter, setMonthFilter] = useState("all");
   const [page, setPage] = useState(1);
-  const [showIntake, setShowIntake] = useState(false);
-  const [dealTab, setDealTab] = useState("all"); // "all" | "pending" | "my"
   const [viewMode, setViewMode] = useState(() => localStorage.getItem("tx_view") || "table"); // "table" | "cards" | "board"
   const [selectMode, setSelectMode] = useState(false);
   const [selectedIds, setSelectedIds] = useState(new Set());
   const [deleting, setDeleting] = useState(false);
-  // Role-based deal access — filters to only deals the user may see
-  const { transactions, pendingDeals, myDeals, isLoading, currentUser, isSuperAdmin, isTC } = useDealAccess();
-
-  // The base list for the "all" tab respects access control
-  const baseList = dealTab === "my" ? myDeals : transactions;
+  // Strictly user-isolated deal access
+  const { transactions, isLoading } = useDealAccess();
+  const baseList = transactions;
 
   const filtered = useMemo(() => (baseList || []).filter((tx) => {
     const q = search.toLowerCase();
@@ -52,12 +46,12 @@ export default function Transactions() {
       return `${dt.getFullYear()}-${String(dt.getMonth() + 1).padStart(2, "0")}` === monthFilter;
     })();
     return matchesSearch && matchesStatus && matchesMonth;
-  }), [transactions, search, statusFilter, monthFilter]);
+  }), [baseList, search, statusFilter, monthFilter]);
 
   const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
   const paginated = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
 
-  useEffect(() => { setPage(1); }, [search, statusFilter, monthFilter, transactions, dealTab]);
+  useEffect(() => { setPage(1); }, [search, statusFilter, monthFilter, transactions]);
 
   const toggleSelect = (id) => {
     setSelectedIds(prev => {
@@ -145,51 +139,6 @@ export default function Transactions() {
           </div>
         </div>
 
-        {/* Deal tabs — mobile scrollable */}
-        <style>{`
-          .tabs-container {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            overflow-x: auto;
-            white-space: nowrap;
-            -webkit-overflow-scrolling: touch;
-            scrollbar-width: none;
-            padding: 4px;
-            border-radius: 12px;
-            background: var(--bg-tertiary);
-            position: relative;
-          }
-          .tabs-container::-webkit-scrollbar {
-            display: none;
-          }
-          .tab {
-            flex: 0 0 auto;
-            padding: 10px 16px;
-            border-radius: 10px;
-            font-size: 14px;
-            display: flex;
-            align-items: center;
-            gap: 6px;
-            font-weight: 500;
-            transition: all 0.2s ease;
-            color: var(--text-muted);
-          }
-          .tab.active {
-            background: var(--card-bg);
-            color: var(--text-primary);
-            box-shadow: var(--card-shadow);
-          }
-          @media (max-width: 480px) {
-            .tabs-container {
-              padding: 4px 8px;
-            }
-            .tab {
-              padding: 8px 12px;
-              font-size: 13px;
-            }
-          }
-        `}</style>
         <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-center">
           <div className="relative flex-1 max-w-sm">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
@@ -335,7 +284,6 @@ export default function Transactions() {
         })()}
       </div>
 
-      <ContractIntakeModal open={showIntake} onClose={() => setShowIntake(false)} />
     </div>
   );
 }

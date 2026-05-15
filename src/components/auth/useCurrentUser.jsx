@@ -1,7 +1,6 @@
 /**
- * Legacy shim — delegates to the global CurrentUserContext.
- * All existing callers (useCurrentUser().data) continue to work
- * because we return { data: currentUser, isLoading }.
+ * useCurrentUser — delegates to the global CurrentUserContext.
+ * Strictly per-user, no team or brokerage role logic.
  */
 import { useCurrentUser as _useCurrentUser } from '@/lib/CurrentUserContext.jsx';
 
@@ -12,50 +11,34 @@ export function useCurrentUser() {
 }
 
 const MASTER_EMAIL = "nhcazateam@gmail.com";
-const FULL_ACCESS_ROLES = ["admin", "owner", "tc_lead", "tc"];
 
-/** Super admin / master account override */
 export function isMasterAccount(user) {
   return user?.email === MASTER_EMAIL;
 }
 
-/** Full internal staff access — can do everything */
 export function hasFullAccess(user) {
-  if (!user) return false;
-  return isMasterAccount(user) || FULL_ACCESS_ROLES.includes(user?.role);
+  return isMasterAccount(user) || user?.role === "admin";
 }
 
 export function canManageTransactions(user) {
-  return hasFullAccess(user);
+  return !!user;
 }
 
 export function canDeleteRecords(user) {
-  return hasFullAccess(user);
+  return !!user;
 }
 
 export function canManageUsers(user) {
-  return hasFullAccess(user);
+  return isMasterAccount(user) || user?.role === "admin";
 }
 
 export function canManageBilling(user) {
-  return isMasterAccount(user) || user?.role === "owner" || user?.role === "admin";
+  return isMasterAccount(user) || user?.role === "admin";
 }
 
-// Legacy helpers — kept for backward compatibility
+// Legacy compat
 export function isOwnerOrAdmin(user) {
-  return isMasterAccount(user) || user?.role === "owner" || user?.role === "admin";
-}
-
-export function isTCOrAdmin(user) {
-  return hasFullAccess(user);
-}
-
-export function isTC(user) {
-  return user?.role === "tc" || user?.role === "tc_lead";
-}
-
-export function isTCLead(user) {
-  return user?.role === "tc_lead";
+  return isMasterAccount(user) || user?.role === "admin";
 }
 
 export function isAgent(user) {
@@ -64,8 +47,4 @@ export function isAgent(user) {
 
 export function isClient(user) {
   return user?.role === "client";
-}
-
-export function canEdit(user) {
-  return hasFullAccess(user) || user?.role === "agent";
 }

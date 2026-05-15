@@ -1,8 +1,9 @@
 /**
- * useDealAccess — Per-user isolated deal access.
+ * useDealAccess — Strictly per-user isolated deal access.
  *
- * Each user only sees transactions where created_by === user.id.
+ * Each user only sees transactions they own (created_by, owner_id, agent_email).
  * Super admin (nhcazateam@gmail.com) sees all transactions.
+ * No team, brokerage, or shared access of any kind.
  */
 import { useQuery } from "@tanstack/react-query";
 import { base44 } from "@/api/base44Client";
@@ -12,7 +13,7 @@ const SUPER_ADMIN_EMAIL = "nhcazateam@gmail.com";
 
 export function isSuperAdmin(user) {
   if (!user) return false;
-  return user.email === SUPER_ADMIN_EMAIL || user.role === "owner" || user.role === "admin";
+  return user.email === SUPER_ADMIN_EMAIL;
 }
 
 export function useDealAccess() {
@@ -37,26 +38,20 @@ export function useDealAccess() {
   const isLoading = userLoading || txLoading;
   const accessibleDealIds = new Set(allTransactions.map(t => t.id));
 
-  const pendingDeals = allTransactions.filter(t => t.status === "pending" && !t.assigned_tc_id);
-  const myDeals = allTransactions; // All returned deals are already the user's own
-
   function canAccess(dealId) {
     if (!currentUser || !dealId) return false;
-    if (txError || isLoading) return true; // fail open on error/loading
+    if (txError || isLoading) return true;
     return accessibleDealIds.has(dealId);
   }
 
   return {
     transactions: allTransactions,
-    pendingDeals,
-    myDeals,
     allTransactions,
     accessibleDealIds,
     isLoading,
     canAccess,
     currentUser,
     isSuperAdmin: isSuperAdmin(currentUser),
-    isTC: currentUser?.role === "tc" || currentUser?.role === "tc_lead",
   };
 }
 
