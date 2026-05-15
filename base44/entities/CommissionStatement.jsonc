@@ -1,0 +1,185 @@
+{
+  "name": "CommissionStatement",
+  "type": "object",
+  "properties": {
+    "owner_id": {
+      "type": "string",
+      "description": "User ID of the creator \u2014 used for RLS isolation"
+    },
+    "brokerage_id": {
+      "type": "string"
+    },
+    "transaction_id": {
+      "type": "string",
+      "description": "Optional link to Transaction"
+    },
+    "property_address": {
+      "type": "string"
+    },
+    "agent_name": {
+      "type": "string"
+    },
+    "agent_email": {
+      "type": "string"
+    },
+    "closing_date": {
+      "type": "string",
+      "format": "date"
+    },
+    "purchase_price": {
+      "type": "number"
+    },
+    "side": {
+      "type": "string",
+      "enum": [
+        "buyer",
+        "listing",
+        "dual"
+      ],
+      "default": "buyer"
+    },
+    "listing_commission_percent": {
+      "type": "number"
+    },
+    "buyer_commission_percent": {
+      "type": "number"
+    },
+    "buyer_compensation_amount": {
+      "type": "number",
+      "default": 0
+    },
+    "gross_commission": {
+      "type": "number"
+    },
+    "brokerage_split_percent": {
+      "type": "number",
+      "default": 20
+    },
+    "brokerage_split_amount": {
+      "type": "number"
+    },
+    "agent_net": {
+      "type": "number"
+    },
+    "referral_fee": {
+      "type": "number",
+      "default": 0
+    },
+    "tc_fee": {
+      "type": "number",
+      "default": 0
+    },
+    "transaction_fee": {
+      "type": "number",
+      "default": 0
+    },
+    "listing_agent_name": {
+      "type": "string"
+    },
+    "listing_agent_brokerage": {
+      "type": "string"
+    },
+    "buyer_agent_name": {
+      "type": "string"
+    },
+    "buyer_agent_brokerage": {
+      "type": "string"
+    },
+    "title_company_email": {
+      "type": "string"
+    },
+    "notes": {
+      "type": "string"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "draft",
+        "sent_to_agent",
+        "approved",
+        "revision_requested",
+        "sent_to_title"
+      ],
+      "default": "draft"
+    },
+    "pdf_url": {
+      "type": "string"
+    },
+    "agent_approved": {
+      "type": "boolean",
+      "default": false
+    },
+    "approved_at": {
+      "type": "string"
+    },
+    "sent_to_title_at": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "property_address"
+  ],
+  "rls": {
+    "create": true,
+    "read": {
+      "$or": [
+        {
+          "user_condition": {
+            "role": {
+              "$in": [
+                "admin",
+                "owner"
+              ]
+            }
+          }
+        },
+        {
+          "data.owner_id": "{{user.id}}"
+        },
+        {
+          "data.created_by": "{{user.id}}"
+        }
+      ]
+    },
+    "update": {
+      "$or": [
+        {
+          "user_condition": {
+            "role": {
+              "$in": [
+                "admin",
+                "owner"
+              ]
+            }
+          }
+        },
+        {
+          "data.owner_id": "{{user.id}}"
+        },
+        {
+          "data.created_by": "{{user.id}}"
+        }
+      ]
+    },
+    "delete": {
+      "$or": [
+        {
+          "user_condition": {
+            "role": {
+              "$in": [
+                "admin",
+                "owner"
+              ]
+            }
+          }
+        },
+        {
+          "data.owner_id": "{{user.id}}"
+        },
+        {
+          "data.created_by": "{{user.id}}"
+        }
+      ]
+    }
+  }
+}
