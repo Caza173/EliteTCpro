@@ -161,10 +161,10 @@ const TX_PHASE_STYLES = {
 };
 
 const statusStyles = {
-  active: "bg-emerald-900/60 text-emerald-300 border-emerald-700",
-  pending: "bg-amber-900/60 text-amber-300 border-amber-700",
-  closed: "bg-slate-700 text-slate-300 border-slate-600",
-  cancelled: "bg-red-900/60 text-red-300 border-red-700",
+  active: "bg-emerald-100 text-emerald-700 border-emerald-300",
+  pending: "bg-amber-100 text-amber-700 border-amber-300",
+  closed: "bg-slate-100 text-slate-600 border-slate-300",
+  cancelled: "bg-red-100 text-red-700 border-red-300",
 };
 
 const STATUS_OPTIONS = ["active", "pending", "closed", "cancelled"];
@@ -324,7 +324,7 @@ export default function TransactionTable({ transactions, sorted = false, onStatu
                  borderBottom: "1px solid var(--border)",
                  borderLeft: score >= 80 ? "2px solid var(--destructive)" : score >= 40 ? "2px solid var(--warning)" : "2px solid transparent"
                }}
-               onMouseEnter={(e) => e.currentTarget.style.background = "var(--accent)"}
+               onMouseEnter={(e) => e.currentTarget.style.background = "var(--accent-subtle)"}
                onMouseLeave={(e) => e.currentTarget.style.background = "var(--card)"}
              >
                <TableCell>
