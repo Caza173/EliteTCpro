@@ -180,8 +180,8 @@ export default function Landing() {
         </nav>
 
         <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-          <OutlineBtn onClick={() => base44.auth.redirectToLogin("/Dashboard")} style={{ padding: "9px 16px", fontSize: 13 }}>
-            Sign In
+          <OutlineBtn onClick={() => scrollTo("contact")} style={{ padding: "9px 16px", fontSize: 13 }}>
+            Schedule Consultation
           </OutlineBtn>
           <GoldBtn onClick={() => base44.auth.redirectToLogin("/Dashboard")} style={{ padding: "9px 18px", fontSize: 13 }}>
             Get Started
