@@ -1,5 +1,6 @@
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Playfair+Display:ital,wght@0,500;0,600;0,700;0,800;1,500;1,600;1,700;1,800&display=swap');
 @import './styles/elite-button.css';
+@import './styles/elite-cards.css';
 
 @tailwind base;
 @tailwind components;
@@ -48,6 +49,13 @@
     --border: rgba(210, 163, 95, 0.18);
     --border-muted: rgba(255, 255, 255, 0.08);
     --border-strong: rgba(210, 163, 95, 0.35);
+
+    /* Premium Card Borders (NEW) */
+    --elite-card-border: rgba(255, 255, 255, 0.10);
+    --elite-card-border-hover: rgba(255, 210, 119, 0.35);
+    --elite-card-highlight: rgba(255, 255, 255, 0.03);
+    --elite-card-shadow: 0 0 0 1px rgba(255, 255, 255, 0.03), 0 8px 32px rgba(0, 0, 0, 0.45);
+    --elite-card-shadow-hover: 0 0 0 1px rgba(255, 255, 255, 0.06), 0 12px 48px rgba(0, 0, 0, 0.55);
 
     /* Text */
     --text-primary: #f7f3ea;
@@ -178,12 +186,24 @@
 /* Cards */
 .elite-card {
   background: var(--surface);
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  border: 1px solid var(--elite-card-border);
   border-radius: var(--radius-md);
-  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+  box-shadow: var(--elite-card-shadow);
+  transition: all 300ms cubic-bezier(0.22, 1, 0.36, 1);
+  position: relative;
+}
+.elite-card::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  border: 1px solid var(--elite-card-highlight);
+  pointer-events: none;
 }
 .elite-card:hover {
-  border-color: rgba(210, 163, 95, 0.28);
+  border-color: var(--elite-card-border-hover);
+  box-shadow: var(--elite-card-shadow-hover);
+  transform: translateY(-1px);
 }
 
 /* Section labels */
