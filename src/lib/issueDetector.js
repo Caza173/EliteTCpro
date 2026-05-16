@@ -1,223 +1,43 @@
 /**
- * issueDetector.js
- * Scans a transaction + related data and returns structured issue objects.
- * Issue types: compliance_issue | deadline_warning | deadline_critical | workflow_incomplete
- * Severity: low | medium | high
+ * issueDetector.js — BACKWARD COMPATIBILITY SHIM
+ *
+ * This module now delegates to the centralized Transaction Intelligence Engine.
+ * The engine (lib/engine/) is the single source of truth.
+ *
+ * Components that import `detectIssues` from here still work,
+ * but the actual logic lives in lib/engine/complianceEngine.js
+ * and lib/engine/deadlineEngine.js.
+ *
+ * Prefer importing `useTransactionInsights` hook for new code.
  */
 
-const DEADLINE_FIELDS = [
-  { key: "earnest_money_deadline",  label: "Earnest Money Deposit" },
-  { key: "inspection_deadline",     label: "Inspection Deadline" },
-  { key: "due_diligence_deadline",  label: "Due Diligence Deadline" },
-  { key: "financing_deadline",      label: "Financing Commitment" },
-  { key: "appraisal_deadline",      label: "Appraisal Deadline" },
-  { key: "closing_date",            label: "Closing Date" },
-  { key: "ctc_target",              label: "Clear to Close Target" },
-];
-
-function hoursUntil(dateStr) {
-  if (!dateStr) return null;
-  const diff = new Date(dateStr) - new Date();
-  return diff / (1000 * 60 * 60);
-}
+import { buildTransactionInsights } from "@/lib/engine/index.js";
 
 /**
- * Main scanner — returns array of issue objects.
- * @param {object} transaction
- * @param {array}  checklistItems
- * @param {array}  complianceReports
- * @param {array}  txTasks
+ * @deprecated Use useTransactionInsights() hook instead.
+ * Kept for backward compatibility with IssueDetectionPanel and other components.
  */
 export function detectIssues(transaction, checklistItems = [], complianceReports = [], txTasks = []) {
-  const issues = [];
-  const seen = new Set(); // dedup by key
+  if (!transaction?.id) return [];
 
-  const add = (issue) => {
-    if (!seen.has(issue.key)) {
-      seen.add(issue.key);
-      issues.push({ id: issue.key, ...issue });
-    }
-  };
+  const insights = buildTransactionInsights(transaction, {
+    tasks: txTasks,
+    checklist: checklistItems,
+    documents: [],
+    complianceReports,
+  });
 
-  // ── 1. DEADLINE CHECKS ────────────────────────────────────────────────────
-
-  // Map deadline fields to completed_deadlines keys or transaction flags that
-  // indicate the work behind the deadline has been done.
-  const DEADLINE_COMPLETION_MAP = {
-    inspection_deadline:      () => !!transaction.inspection_completed || (transaction.completed_deadlines || []).includes("inspection_deadline"),
-    earnest_money_deadline:   () => !!transaction.earnest_money_received,
-    financing_deadline:       () => (transaction.completed_deadlines || []).includes("financing_deadline"),
-    appraisal_deadline:       () => (transaction.completed_deadlines || []).includes("appraisal_deadline"),
-    due_diligence_deadline:   () => (transaction.completed_deadlines || []).includes("due_diligence_deadline"),
-    ctc_target:               () => (transaction.completed_deadlines || []).includes("ctc_target") || transaction.transaction_phase === "clear_to_close" || transaction.transaction_phase === "closing" || transaction.transaction_phase === "closed",
-    closing_date:             () => transaction.transaction_phase === "closed" || transaction.status === "closed",
-  };
-
-  // Also check txTasks: if a task title matching the deadline keyword is completed, suppress
-  const isDeadlineResolvedByTask = (key) => {
-    const TASK_KEYWORDS = {
-      earnest_money_deadline: ["earnest money"],
-      inspection_deadline:    ["inspection"],
-      financing_deadline:     ["financing", "loan"],
-      appraisal_deadline:     ["appraisal"],
-      due_diligence_deadline: ["due diligence"],
-      ctc_target:             ["clear to close", "ctc"],
-      closing_date:           ["closing"],
-    };
-    const keywords = TASK_KEYWORDS[key] || [];
-    if (keywords.length === 0) return false;
-    return txTasks.some(t =>
-      t.is_completed &&
-      keywords.some(kw => t.title?.toLowerCase().includes(kw))
-    );
-  };
-
-  for (const { key, label } of DEADLINE_FIELDS) {
-    const dateStr = transaction[key];
-    if (!dateStr) continue;
-
-    // Suppress if the deadline is marked complete via its specific flag or a completed task
-    const completionCheck = DEADLINE_COMPLETION_MAP[key];
-    if (completionCheck && completionCheck()) continue;
-    if (isDeadlineResolvedByTask(key)) continue;
-
-    const hours = hoursUntil(dateStr);
-
-    if (hours < 0) {
-      add({
-        key: `deadline_missed_${key}`,
-        issue_type: "deadline_critical",
-        severity: "high",
-        description: `${label} was missed — ${new Date(dateStr).toLocaleDateString()}.`,
-        deadline: dateStr,
-        deadline_label: label,
-        document_reference: null,
-      });
-    } else if (hours <= 4) {
-      add({
-        key: `deadline_4h_${key}`,
-        issue_type: "deadline_critical",
-        severity: "high",
-        description: `${label} is due in less than 4 hours (${new Date(dateStr).toLocaleDateString()}).`,
-        deadline: dateStr,
-        deadline_label: label,
-        document_reference: null,
-      });
-    } else if (hours <= 12) {
-      add({
-        key: `deadline_12h_${key}`,
-        issue_type: "deadline_warning",
-        severity: "medium",
-        description: `${label} is due in less than 12 hours (${new Date(dateStr).toLocaleDateString()}).`,
-        deadline: dateStr,
-        deadline_label: label,
-        document_reference: null,
-      });
-    } else if (hours <= 24) {
-      add({
-        key: `deadline_24h_${key}`,
-        issue_type: "deadline_warning",
-        severity: "medium",
-        description: `${label} is due within 24 hours (${new Date(dateStr).toLocaleDateString()}).`,
-        deadline: dateStr,
-        deadline_label: label,
-        document_reference: null,
-      });
-    }
-  }
-
-  // ── 1b. INSPECTION-SPECIFIC CHECKS ────────────────────────────────────────
-  const inspDeadline = transaction.inspection_deadline;
-  const inspScheduled = transaction.inspection_scheduled;
-  const inspCompleted = transaction.inspection_completed;
-
-  const inspDeadlineCompleted = (transaction.completed_deadlines || []).includes("inspection_deadline");
-
-  if (inspDeadline && !inspCompleted && !inspDeadlineCompleted) {
-    // Flag: scheduled is after the contractual deadline date
-    if (inspScheduled) {
-      const scheduledDay = new Date(new Date(inspScheduled).toDateString());
-      const deadlineDay = new Date(new Date(inspDeadline).toDateString());
-      if (scheduledDay > deadlineDay) {
-        add({
-          key: "inspection_scheduled_after_deadline",
-          issue_type: "deadline_warning",
-          severity: "high",
-          description: `Inspection is scheduled (${new Date(inspScheduled).toLocaleDateString()}) after the contractual deadline (${new Date(inspDeadline).toLocaleDateString()}).`,
-          deadline: inspDeadline,
-          deadline_label: "Inspection Deadline",
-          document_reference: null,
-        });
-      }
-    }
-    // Flag: scheduled time has passed but not marked completed
-    if (inspScheduled && new Date(inspScheduled) < new Date()) {
-      add({
-        key: "inspection_scheduled_passed_not_complete",
-        issue_type: "workflow_incomplete",
-        severity: "medium",
-        description: `Inspection was scheduled for ${new Date(inspScheduled).toLocaleString()} but has not been marked completed.`,
-        deadline: inspDeadline,
-        deadline_label: "Inspection",
-        document_reference: null,
-      });
-    }
-  }
-
-  // ── 2. MISSING REQUIRED DOCUMENTS (from checklist) ────────────────────────
-  const phase = transaction.phase || 1;
-  for (const item of checklistItems) {
-    if (item.required && item.status === "missing" && (item.required_by_phase || 99) <= phase) {
-      add({
-        key: `missing_doc_${item.id}`,
-        issue_type: "compliance_issue",
-        severity: "high",
-        description: `Required document missing: ${item.label || item.doc_type || "Unknown document"}.`,
-        deadline: null,
-        deadline_label: null,
-        document_reference: item.doc_type || null,
-      });
-    }
-  }
-
-  // ── 3. COMPLIANCE SCAN ISSUES (from ComplianceReport) ─────────────────────
-  // Note: signature checks are intentionally excluded here — they produce false
-  // positives when signature requests have since been completed. The Compliance
-  // tab handles full signature validation with up-to-date status.
-  for (const report of complianceReports) {
-    // Blockers from AI scan only (no signature/initials checks)
-    for (const blocker of (report.blockers || [])) {
-      add({
-        key: `blocker_${report.id}_${blocker.id || blocker.message?.slice(0, 20)}`,
-        issue_type: "compliance_issue",
-        severity: "high",
-        description: blocker.message,
-        deadline: null,
-        deadline_label: null,
-        document_reference: report.document_name,
-      });
-    }
-  }
-
-  // ── 4. LEAD-BASED PAINT DISCLOSURE ───────────────────────────────────────
-  const propType = (transaction.property_type || "").toLowerCase();
-  const yearBuilt = transaction.year_built ? Number(transaction.year_built) : null;
-  const isLand = propType === "land";
-  if (!isLand && yearBuilt && yearBuilt <= 1978) {
-    add({
-      key: "lead_paint_disclosure_required",
-      issue_type: "compliance_issue",
-      severity: "high",
-      description: `Lead Based Paint Disclosure required. Property was built in ${yearBuilt} (1978 or earlier).`,
-      deadline: null,
-      deadline_label: null,
-      document_reference: "Lead Based Paint Disclosure",
-    });
-  }
-
-  // Sort: high → medium → low
-  const ORDER = { high: 0, medium: 1, low: 2 };
-  return issues.sort((a, b) => ORDER[a.severity] - ORDER[b.severity]);
+  // Map engine alerts → legacy issue format
+  return (insights.alerts || []).map(alert => ({
+    id:              alert.id,
+    key:             alert.id,
+    issue_type:      alert.type,
+    severity:        alert.severity === "high" ? "high" : alert.severity === "medium" ? "medium" : "low",
+    description:     alert.message,
+    deadline:        alert.deadline || null,
+    deadline_label:  null,
+    document_reference: alert.documentRef || null,
+  }));
 }
 
 export const ISSUE_TYPE_LABELS = {
@@ -225,10 +45,23 @@ export const ISSUE_TYPE_LABELS = {
   deadline_warning:    "Deadline Warning",
   deadline_critical:   "Deadline Critical",
   workflow_incomplete: "Workflow",
+  risk_alert:          "Risk Alert",
 };
 
 export const SEVERITY_STYLES = {
-  high:   { badge: "bg-red-50 text-red-700 border-red-200",    dot: "bg-red-500",    row: "border-red-100 bg-red-50/30" },
-  medium: { badge: "bg-amber-50 text-amber-700 border-amber-200", dot: "bg-amber-500", row: "border-amber-100 bg-amber-50/30" },
-  low:    { badge: "bg-blue-50 text-blue-700 border-blue-200",  dot: "bg-blue-500",   row: "border-blue-100 bg-blue-50/20" },
+  high:   {
+    badge: "text-red-400 border-red-500/30",
+    dot:   "bg-red-500",
+    row:   "border-red-500/15",
+  },
+  medium: {
+    badge: "text-[#d2a35f] border-[rgba(210,163,95,0.3)]",
+    dot:   "bg-[#d2a35f]",
+    row:   "border-[rgba(210,163,95,0.15)]",
+  },
+  low: {
+    badge: "text-blue-400 border-blue-500/30",
+    dot:   "bg-blue-400",
+    row:   "border-blue-500/15",
+  },
 };

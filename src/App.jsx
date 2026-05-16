@@ -20,6 +20,7 @@ import SignDocument from './pages/SignDocument.jsx'
 import SystemDiagnostics from './pages/SystemDiagnostics.jsx'
 import AgentSignIn from './pages/AgentSignIn.jsx'
 import AgentIntake from './pages/AgentIntake'
+import TransactionDiagnostics from './pages/TransactionDiagnostics'
 import Onboarding from './pages/Onboarding'
 import TemplateManager from './pages/TemplateManager'
 import TCSignIn from './pages/TCSignIn.jsx'
@@ -181,6 +182,13 @@ const AuthenticatedApp = () => {
         </RequireAuth>
       } />
       <Route path="/SignDocument" element={<SignDocument />} />
+      <Route path="/diagnostics" element={
+        <RequireAuth>
+          <LayoutWrapper currentPageName="TransactionDiagnostics">
+            <TransactionDiagnostics />
+          </LayoutWrapper>
+        </RequireAuth>
+      } />
       <Route path="/settings/system-diagnostics" element={
         <RequireAuth>
           <LayoutWrapper currentPageName="SystemDiagnostics">

@@ -28,6 +28,7 @@ import {
   Droplets,
   BookUser,
   MessageSquarePlus,
+  Cpu,
 } from "lucide-react";
 
 import { InstallButtonHeader, InstallButtonFloat } from "./components/pwa/InstallButton.jsx";
@@ -61,6 +62,7 @@ const OWNER_NAV = [
   { label: "Contacts",       page: "Contacts",       icon: BookUser, path: "/Contacts" },
   { label: "Invoices",       page: "Invoices",       icon: Receipt, path: "/invoices" },
   { label: "Settings",       page: "Settings",       icon: Settings, path: "/Settings" },
+  { label: "Diagnostics",   page: "TransactionDiagnostics", icon: Cpu, path: "/diagnostics" },
 ];
 
 const AGENT_NAV = [
@@ -96,6 +98,7 @@ const PAGE_TITLES = {
   Contacts: "Contacts",
   Invoices: "Invoices",
   TutorialFAQPage: "Help & Training",
+  TransactionDiagnostics: "Transaction Intelligence Diagnostics",
 };
 
 export default function Layout({ children, currentPageName }) {
