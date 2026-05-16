@@ -256,6 +256,21 @@
   box-shadow: var(--elite-shadow-hover);
 }
 
+/* ── Outline Variant ── */
+.elite-btn-outline {
+  background: transparent;
+  color: var(--elite-primary);
+  border: 1px solid var(--elite-primary);
+  transition: all 0.2s ease;
+}
+
+.elite-btn-outline:hover {
+  background: rgba(210, 163, 95, 0.08);
+  border-color: var(--elite-primary-hover);
+  box-shadow: 0 0 0 1px var(--elite-primary),
+              0 2px 8px var(--elite-primary-glow);
+}
+
 /* ── Glow pulse for AI floating button ── */
 @keyframes elite-ai-pulse {
   0%, 100% { box-shadow: 0 0 0 0 var(--elite-ai-glow), var(--elite-shadow); }
