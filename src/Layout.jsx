@@ -164,7 +164,7 @@ export default function Layout({ children, currentPageName }) {
             borderRight: "1px solid var(--sidebar-border)",
             width: sidebarCollapsed ? "60px" : "220px",
           }}
-          className={`fixed lg:sticky top-0 left-0 z-50 h-screen text-white flex flex-col transition-all duration-250 ease-in-out flex-shrink-0 ${
+          className={`fixed lg:sticky top-0 left-0 z-50 h-screen flex flex-col transition-all duration-250 ease-in-out flex-shrink-0 ${
             sidebarOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"
           }`}
         >
@@ -173,19 +173,20 @@ export default function Layout({ children, currentPageName }) {
             className="flex items-center gap-2.5 px-3 py-4 border-b"
             style={{ borderColor: "var(--sidebar-border)" }}
           >
-            <div className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0"
-              style={{ backgroundColor: "var(--sidebar-accent)" }}>
-              <Building2 className="w-4 h-4 text-white" />
+            <div
+              className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 font-bold text-sm"
+              style={{ backgroundColor: "rgba(210,163,95,0.15)", border: "1px solid rgba(210,163,95,0.3)", color: "var(--gold, #d2a35f)" }}
+            >
+              E
             </div>
             {!sidebarCollapsed && (
               <div className="flex-1 min-w-0">
-                <h1 className="text-sm font-semibold tracking-tight text-white">EliteTC</h1>
-                <p className="text-[10px] font-medium" style={{ color: "var(--sidebar-text)" }}>
+                <h1 className="text-sm font-bold tracking-tight" style={{ color: "#f7f3ea", fontFamily: "'Playfair Display', serif" }}>EliteTC</h1>
+                <p className="text-[9px] font-medium tracking-widest uppercase" style={{ color: "var(--sidebar-text)" }}>
                   Transaction Platform
                 </p>
               </div>
             )}
-            {/* Mobile close */}
             <button
               className="ml-auto lg:hidden p-1 rounded"
               style={{ color: "var(--sidebar-text)" }}
@@ -193,11 +194,12 @@ export default function Layout({ children, currentPageName }) {
             >
               <X className="w-4 h-4" />
             </button>
-            {/* Desktop collapse */}
             <button
-              className="hidden lg:flex ml-auto p-1 rounded transition-colors hover:bg-white/10"
+              className="hidden lg:flex ml-auto p-1 rounded transition-colors"
               style={{ color: "var(--sidebar-text)" }}
               onClick={() => setSidebarCollapsed(c => !c)}
+              onMouseEnter={e => e.currentTarget.style.color = "#d2a35f"}
+              onMouseLeave={e => e.currentTarget.style.color = "var(--sidebar-text)"}
               title={sidebarCollapsed ? "Expand" : "Collapse"}
             >
               {sidebarCollapsed
@@ -207,7 +209,7 @@ export default function Layout({ children, currentPageName }) {
           </div>
 
           {/* Navigation */}
-          <nav className="flex-1 px-2 py-3 space-y-0.5 overflow-y-auto">
+          <nav className="flex-1 px-2 py-3 space-y-0.5 overflow-y-auto scrollbar-none">
             {navItems.map((item) => {
               const isActive = currentPageName === item.page;
               const isLocked = currentUser?.profile_completed !== true;
@@ -220,15 +222,15 @@ export default function Layout({ children, currentPageName }) {
                   title={isLocked ? "Complete your profile to access this page" : (sidebarCollapsed ? item.label : undefined)}
                   className={`sidebar-nav-item flex items-center gap-2.5 px-2.5 py-2 rounded-lg text-xs font-medium ${
                     sidebarCollapsed ? "justify-center" : ""
-                  } ${isLocked ? "opacity-40 cursor-not-allowed" : ""}`}
+                  } ${isLocked ? "opacity-30 cursor-not-allowed pointer-events-none" : ""}`}
                   style={isActive
-                    ? { backgroundColor: "var(--sidebar-item-active)", color: "var(--sidebar-accent)" }
-                    : { color: "var(--sidebar-text)" }
+                    ? { backgroundColor: "rgba(210,163,95,0.12)", color: "#d2a35f", borderLeft: "2px solid #d2a35f" }
+                    : { color: "var(--sidebar-text)", borderLeft: "2px solid transparent" }
                   }
                   onMouseEnter={e => {
                     if (!isActive && !isLocked) {
-                      e.currentTarget.style.backgroundColor = "var(--sidebar-item-hover)";
-                      e.currentTarget.style.color = "var(--sidebar-text-active)";
+                      e.currentTarget.style.backgroundColor = "rgba(210,163,95,0.07)";
+                      e.currentTarget.style.color = "#f7f3ea";
                     }
                   }}
                   onMouseLeave={e => {
@@ -240,15 +242,10 @@ export default function Layout({ children, currentPageName }) {
                 >
                   <Icon
                     className="w-4 h-4 flex-shrink-0"
-                    style={{ color: isActive ? "var(--sidebar-accent)" : "inherit" }}
+                    style={{ color: isActive ? "#d2a35f" : "inherit" }}
                   />
                   {!sidebarCollapsed && (
-                    <>
-                      <span className="truncate">{item.label}</span>
-                      {isActive && (
-                        <ChevronRight className="w-3 h-3 ml-auto opacity-40 flex-shrink-0" />
-                      )}
-                    </>
+                    <span className="truncate">{item.label}</span>
                   )}
                 </Link>
               );
@@ -268,13 +265,13 @@ export default function Layout({ children, currentPageName }) {
                 ) : (
                   <div
                     className="w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0"
-                    style={{ backgroundColor: "rgba(37,99,235,0.2)", color: "var(--sidebar-accent)" }}
+                    style={{ backgroundColor: "rgba(210,163,95,0.15)", color: "#d2a35f" }}
                   >
                     {currentUser.profile?.first_name?.[0] || currentUser.email?.[0] || "?"}
                   </div>
                 )}
                 <div className="flex-1 min-w-0">
-                  <p className="text-xs font-medium truncate text-white">
+                  <p className="text-xs font-medium truncate" style={{ color: "#f7f3ea" }}>
                     {currentUser.profile?.full_name || currentUser.email}
                   </p>
                   <p className="text-[10px] capitalize" style={{ color: "var(--sidebar-text)" }}>
@@ -289,20 +286,23 @@ export default function Layout({ children, currentPageName }) {
 
         {/* Main content */}
         <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
-          {/* Top bar — mobile-first, safe-area aware */}
+          {/* Top bar */}
           <header
             className="sticky top-0 z-30 flex-shrink-0 flex flex-col"
             style={{
               backgroundColor: "var(--header-bg)",
               borderBottom: "1px solid var(--header-border)",
               paddingTop: "env(safe-area-inset-top)",
+              backdropFilter: "blur(12px)",
             }}
           >
             <div className="flex items-center justify-between px-4 lg:px-6 h-14">
               {/* LEFT — hamburger (mobile only) */}
               <button
-                className="lg:hidden flex items-center justify-center w-11 h-11 rounded-lg transition-colors hover:bg-black/5"
+                className="lg:hidden flex items-center justify-center w-10 h-10 rounded-lg transition-colors"
                 style={{ color: "var(--text-secondary)" }}
+                onMouseEnter={e => e.currentTarget.style.color = "#d2a35f"}
+                onMouseLeave={e => e.currentTarget.style.color = "var(--text-secondary)"}
                 onClick={() => setSidebarOpen(true)}
                 aria-label="Open menu"
               >
@@ -311,8 +311,8 @@ export default function Layout({ children, currentPageName }) {
 
               {/* CENTER — page title */}
               <h2
-                className="text-sm font-semibold tracking-tight truncate flex-1 text-center lg:text-left lg:ml-0 mx-2"
-                style={{ color: "var(--text-primary)" }}
+                className="text-sm font-semibold tracking-wide truncate flex-1 text-center lg:text-left lg:ml-0 mx-2"
+                style={{ color: "var(--text-primary)", fontFamily: "'Playfair Display', serif", letterSpacing: "0.02em" }}
               >
                 {pageTitle}
               </h2>
@@ -328,7 +328,7 @@ export default function Layout({ children, currentPageName }) {
 
           {/* Page content */}
           <main
-            className="flex-1 p-4 lg:p-5 min-w-0 overflow-y-auto overflow-x-hidden transition-theme"
+            className="flex-1 p-4 lg:p-6 min-w-0 overflow-y-auto overflow-x-hidden"
             style={{
               backgroundColor: "var(--bg-primary)",
               color: "var(--text-primary)",
