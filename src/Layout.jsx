@@ -39,6 +39,7 @@ import UserMenuDropdown from "./components/user/UserMenuDropdown";
 import LogoutButton from "./components/auth/LogoutButton";
 import { useCurrentUser as useCurrentUserCtx } from "./lib/CurrentUserContext.jsx";
 import FloatingAIButton from "./components/ai/FloatingAIButton";
+import SidebarAIButton from "./components/ai/SidebarAIButton";
 import AIModal from "./components/ai/AIModal";
 
 const TC_NAV = [
@@ -280,8 +281,9 @@ export default function Layout({ children, currentPageName }) {
               </div>
             )}
             <LogoutButton sidebarCollapsed={sidebarCollapsed} />
-          </div>
-        </aside>
+            <SidebarAIButton sidebarCollapsed={sidebarCollapsed} />
+            </div>
+            </aside>
 
         {/* Main content */}
         <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
@@ -341,7 +343,6 @@ export default function Layout({ children, currentPageName }) {
         </div>
 
         {/* Global AI System — visible across entire app */}
-        <FloatingAIButton />
         <AIModal />
       </div>
     </ThemeProvider>
