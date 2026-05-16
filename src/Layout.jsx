@@ -44,8 +44,6 @@ import AIModal from "./components/ai/AIModal";
 const TC_NAV = [
   { label: "Dashboard",       page: "Dashboard",       icon: LayoutDashboard, path: "/Dashboard" },
   { label: "Transactions",    page: "Transactions",    icon: FileText, path: "/Transactions" },
-  { label: "Deal Intake",     page: "AgentIntake",     icon: UserPlus, path: "/AgentIntake" },
-
   { label: "Addendum Builder", page: "AddendumBuilder", icon: ClipboardList, path: "/AddendumBuilder" },
   { label: "Contacts",        page: "Contacts",         icon: BookUser, path: "/Contacts" },
   { label: "Invoices",        page: "Invoices",         icon: Receipt, path: "/invoices" },
@@ -56,8 +54,6 @@ const TC_NAV = [
 const OWNER_NAV = [
   { label: "Dashboard",      page: "Dashboard",      icon: LayoutDashboard, path: "/Dashboard" },
   { label: "Transactions",   page: "Transactions",   icon: FileText, path: "/Transactions" },
-  { label: "Deal Intake",    page: "AgentIntake",    icon: UserPlus, path: "/AgentIntake" },
-
   { label: "Addendum Builder",page: "AddendumBuilder",  icon: ClipboardList, path: "/AddendumBuilder" },
   { label: "Contacts",       page: "Contacts",       icon: BookUser, path: "/Contacts" },
   { label: "Invoices",       page: "Invoices",       icon: Receipt, path: "/invoices" },

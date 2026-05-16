@@ -7,12 +7,13 @@ import { Input } from "@/components/ui/input";
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
-import { Search, ChevronLeft, ChevronRight, LayoutGrid, List, Columns, Trash2, CheckSquare, Square, X } from "lucide-react";
+import { Search, ChevronLeft, ChevronRight, LayoutGrid, List, Columns, Trash2, CheckSquare, Square, X, Plus } from "lucide-react";
 import StatusBoardView from "../components/transactions/StatusBoardView";
 import { Skeleton } from "@/components/ui/skeleton";
 import TransactionTable from "../components/transactions/TransactionTable";
 import TransactionCardGrid from "../components/transactions/TransactionCardGrid";
 import { useDealAccess } from "../lib/useDealAccess";
+import NewTransactionModal from "../components/transactions/NewTransactionModal";
 
 const PAGE_SIZE = 25;
 
@@ -25,8 +26,10 @@ export default function Transactions() {
   const [selectMode, setSelectMode] = useState(false);
   const [selectedIds, setSelectedIds] = useState(new Set());
   const [deleting, setDeleting] = useState(false);
+  const [showNewTxModal, setShowNewTxModal] = useState(false);
+  const [newTxHighlightId, setNewTxHighlightId] = useState(null);
   // Strictly user-isolated deal access
-  const { transactions, isLoading } = useDealAccess();
+  const { transactions, isLoading, refetch } = useDealAccess();
   const baseList = transactions;
 
   const filtered = useMemo(() => (baseList || []).filter((tx) => {
@@ -136,6 +139,14 @@ export default function Transactions() {
                 <CheckSquare className="w-4 h-4 mr-1.5" /> Select
               </Button>
             )}
+            <Button
+              size="sm"
+              onClick={() => setShowNewTxModal(true)}
+              style={{ background: "#d2a35f", color: "#050506", fontWeight: 600 }}
+              className="gap-1.5"
+            >
+              <Plus className="w-4 h-4" /> New Transaction
+            </Button>
           </div>
         </div>
 
@@ -284,6 +295,15 @@ export default function Transactions() {
         })()}
       </div>
 
+      <NewTransactionModal
+        open={showNewTxModal}
+        onClose={() => setShowNewTxModal(false)}
+        onCreated={(tx) => {
+          setNewTxHighlightId(tx.id);
+          if (refetch) refetch();
+          setTimeout(() => setNewTxHighlightId(null), 3000);
+        }}
+      />
     </div>
   );
 }
