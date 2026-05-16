@@ -56,7 +56,8 @@ function IssueRow({ issue, transaction, autoSendEnabled, currentUser, onDismiss,
           onClose={() => setViewingDoc(false)}
         />
       )}
-      <div className={`flex items-start gap-3 p-3 rounded-xl border ${styles.row}`}>
+      <div className="flex items-start gap-3 p-3 rounded-xl border transition-colors"
+        style={{ background: "var(--surface-elevated, #101114)", borderColor: "rgba(255,255,255,0.08)" }}>
         <div className="mt-0.5 flex-shrink-0">{TYPE_ICONS[issue.issue_type]}</div>
 
         <div className="flex-1 min-w-0">
@@ -64,18 +65,19 @@ function IssueRow({ issue, transaction, autoSendEnabled, currentUser, onDismiss,
             <Badge className={`text-xs border ${styles.badge}`}>
               {ISSUE_TYPE_LABELS[issue.issue_type]}
             </Badge>
-            <Badge variant="outline" className="text-xs capitalize border-current opacity-70">
+            <Badge variant="outline" className="text-xs capitalize opacity-70"
+              style={{ borderColor: "rgba(255,255,255,0.15)", color: "var(--text-secondary, #a7adba)" }}>
               {issue.severity}
             </Badge>
             {issue.document_reference && (
-              <span className="text-xs text-gray-400 italic truncate max-w-[160px]" title={issue.document_reference}>
+              <span className="text-xs italic truncate max-w-[160px]" style={{ color: "var(--text-muted, #6f7683)" }} title={issue.document_reference}>
                 {issue.document_reference}
               </span>
             )}
           </div>
-          <p className="text-sm text-gray-800">{issue.description}</p>
+          <p className="text-sm" style={{ color: "var(--text-primary, #f7f3ea)" }}>{issue.description}</p>
           {issue.deadline && (
-            <p className="text-xs text-gray-500 mt-0.5">
+            <p className="text-xs mt-0.5" style={{ color: "var(--text-muted, #6f7683)" }}>
               Due: {new Date(issue.deadline).toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" })}
             </p>
           )}
@@ -87,7 +89,8 @@ function IssueRow({ issue, transaction, autoSendEnabled, currentUser, onDismiss,
               size="sm"
               variant="outline"
               onClick={() => setViewingDoc(true)}
-              className="h-8 text-xs gap-1.5 text-purple-600 border-purple-200 hover:bg-purple-50"
+              className="h-8 text-xs gap-1.5"
+              style={{ borderColor: "rgba(168,85,247,0.35)", color: "#a855f7", background: "rgba(168,85,247,0.08)" }}
             >
               <FileText className="w-3.5 h-3.5" />
               View Doc
@@ -97,14 +100,18 @@ function IssueRow({ issue, transaction, autoSendEnabled, currentUser, onDismiss,
             size="sm"
             variant="outline"
             onClick={() => setEmailModalOpen(true)}
-            className="h-8 text-xs gap-1.5 text-blue-600 border-blue-200 hover:bg-blue-50"
+            className="h-8 text-xs gap-1.5"
+            style={{ borderColor: "rgba(210,163,95,0.35)", color: "#d2a35f", background: "rgba(210,163,95,0.08)" }}
           >
             <Mail className="w-3.5 h-3.5" />
             Email
           </Button>
           <button
             onClick={() => onDismiss(issue.id)}
-            className="h-8 w-8 flex items-center justify-center rounded-lg text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors"
+            className="h-8 w-8 flex items-center justify-center rounded-lg transition-colors"
+            style={{ color: "var(--text-muted, #6f7683)" }}
+            onMouseEnter={e => { e.currentTarget.style.color = "#f7f3ea"; e.currentTarget.style.background = "rgba(255,255,255,0.07)"; }}
+            onMouseLeave={e => { e.currentTarget.style.color = "var(--text-muted, #6f7683)"; e.currentTarget.style.background = ""; }}
             title="Dismiss"
           >
             <X className="w-3.5 h-3.5" />
@@ -192,25 +199,25 @@ export default function IssueDetectionPanel({ transaction, currentUser }) {
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="flex items-center gap-2">
           {highCount > 0 && (
-            <span className="inline-flex items-center gap-1.5 text-xs font-medium px-2.5 py-1 rounded-full bg-red-50 text-red-700 border border-red-200">
+            <span className="inline-flex items-center gap-1.5 text-xs font-medium px-2.5 py-1 rounded-full badge-danger">
               <span className="w-1.5 h-1.5 rounded-full bg-red-500" />
               {highCount} Critical
             </span>
           )}
           {mediumCount > 0 && (
-            <span className="inline-flex items-center gap-1.5 text-xs font-medium px-2.5 py-1 rounded-full bg-amber-50 text-amber-700 border border-amber-200">
-              <span className="w-1.5 h-1.5 rounded-full bg-amber-500" />
+            <span className="inline-flex items-center gap-1.5 text-xs font-medium px-2.5 py-1 rounded-full badge-gold">
+              <span className="w-1.5 h-1.5 rounded-full bg-yellow-500" />
               {mediumCount} Warning
             </span>
           )}
           {lowCount > 0 && (
-            <span className="inline-flex items-center gap-1.5 text-xs font-medium px-2.5 py-1 rounded-full bg-blue-50 text-blue-700 border border-blue-200">
-              <span className="w-1.5 h-1.5 rounded-full bg-blue-500" />
+            <span className="inline-flex items-center gap-1.5 text-xs font-medium px-2.5 py-1 rounded-full badge-blue">
+              <span className="w-1.5 h-1.5 rounded-full bg-blue-400" />
               {lowCount} Info
             </span>
           )}
           {visibleIssues.length === 0 && (
-            <span className="inline-flex items-center gap-1.5 text-xs font-medium px-2.5 py-1 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200">
+            <span className="inline-flex items-center gap-1.5 text-xs font-medium px-2.5 py-1 rounded-full badge-success">
               <CheckCircle2 className="w-3.5 h-3.5" /> No issues detected
             </span>
           )}
@@ -222,11 +229,12 @@ export default function IssueDetectionPanel({ transaction, currentUser }) {
             onClick={() => setAutoSend(v => !v)}
             className={`flex items-center gap-2 px-3 py-1.5 rounded-lg border text-xs font-medium transition-all ${
               autoSend
-                ? "bg-amber-50 border-amber-300 text-amber-700 shadow-sm"
-                : "bg-white border-gray-200 text-gray-500 hover:border-gray-300 hover:text-gray-700"
+                ? "border-[rgba(210,163,95,0.4)] text-[#d2a35f]"
+                : "border-[rgba(255,255,255,0.1)] text-[#6f7683] hover:border-[rgba(210,163,95,0.3)] hover:text-[#a7adba]"
             }`}
+            style={{ background: autoSend ? "rgba(210,163,95,0.08)" : "rgba(255,255,255,0.03)" }}
           >
-            <span className={`w-2 h-2 rounded-full flex-shrink-0 transition-colors ${autoSend ? "bg-amber-500" : "bg-gray-300"}`} />
+            <span className={`w-2 h-2 rounded-full flex-shrink-0 transition-colors ${autoSend ? "bg-[#d2a35f]" : "bg-[#6f7683]"}`} />
             Auto-send emails
           </button>
         </div>
@@ -234,7 +242,7 @@ export default function IssueDetectionPanel({ transaction, currentUser }) {
 
       {/* Filter tabs */}
       {visibleIssues.length > 0 && (
-        <div className="flex gap-1 p-1 rounded-lg overflow-x-auto scrollbar-none" style={{ background: "var(--bg-tertiary)" }}>
+        <div className="flex gap-1 p-1 rounded-lg overflow-x-auto scrollbar-none" style={{ background: "var(--surface-muted, #151518)" }}>
           {[
             { id: "all", label: "All" },
             { id: "compliance_issue", label: "Compliance" },
@@ -245,13 +253,18 @@ export default function IssueDetectionPanel({ transaction, currentUser }) {
             <button
               key={tab.id}
               onClick={() => setFilter(tab.id)}
-              className={`px-3 py-1.5 rounded-md text-xs font-medium whitespace-nowrap transition-all ${
-                filter === tab.id ? "bg-white shadow-sm text-gray-900" : "text-gray-500 hover:text-gray-700"
-              }`}
+              className="px-3 py-1.5 rounded-md text-xs font-medium whitespace-nowrap transition-all"
+              style={filter === tab.id
+                ? { background: "rgba(210,163,95,0.12)", color: "#d2a35f" }
+                : { color: "var(--text-muted, #6f7683)" }
+              }
             >
               {tab.label}
               {tab.id === "all" && visibleIssues.length > 0 && (
-                <span className="ml-1.5 px-1.5 py-0.5 rounded-full bg-gray-100 text-gray-600 text-[10px]">{visibleIssues.length}</span>
+                <span className="ml-1.5 px-1.5 py-0.5 rounded-full text-[10px]"
+                  style={{ background: "rgba(255,255,255,0.08)", color: "var(--text-secondary, #a7adba)" }}>
+                  {visibleIssues.length}
+                </span>
               )}
             </button>
           ))}
@@ -288,7 +301,7 @@ export default function IssueDetectionPanel({ transaction, currentUser }) {
       )}
 
       {autoSend && visibleIssues.length > 0 && (
-        <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-xs text-amber-700">
+        <div className="rounded-xl px-4 py-3 text-xs badge-gold">
           ⚡ Auto-send is <strong>ON</strong> — emails will be generated and sent automatically when new critical issues are detected. Manual review is recommended before enabling this in production.
         </div>
       )}
