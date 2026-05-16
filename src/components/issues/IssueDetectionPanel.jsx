@@ -68,8 +68,7 @@ function AlertRow({ alert, transaction, currentUser, onDismiss, documents }) {
       )}
 
       <div
-        className="flex items-start gap-3 p-3 rounded-xl border transition-colors"
-        style={{ background: "var(--surface-elevated, #101114)", borderColor: "rgba(255,255,255,0.08)" }}
+        className="flex items-start gap-3 p-3 rounded-xl border transition-colors elite-card"
       >
         <div className="mt-0.5 flex-shrink-0">
           {TYPE_ICONS[alert.type] || <AlertTriangle className="w-4 h-4 text-red-500" />}
@@ -256,11 +255,11 @@ export default function IssueDetectionPanel({ transaction, currentUser }) {
       </div>
 
       {/* Filter tabs */}
-      {visible.length > 0 && (
-        <div
-          className="flex gap-1 p-1 rounded-lg overflow-x-auto scrollbar-none"
-          style={{ background: "var(--surface-muted, #151518)" }}
-        >
+       {visible.length > 0 && (
+         <div
+           className="flex gap-1 p-1 rounded-lg overflow-x-auto scrollbar-none"
+           style={{ background: "var(--bg-hover)" }}
+         >
           {FILTER_TABS.map(tab => (
             <button
               key={tab.id}
