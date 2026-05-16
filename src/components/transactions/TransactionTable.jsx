@@ -12,7 +12,8 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { MapPin, User, Calendar, AlertTriangle, CheckCircle2, ChevronRight } from "lucide-react";
+import { MapPin, User, Calendar, AlertTriangle, CheckCircle2, ChevronRight, ChevronDown } from "lucide-react";
+import { base44 } from "@/api/base44Client";
 import { format } from "date-fns";
 
 const DEADLINE_FIELDS = [
@@ -166,7 +167,59 @@ const statusStyles = {
   cancelled: "bg-red-900/60 text-red-300 border-red-700",
 };
 
-export default function TransactionTable({ transactions, sorted = false }) {
+const STATUS_OPTIONS = ["active", "pending", "closed", "cancelled"];
+
+function StatusDropdown({ tx, onUpdated }) {
+  const [open, setOpen] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const ref = useRef(null);
+
+  const handleSelect = async (e, newStatus) => {
+    e.stopPropagation();
+    e.preventDefault();
+    if (newStatus === tx.status) { setOpen(false); return; }
+    setSaving(true);
+    try {
+      await base44.entities.Transaction.update(tx.id, { status: newStatus });
+      onUpdated && onUpdated(tx.id, newStatus);
+    } finally {
+      setSaving(false);
+      setOpen(false);
+    }
+  };
+
+  return (
+    <div ref={ref} className="relative" onClick={e => e.stopPropagation()}>
+      <button
+        onClick={e => { e.stopPropagation(); setOpen(o => !o); }}
+        disabled={saving}
+        className={`flex items-center gap-1 text-xs font-medium capitalize px-2 py-1 rounded border transition-opacity ${statusStyles[tx.status] || statusStyles.active} ${saving ? "opacity-50" : "hover:opacity-80"}`}
+      >
+        {tx.status || "active"}
+        <ChevronDown className="w-3 h-3" />
+      </button>
+      {open && (
+        <div
+          className="absolute right-0 top-full mt-1 z-50 rounded-lg border overflow-hidden shadow-xl"
+          style={{ background: "var(--surface-elevated)", borderColor: "var(--border)", minWidth: "110px" }}
+        >
+          {STATUS_OPTIONS.map(s => (
+            <button
+              key={s}
+              onClick={e => handleSelect(e, s)}
+              className={`w-full text-left text-xs font-medium capitalize px-3 py-2 transition-colors hover:opacity-80 ${s === tx.status ? "opacity-50 cursor-default" : ""}`}
+              style={{ color: "var(--text-primary)" }}
+            >
+              {s}
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+export default function TransactionTable({ transactions, sorted = false, onStatusChange }) {
   const navigate = useNavigate();
 
   if (!transactions || transactions.length === 0) {
@@ -309,13 +362,13 @@ export default function TransactionTable({ transactions, sorted = false }) {
                  </div>
                </TableCell>
                <TableCell className="hidden sm:table-cell">
-                 <div className="flex items-center justify-between gap-2">
-                   <Badge variant="outline" className={`text-xs font-medium capitalize ${statusStyles[tx.status] || statusStyles.active}`}>
-                     {tx.status || "active"}
-                   </Badge>
-                   <ChevronRight className="w-4 h-4 transition-all opacity-0 group-hover:opacity-100 group-hover:translate-x-0.5" style={{ color: "var(--muted-foreground)" }} />
-                 </div>
-               </TableCell>
+                  <div className="flex items-center justify-between gap-2">
+                    <StatusDropdown tx={tx} onUpdated={(id, newStatus) => {
+                      if (onStatusChange) onStatusChange(id, newStatus);
+                    }} />
+                    <ChevronRight className="w-4 h-4 transition-all opacity-0 group-hover:opacity-100 group-hover:translate-x-0.5" style={{ color: "var(--muted-foreground)" }} />
+                  </div>
+                </TableCell>
              </TableRow>
              );
            })}

@@ -30,7 +30,15 @@ export default function Transactions() {
   const [newTxHighlightId, setNewTxHighlightId] = useState(null);
   // Strictly user-isolated deal access
   const { transactions, isLoading, refetch } = useDealAccess();
-  const baseList = transactions;
+  const [localOverrides, setLocalOverrides] = useState({}); // id -> { status }
+
+  const baseList = useMemo(() => (transactions || []).map(tx =>
+    localOverrides[tx.id] ? { ...tx, ...localOverrides[tx.id] } : tx
+  ), [transactions, localOverrides]);
+
+  const handleStatusChange = (id, newStatus) => {
+    setLocalOverrides(prev => ({ ...prev, [id]: { status: newStatus } }));
+  };
 
   const filtered = useMemo(() => (baseList || []).filter((tx) => {
     const q = search.toLowerCase();
@@ -252,7 +260,7 @@ export default function Transactions() {
                       ))}
                     </div>
                   ) : (
-                    <TransactionTable transactions={paginated} />
+                    <TransactionTable transactions={paginated} onStatusChange={handleStatusChange} />
                   )}
                 </CardContent>
               </Card>
