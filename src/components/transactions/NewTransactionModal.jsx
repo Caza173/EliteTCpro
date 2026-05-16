@@ -357,17 +357,17 @@ export default function NewTransactionModal({ open, onClose, onCreated }) {
         style={{
           maxWidth: 860,
           maxHeight: "90vh",
-          background: "var(--surface-elevated, #101114)",
-          border: "1px solid rgba(210,163,95,0.2)",
+          background: "var(--card-bg)",
+          border: "1px solid var(--border)",
           borderRadius: 18,
-          boxShadow: "0 24px 80px rgba(0,0,0,0.7)",
+          boxShadow: "0 24px 80px rgba(0,0,0,0.4)",
           animation: "ntm-in 0.2s ease",
         }}
       >
         <style>{`@keyframes ntm-in { from { opacity:0; transform: scale(0.96) translateY(8px); } to { opacity:1; transform: scale(1) translateY(0); } }`}</style>
 
         {/* Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b flex-shrink-0" style={{ borderColor: "rgba(255,255,255,0.08)" }}>
+        <div className="flex items-center justify-between px-6 py-4 border-b flex-shrink-0" style={{ borderColor: "var(--border)" }}>
           <div className="flex items-center gap-3">
             {dealType && (
               <button onClick={() => setDealType(null)} className="p-1.5 rounded-lg transition-colors" style={{ color: "var(--text-muted)" }}
@@ -401,9 +401,9 @@ export default function NewTransactionModal({ open, onClose, onCreated }) {
               {DEAL_TYPES.map(({ id, label, desc, icon: Icon, color, bg }) => (
                 <button key={id} onClick={() => selectDealType(id)}
                   className="flex items-center gap-4 p-5 rounded-2xl border-2 text-left transition-all"
-                  style={{ borderColor: "rgba(255,255,255,0.08)", background: "rgba(255,255,255,0.02)" }}
+                  style={{ borderColor: "var(--border)", background: "var(--bg-secondary)" }}
                   onMouseEnter={e => { e.currentTarget.style.borderColor = color; e.currentTarget.style.background = bg; }}
-                  onMouseLeave={e => { e.currentTarget.style.borderColor = "rgba(255,255,255,0.08)"; e.currentTarget.style.background = "rgba(255,255,255,0.02)"; }}>
+                  onMouseLeave={e => { e.currentTarget.style.borderColor = "var(--border)"; e.currentTarget.style.background = "var(--bg-secondary)"; }}>
                   <div className="w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0" style={{ background: bg }}>
                     <Icon className="w-6 h-6" style={{ color }} />
                   </div>
@@ -429,7 +429,7 @@ export default function NewTransactionModal({ open, onClose, onCreated }) {
                     </span>
                   </div>
                   {isBuyerUC && (
-                    <div className="flex gap-0.5 p-0.5 rounded-lg border" style={{ borderColor: "rgba(255,255,255,0.1)", background: "rgba(255,255,255,0.04)" }}>
+                    <div className="flex gap-0.5 p-0.5 rounded-lg border" style={{ borderColor: "var(--border)", background: "var(--bg-secondary)" }}>
                       <button type="button" onClick={() => handleDocTypeChange("ps")}
                         className="px-3 py-1 rounded-md text-xs font-medium transition-colors"
                         style={{ background: docType === "ps" ? "#d2a35f" : "transparent", color: docType === "ps" ? "#050506" : "var(--text-muted)" }}>
@@ -596,7 +596,7 @@ export default function NewTransactionModal({ open, onClose, onCreated }) {
                     {isUnderContract && (
                       <>
                         <Separator />
-                        <div className="flex items-center justify-between rounded-xl border px-4 py-3" style={{ borderColor: "rgba(255,255,255,0.08)", background: "rgba(255,255,255,0.02)" }}>
+                        <div className="flex items-center justify-between rounded-xl border px-4 py-3" style={{ borderColor: "var(--border)", background: "var(--bg-secondary)" }}>
                           <div>
                             <p className="text-sm font-medium" style={{ color: "var(--text-primary)" }}>Cash Transaction</p>
                             <p className="text-xs" style={{ color: "var(--text-muted)" }}>No financing required</p>
