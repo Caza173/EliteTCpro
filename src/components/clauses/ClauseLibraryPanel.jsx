@@ -161,7 +161,7 @@ export default function ClauseLibraryPanel({ onAddClause, selectedIds = [], brok
               className="rounded-xl border transition-all opacity-100 px-3"
               style={{ borderColor: "var(--card-border)", background: "var(--card-bg)" }}>
               
-              <div className="flex items-start justify-between gap-2">
+              <div className="flex items-start justify-between gap-2 py-3">
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-1.5 flex-wrap mb-1">
                     <p className="text-xs font-semibold" style={{ color: "var(--text-primary)" }}>{clause.name}</p>
