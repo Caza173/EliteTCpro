@@ -37,39 +37,27 @@ const STATUS_STYLES = {
 function StatCard({ label, value, sub, icon: Icon }) {
   return (
     <div
-      className="rounded-xl p-5 flex items-start gap-4 transition-all duration-200 cursor-default"
-      style={{
-        backgroundColor: "#0b0c0f",
-        border: "1px solid rgba(255,255,255,0.08)",
-      }}
-      onMouseEnter={e => {
-        e.currentTarget.style.borderColor = "rgba(210,163,95,0.28)";
-        e.currentTarget.style.backgroundColor = "#101114";
-      }}
-      onMouseLeave={e => {
-        e.currentTarget.style.borderColor = "rgba(255,255,255,0.08)";
-        e.currentTarget.style.backgroundColor = "#0b0c0f";
-      }}
+      className="theme-card rounded-xl p-5 flex items-start gap-4 cursor-default"
     >
       <div style={{
         width: 36, height: 36,
         borderRadius: 8,
         border: "1px solid rgba(210,163,95,0.2)",
         background: "rgba(210,163,95,0.08)",
-        color: "#d2a35f",
+        color: "var(--accent)",
         display: "flex", alignItems: "center", justifyContent: "center",
         flexShrink: 0,
       }}>
         <Icon style={{ width: 16, height: 16 }} />
       </div>
       <div className="min-w-0 flex-1">
-        <p style={{ fontSize: 10, fontWeight: 600, letterSpacing: "0.1em", textTransform: "uppercase", color: "#6f7683" }}>
+        <p style={{ fontSize: 10, fontWeight: 600, letterSpacing: "0.1em", textTransform: "uppercase", color: "var(--text-muted)" }}>
           {label}
         </p>
-        <p style={{ fontSize: 26, fontWeight: 700, color: "#d2a35f", fontFamily: "'Playfair Display', serif", lineHeight: 1.2, marginTop: 4 }}>
+        <p style={{ fontSize: 26, fontWeight: 700, color: "var(--accent)", fontFamily: "'Playfair Display', serif", lineHeight: 1.2, marginTop: 4 }}>
           {value}
         </p>
-        {sub && <p style={{ fontSize: 11, color: "#6f7683", marginTop: 3 }}>{sub}</p>}
+        {sub && <p style={{ fontSize: 11, color: "var(--text-muted)", marginTop: 3 }}>{sub}</p>}
       </div>
     </div>
   );
@@ -232,8 +220,8 @@ export default function Dashboard() {
       )}
 
       {/* Tab Navigation */}
-      <div className="flex gap-1 p-1 rounded-xl overflow-x-auto scrollbar-none"
-        style={{ background: "#0b0c0f", border: "1px solid rgba(255,255,255,0.07)" }}>
+      <div className="flex gap-1 p-1 rounded-xl overflow-x-auto scrollbar-none theme-card"
+        style={{ background: "var(--card-bg)", border: "1px solid var(--border)" }}>
         {[
           { id: "overview", label: "Overview" },
           { id: "finance", label: "Finance" },
@@ -243,8 +231,8 @@ export default function Dashboard() {
             onClick={() => setActiveTab(tab.id)}
             className="px-4 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap transition-all"
             style={activeTab === tab.id
-              ? { background: "rgba(210,163,95,0.12)", color: "#d2a35f", border: "1px solid rgba(210,163,95,0.2)" }
-              : { background: "transparent", color: "#6f7683", border: "1px solid transparent" }
+              ? { background: "var(--accent-subtle)", color: "var(--accent)", border: "1px solid rgba(210,163,95,0.2)" }
+              : { background: "transparent", color: "var(--text-muted)", border: "1px solid transparent" }
             }
           >
             {tab.label}
