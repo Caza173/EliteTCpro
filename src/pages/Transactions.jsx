@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
+import "@/styles/elite-button.css";
 import { Search, ChevronLeft, ChevronRight, LayoutGrid, List, Columns, Trash2, CheckSquare, Square, X, Plus } from "lucide-react";
 import StatusBoardView from "../components/transactions/StatusBoardView";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -128,24 +129,24 @@ export default function Transactions() {
           <div className="flex items-center gap-2">
             {selectMode ? (
               <>
-                <Button variant="outline" size="sm" onClick={toggleSelectAll}>
+                <button className="elite-btn elite-btn-outline elite-btn-sm" onClick={toggleSelectAll}>
                   {selectedIds.size === filtered.length ? <CheckSquare className="w-4 h-4 mr-1.5" /> : <Square className="w-4 h-4 mr-1.5" />}
                   {selectedIds.size === filtered.length ? "Deselect All" : "Select All"}
-                </Button>
+                </button>
                 {selectedIds.size > 0 && (
                   <Button size="sm" variant="destructive" onClick={handleDeleteSelected} disabled={deleting}>
                     <Trash2 className="w-4 h-4 mr-1.5" />
                     {deleting ? "Deleting..." : `Delete ${selectedIds.size}`}
                   </Button>
                 )}
-                <Button variant="ghost" size="sm" onClick={() => { setSelectMode(false); setSelectedIds(new Set()); }}>
+                <button className="elite-btn elite-btn-outline elite-btn-sm" onClick={() => { setSelectMode(false); setSelectedIds(new Set()); }}>
                   <X className="w-4 h-4 mr-1" /> Cancel
-                </Button>
+                </button>
               </>
             ) : (
-              <Button variant="outline" size="sm" onClick={() => setSelectMode(true)}>
+              <button className="elite-btn elite-btn-outline elite-btn-sm" onClick={() => setSelectMode(true)}>
                 <CheckSquare className="w-4 h-4 mr-1.5" /> Select
-              </Button>
+              </button>
             )}
             <Button
               size="sm"
@@ -169,7 +170,7 @@ export default function Transactions() {
             />
           </div>
           <Select value={statusFilter} onValueChange={setStatusFilter}>
-            <SelectTrigger className="w-36"><SelectValue placeholder="All Status" /></SelectTrigger>
+            <SelectTrigger className="elite-btn elite-btn-outline elite-btn-sm w-36"><SelectValue placeholder="All Status" /></SelectTrigger>
             <SelectContent>
               <SelectItem value="all">All Status</SelectItem>
               <SelectItem value="active">Active</SelectItem>
@@ -182,7 +183,7 @@ export default function Transactions() {
             </SelectContent>
           </Select>
           <Select value={monthFilter} onValueChange={setMonthFilter}>
-            <SelectTrigger className="w-44"><SelectValue placeholder="All Months" /></SelectTrigger>
+            <SelectTrigger className="elite-btn elite-btn-outline elite-btn-sm w-44"><SelectValue placeholder="All Months" /></SelectTrigger>
             <SelectContent>
               <SelectItem value="all">All Months</SelectItem>
               {monthOptions.map(({ value, label }) => (
