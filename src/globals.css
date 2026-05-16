@@ -5,8 +5,7 @@
 
 /* ---- DARK THEME (canonical / source of truth) ---- */
 :root,
-[data-theme="dark"],
-[data-theme="cyber"] {
+[data-theme="dark"] {
   --bg-primary:   #050506;
   --bg-secondary: #08090b;
   --bg-tertiary:  #0b0c0f;

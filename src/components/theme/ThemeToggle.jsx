@@ -1,15 +1,8 @@
 import React, { useState, useRef, useEffect } from "react";
 import { useTheme } from "./ThemeContext";
-import { Sun, Moon, Zap } from "lucide-react";
+import { Sun, Moon } from "lucide-react";
 
 const OPTIONS = [
-  { value: "light", label: "Light", icon: Sun },
-  { value: "dark", label: "Dark", icon: Moon },
-  { value: "cyber", label: "Cyber", icon: Zap },
-];
-
-// For simple toggle between Light and Dark only (recommended)
-const SIMPLE_OPTIONS = [
   { value: "light", label: "Light", icon: Sun },
   { value: "dark", label: "Dark", icon: Moon },
 ];
@@ -30,10 +23,8 @@ export default function ThemeToggle() {
   const current = OPTIONS.find((o) => o.value === theme) || OPTIONS[0];
   const Icon = current.icon;
 
-  // Toggle to next theme (light -> dark -> light)
   const handleQuickToggle = () => {
-    const nextTheme = theme === "light" ? "dark" : theme === "dark" ? "cyber" : "light";
-    setTheme(nextTheme);
+    setTheme(theme === "light" ? "dark" : "light");
   };
 
   return (
@@ -42,7 +33,7 @@ export default function ThemeToggle() {
       <button
         onClick={handleQuickToggle}
         className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium theme-toggle-btn"
-        title={`Switch theme (${theme} → ${theme === "light" ? "dark" : theme === "dark" ? "cyber" : "light"})`}
+        title={`Switch theme (${theme === "light" ? "dark" : "light"})`}
       >
         <Icon className="w-4 h-4" />
         <span className="hidden sm:inline">{current.label}</span>

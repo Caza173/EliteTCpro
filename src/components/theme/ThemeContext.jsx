@@ -3,7 +3,6 @@ import React, { createContext, useContext, useEffect, useState } from "react";
 export const THEMES = {
   light: "light",
   dark: "dark",
-  cyber: "cyber",
 };
 
 const ThemeContext = createContext({ theme: "light", setTheme: () => {} });
@@ -36,11 +35,7 @@ export function ThemeProvider({ children }) {
     const root = document.documentElement;
     root.setAttribute("data-theme", theme);
     document.body.setAttribute("data-theme", theme);
-    if (theme === "dark" || theme === "cyber") {
-      root.classList.add("dark");
-    } else {
-      root.classList.remove("dark");
-    }
+    root.classList.toggle("dark", theme === "dark");
   }, [theme]);
 
   return (
