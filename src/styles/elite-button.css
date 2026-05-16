@@ -1,0 +1,317 @@
+/* ============================================================
+   ELITETC — ELITE BUTTON SYSTEM
+   Premium animated button CSS for luxury SaaS design
+   ============================================================ */
+
+/* ── Design Tokens ── */
+:root,
+[data-theme="dark"] {
+  --elite-primary:       #d2a35f;
+  --elite-primary-hover: #e0b874;
+  --elite-primary-glow:  rgba(210, 163, 95, 0.25);
+  --elite-primary-text:  #050506;
+
+  --elite-ai:            #6366f1;
+  --elite-ai-hover:      #818cf8;
+  --elite-ai-glow:       rgba(99, 102, 241, 0.25);
+  --elite-ai-text:       #ffffff;
+
+  --elite-success:       #22c55e;
+  --elite-success-hover: #4ade80;
+  --elite-success-glow:  rgba(34, 197, 94, 0.20);
+  --elite-success-text:  #050506;
+
+  --elite-danger:        #ef4444;
+  --elite-danger-hover:  #f87171;
+  --elite-danger-glow:   rgba(239, 68, 68, 0.20);
+  --elite-danger-text:   #ffffff;
+
+  --elite-card:          rgba(16, 17, 20, 0.85);
+  --elite-border:        rgba(210, 163, 95, 0.25);
+  --elite-ghost-hover:   rgba(210, 163, 95, 0.08);
+  --elite-secondary-bg:  rgba(255, 255, 255, 0.05);
+  --elite-secondary-border: rgba(255, 255, 255, 0.12);
+  --elite-secondary-hover: rgba(255, 255, 255, 0.09);
+  --elite-text:          #f7f3ea;
+  --elite-muted:         #a7adba;
+
+  --elite-focus-ring:    rgba(210, 163, 95, 0.40);
+  --elite-shadow:        0 2px 12px rgba(0, 0, 0, 0.35);
+  --elite-shadow-hover:  0 4px 20px rgba(0, 0, 0, 0.45);
+}
+
+[data-theme="light"] {
+  --elite-primary:       #b8863d;
+  --elite-primary-hover: #c99655;
+  --elite-primary-glow:  rgba(184, 134, 61, 0.20);
+  --elite-primary-text:  #ffffff;
+
+  --elite-ai:            #6366f1;
+  --elite-ai-hover:      #4f46e5;
+  --elite-ai-glow:       rgba(99, 102, 241, 0.18);
+  --elite-ai-text:       #ffffff;
+
+  --elite-success:       #16a34a;
+  --elite-success-hover: #15803d;
+  --elite-success-glow:  rgba(22, 163, 74, 0.15);
+  --elite-success-text:  #ffffff;
+
+  --elite-danger:        #dc2626;
+  --elite-danger-hover:  #b91c1c;
+  --elite-danger-glow:   rgba(220, 38, 38, 0.15);
+  --elite-danger-text:   #ffffff;
+
+  --elite-card:          rgba(255, 255, 255, 0.90);
+  --elite-border:        rgba(184, 134, 61, 0.30);
+  --elite-ghost-hover:   rgba(184, 134, 61, 0.08);
+  --elite-secondary-bg:  rgba(15, 23, 42, 0.05);
+  --elite-secondary-border: rgba(15, 23, 42, 0.14);
+  --elite-secondary-hover: rgba(15, 23, 42, 0.08);
+  --elite-text:          #111827;
+  --elite-muted:         #6b7280;
+
+  --elite-focus-ring:    rgba(184, 134, 61, 0.35);
+  --elite-shadow:        0 2px 8px rgba(0, 0, 0, 0.10);
+  --elite-shadow-hover:  0 4px 16px rgba(0, 0, 0, 0.16);
+}
+
+/* ── Base Button ── */
+.elite-btn {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  font-family: 'Inter', sans-serif;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  border: none;
+  cursor: pointer;
+  overflow: hidden;
+  text-decoration: none;
+  white-space: nowrap;
+  outline: none;
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+  user-select: none;
+  box-shadow: var(--elite-shadow);
+}
+
+.elite-btn:focus-visible {
+  outline: 2px solid var(--elite-focus-ring);
+  outline-offset: 2px;
+}
+
+.elite-btn:disabled,
+.elite-btn[aria-disabled="true"] {
+  opacity: 0.45;
+  cursor: not-allowed;
+  pointer-events: none;
+}
+
+/* ── Sizes ── */
+.elite-btn-sm {
+  height: 34px;
+  padding: 0 14px;
+  font-size: 12px;
+  border-radius: 10px;
+  gap: 6px;
+}
+
+.elite-btn-md {
+  height: 42px;
+  padding: 0 20px;
+  font-size: 14px;
+  border-radius: 12px;
+  gap: 8px;
+}
+
+.elite-btn-lg {
+  height: 52px;
+  padding: 0 28px;
+  font-size: 15px;
+  border-radius: 14px;
+  gap: 10px;
+}
+
+/* ── Gold Variant ── */
+.elite-btn-gold {
+  background: var(--elite-primary);
+  color: var(--elite-primary-text);
+  border: 1px solid transparent;
+}
+
+.elite-btn-gold::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    135deg,
+    rgba(255, 255, 255, 0.15) 0%,
+    rgba(255, 255, 255, 0.0) 50%,
+    rgba(255, 255, 255, 0.06) 100%
+  );
+  border-radius: inherit;
+  opacity: 0;
+  transition: opacity 0.25s ease;
+}
+
+.elite-btn-gold:hover::before {
+  opacity: 1;
+}
+
+.elite-btn-gold:hover {
+  background: var(--elite-primary-hover);
+  box-shadow: 0 0 0 1px var(--elite-primary),
+              0 4px 20px var(--elite-primary-glow),
+              var(--elite-shadow-hover);
+}
+
+/* ── AI Variant ── */
+.elite-btn-ai {
+  background: var(--elite-ai);
+  color: var(--elite-ai-text);
+  border: 1px solid rgba(99, 102, 241, 0.4);
+}
+
+.elite-btn-ai::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    135deg,
+    rgba(255,255,255,0.12) 0%,
+    transparent 60%
+  );
+  border-radius: inherit;
+  opacity: 0;
+  transition: opacity 0.25s ease;
+}
+
+.elite-btn-ai:hover::before {
+  opacity: 1;
+}
+
+.elite-btn-ai:hover {
+  background: var(--elite-ai-hover);
+  box-shadow: 0 0 0 1px var(--elite-ai),
+              0 4px 20px var(--elite-ai-glow),
+              var(--elite-shadow-hover);
+}
+
+/* ── Success Variant ── */
+.elite-btn-success {
+  background: var(--elite-success);
+  color: var(--elite-success-text);
+  border: 1px solid transparent;
+}
+
+.elite-btn-success:hover {
+  background: var(--elite-success-hover);
+  box-shadow: 0 0 0 1px var(--elite-success),
+              0 4px 16px var(--elite-success-glow),
+              var(--elite-shadow-hover);
+}
+
+/* ── Danger Variant ── */
+.elite-btn-danger {
+  background: var(--elite-danger);
+  color: var(--elite-danger-text);
+  border: 1px solid transparent;
+}
+
+.elite-btn-danger:hover {
+  background: var(--elite-danger-hover);
+  box-shadow: 0 0 0 1px var(--elite-danger),
+              0 4px 16px var(--elite-danger-glow),
+              var(--elite-shadow-hover);
+}
+
+/* ── Ghost Variant ── */
+.elite-btn-ghost {
+  background: transparent;
+  color: var(--elite-primary);
+  border: 1px solid var(--elite-border);
+}
+
+.elite-btn-ghost:hover {
+  background: var(--elite-ghost-hover);
+  border-color: var(--elite-primary);
+  box-shadow: 0 0 0 1px rgba(210, 163, 95, 0.15),
+              0 2px 8px var(--elite-primary-glow);
+}
+
+/* ── Secondary Variant ── */
+.elite-btn-secondary {
+  background: var(--elite-secondary-bg);
+  color: var(--elite-text);
+  border: 1px solid var(--elite-secondary-border);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+
+.elite-btn-secondary:hover {
+  background: var(--elite-secondary-hover);
+  border-color: var(--elite-primary);
+  box-shadow: var(--elite-shadow-hover);
+}
+
+/* ── Glow pulse for AI floating button ── */
+@keyframes elite-ai-pulse {
+  0%, 100% { box-shadow: 0 0 0 0 var(--elite-ai-glow), var(--elite-shadow); }
+  50%       { box-shadow: 0 0 0 6px rgba(99,102,241,0.0), var(--elite-shadow); }
+}
+
+.elite-btn-ai-float {
+  animation: elite-ai-pulse 3s ease-in-out infinite;
+}
+
+/* ── Gradient shimmer overlay (gold) ── */
+@keyframes elite-shimmer {
+  0%   { transform: translateX(-100%) skewX(-15deg); }
+  100% { transform: translateX(200%) skewX(-15deg); }
+}
+
+.elite-btn-gold:hover .elite-shimmer,
+.elite-btn-ai:hover .elite-shimmer {
+  animation: elite-shimmer 0.7s ease forwards;
+}
+
+.elite-shimmer {
+  position: absolute;
+  top: 0; left: 0;
+  width: 40%;
+  height: 100%;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(255, 255, 255, 0.12),
+    transparent
+  );
+  pointer-events: none;
+}
+
+/* ── Loading spinner ── */
+@keyframes elite-spin {
+  to { transform: rotate(360deg); }
+}
+
+.elite-spinner {
+  width: 14px;
+  height: 14px;
+  border: 2px solid rgba(255,255,255,0.3);
+  border-top-color: currentColor;
+  border-radius: 50%;
+  animation: elite-spin 0.7s linear infinite;
+  flex-shrink: 0;
+}
+
+.elite-btn-sm .elite-spinner {
+  width: 12px;
+  height: 12px;
+}
+
+.elite-btn-lg .elite-spinner {
+  width: 16px;
+  height: 16px;
+}

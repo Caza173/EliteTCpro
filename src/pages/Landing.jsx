@@ -7,6 +7,7 @@ import {
   FileText, DollarSign, CheckCircle,
   MessageSquare, Search, Star, FileCheck, Mail, Phone, MapPin,
 } from "lucide-react";
+import EliteButton from "@/components/ui/EliteButton";
 
 // ─── Design Tokens ──────────────────────────────────────────────────
 const C = {
@@ -182,9 +183,11 @@ export default function Landing() {
         </nav>
 
         <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-          <OutlineBtn onClick={() => scrollTo("contact")} style={{ padding: "8px 14px", fontSize: 12, display: isMobile ? "none" : "inline-flex" }}>
-            Schedule Consultation
-          </OutlineBtn>
+          {!isMobile && (
+            <EliteButton variant="ghost" size="sm" onClick={() => scrollTo("contact")}>
+              Schedule Consultation
+            </EliteButton>
+          )}
           <button
             onClick={() => base44.auth.redirectToLogin("/Dashboard")}
             style={{ background: "none", border: "none", color: C.textSoft, fontSize: 13, cursor: "pointer", padding: "8px 12px", fontFamily: "Inter, sans-serif", borderRadius: 6, transition: "color 0.15s" }}
@@ -193,9 +196,9 @@ export default function Landing() {
           >
             Login
           </button>
-          <GoldBtn onClick={() => base44.auth.redirectToLogin("/Dashboard")} style={{ padding: "8px 16px", fontSize: 13 }}>
+          <EliteButton variant="gold" size="sm" onClick={() => base44.auth.redirectToLogin("/Dashboard")}>
             Get Started
-          </GoldBtn>
+          </EliteButton>
         </div>
       </header>
 
@@ -250,12 +253,21 @@ export default function Landing() {
             </div>
 
             <div style={{ display: "flex", flexWrap: "wrap", gap: 12, alignItems: "center", marginBottom: 32 }}>
-              <GoldBtn onClick={() => base44.auth.redirectToLogin("/Dashboard")}>
-                Start Your Transaction Workflow <ArrowRight style={{ width: 15, height: 15 }} />
-              </GoldBtn>
-              <OutlineBtn onClick={() => scrollTo("contact")}>
+              <EliteButton
+                variant="gold"
+                size="lg"
+                rightIcon={<ArrowRight className="w-4 h-4" />}
+                onClick={() => base44.auth.redirectToLogin("/Dashboard")}
+              >
+                Start Your Transaction Workflow
+              </EliteButton>
+              <EliteButton
+                variant="ghost"
+                size="lg"
+                onClick={() => scrollTo("contact")}
+              >
                 Schedule a Demo
-              </OutlineBtn>
+              </EliteButton>
             </div>
 
             <NavTextBtn onClick={() => scrollTo("services")}>
@@ -475,9 +487,14 @@ export default function Landing() {
           </div>
 
           <div style={{ marginTop: 64 }}>
-            <GoldBtn onClick={() => base44.auth.redirectToLogin("/Dashboard")} style={{ padding: "16px 36px", fontSize: 15 }}>
+            <EliteButton
+              variant="gold"
+              size="lg"
+              rightIcon={<ArrowRight className="w-4 h-4" />}
+              onClick={() => base44.auth.redirectToLogin("/Dashboard")}
+            >
               Automate Your Contract-to-Close Process
-            </GoldBtn>
+            </EliteButton>
           </div>
         </div>
       </section>
@@ -603,12 +620,21 @@ export default function Landing() {
                 style={{ width: "100%", background: "rgba(8,9,11,0.95)", border: `1px solid rgba(255,255,255,0.08)`, borderRadius: 7, padding: "11px 13px", fontSize: 13, color: C.text, outline: "none", resize: "vertical", fontFamily: "Inter, sans-serif", lineHeight: 1.65 }} />
             </div>
             <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
-              <GoldBtn onClick={() => base44.auth.redirectToLogin("/Dashboard")}>
-                Manage Every Deadline in One Place <ArrowRight style={{ width: 14, height: 14 }} />
-              </GoldBtn>
-              <OutlineBtn onClick={() => base44.auth.redirectToLogin("/Dashboard")}>
+              <EliteButton
+                variant="gold"
+                size="md"
+                rightIcon={<ArrowRight className="w-4 h-4" />}
+                onClick={() => base44.auth.redirectToLogin("/Dashboard")}
+              >
+                Manage Every Deadline in One Place
+              </EliteButton>
+              <EliteButton
+                variant="secondary"
+                size="md"
+                onClick={() => base44.auth.redirectToLogin("/Dashboard")}
+              >
                 Sign In
-              </OutlineBtn>
+              </EliteButton>
             </div>
           </div>
         </div>

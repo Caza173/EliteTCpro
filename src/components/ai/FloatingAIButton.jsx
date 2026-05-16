@@ -1,41 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Sparkles } from 'lucide-react';
 import { useAIConversation } from '@/lib/AIConversationContext';
-
-const styles = `
-  .elite-ai-btn {
-    padding: 10px 18px;
-    border: 1px solid rgba(210, 163, 95, 0.35);
-    font-size: 13px;
-    font-weight: 600;
-    letter-spacing: 0.02em;
-    cursor: grab;
-    position: fixed;
-    background: #0b0c0f;
-    border-radius: 10px;
-    color: #d2a35f;
-    transition: background 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease, opacity 0.2s ease;
-    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.5);
-    display: flex;
-    align-items: center;
-    gap: 7px;
-    font-family: 'Inter', sans-serif;
-    user-select: none;
-    touch-action: none;
-  }
-
-  .elite-ai-btn:hover {
-    background: #101114;
-    border-color: rgba(210, 163, 95, 0.6);
-    box-shadow: 0 6px 24px rgba(210, 163, 95, 0.12);
-    color: #e0b874;
-  }
-
-  .elite-ai-btn.dragging {
-    cursor: grabbing;
-    opacity: 0.85;
-  }
-`;
+import "@/styles/elite-button.css";
 
 const STORAGE_KEY = 'eliteai-btn-pos';
 
@@ -109,21 +75,27 @@ export default function FloatingAIButton() {
   if (isOpen && !isMinimized) return null;
 
   return (
-    <>
-      <style>{styles}</style>
-      <button
-        ref={btnRef}
-        onMouseDown={onMouseDown}
-        onTouchStart={onMouseDown}
-        onClick={handleClick}
-        title="Drag to move · Click to open AI Assistant"
-        className="elite-ai-btn"
-        style={{ left: pos.x, top: pos.y, zIndex: 40 }}
-        aria-label="Open AI Assistant"
-      >
-        <Sparkles className="w-4 h-4" />
-        <span>Ask EliteAI</span>
-      </button>
-    </>
+    <button
+      ref={btnRef}
+      onMouseDown={onMouseDown}
+      onTouchStart={onMouseDown}
+      onClick={handleClick}
+      title="Drag to move · Click to open AI Assistant"
+      aria-label="Open AI Assistant"
+      className="elite-btn elite-btn-gold elite-btn-sm elite-btn-ai-float"
+      style={{
+        position: "fixed",
+        left: pos.x,
+        top: pos.y,
+        zIndex: 40,
+        cursor: "grab",
+        touchAction: "none",
+        userSelect: "none",
+        minHeight: "unset",
+      }}
+    >
+      <Sparkles className="w-3.5 h-3.5 flex-shrink-0" />
+      <span>Ask EliteAI</span>
+    </button>
   );
 }
