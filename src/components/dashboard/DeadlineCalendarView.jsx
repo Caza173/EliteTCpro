@@ -157,13 +157,13 @@ function DayCell({ day, events, selectedDay, hoveredDay, setSelectedDay, setHove
         {dayEvents.slice(0, 2).map((ev, i) => (
           <div key={i} className="flex items-center gap-1 truncate">
             <span className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${ev.dot}`} />
-            <span className="text-[9px] truncate hidden sm:block" style={{ color: "var(--text-secondary)" }}>
+            <span className="text-[12px] truncate hidden sm:block" style={{ color: "var(--text-secondary)" }}>
               {ev.label} · {ev.address?.split(",")[0]}
             </span>
           </div>
         ))}
         {dayEvents.length > 2 && (
-          <span className="text-[9px]" style={{ color: "var(--accent)" }}>+{dayEvents.length - 2} more</span>
+          <span className="text-[12px]" style={{ color: "var(--accent)" }}>+{dayEvents.length - 2} more</span>
         )}
       </div>
       {isHovered && (
@@ -308,7 +308,7 @@ export default function DeadlineCalendarView({ transactions = [] }) {
       <>
         <div className="grid grid-cols-7">
           {DAY_NAMES.map(d => (
-            <div key={d} className="text-center text-[11px] font-semibold py-1" style={{ color: "var(--text-muted)" }}>{d}</div>
+            <div key={d} className="text-center text-[12px] font-semibold py-1" style={{ color: "var(--text-muted)" }}>{d}</div>
           ))}
         </div>
         <div className="relative overflow-visible">
@@ -371,7 +371,7 @@ export default function DeadlineCalendarView({ transactions = [] }) {
                     className="flex items-start gap-1 mb-1.5 group"
                     title={`${ev.label} — ${ev.address}`}>
                     <span className={`w-1.5 h-1.5 rounded-full flex-shrink-0 mt-1 ${ev.dot}`} />
-                    <span className="text-[10px] leading-tight group-hover:underline" style={{ color: "var(--text-secondary)" }}>
+                    <span className="text-[12px] leading-tight group-hover:underline" style={{ color: "var(--text-secondary)" }}>
                       <span className="font-medium" style={{ color: "var(--text-primary)" }}>{ev.label}</span><br />
                       {ev.address?.split(",")[0]}
                     </span>
@@ -486,7 +486,7 @@ export default function DeadlineCalendarView({ transactions = [] }) {
                   <span className={`w-2 h-2 rounded-full flex-shrink-0 ${ev.dot}`} />
                   <div className="flex-1 min-w-0">
                     <p className="text-xs font-semibold truncate" style={{ color: "var(--text-primary)" }}>{ev.address}</p>
-                    <p className="text-[11px]" style={{ color: "var(--text-muted)" }}>{ev.label}</p>
+                    <p className="text-[12px]" style={{ color: "var(--text-muted)" }}>{ev.label}</p>
                   </div>
                   <span className={`text-[10px] font-medium px-2 py-0.5 rounded-full border ${ev.pill}`}>{ev.label}</span>
                 </Link>
@@ -501,7 +501,7 @@ export default function DeadlineCalendarView({ transactions = [] }) {
         {DEADLINE_TYPES.map(dt => (
           <div key={dt.key} className="flex items-center gap-1.5">
             <span className={`w-2 h-2 rounded-full ${dt.dot}`} />
-            <span className="text-[11px]" style={{ color: "var(--text-muted)" }}>{dt.label}</span>
+            <span className="text-[12px]" style={{ color: "var(--text-muted)" }}>{dt.label}</span>
           </div>
         ))}
       </div>
