@@ -193,7 +193,7 @@ function StatusDropdown({ tx, onUpdated }) {
       <button
         onClick={e => { e.stopPropagation(); setOpen(o => !o); }}
         disabled={saving}
-        className={`flex items-center gap-1 text-xs font-medium capitalize px-2 py-1 rounded border transition-opacity ${statusStyles[tx.status] || statusStyles.active} ${saving ? "opacity-50" : "hover:opacity-80"}`}
+        className={`flex items-center gap-1 text-xs font-medium capitalize px-2 py-0.5 rounded border transition-opacity ${statusStyles[tx.status] || statusStyles.active} ${saving ? "opacity-50" : "hover:opacity-80"}`}
       >
         {tx.status || "active"}
         <ChevronDown className="w-3 h-3" />
