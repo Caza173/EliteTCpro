@@ -193,6 +193,7 @@ function StatusDropdown({ tx, onUpdated }) {
       <button
         onClick={e => { e.stopPropagation(); setOpen(o => !o); }}
         disabled={saving}
+        style={{ minHeight: "unset", lineHeight: 1 }}
         className={`flex items-center gap-0.5 text-[10px] font-medium capitalize px-1.5 py-0.5 rounded border transition-opacity ${statusStyles[tx.status] || statusStyles.active} ${saving ? "opacity-50" : "hover:opacity-80"}`}
       >
         {tx.status || "active"}
