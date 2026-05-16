@@ -531,13 +531,18 @@ export default function TransactionDocumentsTab({ transaction, currentUser }) {
       <Card className="shadow-sm border-gray-100">
         <CardHeader className="pb-3">
           <div className="flex items-center justify-between flex-wrap gap-2">
-            <CardTitle className="text-sm font-semibold flex items-center gap-2">
-              <FolderOpen className="w-4 h-4 text-gray-500" /> Uploaded Files
-              {documents.length > 0 && (
-                <Badge variant="outline" className="text-xs">{documents.length}</Badge>
+            <div className="flex flex-col gap-1 flex-1">
+              <CardTitle className="text-sm font-semibold flex items-center gap-2">
+                <FolderOpen className="w-4 h-4 text-gray-500" /> Uploaded Files
+                {documents.length > 0 && (
+                  <Badge variant="outline" className="text-xs">{documents.length}</Badge>
+                )}
+              </CardTitle>
+              {documents.length === 0 && (
+                <p className="text-xs text-amber-600">⚠ Purchase & Sales Agreement required</p>
               )}
-            </CardTitle>
-            {documents.length > 0 && (
+              </div>
+              {documents.length > 0 && (
               <div className="flex items-center gap-1.5">
                 <Filter className="w-3.5 h-3.5 text-gray-400" />
                 <Select value={typeFilter} onValueChange={setTypeFilter}>
