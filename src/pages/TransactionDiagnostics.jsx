@@ -24,7 +24,7 @@ const RISK_COLORS = {
 function Section({ title, icon: Icon, children, defaultOpen = false }) {
   const [open, setOpen] = useState(defaultOpen);
   return (
-    <div className="rounded-xl border mb-3" style={{ borderColor: "rgba(255,255,255,0.08)", background: "var(--surface-elevated, #101114)" }}>
+    <div className="rounded-xl border mb-3" style={{ borderColor: "var(--border)", background: "var(--card-bg)" }}>
       <button
         onClick={() => setOpen(o => !o)}
         className="w-full flex items-center justify-between px-4 py-3 text-sm font-semibold"
@@ -44,7 +44,7 @@ function Section({ title, icon: Icon, children, defaultOpen = false }) {
 function JsonBlock({ data }) {
   return (
     <pre className="text-[11px] rounded-lg p-3 overflow-auto max-h-64 font-mono"
-      style={{ background: "rgba(0,0,0,0.4)", color: "#a7adba", border: "1px solid rgba(255,255,255,0.06)" }}>
+      style={{ background: "var(--bg-secondary)", color: "var(--text-secondary)", border: "1px solid var(--border)" }}>
       {JSON.stringify(data, null, 2)}
     </pre>
   );
@@ -52,7 +52,7 @@ function JsonBlock({ data }) {
 
 function Metric({ label, value, color }) {
   return (
-    <div className="flex flex-col gap-0.5 p-3 rounded-lg" style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.06)" }}>
+    <div className="flex flex-col gap-0.5 p-3 rounded-lg" style={{ background: "var(--bg-hover)", border: "1px solid var(--border)" }}>
       <span className="text-[10px] uppercase tracking-widest" style={{ color: "var(--text-muted)" }}>{label}</span>
       <span className="text-lg font-bold font-mono" style={{ color: color || "var(--text-primary)" }}>{String(value ?? "—")}</span>
     </div>
@@ -131,7 +131,7 @@ export default function TransactionDiagnostics() {
 
         {/* Transaction List */}
         <div className="lg:col-span-1">
-          <div className="rounded-xl border p-3" style={{ borderColor: "rgba(255,255,255,0.08)", background: "var(--surface, #0b0c0f)" }}>
+          <div className="rounded-xl border p-3" style={{ borderColor: "var(--border)", background: "var(--card-bg)" }}>
             <div className="flex items-center gap-2 mb-3">
               <Search className="w-4 h-4" style={{ color: "var(--text-muted)" }} />
               <Input
@@ -182,7 +182,7 @@ export default function TransactionDiagnostics() {
           )}
 
           {!running && !insights && (
-            <div className="rounded-xl border p-12 text-center" style={{ borderColor: "rgba(255,255,255,0.06)" }}>
+            <div className="rounded-xl border p-12 text-center" style={{ borderColor: "var(--border)" }}>
               <Zap className="w-8 h-8 mx-auto mb-3" style={{ color: "rgba(210,163,95,0.4)" }} />
               <p className="text-sm" style={{ color: "var(--text-muted)" }}>Select a transaction to run diagnostics.</p>
             </div>
