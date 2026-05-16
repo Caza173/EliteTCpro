@@ -220,7 +220,7 @@ export default function Layout({ children, currentPageName }) {
                   to={item.path || createPageUrl(item.page)}
                   onClick={() => setSidebarOpen(false)}
                   title={isLocked ? "Complete your profile to access this page" : (sidebarCollapsed ? item.label : undefined)}
-                  className={`sidebar-nav-item flex items-center gap-2.5 px-2.5 py-2 rounded-lg text-xs font-medium ${
+                  className={`sidebar-nav-item flex items-center gap-3 px-3 py-2.5 rounded-lg font-medium ${
                     sidebarCollapsed ? "justify-center" : ""
                   } ${isLocked ? "opacity-30 cursor-not-allowed pointer-events-none" : ""}`}
                   style={isActive
@@ -241,11 +241,11 @@ export default function Layout({ children, currentPageName }) {
                   }}
                 >
                   <Icon
-                    className="w-4 h-4 flex-shrink-0"
+                    className="w-[17px] h-[17px] flex-shrink-0"
                     style={{ color: isActive ? "#d2a35f" : "inherit" }}
                   />
                   {!sidebarCollapsed && (
-                    <span className="truncate">{item.label}</span>
+                    <span className="truncate text-[13px]">{item.label}</span>
                   )}
                 </Link>
               );

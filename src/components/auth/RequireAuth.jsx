@@ -10,7 +10,8 @@ export default function RequireAuth({ children }) {
 
   useEffect(() => {
     if (!isLoadingAuth && !user) {
-      base44.auth.redirectToLogin(window.location.href);
+      // Redirect to /login page (our custom login entry point)
+      base44.auth.redirectToLogin("/Dashboard");
     }
   }, [isLoadingAuth, user]);
 

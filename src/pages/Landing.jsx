@@ -181,10 +181,10 @@ export default function Landing() {
 
         <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
           <OutlineBtn onClick={() => base44.auth.redirectToLogin("/Dashboard")} style={{ padding: "9px 16px", fontSize: 13 }}>
-            Schedule Consultation
+            Sign In
           </OutlineBtn>
-          <GoldBtn onClick={() => navigate("/AgentIntake?agent=1")} style={{ padding: "9px 18px", fontSize: 13 }}>
-            Start a Transaction
+          <GoldBtn onClick={() => base44.auth.redirectToLogin("/Dashboard")} style={{ padding: "9px 18px", fontSize: 13 }}>
+            Get Started
           </GoldBtn>
         </div>
       </header>
@@ -236,8 +236,8 @@ export default function Landing() {
             </div>
 
             <div style={{ display: "flex", flexWrap: "wrap", gap: 12, alignItems: "center", marginBottom: 32 }}>
-              <GoldBtn onClick={() => navigate("/AgentIntake?agent=1")}>
-                Start a Transaction <ArrowRight style={{ width: 15, height: 15 }} />
+              <GoldBtn onClick={() => base44.auth.redirectToLogin("/Dashboard")}>
+                Get Started <ArrowRight style={{ width: 15, height: 15 }} />
               </GoldBtn>
               <OutlineBtn onClick={() => scrollTo("contact")}>
                 Schedule a Consultation
@@ -459,7 +459,7 @@ export default function Landing() {
           </div>
 
           <div style={{ marginTop: 64 }}>
-            <GoldBtn onClick={() => navigate("/AgentIntake?agent=1")} style={{ padding: "16px 36px", fontSize: 15 }}>
+            <GoldBtn onClick={() => base44.auth.redirectToLogin("/Dashboard")} style={{ padding: "16px 36px", fontSize: 15 }}>
               Start Your First Transaction
             </GoldBtn>
           </div>
@@ -587,11 +587,11 @@ export default function Landing() {
                 style={{ width: "100%", background: "rgba(8,9,11,0.95)", border: `1px solid rgba(255,255,255,0.08)`, borderRadius: 7, padding: "11px 13px", fontSize: 13, color: C.text, outline: "none", resize: "vertical", fontFamily: "Inter, sans-serif", lineHeight: 1.65 }} />
             </div>
             <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
-              <GoldBtn onClick={() => navigate("/AgentIntake?agent=1")}>
+              <GoldBtn onClick={() => base44.auth.redirectToLogin("/Dashboard")}>
                 Start a Transaction <ArrowRight style={{ width: 14, height: 14 }} />
               </GoldBtn>
               <OutlineBtn onClick={() => base44.auth.redirectToLogin("/Dashboard")}>
-                Schedule a Consultation
+                Sign In
               </OutlineBtn>
             </div>
           </div>

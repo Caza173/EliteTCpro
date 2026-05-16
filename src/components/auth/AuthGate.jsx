@@ -4,7 +4,7 @@ import { useCurrentUser } from "@/lib/CurrentUserContext.jsx";
 
 // Routes that are always accessible without auth
 const PUBLIC_PATHS = [
-  "/", "/Landing", "/AgentIntake", "/ClientLookup",
+  "/", "/Landing", "/login", "/AgentIntake", "/ClientLookup",
   "/DeadlineResponse", "/ApprovalAction", "/agent-signin",
   "/TCSignIn", "/agent/submit-transaction",
 ];
@@ -21,8 +21,8 @@ function getRedirectTarget(isLoading, currentUser, path) {
   const onboardingComplete = currentUser?.onboarding_complete === true;
 
   if (!loggedIn) {
-    // Unauthenticated: only public paths allowed
-    if (!isPublicPath(path)) return "/";
+    // Unauthenticated: only public paths allowed — redirect to /login (not landing)
+    if (!isPublicPath(path)) return "/login";
     return null;
   }
 
@@ -38,8 +38,8 @@ function getRedirectTarget(isLoading, currentUser, path) {
     return null;
   }
 
-  // Fully onboarded user: redirect away from landing/onboarding
-  if (path === "/" || path.startsWith("/onboarding") || path === "/Landing") {
+  // Fully onboarded user: redirect away from login/onboarding but NOT landing
+  if (path === "/login" || path.startsWith("/onboarding") || path === "/Landing") {
     return "/Dashboard";
   }
 
