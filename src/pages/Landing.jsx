@@ -143,6 +143,8 @@ export default function Landing() {
   // ── NAV ─────────────────────────────────────────────────────────────
   const navLinks = ["Services", "Why EliteTC", "Process", "Testimonials", "FAQ", "Contact"];
 
+  const isMobile = typeof window !== "undefined" && window.innerWidth < 768;
+
   return (
     <div style={{ minHeight: "100vh", background: C.bg, color: C.text, fontFamily: "Inter, sans-serif", overflowX: "hidden" }}>
 
@@ -150,7 +152,7 @@ export default function Landing() {
       <header style={{
         position: "sticky", top: 0, zIndex: 50,
         display: "flex", alignItems: "center", justifyContent: "space-between",
-        padding: "0 60px", height: 72,
+        padding: "0 20px", height: 64,
         background: "rgba(5,5,6,0.96)",
         borderBottom: `1px solid ${C.border}`,
         backdropFilter: "blur(16px)",
@@ -179,11 +181,11 @@ export default function Landing() {
           ))}
         </nav>
 
-        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-          <OutlineBtn onClick={() => scrollTo("contact")} style={{ padding: "9px 16px", fontSize: 13 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+          <OutlineBtn onClick={() => scrollTo("contact")} style={{ padding: "8px 14px", fontSize: 12, display: isMobile ? "none" : "inline-flex" }}>
             Schedule Consultation
           </OutlineBtn>
-          <GoldBtn onClick={() => base44.auth.redirectToLogin("/Dashboard")} style={{ padding: "9px 18px", fontSize: 13 }}>
+          <GoldBtn onClick={() => base44.auth.redirectToLogin("/Dashboard")} style={{ padding: "8px 16px", fontSize: 13 }}>
             Get Started
           </GoldBtn>
         </div>
@@ -191,8 +193,8 @@ export default function Landing() {
 
       {/* ── HERO ────────────────────────────────────────────────────── */}
       <section style={{
-        minHeight: "92vh", display: "flex", alignItems: "center",
-        padding: "100px 60px 80px", position: "relative", overflow: "hidden",
+        minHeight: "auto", display: "flex", alignItems: "center",
+        padding: "80px 20px 60px", position: "relative", overflow: "hidden",
       }}>
         {/* Subtle grid texture */}
         <div style={{
@@ -209,7 +211,7 @@ export default function Landing() {
           background: "radial-gradient(ellipse 60% 50% at 50% 50%, rgba(210,163,95,0.04) 0%, transparent 70%)",
         }} />
 
-        <div style={{ maxWidth: 1200, margin: "0 auto", width: "100%", display: "grid", gridTemplateColumns: "1fr 400px", gap: 100, alignItems: "center", position: "relative", zIndex: 1 }}>
+        <div className="grid grid-cols-1 md:grid-cols-[1fr_400px] gap-12 md:gap-24" style={{ maxWidth: 1200, margin: "0 auto", width: "100%", alignItems: "center", position: "relative", zIndex: 1 }}>
 
           {/* LEFT */}
           <div>
@@ -282,8 +284,8 @@ export default function Landing() {
       <div style={{ height: 1, background: C.border, maxWidth: 1100, margin: "0 auto" }} />
 
       {/* ── THE ELITETC DIFFERENCE ───────────────────────────────────── */}
-      <section id="why-elitetc" style={{ padding: "110px 60px", background: C.bg }}>
-        <div style={{ maxWidth: 1200, margin: "0 auto", display: "grid", gridTemplateColumns: "1fr 1.4fr", gap: 100, alignItems: "start" }}>
+      <section id="why-elitetc" style={{ background: C.bg }} className="py-16 md:py-28 px-5 md:px-16">
+        <div className="grid grid-cols-1 md:grid-cols-[1fr_1.4fr] gap-12 md:gap-24" style={{ maxWidth: 1200, margin: "0 auto", alignItems: "start" }}>
 
           {/* Left */}
           <div>
@@ -324,7 +326,7 @@ export default function Landing() {
       <div style={{ height: 1, background: C.border, maxWidth: 1100, margin: "0 auto" }} />
 
       {/* ── SERVICES ────────────────────────────────────────────────── */}
-      <section id="services" style={{ padding: "110px 60px", background: C.bg }}>
+      <section id="services" style={{ background: C.bg }} className="py-16 md:py-28 px-5 md:px-16">
         <div style={{ maxWidth: 1200, margin: "0 auto" }}>
           <div style={{ marginBottom: 60 }}>
             <h2 style={{ fontFamily: "'Playfair Display', serif", fontSize: "clamp(40px, 5vw, 64px)", fontWeight: 800, color: C.text, lineHeight: 1.05, margin: "0 0 4px" }}>
@@ -339,20 +341,20 @@ export default function Landing() {
           </div>
 
           {/* Row 1: 3 cols */}
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 16, marginBottom: 16 }}>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
             <ServiceCard icon={FileText}      title="Contract-to-Close Coordination" desc="Full oversight from executed contract through final closing. Every document, every deadline, every party — managed with precision." />
             <ServiceCard icon={ShieldCheck}   title="Compliance Management"          desc="We ensure every transaction meets state, brokerage, and MLS compliance requirements. No gaps, no surprises." />
             <ServiceCard icon={Clock}         title="Deadline Tracking"              desc="Inspection periods, financing contingencies, closing dates — tracked and communicated proactively so nothing slips." />
           </div>
           {/* Row 2: 4 cols */}
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 16, marginBottom: 16 }}>
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 mb-4">
             <ServiceCard icon={MessageSquare} title="Communication Management"       desc="Coordinated communication between agents, clients, lenders, title, and escrow. One point of contact for all parties." />
             <ServiceCard icon={LayoutDashboard} title="MLS Input Support"             desc="Accurate, timely MLS data entry and status updates. We handle the administrative load so your listings stay current." />
             <ServiceCard icon={Search}        title="Document Review"                desc="Thorough review of all transaction documents for completeness, accuracy, and compliance before submission." />
             <ServiceCard icon={Users}         title="Client & Vendor Coordination"   desc="We manage relationships with inspectors, appraisers, lenders, title companies, and all parties involved in the transaction." />
           </div>
           {/* Row 3: 1 col (partial) */}
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 16 }}>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <ServiceCard icon={DollarSign}    title="Commission & Closing Tracking"  desc="Accurate commission tracking, closing cost coordination, and final disbursement oversight for every transaction." />
           </div>
         </div>
@@ -362,8 +364,8 @@ export default function Landing() {
       <div style={{ height: 1, background: C.border, maxWidth: 1100, margin: "0 auto" }} />
 
       {/* ── WHY ELITETC ─────────────────────────────────────────────── */}
-      <section id="why-elitetc" style={{ padding: "110px 60px", background: C.bg }}>
-        <div style={{ maxWidth: 1200, margin: "0 auto", display: "grid", gridTemplateColumns: "300px 1fr", gap: 100, alignItems: "start" }}>
+      <section id="why-elitetc" style={{ background: C.bg }} className="py-16 md:py-28 px-5 md:px-16">
+        <div className="grid grid-cols-1 md:grid-cols-[300px_1fr] gap-12 md:gap-24" style={{ maxWidth: 1200, margin: "0 auto", alignItems: "start" }}>
 
           {/* Left */}
           <div>
@@ -386,7 +388,7 @@ export default function Landing() {
           </div>
 
           {/* Right — 2×3 grid */}
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <WhyCard num="01" icon={Zap}           title="Faster Transactions"            desc="Streamlined processes and proactive coordination reduce delays at every stage. Our team anticipates bottlenecks before they become problems." />
             <WhyCard num="02" icon={Clock}          title="Reduced Admin Workload"          desc="Eliminate the hours spent on paperwork, follow-ups, and scheduling. EliteTC absorbs the operational load so you can focus on revenue-generating activities." />
             <WhyCard num="03" icon={Star}           title="Better Client Experience"        desc="Clients receive timely updates, clear communication, and a seamless experience from offer acceptance through closing day." />
@@ -401,7 +403,7 @@ export default function Landing() {
       <div style={{ height: 1, background: C.border, maxWidth: 1100, margin: "0 auto" }} />
 
       {/* ── HOW IT WORKS ────────────────────────────────────────────── */}
-      <section id="process" style={{ padding: "110px 60px", background: C.bg, position: "relative", overflow: "hidden" }}>
+      <section id="process" style={{ background: C.bg, position: "relative", overflow: "hidden" }} className="py-16 md:py-28 px-5 md:px-16">
         {/* Faint radial */}
         <div style={{ position: "absolute", inset: 0, pointerEvents: "none", background: "radial-gradient(ellipse 80% 60% at 50% 50%, rgba(210,163,95,0.03) 0%, transparent 70%)" }} />
 
@@ -418,7 +420,7 @@ export default function Landing() {
           </p>
 
           {/* Timeline */}
-          <div style={{ position: "relative", display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 0 }}>
+          <div className="grid grid-cols-1 sm:grid-cols-3 md:grid-cols-5 gap-8 md:gap-0" style={{ position: "relative", alignItems: "flex-start" }}>
             {/* Connecting line */}
             <div style={{
               position: "absolute", top: 30, left: "10%", right: "10%", height: 1,
@@ -470,7 +472,7 @@ export default function Landing() {
       <div style={{ height: 1, background: C.border, maxWidth: 1100, margin: "0 auto" }} />
 
       {/* ── TESTIMONIALS ─────────────────────────────────────────────── */}
-      <section id="testimonials" style={{ padding: "110px 60px", background: C.bg }}>
+      <section id="testimonials" style={{ background: C.bg }} className="py-16 md:py-28 px-5 md:px-16">
         <div style={{ maxWidth: 1200, margin: "0 auto" }}>
           <SectionLabel>Client Results</SectionLabel>
           <h2 style={{ fontFamily: "'Playfair Display', serif", fontSize: "clamp(36px, 4vw, 52px)", fontWeight: 800, color: C.text, lineHeight: 1.05, margin: "0 0 8px" }}>
@@ -480,7 +482,7 @@ export default function Landing() {
             Real feedback from agents, teams, and brokerages who rely on EliteTC to run their operations.
           </p>
 
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 20 }}>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
             {[
               { quote: "EliteTC has completely changed how I operate. I used to spend 3–4 hours per transaction on admin work. Now I hand it off and focus on my clients. My volume is up 40% this year.", name: "Sarah M.", role: "Independent Agent · Dallas, TX", badge: "85+ transactions/year" },
               { quote: "The compliance management alone is worth every penny. I've never had a file come back with issues since working with EliteTC. Their attention to detail is exceptional.", name: "James R.", role: "Team Lead · Phoenix, AZ", badge: "200+ transactions/year" },
@@ -497,8 +499,8 @@ export default function Landing() {
       <div style={{ height: 1, background: C.border, maxWidth: 1100, margin: "0 auto" }} />
 
       {/* ── FAQ ─────────────────────────────────────────────────────── */}
-      <section id="faq" style={{ padding: "110px 60px", background: C.bg }}>
-        <div style={{ maxWidth: 1200, margin: "0 auto", display: "grid", gridTemplateColumns: "320px 1fr", gap: 100, alignItems: "start" }}>
+      <section id="faq" style={{ background: C.bg }} className="py-16 md:py-28 px-5 md:px-16">
+        <div className="grid grid-cols-1 md:grid-cols-[320px_1fr] gap-12 md:gap-24" style={{ maxWidth: 1200, margin: "0 auto", alignItems: "start" }}>
 
           <div>
             <SectionLabel>FAQ</SectionLabel>
@@ -534,8 +536,8 @@ export default function Landing() {
       <div style={{ height: 1, background: C.border, maxWidth: 1100, margin: "0 auto" }} />
 
       {/* ── CONTACT ─────────────────────────────────────────────────── */}
-      <section id="contact" style={{ padding: "110px 60px", background: C.bg }}>
-        <div style={{ maxWidth: 1200, margin: "0 auto", display: "grid", gridTemplateColumns: "1fr 1.3fr", gap: 100, alignItems: "start" }}>
+      <section id="contact" style={{ background: C.bg }} className="py-16 md:py-28 px-5 md:px-16">
+        <div className="grid grid-cols-1 md:grid-cols-[1fr_1.3fr] gap-12 md:gap-24" style={{ maxWidth: 1200, margin: "0 auto", alignItems: "start" }}>
 
           {/* Left */}
           <div>
@@ -571,8 +573,8 @@ export default function Landing() {
           </div>
 
           {/* Right — Form */}
-          <div style={{ background: C.panel, border: `1px solid ${C.border}`, borderRadius: 16, padding: "40px 36px" }}>
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16, marginBottom: 16 }}>
+          <div style={{ background: C.panel, border: `1px solid ${C.border}`, borderRadius: 16, padding: "32px 24px" }}>
+           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
               <FormField label="FULL NAME *"     placeholder="Your full name" />
               <FormField label="EMAIL ADDRESS *" placeholder="your@email.com" type="email" />
               <FormField label="PHONE NUMBER"    placeholder="(555) 000-0000" type="tel" />
@@ -599,9 +601,9 @@ export default function Landing() {
       </section>
 
       {/* ── FOOTER ──────────────────────────────────────────────────── */}
-      <footer style={{ background: C.bgSoft, borderTop: `1px solid ${C.border}`, padding: "64px 60px 32px" }}>
+      <footer style={{ background: C.bgSoft, borderTop: `1px solid ${C.border}` }} className="px-5 md:px-16 pt-14 md:pt-16 pb-8">
         <div style={{ maxWidth: 1200, margin: "0 auto" }}>
-          <div style={{ display: "grid", gridTemplateColumns: "1.4fr 1fr 1fr 1fr", gap: 60, marginBottom: 52 }}>
+          <div className="grid grid-cols-2 md:grid-cols-[1.4fr_1fr_1fr_1fr] gap-10 md:gap-16 mb-12">
             {/* Brand */}
             <div>
               <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 18 }}>
@@ -631,7 +633,7 @@ export default function Landing() {
           </div>
 
           <div style={{ height: 1, background: C.border, marginBottom: 24 }} />
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+          <div className="flex flex-col md:flex-row justify-between items-center gap-3">
             <p style={{ fontSize: 12, color: C.textMuted, fontFamily: "Inter, sans-serif" }}>© 2026 EliteTC. All rights reserved.</p>
             <div style={{ display: "flex", gap: 24 }}>
               {["Privacy Policy", "Terms of Service"].map(l => <span key={l} style={{ fontSize: 12, color: C.textMuted, cursor: "pointer", fontFamily: "Inter, sans-serif" }}>{l}</span>)}
