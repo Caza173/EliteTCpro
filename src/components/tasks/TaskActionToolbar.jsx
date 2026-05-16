@@ -14,7 +14,7 @@ export default function TaskActionToolbar({ task, transaction, onTaskUpdated, ph
   const isUtilityRequestTask = task.title?.toLowerCase().includes("utility") && phaseNum === 3;
 
   return (
-    <>
+    <div className="flex flex-col items-end gap-1 flex-shrink-0">
       {/* Task-triggered email generator */}
       <TaskEmailTrigger
         task={task}
@@ -41,6 +41,6 @@ export default function TaskActionToolbar({ task, transaction, onTaskUpdated, ph
           />
         )}
       </Suspense>
-    </>
+    </div>
   );
 }
