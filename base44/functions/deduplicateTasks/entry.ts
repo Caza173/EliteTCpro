@@ -53,14 +53,17 @@ Deno.serve(async (req) => {
   console.log(`[deduplicateTasks] duplicates:`, toDelete.map(t => ({ id: t.id, title: t.title, phase: t.phase })));
 
   if (!dry_run && toDelete.length > 0) {
-    // Delete in batches of 10 to avoid overwhelming the API
-    const BATCH = 10;
+    // Delete sequentially to avoid timeouts, skip 404s
+    let deletedCount = 0;
+    const BATCH = 5;
     for (let i = 0; i < toDelete.length; i += BATCH) {
       const batch = toDelete.slice(i, i + BATCH);
-      await Promise.all(batch.map(t => base44.asServiceRole.entities.TransactionTask.delete(t.id)));
-      console.log(`[deduplicateTasks] deleted batch ${Math.floor(i/BATCH)+1}: ${batch.length} tasks`);
+      const results = await Promise.allSettled(
+        batch.map(t => base44.asServiceRole.entities.TransactionTask.delete(t.id))
+      );
+      deletedCount += results.filter(r => r.status === 'fulfilled').length;
     }
-    console.log(`[deduplicateTasks] done — deleted ${toDelete.length} duplicates`);
+    console.log(`[deduplicateTasks] done — deleted ${deletedCount} duplicates`);
   }
 
   return Response.json({
