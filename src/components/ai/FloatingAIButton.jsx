@@ -4,62 +4,36 @@ import { useAIConversation } from '@/lib/AIConversationContext';
 
 const styles = `
   .elite-ai-btn {
-    padding: 12px 20px;
-    border: none;
-    font-size: 1rem;
+    padding: 10px 18px;
+    border: 1px solid rgba(210, 163, 95, 0.35);
+    font-size: 13px;
+    font-weight: 600;
+    letter-spacing: 0.02em;
     cursor: grab;
     position: fixed;
-    background: linear-gradient(90deg, #5bfcc4, #f593e4, #71a4f0);
-    border-radius: 12px;
-    color: #fff;
-    transition: box-shadow 0.3s ease, opacity 0.3s ease;
-    box-shadow:
-      inset 0px 0px 5px #ffffffa9,
-      inset 0px 35px 30px #000,
-      0px 5px 10px #000000cc;
-    text-shadow: 1px 1px 1px #000;
+    background: #0b0c0f;
+    border-radius: 10px;
+    color: #d2a35f;
+    transition: background 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease, opacity 0.2s ease;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.5);
     display: flex;
     align-items: center;
-    gap: 5px;
-    font-weight: 500;
+    gap: 7px;
+    font-family: 'Inter', sans-serif;
     user-select: none;
     touch-action: none;
   }
 
+  .elite-ai-btn:hover {
+    background: #101114;
+    border-color: rgba(210, 163, 95, 0.6);
+    box-shadow: 0 6px 24px rgba(210, 163, 95, 0.12);
+    color: #e0b874;
+  }
+
   .elite-ai-btn.dragging {
     cursor: grabbing;
-    opacity: 0.9;
-    box-shadow:
-      inset 0px 0px 5px #ffffffa9,
-      inset 0px 35px 30px #000,
-      0px 12px 30px #000000cc;
-  }
-
-  .elite-ai-btn::before {
-    content: "";
-    position: absolute;
-    inset: 0;
-    margin: auto;
-    border-radius: 12px;
-    filter: blur(0);
-    z-index: -1;
-    box-shadow: none;
-    background: conic-gradient(
-      #00000000 80deg,
-      #40baf7,
-      #f34ad7,
-      #5bfcc4,
-      #00000000 280deg
-    );
-    transition: all 0.3s ease;
-  }
-
-  .elite-ai-btn:hover::before {
-    filter: blur(15px);
-  }
-
-  .elite-ai-btn:active:not(.dragging)::before {
-    filter: blur(5px);
+    opacity: 0.85;
   }
 `;
 

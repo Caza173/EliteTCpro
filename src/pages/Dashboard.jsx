@@ -34,69 +34,43 @@ const STATUS_STYLES = {
   cancelled: { bg: "bg-red-50",     text: "text-red-700",     dot: "bg-red-500" },
 };
 
-function StatCard({ label, value, sub, icon: Icon, accent }) {
-  const [theme, setTheme] = React.useState("light");
-
-  React.useEffect(() => {
-    const currentTheme = document.documentElement.getAttribute("data-theme") || "light";
-    setTheme(currentTheme);
-    
-    const observer = new MutationObserver(() => {
-      const newTheme = document.documentElement.getAttribute("data-theme") || "light";
-      setTheme(newTheme);
-    });
-    
-    observer.observe(document.documentElement, { attributes: true, attributeFilter: ["data-theme"] });
-    return () => observer.disconnect();
-  }, []);
-
-  const isLightTheme = theme === "light";
-  const colors = {
-    blue:   { bg: "bg-blue-500" },
-    green:  { bg: "bg-emerald-500" },
-    amber:  { bg: "bg-amber-500" },
-    red:    { bg: "bg-red-500" },
-  }[accent] || { bg: "bg-blue-500" };
-
-  if (isLightTheme) {
-    return (
-      <div className="theme-card p-4 flex items-start gap-3">
-        <div className={`w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 ${colors.bg}`}>
-          <Icon className="w-4 h-4 text-white" />
-        </div>
-        <div className="min-w-0">
-          <p className="text-xs font-medium" style={{ color: "var(--text-muted)" }}>{label}</p>
-          <p className="text-2xl font-bold mt-1" style={{ color: "var(--text-primary)" }}>{value}</p>
-          {sub && <p className="text-xs mt-0.5" style={{ color: "var(--text-secondary)" }}>{sub}</p>}
-        </div>
-      </div>
-    );
-  }
-
+function StatCard({ label, value, sub, icon: Icon }) {
   return (
-    <div className="relative overflow-hidden rounded-xl p-4 flex flex-col gap-3" style={{
-      backgroundColor: "hsla(240, 15%, 9%, 1)",
-      backgroundImage: `
-        radial-gradient(at 88% 40%, hsla(240, 15%, 9%, 1) 0px, transparent 85%),
-        radial-gradient(at 49% 30%, hsla(240, 15%, 9%, 1) 0px, transparent 85%),
-        radial-gradient(at 14% 26%, hsla(240, 15%, 9%, 1) 0px, transparent 85%),
-        radial-gradient(at 0% 64%, hsl(189, 99%, 26%) 0px, transparent 85%),
-        radial-gradient(at 41% 94%, hsl(189, 97%, 36%) 0px, transparent 85%),
-        radial-gradient(at 100% 99%, hsl(188, 94%, 13%) 0px, transparent 85%)
-      `,
-      boxShadow: "0px -16px 24px 0px rgba(255, 255, 255, 0.25) inset",
-      border: "1px solid hsl(189, 92%, 58%)"
-    }}>
-      <div className="flex items-start gap-3">
-        <div className={`w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 ${colors.bg}`}>
-          <Icon className="w-4 h-4 text-white" />
-        </div>
-        <div className="min-w-0">
-          <p className="text-xs font-medium text-gray-300">{label}</p>
-          <p className="text-2xl font-bold mt-1 text-white">{value}</p>
-        </div>
+    <div
+      className="rounded-xl p-5 flex items-start gap-4 transition-all duration-200 cursor-default"
+      style={{
+        backgroundColor: "#0b0c0f",
+        border: "1px solid rgba(255,255,255,0.08)",
+      }}
+      onMouseEnter={e => {
+        e.currentTarget.style.borderColor = "rgba(210,163,95,0.28)";
+        e.currentTarget.style.backgroundColor = "#101114";
+      }}
+      onMouseLeave={e => {
+        e.currentTarget.style.borderColor = "rgba(255,255,255,0.08)";
+        e.currentTarget.style.backgroundColor = "#0b0c0f";
+      }}
+    >
+      <div style={{
+        width: 36, height: 36,
+        borderRadius: 8,
+        border: "1px solid rgba(210,163,95,0.2)",
+        background: "rgba(210,163,95,0.08)",
+        color: "#d2a35f",
+        display: "flex", alignItems: "center", justifyContent: "center",
+        flexShrink: 0,
+      }}>
+        <Icon style={{ width: 16, height: 16 }} />
       </div>
-      {sub && <p className="text-xs text-gray-400">{sub}</p>}
+      <div className="min-w-0 flex-1">
+        <p style={{ fontSize: 10, fontWeight: 600, letterSpacing: "0.1em", textTransform: "uppercase", color: "#6f7683" }}>
+          {label}
+        </p>
+        <p style={{ fontSize: 26, fontWeight: 700, color: "#d2a35f", fontFamily: "'Playfair Display', serif", lineHeight: 1.2, marginTop: 4 }}>
+          {value}
+        </p>
+        {sub && <p style={{ fontSize: 11, color: "#6f7683", marginTop: 3 }}>{sub}</p>}
+      </div>
     </div>
   );
 }
@@ -221,13 +195,15 @@ export default function Dashboard() {
       {!isLoading && (missingDocsCount > 0 || pendingApprovalCount > 0) && (
         <div className="flex flex-wrap gap-2">
           {missingDocsCount > 0 && (
-            <div className="flex items-center gap-2 px-3 py-2 rounded-lg border text-xs font-medium bg-amber-50 border-amber-200 text-amber-700">
+            <div className="flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-medium"
+              style={{ background: "rgba(210,163,95,0.08)", border: "1px solid rgba(210,163,95,0.22)", color: "#d2a35f" }}>
               <FileWarning className="w-3.5 h-3.5" />
               {missingDocsCount} missing document{missingDocsCount > 1 ? "s" : ""}
             </div>
           )}
           {pendingApprovalCount > 0 && (
-            <div className="flex items-center gap-2 px-3 py-2 rounded-lg border text-xs font-medium bg-blue-50 border-blue-200 text-blue-700">
+            <div className="flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-medium"
+              style={{ background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.1)", color: "#a7adba" }}>
               <CheckCircle2 className="w-3.5 h-3.5" />
               {pendingApprovalCount} pending approval{pendingApprovalCount > 1 ? "s" : ""}
             </div>
@@ -256,7 +232,8 @@ export default function Dashboard() {
       )}
 
       {/* Tab Navigation */}
-      <div className="flex gap-1 p-1 rounded-xl overflow-x-auto scrollbar-none" style={{ background: "var(--bg-tertiary)" }}>
+      <div className="flex gap-1 p-1 rounded-xl overflow-x-auto scrollbar-none"
+        style={{ background: "#0b0c0f", border: "1px solid rgba(255,255,255,0.07)" }}>
         {[
           { id: "overview", label: "Overview" },
           { id: "finance", label: "Finance" },
@@ -264,10 +241,11 @@ export default function Dashboard() {
           <button
             key={tab.id}
             onClick={() => setActiveTab(tab.id)}
-            className={`px-3 py-1.5 rounded-lg text-xs font-medium whitespace-nowrap transition-all ${
-              activeTab === tab.id ? "bg-white shadow-sm" : "hover:opacity-70"
-            }`}
-            style={{ color: activeTab === tab.id ? "var(--text-primary)" : "var(--text-muted)" }}
+            className="px-4 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap transition-all"
+            style={activeTab === tab.id
+              ? { background: "rgba(210,163,95,0.12)", color: "#d2a35f", border: "1px solid rgba(210,163,95,0.2)" }
+              : { background: "transparent", color: "#6f7683", border: "1px solid transparent" }
+            }
           >
             {tab.label}
           </button>
