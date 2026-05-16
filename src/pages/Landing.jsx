@@ -2,9 +2,9 @@ import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { base44 } from "@/api/base44Client";
 import {
-  ArrowRight, Upload, Clock, ShieldCheck, Send,
+  ArrowRight, Upload, Clock, ShieldCheck,
   Users, LayoutDashboard, CheckCircle2, Zap,
-  FileText, Lock, CircleCheck, DollarSign,
+  FileText, DollarSign, CheckCircle,
   MessageSquare, Search, Star, FileCheck, Mail, Phone, MapPin,
 } from "lucide-react";
 
@@ -229,7 +229,7 @@ export default function Landing() {
             <div style={{ display: "flex", flexDirection: "column", gap: 12, marginBottom: 40 }}>
               {["Contract-to-close coordination", "Compliance & deadline management", "Client & vendor communication"].map(item => (
                 <div key={item} style={{ display: "flex", alignItems: "center", gap: 10, fontSize: 14, color: C.textSoft }}>
-                  <CircleCheck style={{ width: 16, height: 16, color: C.gold, flexShrink: 0 }} />
+                  <CheckCircle style={{ width: 16, height: 16, color: C.gold, flexShrink: 0 }} />
                   {item}
                 </div>
               ))}
