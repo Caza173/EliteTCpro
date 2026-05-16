@@ -42,35 +42,46 @@ export default function ParsedDeadlinesPreview({ parsed, isCash = false }) {
   const items = TIMELINE_ITEMS.filter(item => !(item.key === "financing_commitment_date" && isCash));
 
   return (
-    <div className="rounded-xl border border-blue-100 bg-blue-50/40 p-4 space-y-2">
-      <p className="text-xs font-semibold text-blue-700 uppercase tracking-wider mb-3">Transaction Timeline</p>
-      {items.map((item, i) => {
-        const dateStr = resolveDate(item, parsed);
-        return (
-          <div key={item.key} className="flex items-center gap-3">
-            <div className={`w-7 h-7 rounded-full flex items-center justify-center flex-shrink-0 ${
-              dateStr ? "bg-emerald-100" : "bg-gray-100"
-            }`}>
-              {dateStr
-                ? <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
-                : <AlertCircle className="w-3.5 h-3.5 text-gray-400" />
-              }
+    <div style={{
+      borderRadius: 12,
+      border: "1px solid rgba(210,163,95,0.2)",
+      background: "rgba(210,163,95,0.04)",
+      padding: "14px 16px",
+    }}>
+      <p className="section-label mb-3">Transaction Timeline</p>
+      <div className="space-y-2">
+        {items.map((item) => {
+          const dateStr = resolveDate(item, parsed);
+          return (
+            <div key={item.key} className="flex items-center gap-3">
+              <div style={{
+                width: 26, height: 26, borderRadius: "50%", flexShrink: 0,
+                display: "flex", alignItems: "center", justifyContent: "center",
+                background: dateStr ? "rgba(34,197,94,0.12)" : "rgba(255,255,255,0.05)",
+                border: `1px solid ${dateStr ? "rgba(34,197,94,0.3)" : "rgba(255,255,255,0.08)"}`,
+              }}>
+                {dateStr
+                  ? <CheckCircle2 style={{ width: 13, height: 13, color: "#22c55e" }} />
+                  : <AlertCircle style={{ width: 13, height: 13, color: "var(--text-muted)" }} />
+                }
+              </div>
+              <div className="flex-1">
+                <span style={{ fontSize: 12, color: "var(--text-secondary)" }}>{item.label}</span>
+              </div>
+              <span style={{
+                fontSize: 12, fontWeight: 500,
+                color: dateStr ? "var(--text-primary)" : "var(--text-muted)",
+                fontStyle: dateStr ? "normal" : "italic",
+              }}>
+                {dateStr
+                  ? (() => { const d = parseISO(dateStr); return isValid(d) ? format(d, "MMM d, yyyy") : "Invalid date"; })()
+                  : "Not detected"
+                }
+              </span>
             </div>
-            {i < items.length - 1 && (
-              <div className="absolute left-[1.75rem] mt-7 w-px h-5 bg-gray-200" style={{ display: "none" }} />
-            )}
-            <div className="flex-1">
-              <span className="text-xs text-gray-500">{item.label}</span>
-            </div>
-            <span className={`text-xs font-medium ${dateStr ? "text-gray-800" : "text-gray-400 italic"}`}>
-              {dateStr
-                ? (() => { const d = parseISO(dateStr); return isValid(d) ? format(d, "MMM d, yyyy") : "Invalid date"; })()
-                : "Not detected in contract"
-              }
-            </span>
-          </div>
-        );
-      })}
+          );
+        })}
+      </div>
     </div>
   );
 }
