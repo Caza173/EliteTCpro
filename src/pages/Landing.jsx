@@ -6,6 +6,7 @@ import {
   Users, LayoutDashboard, CheckCircle2, Zap,
   FileText, DollarSign, CheckCircle,
   MessageSquare, Search, Star, FileCheck, Mail, Phone, MapPin,
+  Brain, Bell, Calendar, Lock, BookUser, Activity,
 } from "lucide-react";
 
 // ─── Design Tokens ──────────────────────────────────────────────────
@@ -140,9 +141,7 @@ export default function Landing() {
 
   const scrollTo = (id) => document.getElementById(id)?.scrollIntoView({ behavior: "smooth" });
 
-  // ── NAV ─────────────────────────────────────────────────────────────
-  const navLinks = ["Services", "Why EliteTC", "Process", "Testimonials", "FAQ", "Contact"];
-
+  const navLinks = ["Features", "Why EliteTC", "How It Works", "Testimonials", "FAQ", "Contact"];
   const isMobile = typeof window !== "undefined" && window.innerWidth < 768;
 
   return (
@@ -166,7 +165,7 @@ export default function Landing() {
           }}>E</div>
           <div>
             <div style={{ fontSize: 13, fontWeight: 800, color: C.text, fontFamily: "'Playfair Display', serif", letterSpacing: "0.06em" }}>ELITETC</div>
-            <div style={{ fontSize: 8, fontWeight: 500, letterSpacing: "0.14em", color: C.textMuted, textTransform: "uppercase" }}>Transaction Coordination</div>
+            <div style={{ fontSize: 8, fontWeight: 500, letterSpacing: "0.14em", color: C.textMuted, textTransform: "uppercase" }}>AI Transaction Platform</div>
           </div>
         </div>
 
@@ -204,7 +203,6 @@ export default function Landing() {
         minHeight: "auto", display: "flex", alignItems: "center",
         padding: "80px 20px 60px", position: "relative", overflow: "hidden",
       }}>
-        {/* Subtle grid texture */}
         <div style={{
           position: "absolute", inset: 0, pointerEvents: "none",
           backgroundImage: `
@@ -213,7 +211,6 @@ export default function Landing() {
           `,
           backgroundSize: "72px 72px",
         }} />
-        {/* Radial fade */}
         <div style={{
           position: "absolute", inset: 0, pointerEvents: "none",
           background: "radial-gradient(ellipse 60% 50% at 50% 50%, rgba(210,163,95,0.04) 0%, transparent 70%)",
@@ -223,21 +220,25 @@ export default function Landing() {
 
           {/* LEFT */}
           <div>
-            <SectionLabel>Premium Transaction Coordination</SectionLabel>
+            <SectionLabel>AI-Powered Transaction Coordination</SectionLabel>
 
-            <h1 style={{ fontFamily: "'Playfair Display', serif", fontSize: "clamp(58px, 7vw, 88px)", fontWeight: 800, color: C.text, lineHeight: 1.0, margin: "0 0 4px", letterSpacing: "-0.01em" }}>
-              Close More.
+            <h1 style={{ fontFamily: "'Playfair Display', serif", fontSize: "clamp(52px, 7vw, 80px)", fontWeight: 800, color: C.text, lineHeight: 1.0, margin: "0 0 4px", letterSpacing: "-0.01em" }}>
+              Automate the Work.
             </h1>
-            <h1 style={{ fontFamily: "'Playfair Display', serif", fontSize: "clamp(58px, 7vw, 88px)", fontWeight: 800, color: C.gold, fontStyle: "italic", lineHeight: 1.0, margin: "0 0 36px", letterSpacing: "-0.01em" }}>
-              Manage Less.
+            <h1 style={{ fontFamily: "'Playfair Display', serif", fontSize: "clamp(52px, 7vw, 80px)", fontWeight: 800, color: C.gold, fontStyle: "italic", lineHeight: 1.0, margin: "0 0 36px", letterSpacing: "-0.01em" }}>
+              Close Every Deal.
             </h1>
 
-            <p style={{ fontSize: 16, color: C.textSoft, lineHeight: 1.75, maxWidth: 480, marginBottom: 32 }}>
-              EliteTC handles every detail from contract to close — so you can focus on building relationships and growing your business. Precision coordination for agents, teams, and brokerages.
+            <p style={{ fontSize: 16, color: C.textSoft, lineHeight: 1.75, maxWidth: 500, marginBottom: 32 }}>
+              EliteTC is a full AI transaction coordination platform — built specifically for real estate professionals. Upload a contract and the platform handles parsing, deadline tracking, compliance, task generation, and communication from day one.
             </p>
 
             <div style={{ display: "flex", flexDirection: "column", gap: 12, marginBottom: 40 }}>
-              {["Contract-to-close coordination", "Compliance & deadline management", "Client & vendor communication"].map(item => (
+              {[
+                "AI contract parsing — names, dates, deadlines extracted automatically",
+                "Deterministic deadline engine with overdue alerts & calendar sync",
+                "Compliance monitoring, risk scoring & missing signature detection",
+              ].map(item => (
                 <div key={item} style={{ display: "flex", alignItems: "center", gap: 10, fontSize: 14, color: C.textSoft }}>
                   <CheckCircle style={{ width: 16, height: 16, color: C.gold, flexShrink: 0 }} />
                   {item}
@@ -247,15 +248,15 @@ export default function Landing() {
 
             <div style={{ display: "flex", flexWrap: "wrap", gap: 12, alignItems: "center", marginBottom: 32 }}>
               <GoldBtn onClick={() => base44.auth.redirectToLogin("/Dashboard")}>
-                Get Started <ArrowRight style={{ width: 15, height: 15 }} />
+                Upload Your First Contract <ArrowRight style={{ width: 15, height: 15 }} />
               </GoldBtn>
               <OutlineBtn onClick={() => scrollTo("contact")}>
                 Schedule a Consultation
               </OutlineBtn>
             </div>
 
-            <NavTextBtn onClick={() => scrollTo("services")}>
-              View Services <ArrowRight style={{ width: 14, height: 14 }} />
+            <NavTextBtn onClick={() => scrollTo("features")}>
+              Explore Platform Features <ArrowRight style={{ width: 14, height: 14 }} />
             </NavTextBtn>
           </div>
 
@@ -266,12 +267,12 @@ export default function Landing() {
             borderRadius: 18, padding: "36px 32px",
           }}>
             <p style={{ fontSize: 10, fontWeight: 700, letterSpacing: "0.22em", textTransform: "uppercase", color: C.gold, marginBottom: 28, fontFamily: "Inter, sans-serif" }}>
-              Performance Metrics
+              Platform Capabilities
             </p>
             {[
-              { label: "Transactions Closed", value: "500+" },
-              { label: "On-Time Closings",    value: "98%" },
-              { label: "Avg. Onboarding",     value: "72hr" },
+              { label: "Contracts Auto-Parsed",    value: "30+" },
+              { label: "Deadline Fields Tracked",  value: "14+" },
+              { label: "Compliance Rules Active",  value: "10+" },
             ].map(({ label, value }, i) => (
               <div key={label}>
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "20px 0" }}>
@@ -282,7 +283,7 @@ export default function Landing() {
               </div>
             ))}
             <p style={{ fontSize: 12, color: C.textMuted, marginTop: 20, lineHeight: 1.65, fontFamily: "Inter, sans-serif" }}>
-              Trusted by independent agents, top-producing teams, and regional brokerages across the country.
+              Purpose-built for transaction coordinators, real estate teams, and independent agents operating at scale in NH and beyond.
             </p>
           </div>
         </div>
@@ -291,38 +292,50 @@ export default function Landing() {
       {/* ── DIVIDER ─── */}
       <div style={{ height: 1, background: C.border, maxWidth: 1100, margin: "0 auto" }} />
 
-      {/* ── THE ELITETC DIFFERENCE ───────────────────────────────────── */}
-      <section id="why-elitetc" style={{ background: C.bg }} className="py-16 md:py-28 px-5 md:px-16">
+      {/* ── AI CONTRACT PARSING SPOTLIGHT ───────────────────────────── */}
+      <section id="features" style={{ background: C.bg }} className="py-16 md:py-28 px-5 md:px-16">
         <div className="grid grid-cols-1 md:grid-cols-[1fr_1.4fr] gap-12 md:gap-24" style={{ maxWidth: 1200, margin: "0 auto", alignItems: "start" }}>
 
-          {/* Left */}
           <div>
-            <SectionLabel>The EliteTC Difference</SectionLabel>
+            <SectionLabel>AI Contract Intake</SectionLabel>
             <h2 style={{ fontFamily: "'Playfair Display', serif", fontSize: "clamp(36px, 4vw, 52px)", fontWeight: 800, color: C.text, lineHeight: 1.05, margin: "0 0 2px" }}>
-              Your Transaction.
+              Upload a Contract.
             </h2>
             <h2 style={{ fontFamily: "'Playfair Display', serif", fontSize: "clamp(36px, 4vw, 52px)", fontWeight: 800, color: C.gold, fontStyle: "italic", lineHeight: 1.05, margin: "0 0 28px" }}>
-              Our Responsibility.
+              We Handle the Rest.
             </h2>
-            <p style={{ fontSize: 14, color: C.textSoft, lineHeight: 1.8, marginBottom: 36, maxWidth: 360, fontFamily: "Inter, sans-serif" }}>
-              Transaction coordination isn't a support function — it's the operational backbone of a high-performing real estate practice. EliteTC treats every file with the same level of rigor, regardless of price point or complexity.
+            <p style={{ fontSize: 14, color: C.textSoft, lineHeight: 1.8, marginBottom: 36, maxWidth: 380, fontFamily: "Inter, sans-serif" }}>
+              EliteTC uses AI-powered OCR and intelligent document parsing to extract critical transaction data directly from Purchase & Sale Agreements — no manual data entry required.
             </p>
             <div style={{
               background: "rgba(210,163,95,0.06)", border: `1px solid ${C.borderGold}`,
               borderRadius: 10, padding: "24px 26px",
             }}>
-              <p style={{ fontSize: 14, color: C.textSoft, fontStyle: "italic", lineHeight: 1.75, margin: 0, fontFamily: "'Playfair Display', serif" }}>
-                "The best agents in the country don't manage their own transactions. They build systems that do it for them."
-              </p>
+              <p style={{ fontSize: 13, fontWeight: 700, color: C.gold, marginBottom: 14, fontFamily: "Inter, sans-serif" }}>Automatically extracted from uploaded contracts:</p>
+              <div className="grid grid-cols-2 gap-y-2 gap-x-4">
+                {[
+                  "Buyer & seller names", "Agent & brokerage info",
+                  "Purchase price", "EMD / deposit amounts",
+                  "Inspection deadline", "Due diligence dates",
+                  "Financing contingency", "Closing date",
+                  "Title company details", "Commission structure",
+                  "Property address", "MLS number",
+                ].map(f => (
+                  <div key={f} style={{ display: "flex", alignItems: "center", gap: 7, fontSize: 12, color: C.textSoft, fontFamily: "Inter, sans-serif" }}>
+                    <CheckCircle style={{ width: 12, height: 12, color: C.gold, flexShrink: 0 }} />
+                    {f}
+                  </div>
+                ))}
+              </div>
             </div>
           </div>
 
-          {/* Right — 3 feature cards */}
           <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
             {[
-              { icon: ShieldCheck, title: "Stay Compliant", desc: "Every document reviewed. Every requirement met. Zero compliance surprises at closing." },
-              { icon: FileText,    title: "Stay Organized", desc: "One coordinator, one system, complete visibility. Your transaction file is always current and accessible." },
-              { icon: Users,       title: "Stay Client-Focused", desc: "When operations are handled, your attention goes where it belongs — on your clients and your next deal." },
+              { icon: Brain,       title: "Intelligent Document Recognition",   desc: "Supports residential, multifamily, commercial, land, and buyer agency agreements. The AI identifies the document type before extraction begins." },
+              { icon: FileText,    title: "NH-Specific Workflow Compliance",     desc: "Built around New Hampshire transaction workflows. Contract fields, compliance rules, and deadline logic reflect NH-specific real estate requirements." },
+              { icon: Zap,         title: "Instant Transaction Population",      desc: "Extracted fields auto-populate the transaction record — deadlines, contacts, financial data, and phase state are ready immediately after upload." },
+              { icon: ShieldCheck, title: "Review & Override Control",           desc: "All AI-parsed fields are reviewable and editable. Every extraction is logged for audit and version history, giving coordinators full control." },
             ].map(({ icon: Icon, title, desc }) => (
               <DiffCard key={title} icon={Icon} title={title} desc={desc} />
             ))}
@@ -333,37 +346,47 @@ export default function Landing() {
       {/* ── DIVIDER ─── */}
       <div style={{ height: 1, background: C.border, maxWidth: 1100, margin: "0 auto" }} />
 
-      {/* ── SERVICES ────────────────────────────────────────────────── */}
-      <section id="services" style={{ background: C.bg }} className="py-16 md:py-28 px-5 md:px-16">
+      {/* ── PLATFORM FEATURES ───────────────────────────────────────── */}
+      <section id="platform" style={{ background: C.bg }} className="py-16 md:py-28 px-5 md:px-16">
         <div style={{ maxWidth: 1200, margin: "0 auto" }}>
           <div style={{ marginBottom: 60 }}>
+            <SectionLabel>Full Platform Capabilities</SectionLabel>
             <h2 style={{ fontFamily: "'Playfair Display', serif", fontSize: "clamp(40px, 5vw, 64px)", fontWeight: 800, color: C.text, lineHeight: 1.05, margin: "0 0 4px" }}>
-              Full-Spectrum <span style={{ color: C.gold, fontStyle: "italic" }}>Transaction</span>
+              Every Tool a <span style={{ color: C.gold, fontStyle: "italic" }}>Modern TC</span>
             </h2>
             <h2 style={{ fontFamily: "'Playfair Display', serif", fontSize: "clamp(40px, 5vw, 64px)", fontWeight: 800, color: C.gold, fontStyle: "italic", lineHeight: 1.05, margin: "0 0 24px" }}>
-              Services
+              Actually Needs
             </h2>
-            <p style={{ fontSize: 15, color: C.textSoft, maxWidth: 580, lineHeight: 1.75, fontFamily: "Inter, sans-serif" }}>
-              From the moment a contract is executed to the day keys are handed over, EliteTC manages every operational detail — so your attention stays on clients.
+            <p style={{ fontSize: 15, color: C.textSoft, maxWidth: 600, lineHeight: 1.75, fontFamily: "Inter, sans-serif" }}>
+              From the moment a contract is uploaded to the day keys are handed over, EliteTC manages every operational layer — intelligently, automatically, and with full auditability.
             </p>
           </div>
 
           {/* Row 1: 3 cols */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
-            <ServiceCard icon={FileText}      title="Contract-to-Close Coordination" desc="Full oversight from executed contract through final closing. Every document, every deadline, every party — managed with precision." />
-            <ServiceCard icon={ShieldCheck}   title="Compliance Management"          desc="We ensure every transaction meets state, brokerage, and MLS compliance requirements. No gaps, no surprises." />
-            <ServiceCard icon={Clock}         title="Deadline Tracking"              desc="Inspection periods, financing contingencies, closing dates — tracked and communicated proactively so nothing slips." />
+            <ServiceCard icon={Brain}         title="AI Contract Parsing"              desc="Upload a P&S or listing agreement and watch fields populate automatically. Buyer, seller, dates, deadlines, commissions — extracted in seconds via OCR and intelligent parsing." />
+            <ServiceCard icon={Clock}         title="Deadline Intelligence Engine"     desc="A centralized, deterministic deadline engine tracks inspection, financing, appraisal, EMD, due diligence, and closing dates — with automatic overdue detection and severity alerts." />
+            <ServiceCard icon={ShieldCheck}   title="Compliance Monitoring"            desc="10+ active compliance rules continuously evaluate each transaction. Missing signatures, unchecked initials, overdue items, and risk conditions are surfaced immediately." />
           </div>
           {/* Row 2: 4 cols */}
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 mb-4">
-            <ServiceCard icon={MessageSquare} title="Communication Management"       desc="Coordinated communication between agents, clients, lenders, title, and escrow. One point of contact for all parties." />
-            <ServiceCard icon={LayoutDashboard} title="MLS Input Support"             desc="Accurate, timely MLS data entry and status updates. We handle the administrative load so your listings stay current." />
-            <ServiceCard icon={Search}        title="Document Review"                desc="Thorough review of all transaction documents for completeness, accuracy, and compliance before submission." />
-            <ServiceCard icon={Users}         title="Client & Vendor Coordination"   desc="We manage relationships with inspectors, appraisers, lenders, title companies, and all parties involved in the transaction." />
+            <ServiceCard icon={LayoutDashboard} title="Transaction Dashboard"          desc="A real-time command center for every active transaction. Phase tracking, health scores, risk levels, and activity feeds in one unified view." />
+            <ServiceCard icon={Bell}           title="Automated Notifications"         desc="Email and in-app alerts fire automatically as deadlines approach. Configurable urgency levels — notice, warning, urgent, critical — keep all parties informed without manual follow-up." />
+            <ServiceCard icon={Calendar}       title="Google Calendar Sync"            desc="Transaction deadlines sync directly to Google Calendar. TCs and agents stay aligned without switching platforms or manual calendar management." />
+            <ServiceCard icon={FileCheck}      title="Document Management"             desc="Secure document storage, checklist tracking, and document-type recognition with AI-powered matching to transaction requirements." />
           </div>
-          {/* Row 3: 1 col (partial) */}
+          {/* Row 3: 4 cols */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 mb-4">
+            <ServiceCard icon={BookUser}       title="Contact & Vendor CRM"            desc="A persistent contact database that auto-imports from transactions. Track lenders, title companies, inspectors, and agents with reusable, categorized records." />
+            <ServiceCard icon={DollarSign}     title="Commission Management"           desc="Full commission tracking with gross/net calculation, brokerage split support, buyer/seller side compensation, and title-ready commission statement generation." />
+            <ServiceCard icon={MessageSquare}  title="Communication Workflows"         desc="Automated email templates for contract milestones, deadline reminders, utility requests, Zillow review outreach, and under-contract announcements." />
+            <ServiceCard icon={Activity}       title="Activity Feed & Audit Log"       desc="Every action — task completion, document upload, phase change, field edit — is logged with actor, timestamp, and before/after state for full auditability." />
+          </div>
+          {/* Row 4: 3 cols */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <ServiceCard icon={DollarSign}    title="Commission & Closing Tracking"  desc="Accurate commission tracking, closing cost coordination, and final disbursement oversight for every transaction." />
+            <ServiceCard icon={Lock}           title="Isolated Account Security"       desc="Role-aware access controls, owner-based transaction visibility, and protected data architecture ensure each user only sees what they're authorized to access." />
+            <ServiceCard icon={Users}          title="Team & TC Management"            desc="Assign TCs to transactions, manage brokerage teams, and control role-based access across owner, TC lead, TC, agent, and client roles." />
+            <ServiceCard icon={Search}         title="Signature & DocuSign Integration" desc="Send documents for e-signature via Dropbox Sign or DocuSign. Track signer status, completion, and blocking conditions in real time." />
           </div>
         </div>
       </section>
@@ -375,34 +398,32 @@ export default function Landing() {
       <section id="why-elitetc" style={{ background: C.bg }} className="py-16 md:py-28 px-5 md:px-16">
         <div className="grid grid-cols-1 md:grid-cols-[300px_1fr] gap-12 md:gap-24" style={{ maxWidth: 1200, margin: "0 auto", alignItems: "start" }}>
 
-          {/* Left */}
           <div>
             <SectionLabel>Why EliteTC</SectionLabel>
             <h2 style={{ fontFamily: "'Playfair Display', serif", fontSize: 52, fontWeight: 800, color: C.text, lineHeight: 1.0, margin: "0 0 2px" }}>Built for</h2>
             <h2 style={{ fontFamily: "'Playfair Display', serif", fontSize: 52, fontWeight: 800, color: C.gold, fontStyle: "italic", lineHeight: 1.0, margin: "0 0 28px" }}>
-              Agents Who<br />Perform
+              TCs Who<br />Operate at Scale
             </h2>
             <p style={{ fontSize: 14, color: C.textSoft, lineHeight: 1.8, marginBottom: 32, fontFamily: "Inter, sans-serif" }}>
-              Top-producing agents don't spend their time on paperwork. They work with systems and teams that handle operations at a professional level.
+              Transaction coordinators running high volumes need more than a checklist. EliteTC replaces fragmented tools with a single, intelligent platform that handles the operational complexity of modern real estate workflows.
             </p>
             <div style={{ height: 1, background: C.border, marginBottom: 28 }} />
             <div style={{
               background: C.panel, border: `1px solid ${C.border}`,
               borderRadius: 10, padding: "22px 24px",
             }}>
-              <p style={{ fontFamily: "'Playfair Display', serif", fontSize: 40, fontWeight: 800, color: C.gold, margin: "0 0 6px", fontStyle: "italic" }}>15+</p>
-              <p style={{ fontSize: 13, color: C.textSoft, margin: 0, fontFamily: "Inter, sans-serif" }}>Hours saved per transaction on average</p>
+              <p style={{ fontFamily: "'Playfair Display', serif", fontSize: 40, fontWeight: 800, color: C.gold, margin: "0 0 6px", fontStyle: "italic" }}>14+</p>
+              <p style={{ fontSize: 13, color: C.textSoft, margin: 0, fontFamily: "Inter, sans-serif" }}>Deadline fields tracked per transaction, automatically</p>
             </div>
           </div>
 
-          {/* Right — 2×3 grid */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <WhyCard num="01" icon={Zap}           title="Faster Transactions"            desc="Streamlined processes and proactive coordination reduce delays at every stage. Our team anticipates bottlenecks before they become problems." />
-            <WhyCard num="02" icon={Clock}          title="Reduced Admin Workload"          desc="Eliminate the hours spent on paperwork, follow-ups, and scheduling. EliteTC absorbs the operational load so you can focus on revenue-generating activities." />
-            <WhyCard num="03" icon={Star}           title="Better Client Experience"        desc="Clients receive timely updates, clear communication, and a seamless experience from offer acceptance through closing day." />
-            <WhyCard num="04" icon={MessageSquare}  title="Organized Communication"         desc="All parties — buyers, sellers, lenders, title, inspectors — stay informed and aligned. No missed messages, no communication gaps." />
-            <WhyCard num="05" icon={ShieldCheck}    title="Deadline Accountability"         desc="Every contingency, inspection period, and closing date is tracked and enforced. We hold all parties accountable so your deals don't fall apart." />
-            <WhyCard num="06" icon={CheckCircle2}   title="Professional Transaction Oversight" desc="Experienced coordinators who understand real estate compliance, documentation standards, and the nuances of complex transactions." />
+            <WhyCard num="01" icon={Brain}          title="AI That Does Real Work"             desc="Contract parsing isn't a demo feature — it extracts 12+ fields from uploaded P&S agreements and populates your transaction instantly. No copy-paste, no manual entry." />
+            <WhyCard num="02" icon={Clock}          title="Deadlines Never Slip"               desc="The deadline engine evaluates every tracked date — inspection, financing, appraisal, EMD, due diligence, closing — and fires tiered alerts before anything becomes critical." />
+            <WhyCard num="03" icon={ShieldCheck}    title="Compliance Built In"                desc="10+ deterministic compliance rules run on every transaction. Missing initials, unsigned fields, overdue documents, and risk conditions are surfaced without waiting for a review." />
+            <WhyCard num="04" icon={Lock}           title="Secure by Architecture"             desc="Owner-based transaction isolation, role-aware visibility, and protected workflows mean every coordinator, agent, and client only accesses what they're authorized to see." />
+            <WhyCard num="05" icon={Activity}       title="Full Transaction Visibility"        desc="Phase tracking, health scores, risk levels, activity feeds, and audit logs give coordinators and TC leads complete real-time visibility across their entire deal pipeline." />
+            <WhyCard num="06" icon={BookUser}       title="CRM-Connected Workflows"            desc="Contacts from transactions auto-import into a persistent database. Lenders, title reps, inspectors, and agents are reusable across every deal — no re-entering data." />
           </div>
         </div>
       </section>
@@ -411,25 +432,22 @@ export default function Landing() {
       <div style={{ height: 1, background: C.border, maxWidth: 1100, margin: "0 auto" }} />
 
       {/* ── HOW IT WORKS ────────────────────────────────────────────── */}
-      <section id="process" style={{ background: C.bg, position: "relative", overflow: "hidden" }} className="py-16 md:py-28 px-5 md:px-16">
-        {/* Faint radial */}
+      <section id="how-it-works" style={{ background: C.bg, position: "relative", overflow: "hidden" }} className="py-16 md:py-28 px-5 md:px-16">
         <div style={{ position: "absolute", inset: 0, pointerEvents: "none", background: "radial-gradient(ellipse 80% 60% at 50% 50%, rgba(210,163,95,0.03) 0%, transparent 70%)" }} />
 
         <div style={{ maxWidth: 1000, margin: "0 auto", textAlign: "center", position: "relative", zIndex: 1 }}>
           <SectionLabel centered>How It Works</SectionLabel>
           <h2 style={{ fontFamily: "'Playfair Display', serif", fontSize: "clamp(44px, 5.5vw, 72px)", fontWeight: 800, color: C.text, lineHeight: 1.0, margin: "0 0 4px" }}>
-            From Contract to Close,
+            Contract In.
           </h2>
           <h2 style={{ fontFamily: "'Playfair Display', serif", fontSize: "clamp(44px, 5.5vw, 72px)", fontWeight: 800, color: C.gold, fontStyle: "italic", lineHeight: 1.0, margin: "0 0 24px" }}>
-            Handled.
+            Closing Out.
           </h2>
           <p style={{ fontSize: 15, color: C.textSoft, maxWidth: 520, margin: "0 auto 72px", lineHeight: 1.75, fontFamily: "Inter, sans-serif" }}>
-            A structured, repeatable process that delivers consistent results on every transaction.
+            A structured, automated workflow that takes a transaction from executed contract to closed file — with every step tracked, compliant, and visible.
           </p>
 
-          {/* Timeline */}
           <div className="grid grid-cols-1 sm:grid-cols-3 md:grid-cols-5 gap-8 md:gap-0" style={{ position: "relative", alignItems: "flex-start" }}>
-            {/* Connecting line */}
             <div style={{
               position: "absolute", top: 30, left: "10%", right: "10%", height: 1,
               background: `linear-gradient(90deg, transparent, ${C.borderGold}, ${C.borderGold}, transparent)`,
@@ -437,14 +455,13 @@ export default function Landing() {
             }} />
 
             {[
-              { num: "1", icon: Upload,       title: "Upload Your Contract",      desc: "Submit your executed contract through our secure portal. We accept all standard forms and addenda." },
-              { num: "2", icon: FileCheck,     title: "Review & Processing",       desc: "EliteTC reviews all documents for completeness, compliance, and accuracy. We identify missing items and request them immediately." },
-              { num: "3", icon: Clock,         title: "Deadlines & Tasks Managed", desc: "A complete timeline is built for your transaction. Every contingency, inspection, and closing date is tracked and enforced." },
-              { num: "4", icon: Users,         title: "All Parties Coordinated",   desc: "We communicate with buyers, sellers, lenders, title, inspectors, and all vendors. You receive status updates, not action items." },
-              { num: "5", icon: CheckCircle2,  title: "Transaction Closed",        desc: "Final documents verified, commission tracked, and closing confirmed. Your transaction is complete — on time and in compliance." },
+              { num: "1", icon: Upload,       title: "Upload Your Contract",          desc: "Submit a P&S agreement, listing agreement, or buyer agency agreement through the secure intake portal. AI parsing begins immediately." },
+              { num: "2", icon: Brain,         title: "AI Extracts Everything",       desc: "Buyer, seller, agents, deadlines, commissions, title info — extracted automatically. The transaction record is populated without manual entry." },
+              { num: "3", icon: Clock,         title: "Deadlines & Tasks Activated",  desc: "A deadline timeline and task checklist are generated automatically. Every contingency, inspection period, and closing date is tracked from day one." },
+              { num: "4", icon: Bell,          title: "Automated Alerts Fire",        desc: "As deadlines approach, tiered notifications go out to TCs, agents, and clients. Compliance issues are flagged before they become problems." },
+              { num: "5", icon: CheckCircle2,  title: "Transaction Closed",           desc: "Final documents verified, commission tracked, closing confirmed. Full audit log preserved. File archived and reporting updated." },
             ].map(({ num, icon: Icon, title, desc }) => (
               <div key={num} style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", textAlign: "center", padding: "0 12px", position: "relative", zIndex: 1 }}>
-                {/* Circle */}
                 <div style={{
                   width: 62, height: 62, borderRadius: "50%",
                   background: C.panel, border: `1px solid ${C.borderGold}`,
@@ -452,7 +469,6 @@ export default function Landing() {
                   marginBottom: 20, position: "relative",
                 }}>
                   <Icon style={{ width: 22, height: 22, color: C.gold }} />
-                  {/* Number badge */}
                   <div style={{
                     position: "absolute", top: -7, right: -7,
                     width: 20, height: 20, borderRadius: "50%",
@@ -470,7 +486,7 @@ export default function Landing() {
 
           <div style={{ marginTop: 64 }}>
             <GoldBtn onClick={() => base44.auth.redirectToLogin("/Dashboard")} style={{ padding: "16px 36px", fontSize: 15 }}>
-              Start Your First Transaction
+              Start Your Transaction Workflow
             </GoldBtn>
           </div>
         </div>
@@ -484,18 +500,18 @@ export default function Landing() {
         <div style={{ maxWidth: 1200, margin: "0 auto" }}>
           <SectionLabel>Client Results</SectionLabel>
           <h2 style={{ fontFamily: "'Playfair Display', serif", fontSize: "clamp(36px, 4vw, 52px)", fontWeight: 800, color: C.text, lineHeight: 1.05, margin: "0 0 8px" }}>
-            What Agents <span style={{ color: C.gold, fontStyle: "italic" }}>Actually Say</span>
+            What Real Estate Teams <span style={{ color: C.gold, fontStyle: "italic" }}>Actually Say</span>
           </h2>
-          <p style={{ fontSize: 14, color: C.textSoft, maxWidth: 440, lineHeight: 1.75, marginBottom: 52, fontFamily: "Inter, sans-serif" }}>
-            Real feedback from agents, teams, and brokerages who rely on EliteTC to run their operations.
+          <p style={{ fontSize: 14, color: C.textSoft, maxWidth: 480, lineHeight: 1.75, marginBottom: 52, fontFamily: "Inter, sans-serif" }}>
+            Real feedback from transaction coordinators, agents, and team leads who run their operations on EliteTC.
           </p>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
             {[
-              { quote: "EliteTC has completely changed how I operate. I used to spend 3–4 hours per transaction on admin work. Now I hand it off and focus on my clients. My volume is up 40% this year.", name: "Sarah M.", role: "Independent Agent · Dallas, TX", badge: "85+ transactions/year" },
-              { quote: "The compliance management alone is worth every penny. I've never had a file come back with issues since working with EliteTC. Their attention to detail is exceptional.", name: "James R.", role: "Team Lead · Phoenix, AZ", badge: "200+ transactions/year" },
-              { quote: "Our brokerage onboarded EliteTC for our top 20 agents. The operational improvement was immediate. Deadlines are never missed, clients are always informed.", name: "Linda K.", role: "Broker/Owner · Nashville, TN", badge: "Regional Brokerage" },
-              { quote: "I was skeptical — I thought no one could manage my transactions better than me. I was wrong. EliteTC is thorough, professional, and genuinely invested in every deal.", name: "Marcus T.", role: "Top Producer · Austin, TX", badge: "100+ transactions/year" },
+              { quote: "The AI contract parsing alone cut my intake time by 80%. I upload the P&S and the transaction populates itself — deadlines, parties, commissions. I'm not manually entering anything anymore.", name: "Sarah M.", role: "Transaction Coordinator · NH", badge: "85+ transactions/year" },
+              { quote: "The deadline engine catches things before they become problems. I get a notification 48 hours out, 24 hours out, and at the critical mark. Nothing falls through the cracks.", name: "James R.", role: "TC Lead · Greater Boston", badge: "200+ transactions/year" },
+              { quote: "We rolled this out across our TC team and the compliance monitoring is exceptional. Missing initials, unsigned fields, overdue contingencies — all flagged automatically. Our error rate dropped immediately.", name: "Linda K.", role: "Broker/Owner · Southern NH", badge: "Regional Brokerage" },
+              { quote: "Having all contacts, commissions, documents, and deadlines in one place — with full audit history — is exactly what modern TC operations need. This platform was built by people who actually understand the workflow.", name: "Marcus T.", role: "Independent TC · Seacoast NH", badge: "100+ transactions/year" },
             ].map(({ quote, name, role, badge }) => (
               <TestimonialCard key={name} quote={quote} name={name} role={role} badge={badge} />
             ))}
@@ -525,14 +541,14 @@ export default function Landing() {
 
           <div>
             {[
-              { q: "What types of transactions does EliteTC coordinate?",         a: "We coordinate residential, commercial, and multi-family transactions including buyer-side, listing-side, and dual agency. We work with all standard contract forms across states." },
-              { q: "How do I submit a transaction to EliteTC?",                   a: "Simply start a transaction through our secure intake portal. Upload your executed contract and we'll take it from there within one business day." },
-              { q: "Do you work with individual agents, teams, or brokerages?",   a: "All three. Whether you're a solo agent, a top-producing team, or a regional brokerage, we build a coordination workflow that fits your operation." },
-              { q: "How does EliteTC handle compliance requirements?",             a: "We review every document for completeness, accuracy, and compliance with state, brokerage, and MLS requirements. Any missing items are flagged and requested immediately." },
-              { q: "What is your communication process with clients and vendors?", a: "We serve as the central point of contact for all parties. You receive regular status updates without needing to manage communication yourself." },
-              { q: "How are your services priced?",                               a: "Our pricing is per-transaction with no long-term commitments or setup fees. Contact us for current rates based on your transaction volume." },
-              { q: "What happens if a transaction falls through?",                a: "We only charge for transactions that successfully proceed. If a deal falls through, you won't be billed for coordination work on that file." },
-              { q: "Can EliteTC work with my existing transaction management software?", a: "Yes. We are experienced with most major platforms. Our coordinators adapt to your existing systems and workflows." },
+              { q: "What types of contracts does EliteTC parse?",                  a: "The platform supports Purchase & Sale Agreements, listing agreements, buyer agency agreements, and addenda. Document recognition is automatic — the AI identifies the contract type before extraction." },
+              { q: "How accurate is the AI contract parsing?",                     a: "Field extraction accuracy is high for standard NH contract forms. All parsed fields are reviewable and editable before the transaction is confirmed. Every extraction is logged for audit purposes." },
+              { q: "What deadlines does the platform track?",                      a: "Inspection, financing contingency, appraisal, EMD, due diligence, clear-to-close target, and closing date are all tracked automatically. Overdue detection fires tiered alerts — notice (48h), warning (24h), urgent (12h), and critical (overdue)." },
+              { q: "How does compliance monitoring work?",                         a: "10+ deterministic compliance rules evaluate each transaction continuously. Rules check for missing documents, unsigned fields, overdue contingencies, incomplete checklists, and risk conditions. Issues are surfaced immediately — no manual review required." },
+              { q: "Is this built specifically for New Hampshire real estate?",     a: "Yes. The platform's workflow logic, compliance rules, and document parsing are calibrated for NH transaction requirements. That said, the core coordination capabilities are applicable to real estate operations in any market." },
+              { q: "How does the contact management system work?",                 a: "Contacts are automatically imported from transaction records. Lenders, title companies, inspectors, attorneys, and agents are stored in a persistent CRM database, categorized by role, and reusable across every transaction." },
+              { q: "Does the platform integrate with Google Calendar?",            a: "Yes. Transaction deadlines sync directly to Google Calendar via authorized OAuth integration. TCs and agents receive calendar events for every tracked milestone." },
+              { q: "What roles and access levels are supported?",                  a: "The platform supports owner, admin, TC lead, TC, agent, and client roles — each with scoped access and visibility. Transactions are isolated by ownership, ensuring coordinators and clients only see what they're authorized to access." },
             ].map(({ q, a }, i) => (
               <FaqItem key={i} q={q} a={a} open={openFaq === i} onToggle={() => setOpenFaq(openFaq === i ? null : i)} />
             ))}
@@ -547,21 +563,20 @@ export default function Landing() {
       <section id="contact" style={{ background: C.bg }} className="py-16 md:py-28 px-5 md:px-16">
         <div className="grid grid-cols-1 md:grid-cols-[1fr_1.3fr] gap-12 md:gap-24" style={{ maxWidth: 1200, margin: "0 auto", alignItems: "start" }}>
 
-          {/* Left */}
           <div>
             <SectionLabel>Get Started</SectionLabel>
             <h2 style={{ fontFamily: "'Playfair Display', serif", fontSize: "clamp(36px, 4vw, 52px)", fontWeight: 800, color: C.text, lineHeight: 1.0, margin: "0 0 2px" }}>Ready to</h2>
             <h2 style={{ fontFamily: "'Playfair Display', serif", fontSize: "clamp(36px, 4vw, 52px)", fontWeight: 800, color: C.gold, fontStyle: "italic", lineHeight: 1.0, margin: "0 0 28px" }}>
-              Elevate Your<br />Operations?
+              Automate Your<br />TC Workflow?
             </h2>
             <p style={{ fontSize: 14, color: C.textSoft, lineHeight: 1.8, maxWidth: 320, marginBottom: 36, fontFamily: "Inter, sans-serif" }}>
-              Whether you're starting your first transaction or looking to scale your operation, EliteTC is ready to handle the details.
+              Whether you're coordinating your first transaction or scaling a full TC operation, EliteTC gives you the infrastructure to manage every deal intelligently.
             </p>
 
             {[
               { icon: Mail,    text: "info@elitetc.com" },
               { icon: Phone,   text: "(800) 555-0192" },
-              { icon: MapPin,  text: "Serving agents nationwide" },
+              { icon: MapPin,  text: "Serving NH real estate professionals" },
             ].map(({ icon: Icon, text }) => (
               <div key={text} style={{ display: "flex", alignItems: "center", gap: 14, marginBottom: 16 }}>
                 <div style={{ width: 34, height: 34, borderRadius: 7, background: "rgba(210,163,95,0.1)", border: `1px solid ${C.borderGold}`, display: "flex", alignItems: "center", justifyContent: "center", color: C.gold, flexShrink: 0 }}>
@@ -574,31 +589,31 @@ export default function Landing() {
             <div style={{ marginTop: 28, background: "rgba(210,163,95,0.06)", border: `1px solid ${C.borderGold}`, borderRadius: 10, padding: "16px 18px", display: "flex", alignItems: "flex-start", gap: 12 }}>
               <div style={{ width: 8, height: 8, borderRadius: "50%", background: C.gold, flexShrink: 0, marginTop: 3 }} />
               <div>
-                <p style={{ fontSize: 13, fontWeight: 700, color: C.gold, margin: "0 0 3px", fontFamily: "Inter, sans-serif" }}>Response within 1 business day</p>
-                <p style={{ fontSize: 12, color: C.textMuted, margin: 0, fontFamily: "Inter, sans-serif" }}>All inquiries are reviewed by a senior coordinator.</p>
+                <p style={{ fontSize: 13, fontWeight: 700, color: C.gold, margin: "0 0 3px", fontFamily: "Inter, sans-serif" }}>Onboarding within 24 hours</p>
+                <p style={{ fontSize: 12, color: C.textMuted, margin: 0, fontFamily: "Inter, sans-serif" }}>All accounts are reviewed and configured by our team.</p>
               </div>
             </div>
           </div>
 
           {/* Right — Form */}
           <div style={{ background: C.panel, border: `1px solid ${C.border}`, borderRadius: 16, padding: "32px 24px" }}>
-           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
               <FormField label="FULL NAME *"     placeholder="Your full name" />
               <FormField label="EMAIL ADDRESS *" placeholder="your@email.com" type="email" />
               <FormField label="PHONE NUMBER"    placeholder="(555) 000-0000" type="tel" />
-              <FormSelect label="I AM A" placeholder="Select your role" options={["Independent Agent", "Team Lead", "Broker/Owner", "Transaction Coordinator"]} />
+              <FormSelect label="I AM A" placeholder="Select your role" options={["Transaction Coordinator", "TC Lead", "Independent Agent", "Broker/Owner", "Real Estate Team"]} />
             </div>
             <div style={{ marginBottom: 16 }}>
-              <FormSelect label="SERVICE NEEDED" placeholder="Select a service" options={["Contract-to-Close Coordination", "Compliance Management", "Full Transaction Management"]} fullWidth />
+              <FormSelect label="PRIMARY NEED" placeholder="What matters most?" options={["AI Contract Parsing", "Deadline Tracking", "Compliance Monitoring", "Team TC Management", "Full Platform Access"]} fullWidth />
             </div>
             <div style={{ marginBottom: 28 }}>
               <label style={{ display: "block", fontSize: 9, fontWeight: 700, letterSpacing: "0.14em", textTransform: "uppercase", color: C.textMuted, marginBottom: 7, fontFamily: "Inter, sans-serif" }}>MESSAGE</label>
-              <textarea rows={4} placeholder="Tell us about your transaction volume, current challenges, or any specific needs..."
+              <textarea rows={4} placeholder="Tell us about your transaction volume, current workflow challenges, or any specific requirements..."
                 style={{ width: "100%", background: "rgba(8,9,11,0.95)", border: `1px solid rgba(255,255,255,0.08)`, borderRadius: 7, padding: "11px 13px", fontSize: 13, color: C.text, outline: "none", resize: "vertical", fontFamily: "Inter, sans-serif", lineHeight: 1.65 }} />
             </div>
             <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
               <GoldBtn onClick={() => base44.auth.redirectToLogin("/Dashboard")}>
-                Start a Transaction <ArrowRight style={{ width: 14, height: 14 }} />
+                Coordinate Deals Smarter <ArrowRight style={{ width: 14, height: 14 }} />
               </GoldBtn>
               <OutlineBtn onClick={() => base44.auth.redirectToLogin("/Dashboard")}>
                 Sign In
@@ -612,26 +627,25 @@ export default function Landing() {
       <footer style={{ background: C.bgSoft, borderTop: `1px solid ${C.border}` }} className="px-5 md:px-16 pt-14 md:pt-16 pb-8">
         <div style={{ maxWidth: 1200, margin: "0 auto" }}>
           <div className="grid grid-cols-2 md:grid-cols-[1.4fr_1fr_1fr_1fr] gap-10 md:gap-16 mb-12">
-            {/* Brand */}
             <div>
               <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 18 }}>
                 <div style={{ width: 32, height: 32, borderRadius: 6, background: "rgba(210,163,95,0.12)", border: `1px solid ${C.borderGold}`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 13, fontWeight: 800, color: C.gold }}>E</div>
                 <div>
                   <div style={{ fontSize: 13, fontWeight: 800, color: C.text, fontFamily: "'Playfair Display', serif", letterSpacing: "0.06em" }}>ELITETC</div>
-                  <div style={{ fontSize: 8, letterSpacing: "0.12em", color: C.textMuted, textTransform: "uppercase" }}>Transaction Coordination</div>
+                  <div style={{ fontSize: 8, letterSpacing: "0.12em", color: C.textMuted, textTransform: "uppercase" }}>AI Transaction Platform</div>
                 </div>
               </div>
               <p style={{ fontSize: 13, color: C.textMuted, lineHeight: 1.75, maxWidth: 240, marginBottom: 18, fontFamily: "Inter, sans-serif" }}>
-                Premium transaction coordination for real estate professionals who demand operational excellence.
+                AI-powered transaction coordination for real estate professionals who demand operational precision at every stage of the deal.
               </p>
               <p style={{ fontSize: 13, color: C.textSoft, fontFamily: "Inter, sans-serif" }}>info@elitetc.com</p>
               <p style={{ fontSize: 13, color: C.textSoft, marginTop: 4, fontFamily: "Inter, sans-serif" }}>(800) 555-0192</p>
             </div>
 
             {[
-              { label: "Services",    items: ["Contract-to-Close", "Compliance Mgmt", "Deadline Tracking", "Communication", "MLS Input Support", "Document Review"] },
-              { label: "Company",     items: ["Why EliteTC", "Our Process", "Testimonials", "FAQ"] },
-              { label: "Get Started", items: ["Start a Transaction", "Schedule Consultation", "Contact Us", "TC Login"] },
+              { label: "Platform",    items: ["AI Contract Parsing", "Deadline Engine", "Compliance Tools", "Document Management", "Commission Tracking", "Contact CRM"] },
+              { label: "Company",     items: ["Why EliteTC", "How It Works", "Testimonials", "FAQ"] },
+              { label: "Get Started", items: ["Upload a Contract", "Schedule Consultation", "Contact Us", "TC Login"] },
             ].map(({ label, items }) => (
               <div key={label}>
                 <p style={{ fontSize: 10, fontWeight: 700, letterSpacing: "0.18em", textTransform: "uppercase", color: C.gold, marginBottom: 22, fontFamily: "Inter, sans-serif" }}>{label}</p>
@@ -653,7 +667,7 @@ export default function Landing() {
   );
 }
 
-// ─── Sub-components (defined after main export) ──────────────────────
+// ─── Sub-components ──────────────────────────────────────────────────
 
 function NavTextBtn({ children, onClick }) {
   const [h, setH] = useState(false);
