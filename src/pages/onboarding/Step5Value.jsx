@@ -1,42 +1,42 @@
 import React, { useState } from "react";
 import { base44 } from "@/api/base44Client";
-import { Button } from "@/components/ui/button";
-import { Loader2, CheckCircle, Calendar, Shield, ClipboardList, Mail, Zap } from "lucide-react";
+import { Loader2, CheckCircle2, Calendar, Shield, ClipboardList, Mail, Zap, ArrowRight } from "lucide-react";
 import { useQueryClient } from "@tanstack/react-query";
+
+const C = {
+  bg:         "#050506",
+  panel:      "#0d0e11",
+  border:     "rgba(255,255,255,0.08)",
+  borderGold: "rgba(210,163,95,0.22)",
+  text:       "#f5f1e8",
+  textSoft:   "#a6adbb",
+  textMuted:  "#6f7683",
+  gold:       "#d2a35f",
+};
 
 const HIGHLIGHTS = [
   {
     icon: Calendar,
-    color: "text-blue-400",
-    bg: "bg-blue-500/20",
     title: "Deadline Tracking",
-    desc: "All critical deadlines automatically tracked — inspection, appraisal, financing, closing.",
+    desc: "All critical deadlines automatically tracked — inspection, appraisal, financing, and closing.",
   },
   {
     icon: Shield,
-    color: "text-purple-400",
-    bg: "bg-purple-500/20",
     title: "Compliance Alerts",
     desc: "Instant alerts when documents are missing or signatures are needed.",
   },
   {
     icon: ClipboardList,
-    color: "text-green-400",
-    bg: "bg-green-500/20",
     title: "Task Checklists",
     desc: "Phase-by-phase task lists auto-generated from your transaction type.",
   },
   {
     icon: Mail,
-    color: "text-amber-400",
-    bg: "bg-amber-500/20",
     title: "Email Automation",
-    desc: "Automated deadline alerts emailed to agents, clients, and parties.",
+    desc: "Automated deadline alerts emailed to agents, clients, and all parties.",
   },
   {
     icon: Zap,
-    color: "text-cyan-400",
-    bg: "bg-cyan-500/20",
     title: "AI-Powered Parsing",
     desc: "Upload a contract and EliteTC extracts deadlines, parties, and key dates instantly.",
   },
@@ -58,33 +58,89 @@ export default function Step5Value({ parsedData, onComplete }) {
   };
 
   return (
-    <div className="space-y-4">
+    <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+
       {/* Hero card */}
-      <div className="bg-gradient-to-br from-blue-600/20 to-purple-600/20 border border-blue-500/30 rounded-2xl p-8 text-center shadow-xl">
-        <div className="w-16 h-16 rounded-full bg-blue-500/20 flex items-center justify-center mx-auto mb-4">
-          <CheckCircle className="w-8 h-8 text-blue-400" />
+      <div style={{
+        background: "rgba(13,14,17,0.9)",
+        border: `1px solid ${C.borderGold}`,
+        borderRadius: 14,
+        padding: "40px 32px",
+        textAlign: "center",
+        position: "relative",
+        overflow: "hidden",
+      }}>
+        {/* Ambient glow behind icon */}
+        <div style={{
+          position: "absolute", top: "30%", left: "50%", transform: "translate(-50%,-50%)",
+          width: 160, height: 160,
+          background: "radial-gradient(circle, rgba(210,163,95,0.08) 0%, transparent 70%)",
+          pointerEvents: "none",
+        }} />
+
+        <div style={{
+          width: 60, height: 60, borderRadius: "50%",
+          background: "rgba(210,163,95,0.1)",
+          border: `1px solid ${C.borderGold}`,
+          display: "flex", alignItems: "center", justifyContent: "center",
+          margin: "0 auto 20px",
+          boxShadow: "0 0 20px rgba(210,163,95,0.12)",
+          position: "relative",
+        }}>
+          <CheckCircle2 style={{ width: 26, height: 26, color: C.gold }} />
         </div>
-        <h2 className="text-2xl font-bold text-white mb-2">You're all set! 🎉</h2>
-        <p className="text-slate-300 text-sm max-w-sm mx-auto">
-          Here's what EliteTC will do for you on every transaction.
+
+        <h2 style={{
+          fontFamily: "'Playfair Display', serif",
+          fontSize: 32,
+          fontWeight: 800,
+          color: C.text,
+          margin: "0 0 10px",
+          lineHeight: 1.1,
+        }}>
+          You're <span style={{ color: C.gold, fontStyle: "italic" }}>Ready.</span>
+        </h2>
+        <p style={{ fontSize: 14, color: C.textSoft, maxWidth: 360, margin: "0 auto", lineHeight: 1.75, fontFamily: "Inter, sans-serif" }}>
+          Your EliteTC workspace is configured. Here's what the platform will handle on every transaction.
         </p>
       </div>
 
       {/* Highlights */}
-      <div className="space-y-3">
+      <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
         {HIGHLIGHTS.map((item) => {
           const Icon = item.icon;
           return (
             <div
               key={item.title}
-              className="flex items-start gap-4 bg-slate-800/60 border border-slate-700 rounded-xl p-4"
+              style={{
+                display: "flex",
+                alignItems: "flex-start",
+                gap: 16,
+                background: C.panel,
+                border: `1px solid ${C.border}`,
+                borderRadius: 10,
+                padding: "16px 18px",
+                transition: "border-color 0.2s ease",
+              }}
+              onMouseEnter={e => e.currentTarget.style.borderColor = C.borderGold}
+              onMouseLeave={e => e.currentTarget.style.borderColor = C.border}
             >
-              <div className={`w-10 h-10 rounded-lg ${item.bg} flex items-center justify-center flex-shrink-0`}>
-                <Icon className={`w-5 h-5 ${item.color}`} />
+              <div style={{
+                width: 36, height: 36, borderRadius: 8,
+                background: "rgba(210,163,95,0.08)",
+                border: `1px solid rgba(210,163,95,0.2)`,
+                display: "flex", alignItems: "center", justifyContent: "center",
+                color: C.gold, flexShrink: 0,
+              }}>
+                <Icon style={{ width: 15, height: 15 }} />
               </div>
               <div>
-                <p className="text-white font-semibold text-sm">{item.title}</p>
-                <p className="text-slate-400 text-xs mt-0.5">{item.desc}</p>
+                <p style={{ fontSize: 13, fontWeight: 700, color: C.text, margin: "0 0 4px", fontFamily: "Inter, sans-serif" }}>
+                  {item.title}
+                </p>
+                <p style={{ fontSize: 12, color: C.textSoft, margin: 0, lineHeight: 1.65, fontFamily: "Inter, sans-serif" }}>
+                  {item.desc}
+                </p>
               </div>
             </div>
           );
@@ -93,47 +149,76 @@ export default function Step5Value({ parsedData, onComplete }) {
 
       {/* Parsed data preview */}
       {parsedData && (parsedData.closing_date || parsedData.inspection_deadline || parsedData.address) && (
-        <div className="bg-slate-800/60 border border-slate-600 rounded-xl p-4">
-          <p className="text-slate-400 text-xs font-semibold uppercase tracking-wide mb-3">
-            From your uploaded document
+        <div style={{
+          background: C.panel,
+          border: `1px solid ${C.borderGold}`,
+          borderRadius: 10,
+          padding: "18px 20px",
+        }}>
+          <p style={{ fontSize: 10, fontWeight: 700, letterSpacing: "0.14em", textTransform: "uppercase", color: C.gold, marginBottom: 14, fontFamily: "Inter, sans-serif" }}>
+            From Your Uploaded Document
           </p>
-          <div className="grid grid-cols-2 gap-2 text-sm">
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
             {parsedData.address && (
               <div>
-                <p className="text-slate-500 text-xs">Property</p>
-                <p className="text-white font-medium truncate">{parsedData.address}</p>
+                <p style={{ fontSize: 10, color: C.textMuted, marginBottom: 3, fontFamily: "Inter, sans-serif" }}>Property</p>
+                <p style={{ fontSize: 13, fontWeight: 600, color: C.text, margin: 0, fontFamily: "Inter, sans-serif", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{parsedData.address}</p>
               </div>
             )}
             {parsedData.closing_date && (
               <div>
-                <p className="text-slate-500 text-xs">Closing</p>
-                <p className="text-blue-300 font-medium">{parsedData.closing_date}</p>
+                <p style={{ fontSize: 10, color: C.textMuted, marginBottom: 3, fontFamily: "Inter, sans-serif" }}>Closing</p>
+                <p style={{ fontSize: 13, fontWeight: 600, color: C.gold, margin: 0, fontFamily: "Inter, sans-serif" }}>{parsedData.closing_date}</p>
               </div>
             )}
             {parsedData.inspection_deadline && (
               <div>
-                <p className="text-slate-500 text-xs">Inspection</p>
-                <p className="text-amber-300 font-medium">{parsedData.inspection_deadline}</p>
+                <p style={{ fontSize: 10, color: C.textMuted, marginBottom: 3, fontFamily: "Inter, sans-serif" }}>Inspection</p>
+                <p style={{ fontSize: 13, fontWeight: 600, color: C.gold, margin: 0, fontFamily: "Inter, sans-serif" }}>{parsedData.inspection_deadline}</p>
               </div>
             )}
             {parsedData.financing_deadline && (
               <div>
-                <p className="text-slate-500 text-xs">Financing</p>
-                <p className="text-green-300 font-medium">{parsedData.financing_deadline}</p>
+                <p style={{ fontSize: 10, color: C.textMuted, marginBottom: 3, fontFamily: "Inter, sans-serif" }}>Financing</p>
+                <p style={{ fontSize: 13, fontWeight: 600, color: C.gold, margin: 0, fontFamily: "Inter, sans-serif" }}>{parsedData.financing_deadline}</p>
               </div>
             )}
           </div>
         </div>
       )}
 
-      <Button
+      {/* CTA */}
+      <button
         onClick={handleFinish}
         disabled={saving}
-        className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 text-base"
+        style={{
+          width: "100%",
+          padding: "16px 28px",
+          background: saving ? "rgba(210,163,95,0.5)" : "#d2a35f",
+          color: "#050506",
+          border: "none",
+          borderRadius: 8,
+          fontSize: 14,
+          fontWeight: 700,
+          cursor: saving ? "not-allowed" : "pointer",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          gap: 8,
+          fontFamily: "Inter, sans-serif",
+          letterSpacing: "0.02em",
+          transition: "background 0.18s ease",
+          marginTop: 4,
+        }}
+        onMouseEnter={e => { if (!saving) e.currentTarget.style.background = "#e0b874"; }}
+        onMouseLeave={e => { if (!saving) e.currentTarget.style.background = "#d2a35f"; }}
       >
-        {saving ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
-        Go to Dashboard →
-      </Button>
+        {saving
+          ? <><Loader2 style={{ width: 16, height: 16 }} className="animate-spin" /> Saving...</>
+          : <>Enter Dashboard <ArrowRight style={{ width: 15, height: 15 }} /></>
+        }
+      </button>
+
     </div>
   );
 }
