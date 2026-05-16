@@ -158,7 +158,7 @@ export default function ClauseLibraryPanel({ onAddClause, selectedIds = [], brok
           return (
             <div
               key={clause.id}
-              className="rounded-xl border p-3 transition-all opacity-100"
+              className="rounded-xl border transition-all opacity-100 px-3"
               style={{ borderColor: "var(--card-border)", background: "var(--card-bg)" }}>
               
               <div className="flex items-start justify-between gap-2">
