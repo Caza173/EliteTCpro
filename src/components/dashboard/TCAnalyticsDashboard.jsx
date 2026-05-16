@@ -1,6 +1,6 @@
 import React, { useMemo } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell } from "recharts";
+import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer } from "recharts";
 import { differenceInCalendarDays, parseISO } from "date-fns";
 import { TrendingUp, Users } from "lucide-react";
 
@@ -106,11 +106,7 @@ export default function TCAnalyticsDashboard({ transactions = [] }) {
                     formatter={(val, _, props) => [val, props.payload.fullName]}
                     contentStyle={{ fontSize: 12 }}
                   />
-                  <Bar dataKey="count" radius={[4, 4, 0, 0]}>
-                    {perAgent.map((_, i) => (
-                      <Cell key={i} fill={BAR_COLORS[i % BAR_COLORS.length]} />
-                    ))}
-                  </Bar>
+                  <Bar dataKey="count" radius={[4, 4, 0, 0]} fill="#d2a35f" />
                 </BarChart>
               </ResponsiveContainer>
             )}
