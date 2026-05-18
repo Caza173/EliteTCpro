@@ -269,6 +269,10 @@ export default function Settings() {
     return true;
   });
 
+  // Ensure activeTab is always a valid visible tab
+  const visibleTabIds = TABS.map(t => t.id);
+  const resolvedActiveTab = visibleTabIds.includes(activeTab) ? activeTab : (visibleTabIds[0] || "account");
+
   return (
     <div className="max-w-3xl mx-auto">
       <div className="mb-5">
@@ -283,7 +287,7 @@ export default function Settings() {
             key={id}
             onClick={() => setActiveTab(id)}
             className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-medium whitespace-nowrap transition-all flex-shrink-0"
-            style={activeTab === id
+            style={resolvedActiveTab === id
               ? { background: "var(--card-bg)", color: "var(--text-primary)", boxShadow: "var(--card-shadow)" }
               : { color: "var(--text-muted)" }}
           >
@@ -294,7 +298,7 @@ export default function Settings() {
       </div>
 
       {/* ── Account ── */}
-      {activeTab === "account" && (
+      {resolvedActiveTab === "account" && (
         <div className="space-y-4">
           <Card className="shadow-sm border-gray-100">
             <CardHeader className="pb-3">
@@ -375,10 +379,10 @@ export default function Settings() {
       )}
 
       {/* ── Profile ── */}
-      {activeTab === "profile" && <ProfileTab currentUser={currentUser} />}
+      {resolvedActiveTab === "profile" && <ProfileTab currentUser={currentUser} />}
 
       {/* ── Team ── */}
-      {activeTab === "team" && isTCOrAdmin(currentUser) && (
+      {resolvedActiveTab === "team" && (
         <div className="space-y-4">
           {/* Invite User */}
           <Card className="shadow-sm border-gray-100">
@@ -455,7 +459,7 @@ export default function Settings() {
       )}
 
       {/* ── Brokerage ── */}
-      {activeTab === "brokerage" && (
+      {resolvedActiveTab === "brokerage" && (
         <Card className="shadow-sm border-gray-100">
           <CardHeader className="pb-3">
             <div className="flex items-center justify-between">
@@ -503,7 +507,7 @@ export default function Settings() {
       )}
 
       {/* ── Finance ── */}
-      {activeTab === "finance" && (
+      {resolvedActiveTab === "finance" && (
         <Card className="shadow-sm border-gray-100">
           <CardHeader className="pb-3">
             <CardTitle className="text-base font-semibold flex items-center gap-2">
@@ -537,7 +541,7 @@ export default function Settings() {
       )}
 
       {/* ── Email Signature ── */}
-      {activeTab === "email" && (
+      {resolvedActiveTab === "email" && (
         <Card className="shadow-sm border-gray-100">
           <CardHeader className="pb-3">
             <CardTitle className="text-base font-semibold flex items-center gap-2">
@@ -575,7 +579,7 @@ export default function Settings() {
       )}
 
       {/* ── Templates ── */}
-      {activeTab === "templates" && isTCOrAdmin(currentUser) && (
+      {resolvedActiveTab === "templates" && (
         <Card className="shadow-sm border-gray-100">
           <CardHeader className="pb-3">
             <CardTitle className="text-base font-semibold flex items-center gap-2">
@@ -590,7 +594,7 @@ export default function Settings() {
       )}
 
       {/* ── Feedback ── */}
-      {activeTab === "feedback" && (
+      {resolvedActiveTab === "feedback" && (
         <Card className="shadow-sm border-gray-100">
           <CardHeader className="pb-3">
             <CardTitle className="text-base font-semibold flex items-center gap-2">
@@ -621,7 +625,7 @@ export default function Settings() {
       )}
 
       {/* ── Integrations ── */}
-      {activeTab === "integrations" && (() => {
+      {resolvedActiveTab === "integrations" && (() => {
         const INTEGRATIONS = [
           { id: "dotloop", name: "Dotloop", icon: Zap, status: "Coming Soon", description: "Integration will be available soon", route: "DotloopIntegration" },
           { id: "skyslope", name: "SkySlope", icon: BarChart3, status: "Coming Soon", description: "Integration will be available soon", route: null },
@@ -665,7 +669,7 @@ export default function Settings() {
       })()}
 
       {/* ── System ── */}
-      {activeTab === "system" && (
+      {resolvedActiveTab === "system" && (
         <div className="space-y-4">
           <Link to="/settings/system-diagnostics">
             <Card className="shadow-sm border-gray-100 hover:border-blue-300 hover:bg-blue-50/30 transition-all cursor-pointer">
@@ -720,7 +724,7 @@ export default function Settings() {
       )}
 
       {/* ── Help & Training ── */}
-      {activeTab === "help" && (
+      {resolvedActiveTab === "help" && (
         <div className="space-y-5">
           {/* Sub-tab bar */}
           <div className="flex gap-1 bg-gray-100 p-1 rounded-xl w-fit">
@@ -773,7 +777,7 @@ export default function Settings() {
       )}
 
       {/* ── Audit Log ── */}
-      {activeTab === "auditlog" && isOwnerOrAdmin(currentUser) && (
+      {resolvedActiveTab === "auditlog" && (
         <div className="space-y-4">
           {selectedLog && (
             <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
@@ -894,7 +898,7 @@ export default function Settings() {
       )}
 
       {/* ── Billing ── */}
-      {activeTab === "billing" && (
+      {resolvedActiveTab === "billing" && (
         <div className="space-y-6">
           {!canManageBilling(currentUser) ? (
             <div className="text-center py-20">
