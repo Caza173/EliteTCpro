@@ -32,7 +32,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { format } from "date-fns";
 
 export default function Settings() {
-  const { data: currentUser } = useCurrentUser();
+  const { data: currentUser, isLoading: userLoading } = useCurrentUser();
   const queryClient = useQueryClient();
   const [inviteEmail, setInviteEmail] = useState("");
   const [inviteRole, setInviteRole] = useState("agent");
@@ -99,17 +99,12 @@ export default function Settings() {
       const users = await base44.entities.User.list();
       return users.filter(u => !u.is_deleted);
     },
-    enabled: isTCOrAdmin(currentUser),
+    enabled: !!currentUser && isTCOrAdmin(currentUser),
   });
 
   const [activeTab, setActiveTab] = useState("account");
 
-  const { data: billingAccounts = [] } = useQuery({
-    queryKey: ["billingAccount", currentUser?.brokerage_id],
-    queryFn: () => base44.entities.BillingAccount.filter({ brokerage_id: currentUser?.brokerage_id }),
-    enabled: !!currentUser?.brokerage_id && activeTab === "billing",
-  });
-  const billing = billingAccounts[0];
+  const billing = null; // Billing managed on dedicated /Billing page
   const planOrder = ["individual_monthly", "team_monthly"];
   const statusBadge = {
     trial: "bg-amber-50 text-amber-700 border-amber-200",
@@ -118,12 +113,7 @@ export default function Settings() {
     canceled: "bg-gray-50 text-gray-600 border-gray-200",
   };
 
-  const { data: brokerage } = useQuery({
-    queryKey: ["brokerage", currentUser?.brokerage_id],
-    queryFn: () => base44.entities.Brokerage.filter({ id: currentUser?.brokerage_id }),
-    enabled: !!currentUser?.brokerage_id,
-    select: (data) => data[0],
-  });
+  const brokerage = null; // Brokerage display not used in owner-isolated architecture
 
   const [feedbackModal, setFeedbackModal] = useState({ open: false, type: "bug" });
   const [showDeleteModal, setShowDeleteModal] = useState(false);
@@ -133,24 +123,9 @@ export default function Settings() {
   const [brokerageForm, setBrokerageForm] = useState({});
   const [brokerageSaved, setBrokerageSaved] = useState(false);
 
-  useEffect(() => {
-    if (brokerage) {
-      setBrokerageForm({
-        name: brokerage.name || "",
-        timezone: brokerage.timezone || "",
-        primary_contact_email: brokerage.primary_contact_email || "",
-      });
-    }
-  }, [brokerage]);
-
+  // Brokerage form/mutation kept for potential future use but inactive
   const saveBrokerageMutation = useMutation({
-    mutationFn: (data) => base44.functions.invoke("updateBrokerage", { brokerage_id: brokerage.id, data }),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["brokerage", currentUser?.brokerage_id] });
-      setBrokerageSaved(true);
-      setEditingBrokerage(false);
-      setTimeout(() => setBrokerageSaved(false), 2500);
-    },
+    mutationFn: (data) => Promise.resolve(data),
   });
 
   const updateRoleMutation = useMutation({
@@ -211,15 +186,15 @@ export default function Settings() {
   const isTC = currentUser?.role === "tc" || currentUser?.role === "tc_lead";
 
   const { data: auditLogs = [], isLoading: auditLoading } = useQuery({
-    queryKey: ["auditLogs", currentUser?.brokerage_id],
-    queryFn: () => base44.entities.AuditLog.filter({ brokerage_id: currentUser?.brokerage_id }, "-created_date", 100),
-    enabled: !!currentUser?.brokerage_id && isOwnerOrAdmin(currentUser) && activeTab === "auditlog",
+    queryKey: ["auditLogs", currentUser?.id],
+    queryFn: () => base44.entities.AuditLog.list("-created_date", 100),
+    enabled: !!currentUser && isOwnerOrAdmin(currentUser) && activeTab === "auditlog",
   });
 
   const { data: auditTransactions = [] } = useQuery({
-    queryKey: ["transactions-audit"],
+    queryKey: ["transactions-audit", currentUser?.id],
     queryFn: () => base44.entities.Transaction.list(),
-    enabled: isOwnerOrAdmin(currentUser) && activeTab === "auditlog",
+    enabled: !!currentUser && isOwnerOrAdmin(currentUser) && activeTab === "auditlog",
   });
 
   const txAddressMap = Object.fromEntries(auditTransactions.map(t => [t.id, t.address]));
@@ -272,6 +247,18 @@ export default function Settings() {
   // Ensure activeTab is always a valid visible tab
   const visibleTabIds = TABS.map(t => t.id);
   const resolvedActiveTab = visibleTabIds.includes(activeTab) ? activeTab : (visibleTabIds[0] || "account");
+
+  if (userLoading) {
+    return (
+      <div className="max-w-3xl mx-auto space-y-4 pt-6">
+        <Skeleton className="h-8 w-40 rounded" />
+        <div className="flex gap-2 flex-wrap">
+          {[1,2,3,4,5].map(i => <Skeleton key={i} className="h-9 w-24 rounded-lg" />)}
+        </div>
+        <Skeleton className="h-48 rounded-xl" />
+      </div>
+    );
+  }
 
   return (
     <div className="max-w-3xl mx-auto">

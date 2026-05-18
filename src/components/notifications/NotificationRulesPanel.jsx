@@ -4,7 +4,7 @@
  */
 import React, { useState, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Bell, CheckCircle, Loader2, Radio, Zap, Clock } from "lucide-react";
@@ -182,27 +182,16 @@ export default function NotificationRulesPanel({ currentUser }) {
   const [saved, setSaved] = useState(false);
   const [runningEngine, setRunningEngine] = useState(false);
 
-  const { data: brokerage } = useQuery({
-    queryKey: ["brokerage", currentUser?.brokerage_id],
-    queryFn: () => base44.entities.Brokerage.filter({ id: currentUser?.brokerage_id }),
-    enabled: !!currentUser?.brokerage_id,
-    select: (data) => data[0],
-  });
-
   useEffect(() => {
-    if (brokerage?.notification_rules) {
-      setRules({ ...DEFAULT_RULES, ...brokerage.notification_rules });
+    if (currentUser?.notification_rules) {
+      setRules({ ...DEFAULT_RULES, ...currentUser.notification_rules });
     }
-  }, [brokerage]);
+  }, [currentUser?.id]);
 
   const saveMutation = useMutation({
-    mutationFn: () =>
-      base44.functions.invoke("updateBrokerage", {
-        brokerage_id: currentUser?.brokerage_id,
-        data: { notification_rules: rules },
-      }),
+    mutationFn: () => base44.auth.updateMe({ notification_rules: rules }),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["brokerage", currentUser?.brokerage_id] });
+      queryClient.invalidateQueries({ queryKey: ["currentUser"] });
       setSaved(true);
       setTimeout(() => setSaved(false), 2500);
       toast({ title: "Notification rules saved" });
@@ -289,7 +278,7 @@ export default function NotificationRulesPanel({ currentUser }) {
       <div>
         <Button
           onClick={() => saveMutation.mutate()}
-          disabled={saveMutation.isPending || !brokerage}
+          disabled={saveMutation.isPending || !currentUser}
           style={{
             background: "#2563EB",
             color: "#fff",
