@@ -232,8 +232,9 @@ export default function TransactionDetail() {
     }
   }, [transaction?.transaction_type, urlTab]);
 
-  // Track which phases have already been seeded — persisted in localStorage to survive page reloads
+  // Guards — useRef ensures StrictMode double-invocation is blocked
   const seedingInProgressRef = useRef(false);
+  const seedingCalledRef = useRef(new Set()); // tracks which phases were already requested this mount
   const repairedRef = useRef(false);
 
   // ── Repair routine: archive incompatible tasks ───────────────────────────────
@@ -283,46 +284,47 @@ export default function TransactionDetail() {
     seedPhaseTasksIfNeeded(selectedPhase);
   }, [transaction?.id, txTasks?.length]);
 
-  // Seed TransactionTasks from library if none exist yet for a given phase
+  // Seed TransactionTasks via server-side idempotent function (prevents duplicates from StrictMode/race conditions)
   const seedPhaseTasksIfNeeded = async (phaseNum) => {
+    // Guard 1: localStorage — persists across page reloads
     const storageKey = `seeded_${id}_${phaseNum}`;
     if (localStorage.getItem(storageKey)) return;
-    if (seedingInProgressRef.current) return;
-    seedingInProgressRef.current = true;
 
-    // Fetch fresh tasks directly from DB to get true count
-    const fresh = await base44.entities.TransactionTask.filter({ transaction_id: id });
-    const existing = fresh.filter(t => t.phase === phaseNum);
+    // Guard 2: in-memory ref — blocks StrictMode double-invocation within same mount
+    if (seedingCalledRef.current.has(phaseNum)) return;
+    seedingCalledRef.current.add(phaseNum);
 
-    // Mark seeded immediately to prevent any concurrent attempts
+    // Mark immediately before any async work to block concurrent calls
     localStorage.setItem(storageKey, "1");
 
-    if (existing.length > 0) {
-      seedingInProgressRef.current = false;
-      return;
-    }
-
     const libTasks = generateTasksForPhase(phaseNum, id, normalizeTransactionType(transaction?.transaction_type));
+    if (libTasks.length === 0) return;
+
+    const taskDefs = libTasks.map((t, i) => ({
+      title: t.name,
+      order_index: i,
+      is_required: t.required,
+    }));
+
+    console.log(`[TaskSeed] tx=${id} phase=${phaseNum} tasksToSeed=${taskDefs.length}`);
+
     try {
-      await Promise.all(libTasks.map((t, i) =>
-        base44.entities.TransactionTask.create({
-          transaction_id: id,
-          brokerage_id: transaction?.brokerage_id || undefined,
-          phase: phaseNum,
-          title: t.name,
-          order_index: i,
-          is_completed: false,
-          is_required: t.required,
-          is_custom: false,
-          created_by: currentUser?.id || undefined,
-        })
-      ));
+      const res = await base44.functions.invoke("seedPhaseTasks", {
+        transaction_id: id,
+        phase: phaseNum,
+        tasks: taskDefs,
+        brokerage_id: transaction?.brokerage_id || undefined,
+      });
+      console.log(`[TaskSeed] result:`, res.data);
+      if (res.data?.seeded > 0) {
+        refetchTxTasks();
+      }
     } catch (err) {
-      console.error("[seedPhaseTasksIfNeeded] Failed to seed tasks:", err?.message || err);
-      localStorage.removeItem(storageKey); // allow retry on next load if seeding failed
+      console.error("[TaskSeed] Failed:", err?.message || err);
+      // Remove localStorage guard so it can retry next load
+      localStorage.removeItem(storageKey);
+      seedingCalledRef.current.delete(phaseNum);
     }
-    seedingInProgressRef.current = false;
-    refetchTxTasks();
   };
 
   // ── Deadline → task resolution mapping ───────────────────────────────────────

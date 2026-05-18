@@ -206,9 +206,17 @@ function PhaseCard({
   const [addTaskError, setAddTaskError] = useState(null);
   const queryClient = useQueryClient();
 
-  const phaseTasks = tasks
+  // Deduplicate by title within this phase — keeps oldest (lowest order_index) if DB has duplicates
+  const rawPhaseTasks = tasks
     .filter(t => t.phase === phase.phaseNum)
     .sort((a, b) => (a.order_index ?? 0) - (b.order_index ?? 0));
+  const seenTitles = new Set();
+  const phaseTasks = rawPhaseTasks.filter(t => {
+    const key = t.title?.trim().toLowerCase();
+    if (seenTitles.has(key)) return false;
+    seenTitles.add(key);
+    return true;
+  });
 
   // For parent phases, include sub-phase tasks in progress calculation
   const subPhaseNums = SUB_PHASE_MAP[phase.phaseNum] || [];
@@ -514,7 +522,10 @@ export default function UnifiedPhaseBoard({
     }
   }, [tasks]);
 
-  const activeTasks = localTasks || tasks;
+  // Deduplicate by id — guards against DB duplicates or optimistic+fetched collision
+  const rawTasks = localTasks || tasks;
+  const activeTasks = Array.from(new Map(rawTasks.map(t => [t.id, t])).values());
+  console.log(`[TaskRenderCount] total unique tasks: ${activeTasks.length}`);
   const activePhaseNum = getActivePhaseNum(allPhases, activeTasks, phasesCompleted);
 
   // Detect mobile
