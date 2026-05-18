@@ -2,26 +2,96 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="https://base44.com/logo_v2.svg" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+
+    <!-- ── Viewport & Mobile ────────────────────────────────────── -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+
+    <!-- ── PWA / Theme ──────────────────────────────────────────── -->
+    <meta name="theme-color" content="#050506" />
+    <meta name="background-color" content="#050506" />
+    <meta name="color-scheme" content="dark" />
+
+    <!-- ── Android / Chrome PWA ────────────────────────────────── -->
     <meta name="mobile-web-app-capable" content="yes" />
-    <meta name="apple-mobile-web-app-capable" content="yes" />
-    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
     <link rel="manifest" href="/manifest.json" />
+
+    <!-- ── Apple iOS PWA ────────────────────────────────────────── -->
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="EliteTC" />
+
+    <!-- Apple touch icons (fallback for devices that don't use manifest) -->
+    <link rel="apple-touch-icon" href="https://media.base44.com/images/public/69a9cd0677a8832ab0cc59bc/b43e6d25e_generated_image.png" />
+
+    <!-- ── Windows / Microsoft ──────────────────────────────────── -->
+    <meta name="msapplication-TileColor" content="#050506" />
+    <meta name="msapplication-TileImage" content="https://media.base44.com/images/public/69a9cd0677a8832ab0cc59bc/b43e6d25e_generated_image.png" />
+    <meta name="msapplication-config" content="none" />
+
+    <!-- ── SEO / Social ─────────────────────────────────────────── -->
+    <meta name="description" content="Professional real estate transaction coordination platform for TCs, agents, and brokerages." />
+    <meta name="application-name" content="EliteTC" />
+    <meta property="og:title" content="EliteTC — Transaction Coordinator Platform" />
+    <meta property="og:description" content="Professional real estate transaction coordination." />
+    <meta property="og:type" content="website" />
+
+    <!-- ── Icons ────────────────────────────────────────────────── -->
+    <link rel="icon" type="image/svg+xml" href="/icons/icon.svg" />
+    <link rel="icon" type="image/png" sizes="512x512" href="https://media.base44.com/images/public/69a9cd0677a8832ab0cc59bc/b43e6d25e_generated_image.png" />
+    <link rel="shortcut icon" href="https://media.base44.com/images/public/69a9cd0677a8832ab0cc59bc/b43e6d25e_generated_image.png" />
+
     <title>EliteTC — Transaction Coordinator Platform</title>
+
+    <!-- ── Fonts ────────────────────────────────────────────────── -->
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Playfair+Display:ital,wght@0,700;0,800;1,700;1,800&display=swap" rel="stylesheet" />
   </head>
   <body>
     <div id="root"></div>
+
+    <!-- ── Service Worker Registration + Update Detection ────────── -->
     <script>
       if ("serviceWorker" in navigator) {
         window.addEventListener("load", () => {
-          navigator.serviceWorker.register("/sw.js");
+          navigator.serviceWorker
+            .register("/sw.js")
+            .then((registration) => {
+              // Poll for updates every 60 seconds
+              setInterval(() => registration.update(), 60_000);
+
+              // When a new SW is waiting, broadcast so the app can show a toast
+              registration.addEventListener("updatefound", () => {
+                const newWorker = registration.installing;
+                if (!newWorker) return;
+                newWorker.addEventListener("statechange", () => {
+                  if (
+                    newWorker.state === "installed" &&
+                    navigator.serviceWorker.controller
+                  ) {
+                    // Dispatch a custom event the React app can listen to
+                    window.dispatchEvent(new CustomEvent("pwa-update-available"));
+                  }
+                });
+              });
+            })
+            .catch((err) => {
+              // Non-fatal — app still works without SW
+              console.warn("SW registration failed:", err);
+            });
+
+          // When a new SW takes control, reload to get fresh assets
+          let refreshing = false;
+          navigator.serviceWorker.addEventListener("controllerchange", () => {
+            if (!refreshing) {
+              refreshing = true;
+              window.location.reload();
+            }
+          });
         });
       }
     </script>
+
     <script type="module" src="/src/main.jsx"></script>
   </body>
 </html>

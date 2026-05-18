@@ -1,21 +1,55 @@
 {
-  "name": "EliteTC",
+  "name": "EliteTC — Transaction Coordinator Platform",
   "short_name": "EliteTC",
-  "description": "Transaction Coordinator Platform",
+  "description": "Professional real estate transaction coordination platform for TCs, agents, and brokerages.",
   "start_url": "/",
   "display": "standalone",
-  "background_color": "#ffffff",
-  "theme_color": "#0F172A",
+  "background_color": "#050506",
+  "theme_color": "#050506",
+  "orientation": "portrait-primary",
+  "scope": "/",
+  "lang": "en-US",
+  "categories": ["business", "productivity", "finance"],
   "icons": [
     {
-      "src": "/icon-192.png",
-      "sizes": "192x192",
-      "type": "image/png"
+      "src": "/icons/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
     },
     {
-      "src": "/icon-512.png",
+      "src": "https://media.base44.com/images/public/69a9cd0677a8832ab0cc59bc/b43e6d25e_generated_image.png",
       "sizes": "512x512",
-      "type": "image/png"
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "https://media.base44.com/images/public/69a9cd0677a8832ab0cc59bc/b43e6d25e_generated_image.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Transactions",
+      "short_name": "Transactions",
+      "description": "View all transactions",
+      "url": "/Transactions",
+      "icons": [{
+        "src": "https://media.base44.com/images/public/69a9cd0677a8832ab0cc59bc/b43e6d25e_generated_image.png",
+        "sizes": "96x96"
+      }]
+    },
+    {
+      "name": "Dashboard",
+      "short_name": "Dashboard",
+      "description": "View your dashboard",
+      "url": "/Dashboard",
+      "icons": [{
+        "src": "https://media.base44.com/images/public/69a9cd0677a8832ab0cc59bc/b43e6d25e_generated_image.png",
+        "sizes": "96x96"
+      }]
     }
   ]
 }

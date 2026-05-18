@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <!-- Background -->
+  <rect width="512" height="512" rx="112" fill="#050506"/>
+  <!-- Gold border subtle glow -->
+  <rect width="512" height="512" rx="112" fill="none" stroke="#d2a35f" stroke-width="8" stroke-opacity="0.4"/>
+  <!-- Inner card shape -->
+  <rect x="80" y="80" width="352" height="352" rx="72" fill="#0b0c0f"/>
+  <rect x="80" y="80" width="352" height="352" rx="72" fill="none" stroke="#d2a35f" stroke-width="3" stroke-opacity="0.25"/>
+  <!-- "E" lettermark — Playfair Display style -->
+  <text
+    x="256"
+    y="326"
+    text-anchor="middle"
+    font-family="Georgia, 'Times New Roman', serif"
+    font-size="220"
+    font-weight="700"
+    font-style="italic"
+    fill="#d2a35f"
+    letter-spacing="-4"
+  >E</text>
+  <!-- Gold accent line bottom -->
+  <rect x="140" y="388" width="232" height="3" rx="2" fill="#d2a35f" opacity="0.4"/>
+</svg>

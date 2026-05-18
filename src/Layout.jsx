@@ -32,6 +32,7 @@ import {
 } from "lucide-react";
 
 import { InstallButtonHeader, InstallButtonFloat } from "./components/pwa/InstallButton.jsx";
+import UpdateBanner from "./components/pwa/UpdateBanner.jsx";
 import { ThemeProvider } from "./components/theme/ThemeContext";
 import ThemeToggle from "./components/theme/ThemeToggle";
 import OfflineBanner from "./components/pwa/OfflineBanner";
@@ -345,6 +346,9 @@ export default function Layout({ children, currentPageName }) {
         {/* Global AI System — visible across entire app */}
         <AIModal />
       </div>
+
+      {/* PWA update banner */}
+      <UpdateBanner />
     </ThemeProvider>
   );
 }
