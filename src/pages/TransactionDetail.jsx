@@ -47,7 +47,7 @@ import ListingIntakeTab from "../components/transactions/ListingIntakeTab";
 import UnifiedDeadlinesPanel from "../components/transactions/UnifiedDeadlinesPanel";
 import ContactsSection from "../components/transactions/ContactsSection";
 import IssueDetectionPanel from "../components/issues/IssueDetectionPanel";
-import { detectIssues } from "../lib/issueDetector";
+import { buildTransactionInsights } from "../lib/engine/index.js";
 import QuickFeedbackButton from "../components/feedback/QuickFeedbackButton";
 import NotesPanel from "../components/transactions/NotesPanel";
 import UnderContractCommsPanel from "../components/comms/UnderContractCommsPanel";
@@ -584,8 +584,22 @@ export default function TransactionDetail() {
 
 
 
-  // Read dismissed issues from localStorage to accurately compute the Issues badge
-  // Must use the same key as IssueDetectionPanel: dismissed_alerts_${id}
+  // Compute issues badge using same engine + same data as IssueDetectionPanel
+  const allDetectedIssues = useMemo(() => {
+    if (!transaction?.id) return [];
+    try {
+      const insights = buildTransactionInsights(transaction, {
+        tasks: txTasks,
+        checklist: checklistItems,
+        documents,
+        complianceReports,
+      });
+      // Auto-prune dismissed IDs that no longer exist (stale dismissals)
+      return insights?.alerts || [];
+    } catch { return []; }
+  }, [transaction, txTasks, checklistItems, documents, complianceReports]);
+
+  // Read dismissed IDs using the same key as IssueDetectionPanel
   const dismissedIssueIds = useMemo(() => {
     try {
       const saved = localStorage.getItem(`dismissed_alerts_${id}`);
@@ -594,11 +608,6 @@ export default function TransactionDetail() {
       return Array.isArray(parsed) ? new Set(parsed) : new Set();
     } catch { return new Set(); }
   }, [id, activeTab]);
-
-  const allDetectedIssues = useMemo(
-    () => detectIssues(transaction || {}, checklistItems, complianceReports, txTasks),
-    [transaction, checklistItems, complianceReports, txTasks]
-  );
 
   const isLoading = isLoadingList;
 
@@ -664,7 +673,10 @@ export default function TransactionDetail() {
   const totalDeadlineBadge = overdueDeadlineCount + approachingDeadlineCount;
   const overdueTaskCount = overdueTasks.length;
   const missingDocCount = checklistItems.filter(i => i.required && i.status === "missing").length;
-  const issuesBadgeCount = allDetectedIssues.filter(i => !dismissedIssueIds.has(i.id)).length;
+  // Only count alerts that are not dismissed AND whose ID still exists (prune stale dismissals)
+  const currentAlertIdSet = new Set(allDetectedIssues.map(a => a.id));
+  const activeDismissedBadge = new Set([...dismissedIssueIds].filter(id => currentAlertIdSet.has(id)));
+  const issuesBadgeCount = allDetectedIssues.filter(i => !activeDismissedBadge.has(i.id)).length;
 
   const TAB_BADGES = {
     issues:          issuesBadgeCount,
