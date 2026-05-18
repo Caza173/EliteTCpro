@@ -162,7 +162,14 @@ export default function IssueDetectionPanel({ transaction, currentUser }) {
 
   const storageKey = `dismissed_alerts_${transaction.id}`;
   const [dismissed, setDismissed] = useState(() => {
-    try { return new Set(JSON.parse(localStorage.getItem(storageKey) || "[]")); }
+    try {
+      const saved = JSON.parse(localStorage.getItem(storageKey) || "[]");
+      // Only restore if it's a non-empty array of strings — guard against corrupt data
+      if (Array.isArray(saved) && saved.every(x => typeof x === "string")) {
+        return new Set(saved);
+      }
+      return new Set();
+    }
     catch { return new Set(); }
   });
 
@@ -203,19 +210,28 @@ export default function IssueDetectionPanel({ transaction, currentUser }) {
       console.error("[IssueDetectionPanel] Engine error:", err.message);
       return null;
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [
     transaction?.id, transaction?.status, transaction?.transaction_phase,
     transaction?.closing_date, transaction?.inspection_deadline, transaction?.financing_deadline,
     transaction?.earnest_money_deadline, transaction?.is_cash_transaction, transaction?.transaction_type,
-    tasks.length, checklist.length, documents.length, complianceReports.length,
+    tasks, checklist, documents, complianceReports,
   ]);
 
   const allAlerts    = insights?.alerts || [];
-  const visible      = allAlerts.filter(a => !dismissed.has(a.id));
+  // Auto-prune dismissed IDs that no longer exist in current alerts (stale dismissals)
+  const currentAlertIds = new Set(allAlerts.map(a => a.id));
+  const activeDismissed = new Set([...dismissed].filter(id => currentAlertIds.has(id)));
+  const visible      = allAlerts.filter(a => !activeDismissed.has(a.id));
   const filtered     = filter === "all" ? visible : visible.filter(a => a.type === filter);
 
   const highCount   = visible.filter(a => a.severity === "high").length;
   const mediumCount = visible.filter(a => a.severity === "medium").length;
+
+  const clearAllDismissed = () => {
+    setDismissed(new Set());
+    try { localStorage.removeItem(storageKey); } catch {}
+  };
 
   const dismiss = (id) => setDismissed(prev => {
     const next = new Set([...prev, id]);
@@ -319,6 +335,16 @@ export default function IssueDetectionPanel({ transaction, currentUser }) {
             />
           ))}
         </div>
+      )}
+
+      {activeDismissed.size > 0 && (
+        <button
+          onClick={clearAllDismissed}
+          className="w-full text-xs py-1.5 rounded-lg border transition-colors"
+          style={{ borderColor: "rgba(255,255,255,0.1)", color: "var(--text-muted)" }}
+        >
+          Show {activeDismissed.size} dismissed issue{activeDismissed.size > 1 ? "s" : ""}
+        </button>
       )}
 
       {autoSend && visible.length > 0 && (
