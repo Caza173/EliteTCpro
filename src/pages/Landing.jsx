@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { Menu, X } from "lucide-react";
 import { base44 } from "@/api/base44Client";
 import {
   ArrowRight, Upload, Clock, ShieldCheck,
@@ -138,64 +139,155 @@ function WhyCard({ num, icon: Icon, title, desc }) {
 export default function Landing() {
   const navigate = useNavigate();
   const [openFaq, setOpenFaq] = useState(null);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
-  const scrollTo = (id) => document.getElementById(id)?.scrollIntoView({ behavior: "smooth" });
+  const scrollTo = (id) => {
+    setMobileMenuOpen(false);
+    document.getElementById(id)?.scrollIntoView({ behavior: "smooth" });
+  };
 
-  // ── NAV ─────────────────────────────────────────────────────────────
+  // Lock body scroll when mobile menu is open
+  React.useEffect(() => {
+    document.body.style.overflow = mobileMenuOpen ? "hidden" : "";
+    return () => { document.body.style.overflow = ""; };
+  }, [mobileMenuOpen]);
+
   const navLinks = ["Platform", "Features", "Process", "Testimonials", "FAQ", "Contact"];
 
-  const isMobile = typeof window !== "undefined" && window.innerWidth < 768;
-
   return (
-    <div style={{ minHeight: "100vh", background: C.bg, color: C.text, fontFamily: "Inter, sans-serif", overflowX: "hidden" }}>
+    <div style={{ minHeight: "100vh", background: C.bg, color: C.text, fontFamily: "Inter, sans-serif", overflowX: "hidden", maxWidth: "100vw", boxSizing: "border-box" }}>
 
       {/* NAV */}
       <header style={{
-        position: "sticky", top: 0, zIndex: 50,
-        display: "flex", alignItems: "center", justifyContent: "space-between",
-        padding: "0 20px", height: 64,
-        background: "rgba(5,5,6,0.96)",
+        position: "sticky", top: 0, zIndex: 100,
+        width: "100%", maxWidth: "100vw", boxSizing: "border-box",
+        background: "rgba(5,5,6,0.97)",
         borderBottom: `1px solid ${C.border}`,
         backdropFilter: "blur(16px)",
+        paddingTop: "env(safe-area-inset-top)",
       }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-          <div style={{
-            width: 34, height: 34, borderRadius: 6,
-            background: "rgba(210,163,95,0.12)", border: `1px solid ${C.borderGold}`,
-            display: "flex", alignItems: "center", justifyContent: "center",
-            fontSize: 14, fontWeight: 800, color: C.gold,
-          }}>E</div>
-          <div>
-            <div style={{ fontSize: 13, fontWeight: 800, color: C.text, fontFamily: "'Playfair Display', serif", letterSpacing: "0.06em" }}>ELITETC</div>
-            <div style={{ fontSize: 8, fontWeight: 500, letterSpacing: "0.14em", color: C.textMuted, textTransform: "uppercase" }}>Transaction Coordination</div>
+        <div style={{
+          display: "flex", alignItems: "center", justifyContent: "space-between",
+          padding: "0 16px", height: 64, maxWidth: "100%", boxSizing: "border-box",
+        }}>
+          {/* Logo */}
+          <div style={{ display: "flex", alignItems: "center", gap: 10, flexShrink: 0 }}>
+            <div style={{
+              width: 34, height: 34, borderRadius: 6,
+              background: "rgba(210,163,95,0.12)", border: `1px solid ${C.borderGold}`,
+              display: "flex", alignItems: "center", justifyContent: "center",
+              fontSize: 14, fontWeight: 800, color: C.gold, flexShrink: 0,
+            }}>E</div>
+            <div>
+              <div style={{ fontSize: 13, fontWeight: 800, color: C.text, fontFamily: "'Playfair Display', serif", letterSpacing: "0.06em", whiteSpace: "nowrap" }}>ELITETC</div>
+              <div style={{ fontSize: 8, fontWeight: 500, letterSpacing: "0.14em", color: C.textMuted, textTransform: "uppercase", whiteSpace: "nowrap" }}>Transaction Coordination</div>
+            </div>
+          </div>
+
+          {/* Desktop nav — hidden on mobile */}
+          <nav className="hidden lg:flex" style={{ alignItems: "center", gap: 28 }}>
+            {navLinks.map(item => (
+              <button key={item} onClick={() => scrollTo(item.toLowerCase().replace(/\s+/g, "-"))}
+                style={{ background: "none", border: "none", fontSize: 13, color: C.textSoft, cursor: "pointer", padding: 0, fontFamily: "Inter, sans-serif", whiteSpace: "nowrap" }}
+                onMouseEnter={e => e.currentTarget.style.color = C.text}
+                onMouseLeave={e => e.currentTarget.style.color = C.textSoft}>
+                {item}
+              </button>
+            ))}
+          </nav>
+
+          {/* Desktop CTAs — hidden on mobile */}
+          <div className="hidden lg:flex" style={{ alignItems: "center", gap: 8, flexShrink: 0 }}>
+            <EliteButton variant="ghost" size="sm" onClick={() => scrollTo("contact")}>
+              Schedule Consultation
+            </EliteButton>
+            <EliteButton variant="ghost" size="sm" onClick={() => base44.auth.redirectToLogin("/Dashboard")}>
+              Sign In
+            </EliteButton>
+            <EliteButton variant="gold" size="sm" onClick={() => base44.auth.redirectToLogin("/Dashboard")}>
+              Get Started
+            </EliteButton>
+          </div>
+
+          {/* Mobile right — Sign In + Hamburger */}
+          <div className="flex lg:hidden" style={{ alignItems: "center", gap: 8, flexShrink: 0 }}>
+            <button
+              onClick={() => base44.auth.redirectToLogin("/Dashboard")}
+              style={{
+                background: "none", border: `1px solid ${C.borderGold}`,
+                color: C.gold, fontSize: 13, fontWeight: 600,
+                cursor: "pointer", padding: "7px 14px", borderRadius: 6,
+                fontFamily: "Inter, sans-serif", whiteSpace: "nowrap",
+              }}
+            >
+              Sign In
+            </button>
+            <button
+              aria-label={mobileMenuOpen ? "Close menu" : "Open menu"}
+              onClick={() => setMobileMenuOpen(o => !o)}
+              style={{
+                background: "none", border: "none", cursor: "pointer",
+                color: C.text, padding: 8, display: "flex", alignItems: "center", justifyContent: "center",
+              }}
+            >
+              {mobileMenuOpen ? <X style={{ width: 22, height: 22 }} /> : <Menu style={{ width: 22, height: 22 }} />}
+            </button>
           </div>
         </div>
+      </header>
 
-        <nav style={{ display: "flex", alignItems: "center", gap: 32 }} className="hidden md:flex">
+      {/* Mobile drawer overlay */}
+      {mobileMenuOpen && (
+        <div
+          onClick={() => setMobileMenuOpen(false)}
+          style={{
+            position: "fixed", inset: 0, zIndex: 98,
+            background: "rgba(0,0,0,0.6)", backdropFilter: "blur(4px)",
+          }}
+        />
+      )}
+
+      {/* Mobile drawer */}
+      <div style={{
+        position: "fixed", top: 0, right: 0, bottom: 0, zIndex: 99,
+        width: "min(300px, 85vw)",
+        background: "#0a0b0d",
+        borderLeft: `1px solid ${C.border}`,
+        transform: mobileMenuOpen ? "translateX(0)" : "translateX(100%)",
+        transition: "transform 0.28s cubic-bezier(0.22, 1, 0.36, 1)",
+        display: "flex", flexDirection: "column",
+        paddingTop: "calc(env(safe-area-inset-top) + 80px)",
+        paddingBottom: "env(safe-area-inset-bottom)",
+        overflowY: "auto",
+      }}>
+        <nav style={{ padding: "0 24px", display: "flex", flexDirection: "column", gap: 4 }}>
           {navLinks.map(item => (
-            <button key={item} onClick={() => scrollTo(item.toLowerCase().replace(/\s+/g, "-"))}
-              style={{ background: "none", border: "none", fontSize: 13, color: C.textSoft, cursor: "pointer", padding: 0, fontFamily: "Inter, sans-serif" }}
-              onMouseEnter={e => e.currentTarget.style.color = C.text}
-              onMouseLeave={e => e.currentTarget.style.color = C.textSoft}>
+            <button key={item}
+              onClick={() => scrollTo(item.toLowerCase().replace(/\s+/g, "-"))}
+              style={{
+                background: "none", border: "none", textAlign: "left",
+                fontSize: 18, fontWeight: 600, color: C.textSoft,
+                cursor: "pointer", padding: "14px 0",
+                borderBottom: `1px solid ${C.border}`,
+                fontFamily: "Inter, sans-serif",
+                transition: "color 0.15s",
+              }}
+              onMouseEnter={e => e.currentTarget.style.color = C.gold}
+              onMouseLeave={e => e.currentTarget.style.color = C.textSoft}
+            >
               {item}
             </button>
           ))}
         </nav>
-
-        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-          {!isMobile && (
-            <EliteButton variant="ghost" size="sm" onClick={() => scrollTo("contact")}>
-              Schedule Consultation
-            </EliteButton>
-          )}
-          <EliteButton variant="ghost" size="sm" onClick={() => base44.auth.redirectToLogin("/Dashboard")}>
-            Sign In
+        <div style={{ padding: "24px", display: "flex", flexDirection: "column", gap: 12, marginTop: 8 }}>
+          <EliteButton variant="ghost" size="md" onClick={() => { setMobileMenuOpen(false); scrollTo("contact"); }}>
+            Schedule Consultation
           </EliteButton>
-          <EliteButton variant="gold" size="sm" onClick={() => base44.auth.redirectToLogin("/Dashboard")}>
+          <EliteButton variant="gold" size="md" onClick={() => base44.auth.redirectToLogin("/Dashboard")}>
             Get Started
           </EliteButton>
         </div>
-      </header>
+      </div>
 
       {/* ── HERO ────────────────────────────────────────────────────── */}
       <section style={{
