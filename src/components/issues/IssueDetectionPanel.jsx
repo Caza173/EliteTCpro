@@ -3,7 +3,7 @@
  * Displays alerts and issues sourced 100% from the Transaction Intelligence Engine.
  * NO direct transaction logic — all computed by buildTransactionInsights().
  */
-import React, { useState } from "react";
+import React, { useState, useMemo } from "react";
 import { base44 } from "@/api/base44Client";
 import { useQuery } from "@tanstack/react-query";
 import { Badge } from "@/components/ui/badge";
@@ -13,7 +13,7 @@ import {
   AlertTriangle, ShieldX, Clock, ClipboardList,
   Mail, CheckCircle2, X, FileText, Zap,
 } from "lucide-react";
-import { useTransactionInsights } from "@/hooks/useTransactionInsights";
+import { buildTransactionInsights } from "@/lib/engine/index.js";
 import EmailGeneratorModal from "@/components/compliance/EmailGeneratorModal";
 import DocumentViewerModal from "@/components/transactions/DocumentViewerModal";
 
@@ -195,9 +195,20 @@ export default function IssueDetectionPanel({ transaction, currentUser }) {
   const isLoading = l1 || l2 || l3;
 
   // ── Engine call ──────────────────────────────────────────────────────────
-  const { insights } = useTransactionInsights(transaction, {
-    tasks, checklist, documents, complianceReports,
-  });
+  const insights = useMemo(() => {
+    if (!transaction?.id) return null;
+    try {
+      return buildTransactionInsights(transaction, { tasks, checklist, documents, complianceReports });
+    } catch (err) {
+      console.error("[IssueDetectionPanel] Engine error:", err.message);
+      return null;
+    }
+  }, [
+    transaction?.id, transaction?.status, transaction?.transaction_phase,
+    transaction?.closing_date, transaction?.inspection_deadline, transaction?.financing_deadline,
+    transaction?.earnest_money_deadline, transaction?.is_cash_transaction, transaction?.transaction_type,
+    tasks.length, checklist.length, documents.length, complianceReports.length,
+  ]);
 
   const allAlerts    = insights?.alerts || [];
   const visible      = allAlerts.filter(a => !dismissed.has(a.id));
