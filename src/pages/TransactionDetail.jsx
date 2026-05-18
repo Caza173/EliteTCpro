@@ -585,11 +585,13 @@ export default function TransactionDetail() {
 
 
   // Read dismissed issues from localStorage to accurately compute the Issues badge
-  // (must be before early returns to satisfy Rules of Hooks)
+  // Must use the same key as IssueDetectionPanel: dismissed_alerts_${id}
   const dismissedIssueIds = useMemo(() => {
     try {
-      const saved = localStorage.getItem(`dismissed_issues_${id}`);
-      return saved ? new Set(JSON.parse(saved)) : new Set();
+      const saved = localStorage.getItem(`dismissed_alerts_${id}`);
+      if (!saved) return new Set();
+      const parsed = JSON.parse(saved);
+      return Array.isArray(parsed) ? new Set(parsed) : new Set();
     } catch { return new Set(); }
   }, [id, activeTab]);
 
