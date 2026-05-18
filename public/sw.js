@@ -20,7 +20,6 @@ const PRECACHE_ASSETS = [
   "/",
   "/offline.html",
   "/manifest.json",
-  "/icons/icon.svg",
 ];
 
 // URL patterns that must NEVER be cached (auth, API, sensitive data)
@@ -44,11 +43,14 @@ const NEVER_CACHE_PATTERNS = [
 // ─── Install ───────────────────────────────────────────────────────────────
 self.addEventListener("install", (event) => {
   event.waitUntil(
-    caches.open(STATIC_CACHE).then((cache) =>
-      cache.addAll(PRECACHE_ASSETS).catch(() => {
-        // Don't fail install if offline.html isn't available yet
-      })
-    ).then(() => self.skipWaiting())
+    caches.open(STATIC_CACHE).then(async (cache) => {
+      // Cache each asset individually so one failure doesn't abort install
+      await Promise.allSettled(
+        PRECACHE_ASSETS.map((url) =>
+          fetch(url).then((res) => { if (res.ok) cache.put(url, res); }).catch(() => {})
+        )
+      );
+    }).then(() => self.skipWaiting())
   );
 });
 
