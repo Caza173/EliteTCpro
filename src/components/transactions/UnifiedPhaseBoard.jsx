@@ -158,7 +158,7 @@ const TaskRow = memo(function TaskRow({
             />
           )}
 
-          <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0">
+          <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 [@media(pointer:coarse)]:opacity-100 transition-opacity flex-shrink-0">
             {!editing && (
               <button onClick={() => { setDraft(task.title); setEditing(true); }} className="p-0.5 rounded" style={{ background: "transparent" }}>
                  <Pencil className="w-2.5 h-2.5" style={{ color: "var(--text-muted)" }} />
