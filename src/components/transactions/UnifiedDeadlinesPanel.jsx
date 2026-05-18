@@ -199,7 +199,7 @@ function DeadlineRow({ item, calendarMaps, transactionId, onUpdateContingency, o
   };
 
   return (
-    <div className={`rounded-xl border border-l-4 p-3.5 ${borderClass} transition-all`} style={{ background: "var(--card-bg)", borderColor: "var(--card-border)" }}>
+    <div className={`rounded-xl border border-l-4 p-3.5 ${borderClass} transition-all`} style={{ background: "var(--card-bg)", borderTopColor: "var(--card-border)", borderRightColor: "var(--card-border)", borderBottomColor: "var(--card-border)" }}>
       <div className="flex items-start gap-3">
         <div className="flex-1 min-w-0">
           {/* Label row */}
@@ -626,22 +626,22 @@ export default function UnifiedDeadlinesPanel({ transaction, onSave }) {
     <div className="space-y-4">
       {/* Stats bar */}
       <div className="flex flex-wrap gap-2">
-        <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white border border-gray-200 text-xs text-gray-600">
-          <Calendar className="w-3.5 h-3.5 text-gray-400" />
+        <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs" style={{ background: "var(--bg-tertiary)", border: "1px solid var(--border)", color: "var(--text-secondary)" }}>
+          <Calendar className="w-3.5 h-3.5" style={{ color: "var(--text-muted)" }} />
           {allItems.filter(i => i.date).length} deadlines
         </div>
         {overdue > 0 && (
-          <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-red-50 border border-red-200 text-xs text-red-700 font-semibold">
+          <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold" style={{ background: "var(--danger-bg)", border: "1px solid rgba(239,68,68,0.3)", color: "var(--danger)" }}>
             <AlertTriangle className="w-3.5 h-3.5" /> {overdue} overdue
           </div>
         )}
         {upcoming > 0 && (
-          <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-amber-50 border border-amber-200 text-xs text-amber-700">
+          <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs" style={{ background: "var(--warning-bg)", border: "1px solid rgba(210,163,95,0.3)", color: "var(--warning)" }}>
             <Zap className="w-3.5 h-3.5" /> {upcoming} this week
           </div>
         )}
         {synced > 0 && (
-          <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-50 border border-emerald-200 text-xs text-emerald-700">
+          <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs" style={{ background: "var(--success-bg)", border: "1px solid rgba(34,197,94,0.3)", color: "var(--success)" }}>
             <CalendarCheck className="w-3.5 h-3.5" /> {synced} synced
           </div>
         )}
