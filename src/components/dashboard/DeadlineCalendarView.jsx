@@ -131,7 +131,14 @@ function DayHoverPopup({ day, dayEvents, dayRect, onClose }) {
               <p style={{ fontSize: "11px", fontWeight: "600", color: "var(--text-primary)", margin: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                 {ev.address?.split(",")[0]}
               </p>
-              <p style={{ fontSize: "10px", color: "var(--text-muted)", margin: 0 }}>{ev.label}</p>
+              <div style={{ display: "flex", alignItems: "center", gap: "4px" }}>
+                <p style={{ fontSize: "10px", color: "var(--text-muted)", margin: 0 }}>{ev.label}</p>
+                {ev.gcalSynced && (
+                  <span style={{ fontSize: "9px", color: "var(--accent)", background: "var(--accent-subtle)", borderRadius: "4px", padding: "0 4px", fontWeight: 600 }}>
+                    GCal
+                  </span>
+                )}
+              </div>
             </div>
           </Link>
         ))}
@@ -285,6 +292,7 @@ export default function DeadlineCalendarView({ transactions = [] }) {
         pill: "bg-yellow-50 text-yellow-700 border-yellow-200",
         txId: appt.transaction_id,
         category: "appointment",
+        gcalSynced: appt.google_calendar_synced === true,
       });
     });
 

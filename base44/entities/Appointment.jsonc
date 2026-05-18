@@ -25,6 +25,22 @@
     },
     "address": {
       "type": "string"
+    },
+    "google_calendar_synced": {
+      "type": "boolean",
+      "default": false
+    },
+    "google_calendar_event_id": {
+      "type": "string"
+    },
+    "sync_status": {
+      "type": "string",
+      "enum": [
+        "pending",
+        "synced",
+        "failed"
+      ],
+      "description": "Status of Google Calendar sync"
     }
   },
   "required": [
