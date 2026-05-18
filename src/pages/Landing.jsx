@@ -188,14 +188,9 @@ export default function Landing() {
               Schedule Consultation
             </EliteButton>
           )}
-          <button
-            onClick={() => base44.auth.redirectToLogin("/Dashboard")}
-            style={{ background: "none", border: "none", color: C.textSoft, fontSize: 13, cursor: "pointer", padding: "8px 12px", fontFamily: "Inter, sans-serif", borderRadius: 6, transition: "color 0.15s" }}
-            onMouseEnter={e => e.currentTarget.style.color = C.text}
-            onMouseLeave={e => e.currentTarget.style.color = C.textSoft}
-          >
-            Login
-          </button>
+          <EliteButton variant="ghost" size="sm" onClick={() => base44.auth.redirectToLogin("/Dashboard")}>
+            Sign In
+          </EliteButton>
           <EliteButton variant="gold" size="sm" onClick={() => base44.auth.redirectToLogin("/Dashboard")}>
             Get Started
           </EliteButton>
