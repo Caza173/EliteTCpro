@@ -11,12 +11,7 @@ const Card = React.forwardRef(({ className, ...props }, ref) => (
       boxShadow: 'var(--elite-card-shadow)',
     }}
     {...props}
-  >
-    <div
-      className="absolute inset-0 rounded-xl border pointer-events-none"
-      style={{ borderColor: 'var(--elite-card-highlight)' }}
-    />
-  </div>
+  />
 ))
 Card.displayName = "Card"
 

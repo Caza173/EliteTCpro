@@ -248,7 +248,7 @@ export default function Settings() {
   const visibleTabIds = TABS.map(t => t.id);
   const resolvedActiveTab = visibleTabIds.includes(activeTab) ? activeTab : (visibleTabIds[0] || "account");
 
-  if (userLoading) {
+  if (userLoading || !currentUser) {
     return (
       <div className="max-w-3xl mx-auto space-y-4 pt-6">
         <Skeleton className="h-8 w-40 rounded" />
@@ -287,7 +287,7 @@ export default function Settings() {
       {/* ── Account ── */}
       {resolvedActiveTab === "account" && (
         <div className="space-y-4">
-          <Card className="shadow-sm border-gray-100">
+          <Card style={{ borderColor: "var(--card-border)", background: "var(--card-bg)" }}>
             <CardHeader className="pb-3">
               <CardTitle className="text-base font-semibold flex items-center gap-2">
                 <SettingsIcon className="w-4 h-4" /> My Account
@@ -315,12 +315,12 @@ export default function Settings() {
           )}
 
           {/* Data & Privacy */}
-          <Card className="shadow-sm border-gray-100">
+          <Card style={{ borderColor: "var(--card-border)", background: "var(--card-bg)" }}>
             <CardHeader className="pb-3">
               <CardTitle className="text-base font-semibold flex items-center gap-2">
                 <Download className="w-4 h-4 text-blue-500" /> Data & Privacy
               </CardTitle>
-              <p className="text-xs text-gray-400 mt-0.5">Export or manage your personal data.</p>
+              <p className="text-xs mt-0.5" style={{ color: "var(--text-muted)" }}>Export or manage your personal data.</p>
             </CardHeader>
             <CardContent>
               <Button
