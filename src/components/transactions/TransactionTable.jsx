@@ -320,12 +320,12 @@ export default function TransactionTable({ transactions, sorted = false, onStatu
                }}
                className="cursor-pointer transition-colors group"
                style={{
-                 background: "var(--card)",
+                 background: "var(--card-bg)",
                  borderBottom: "1px solid var(--border)",
                  borderLeft: score >= 80 ? "2px solid var(--destructive)" : score >= 40 ? "2px solid var(--warning)" : "2px solid transparent"
                }}
-               onMouseEnter={(e) => e.currentTarget.style.background = "var(--accent-subtle)"}
-               onMouseLeave={(e) => e.currentTarget.style.background = "var(--card)"}
+               onMouseEnter={(e) => e.currentTarget.style.background = "var(--bg-hover)"}
+               onMouseLeave={(e) => e.currentTarget.style.background = "var(--card-bg)"}
              >
                <TableCell>
                  <div className="flex items-center gap-2">

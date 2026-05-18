@@ -2,7 +2,6 @@ import React, { useState, useMemo, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { base44 } from "@/api/base44Client";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
@@ -243,28 +242,26 @@ export default function Transactions() {
                 {!selectMode && <TransactionCardGrid transactions={paginated} />}
               </div>
             ) : (
-              <Card className="shadow-sm border-gray-100">
-                <CardContent className="px-0 pb-0 pt-0">
-                  {selectMode ? (
-                    <div className="divide-y" style={{ borderColor: "var(--border)" }}>
-                      {paginated.map(tx => (
-                        <div key={tx.id} className="flex items-center gap-3 px-4 py-3 cursor-pointer hover:opacity-80 transition-opacity"
-                          style={{ background: selectedIds.has(tx.id) ? "var(--accent-subtle)" : "transparent" }}
-                          onClick={() => toggleSelect(tx.id)}>
-                          {selectedIds.has(tx.id)
-                            ? <CheckSquare className="w-5 h-5 flex-shrink-0" style={{ color: "var(--accent)" }} />
-                            : <Square className="w-5 h-5 flex-shrink-0" style={{ color: "var(--text-muted)" }} />}
-                          <span className="text-sm font-medium flex-1 truncate" style={{ color: "var(--text-primary)" }}>{tx.address}</span>
-                          <span className="text-xs px-2 py-0.5 rounded-full" style={{ background: "var(--bg-tertiary)", color: "var(--text-muted)" }}>{tx.status}</span>
-                          <span className="text-xs" style={{ color: "var(--text-muted)" }}>{tx.closing_date || tx.contract_date || ""}</span>
-                        </div>
-                      ))}
-                    </div>
-                  ) : (
-                    <TransactionTable transactions={paginated} onStatusChange={handleStatusChange} />
-                  )}
-                </CardContent>
-              </Card>
+              <div style={{ width: "100%", minHeight: 300, border: "1px solid var(--border)", borderRadius: 10, overflow: "hidden", background: "var(--card-bg)" }}>
+                {selectMode ? (
+                  <div className="divide-y" style={{ borderColor: "var(--border)" }}>
+                    {paginated.map(tx => (
+                      <div key={tx.id} className="flex items-center gap-3 px-4 py-3 cursor-pointer hover:opacity-80 transition-opacity"
+                        style={{ background: selectedIds.has(tx.id) ? "var(--accent-subtle)" : "transparent" }}
+                        onClick={() => toggleSelect(tx.id)}>
+                        {selectedIds.has(tx.id)
+                          ? <CheckSquare className="w-5 h-5 flex-shrink-0" style={{ color: "var(--accent)" }} />
+                          : <Square className="w-5 h-5 flex-shrink-0" style={{ color: "var(--text-muted)" }} />}
+                        <span className="text-sm font-medium flex-1 truncate" style={{ color: "var(--text-primary)" }}>{tx.address}</span>
+                        <span className="text-xs px-2 py-0.5 rounded-full" style={{ background: "var(--bg-tertiary)", color: "var(--text-muted)" }}>{tx.status}</span>
+                        <span className="text-xs" style={{ color: "var(--text-muted)" }}>{tx.closing_date || tx.contract_date || ""}</span>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <TransactionTable transactions={paginated} onStatusChange={handleStatusChange} />
+                )}
+              </div>
             )}
 
             {totalPages > 1 && (
