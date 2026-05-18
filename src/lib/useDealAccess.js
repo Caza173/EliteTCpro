@@ -17,19 +17,22 @@ export function isSuperAdmin(user) {
 }
 
 export function useDealAccess() {
-  const { currentUser, isLoading: userLoading } = useCurrentUserCtx();
+  const ctx = useCurrentUserCtx();
+  const currentUser = ctx?.currentUser ?? null;
+  const userLoading = ctx?.isLoading ?? true;
 
   const { data: serverData, isLoading: txLoading, error: txError } = useQuery({
-    queryKey: ["transactions", currentUser?.id],
+    queryKey: ["transactions", currentUser?.id ?? "none"],
     queryFn: async () => {
       const r = await base44.functions.invoke("getTeamTransactions", { sort: "-created_date", limit: 200 });
       const txs = r.data?.transactions;
       if (!Array.isArray(txs)) throw new Error("Invalid response from getTeamTransactions");
       return txs;
     },
-    enabled: !!currentUser,
+    enabled: !!currentUser && !userLoading,
     staleTime: 30_000,
     retry: 2,
+    suspense: false,
   });
 
   if (txError) console.error("[useDealAccess] Error fetching transactions:", txError);
