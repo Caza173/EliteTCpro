@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useRef, useEffect } from "react";
+import React, { useState, useMemo, useRef, useEffect, useCallback } from "react";
 import { createPortal } from "react-dom";
 import { base44 } from "@/api/base44Client";
 import {
@@ -27,14 +27,12 @@ function useContingencies(txIds) {
   React.useEffect(() => {
     if (!txIds.length) return;
     
-    // Only refetch if tx list actually changed
     const newKey = txIds.sort().join(",");
     if (cachedTxIds.current === newKey) return;
     cachedTxIds.current = newKey;
     
     (async () => {
       try {
-        // Fetch all contingencies once, then filter client-side
         const allConts = await base44.entities.Contingency.list(undefined, 1000);
         const filtered = allConts.filter(c => txIds.includes(c.transaction_id));
         setContingencies(filtered);
@@ -45,6 +43,25 @@ function useContingencies(txIds) {
   }, [txIds]);
   
   return contingencies;
+}
+
+function useAppointments(refreshKey) {
+  const [appointments, setAppointments] = React.useState([]);
+
+  const fetchAppts = React.useCallback(async () => {
+    try {
+      const appts = await base44.entities.Appointment.list("-event_date", 500);
+      setAppointments(appts);
+    } catch {
+      setAppointments([]);
+    }
+  }, []);
+
+  React.useEffect(() => {
+    fetchAppts();
+  }, [fetchAppts, refreshKey]);
+
+  return { appointments, refetch: fetchAppts };
 }
 
 const DAY_NAMES = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
@@ -185,6 +202,8 @@ export default function DeadlineCalendarView({ transactions = [] }) {
   const [hoveredDay, setHoveredDay] = useState(null);
   const [txList, setTxList] = useState(transactions);
   const [apptModal, setApptModal] = useState(null); // null | { defaultDate }
+  const [apptRefreshKey, setApptRefreshKey] = useState(0);
+  const { appointments, refetch: refetchAppts } = useAppointments(apptRefreshKey);
 
   // Subscribe to transaction & contingency updates for real-time deadline syncing
   useEffect(() => {
@@ -254,6 +273,21 @@ export default function DeadlineCalendarView({ transactions = [] }) {
       });
     });
     
+    // Appointments
+    appointments.forEach((appt) => {
+      if (!appt.event_date) return;
+      const timeLabel = appt.event_time ? ` · ${appt.event_time}` : "";
+      if (!map[appt.event_date]) map[appt.event_date] = [];
+      map[appt.event_date].push({
+        label: appt.title + timeLabel,
+        address: appt.address || "",
+        dot: "bg-yellow-400",
+        pill: "bg-yellow-50 text-yellow-700 border-yellow-200",
+        txId: appt.transaction_id,
+        category: "appointment",
+      });
+    });
+
     // Custom contingency deadlines
     contingencies.forEach((cont) => {
       if (!cont.due_date || !cont.is_active) return;
@@ -274,7 +308,7 @@ export default function DeadlineCalendarView({ transactions = [] }) {
     });
     
     return map;
-  }, [dedupedTx, contingencies]);
+  }, [dedupedTx, contingencies, appointments]);
 
   const getEventsForDay = (day) => events[format(day, "yyyy-MM-dd")] || [];
 
@@ -504,6 +538,10 @@ export default function DeadlineCalendarView({ transactions = [] }) {
             <span className="text-[12px]" style={{ color: "var(--text-muted)" }}>{dt.label}</span>
           </div>
         ))}
+        <div className="flex items-center gap-1.5">
+          <span className="w-2 h-2 rounded-full bg-yellow-400" />
+          <span className="text-[12px]" style={{ color: "var(--text-muted)" }}>Appointment</span>
+        </div>
       </div>
 
       {/* Add Appointment Modal */}
@@ -512,7 +550,10 @@ export default function DeadlineCalendarView({ transactions = [] }) {
           transactions={transactions}
           defaultDate={apptModal.defaultDate}
           onClose={() => setApptModal(null)}
-          onSaved={() => setApptModal(null)}
+          onSaved={() => {
+            setApptModal(null);
+            setApptRefreshKey(k => k + 1);
+          }}
         />
       )}
     </div>

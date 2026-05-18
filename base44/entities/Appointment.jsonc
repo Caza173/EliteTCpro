@@ -1,0 +1,47 @@
+{
+  "name": "Appointment",
+  "type": "object",
+  "properties": {
+    "owner_id": {
+      "type": "string",
+      "description": "User ID of the creator \u2014 used for RLS isolation"
+    },
+    "transaction_id": {
+      "type": "string"
+    },
+    "title": {
+      "type": "string"
+    },
+    "event_date": {
+      "type": "string",
+      "format": "date"
+    },
+    "event_time": {
+      "type": "string",
+      "description": "HH:MM format (24h)"
+    },
+    "notes": {
+      "type": "string"
+    },
+    "address": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "transaction_id",
+    "title",
+    "event_date"
+  ],
+  "rls": {
+    "create": true,
+    "read": {
+      "data.owner_id": "{{user.id}}"
+    },
+    "update": {
+      "data.owner_id": "{{user.id}}"
+    },
+    "delete": {
+      "data.owner_id": "{{user.id}}"
+    }
+  }
+}
