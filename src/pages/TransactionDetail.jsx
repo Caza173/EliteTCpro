@@ -1004,23 +1004,19 @@ export default function TransactionDetail() {
           {/* ── Tab: Deadlines ── */}
           {activeTab === "deadlines" && (
             <div className="space-y-4">
-              <Card className="shadow-sm border-gray-100">
-                <CardHeader className="pb-2">
-                  <div className="flex items-center justify-between">
-                    <CardTitle className="text-sm font-semibold">Deadlines</CardTitle>
-                    <Button size="sm" variant="outline" className="text-blue-600 hover:bg-blue-50 border-blue-200"
-                      onClick={() => setTimelineModalOpen(true)} disabled={sendingTimeline}>
-                      <Send className="w-3.5 h-3.5 mr-1.5" />{sendingTimeline ? "Sending…" : "Send Timeline"}
-                    </Button>
-                  </div>
-                </CardHeader>
-                <CardContent>
-                  <UnifiedDeadlinesPanel
-                    transaction={transaction}
-                    onSave={(changes) => updateMutation.mutate({ id: transaction.id, data: { ...changes, last_activity_at: new Date().toISOString() } })}
-                  />
-                </CardContent>
-              </Card>
+              <div className="theme-card p-4">
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-sm font-semibold" style={{ color: "var(--text-primary)" }}>Deadlines</h3>
+                  <Button size="sm" variant="outline" style={{ borderColor: "var(--border)", color: "var(--text-secondary)" }}
+                    onClick={() => setTimelineModalOpen(true)} disabled={sendingTimeline}>
+                    <Send className="w-3.5 h-3.5 mr-1.5" />{sendingTimeline ? "Sending…" : "Send Timeline"}
+                  </Button>
+                </div>
+                <UnifiedDeadlinesPanel
+                  transaction={transaction}
+                  onSave={(changes) => updateMutation.mutate({ id: transaction.id, data: { ...changes, last_activity_at: new Date().toISOString() } })}
+                />
+              </div>
             </div>
           )}
 

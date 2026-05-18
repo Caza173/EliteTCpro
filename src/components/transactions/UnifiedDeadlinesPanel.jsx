@@ -39,15 +39,15 @@ const SYSTEM_FIELDS = [
 const NON_ACTIONABLE = new Set(["effective_date", "acceptance_date"]);
 
 const CATEGORY_COLORS = {
-  effective_date:   { leftBorder: "border-l-blue-400",   labelText: "text-white", dot: "bg-blue-400" },
-  earnest_money:    { leftBorder: "border-l-indigo-400", labelText: "text-white", dot: "bg-indigo-400" },
-  closing:          { leftBorder: "border-l-rose-500",   labelText: "text-white", dot: "bg-rose-500" },
-  Inspection:       { leftBorder: "border-l-orange-400", labelText: "text-white", dot: "bg-orange-400" },
-  Financing:        { leftBorder: "border-l-emerald-500",labelText: "text-white", dot: "bg-emerald-500" },
-  Appraisal:        { leftBorder: "border-l-teal-500",   labelText: "text-white", dot: "bg-teal-500" },
-  Title:            { leftBorder: "border-l-purple-500", labelText: "text-white", dot: "bg-purple-500" },
-  "Due Diligence":  { leftBorder: "border-l-violet-500", labelText: "text-white", dot: "bg-violet-500" },
-  Other:            { leftBorder: "border-l-gray-400",   labelText: "text-white", dot: "bg-gray-400" },
+  effective_date:   { leftColor: "#60a5fa" },
+  earnest_money:    { leftColor: "#818cf8" },
+  closing:          { leftColor: "#f43f5e" },
+  Inspection:       { leftColor: "#fb923c" },
+  Financing:        { leftColor: "#10b981" },
+  Appraisal:        { leftColor: "#14b8a6" },
+  Title:            { leftColor: "#a855f7" },
+  "Due Diligence":  { leftColor: "#8b5cf6" },
+  Other:            { leftColor: "#9ca3af" },
 };
 
 function formatTime(t) {
@@ -109,19 +109,12 @@ function DeadlineRow({ item, calendarMaps, transactionId, onUpdateContingency, o
   const daysInfo = getDaysLabel(item.date, { nonActionable: item.nonActionable, emdReceived });
   // Only show overdue ring for actionable, non-received, non-completed deadlines
   const isOverdue = !item.nonActionable && !emdReceived && !isCompleted && daysInfo?.cls?.includes("red");
-  
-  // Determine left border and title color based on state
-  let borderClass = "border-l-transparent";
-  
-  if (isCompleted) {
-    borderClass = "border-l-emerald-500";
-  } else if (isOverdue) {
-    borderClass = "border-l-red-500";
-  } else if (daysInfo?.cls?.includes("amber")) {
-    borderClass = "border-l-amber-500";
-  } else {
-    borderClass = colors.leftBorder;
-  }
+
+  // Left border color — pure inline to avoid Tailwind/global CSS conflicts in dark mode
+  const leftBorderColor = isCompleted ? "#10b981"
+    : isOverdue ? "#ef4444"
+    : daysInfo?.cls?.includes("amber") ? "#f59e0b"
+    : colors.leftColor;
 
   const handleMarkComplete = async () => {
     setMarkingComplete(true);
@@ -199,7 +192,11 @@ function DeadlineRow({ item, calendarMaps, transactionId, onUpdateContingency, o
   };
 
   return (
-    <div className={`rounded-xl border border-l-4 p-3.5 ${borderClass} transition-all`} style={{ background: "var(--card-bg)", borderTopColor: "var(--card-border)", borderRightColor: "var(--card-border)", borderBottomColor: "var(--card-border)" }}>
+    <div className="rounded-xl p-3.5 transition-all" style={{
+      background: "var(--card-bg)",
+      border: "1px solid var(--card-border)",
+      borderLeft: `4px solid ${leftBorderColor}`,
+    }}>
       <div className="flex items-start gap-3">
         <div className="flex-1 min-w-0">
           {/* Label row */}
