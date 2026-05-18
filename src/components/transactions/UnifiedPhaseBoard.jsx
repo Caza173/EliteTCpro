@@ -184,7 +184,12 @@ const TaskRow = memo(function TaskRow({
                 />
               )}
             </div>
-            <button onClick={() => onDelete(task.id)} className="p-0.5 rounded">
+            <button
+              onClick={(e) => { e.stopPropagation(); onDelete(task.id); }}
+              onPointerDown={(e) => e.stopPropagation()}
+              className="p-0.5 rounded hover:bg-red-500/10 transition-colors"
+              title="Delete task"
+            >
               <Trash2 className="w-2.5 h-2.5 text-red-400 hover:text-red-300" />
             </button>
           </div>
@@ -590,13 +595,31 @@ export default function UnifiedPhaseBoard({
   };
 
   const handleDelete = async (taskId) => {
+    console.log("[DeleteTask] clicked", taskId);
     const task = activeTasks.find(t => t.id === taskId);
-    await base44.entities.TransactionTask.delete(taskId);
-    if (task?.is_custom && brokerageId) {
-      const libraryItems = await base44.entities.TaskLibraryItem.filter({ brokerage_id: brokerageId, title: task.title });
-      await Promise.all(libraryItems.map(i => base44.entities.TaskLibraryItem.delete(i.id)));
+
+    // Optimistic removal — immediately remove from local state so UI updates instantly
+    const optimistic = activeTasks.filter(t => t.id !== taskId);
+    setLocalTasks(optimistic);
+
+    try {
+      await base44.entities.TransactionTask.delete(taskId);
+      console.log("[DeleteTask] success", taskId);
+
+      // Also clean up library item if it was a custom task
+      if (task?.is_custom && brokerageId) {
+        const libraryItems = await base44.entities.TaskLibraryItem.filter({ brokerage_id: brokerageId, title: task.title });
+        await Promise.all(libraryItems.map(i => base44.entities.TaskLibraryItem.delete(i.id)));
+      }
+
+      // Sync cache with server
+      queryClient.setQueryData(["txTasks", transactionId], optimistic);
+      onTasksChanged?.();
+    } catch (err) {
+      console.error("[DeleteTask] failed", taskId, err?.message || err);
+      // Roll back optimistic removal on failure
+      setLocalTasks(null);
     }
-    onTasksChanged?.();
   };
 
   const handleMoveTo = async (taskId, targetPhaseNum) => {
