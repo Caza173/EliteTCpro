@@ -10,7 +10,7 @@
  *  - Navigation (HTML):            Network First, fallback to offline.html
  */
 
-const CACHE_VERSION = "elitetc-v4";
+const CACHE_VERSION = "elitetc-v5";
 const STATIC_CACHE  = `${CACHE_VERSION}-static`;
 const FONT_CACHE    = `${CACHE_VERSION}-fonts`;
 const IMAGE_CACHE   = `${CACHE_VERSION}-images`;
