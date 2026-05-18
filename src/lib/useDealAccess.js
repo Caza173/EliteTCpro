@@ -6,6 +6,7 @@
  * No team, brokerage, or shared access of any kind.
  */
 import { useQuery } from "@tanstack/react-query";
+import { useState, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
 import { useCurrentUser as useCurrentUserCtx } from "@/lib/CurrentUserContext.jsx";
 
@@ -21,6 +22,13 @@ export function useDealAccess() {
   const currentUser = ctx?.currentUser ?? null;
   const userLoading = ctx?.isLoading ?? true;
 
+  // Defer query enabling by one tick to ensure QueryClientProvider is fully mounted
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => { setMounted(true); }, []);
+
+  // Only enable once we have confirmed user identity — never during provider bootstrap
+  const isReady = mounted && !userLoading && !!currentUser?.id;
+
   const { data: serverData, isLoading: txLoading, error: txError } = useQuery({
     queryKey: ["transactions", currentUser?.id ?? "none"],
     queryFn: async () => {
@@ -29,10 +37,9 @@ export function useDealAccess() {
       if (!Array.isArray(txs)) throw new Error("Invalid response from getTeamTransactions");
       return txs;
     },
-    enabled: !!currentUser && !userLoading,
+    enabled: isReady,
     staleTime: 30_000,
     retry: 2,
-    suspense: false,
   });
 
   if (txError) console.error("[useDealAccess] Error fetching transactions:", txError);

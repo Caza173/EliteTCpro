@@ -109,7 +109,10 @@ export default function Dashboard() {
   const [activeTab, setActiveTab] = useState("overview");
 
   // Role-based deal access — only shows deals the user is authorized to see
-  const { transactions, isLoading, currentUser } = useDealAccess();
+  const dealAccess = useDealAccess();
+  const transactions = dealAccess?.transactions ?? [];
+  const isLoading = dealAccess?.isLoading ?? true;
+  const currentUser = dealAccess?.currentUser ?? null;
 
   // Scoped to transactions the current user owns
   const txIds = transactions.map(t => t.id);
