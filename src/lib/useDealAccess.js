@@ -7,7 +7,7 @@
  */
 import { useQuery } from "@tanstack/react-query";
 import { base44 } from "@/api/base44Client";
-import { useCurrentUser } from "@/components/auth/useCurrentUser";
+import { useCurrentUser as useCurrentUserCtx } from "@/lib/CurrentUserContext.jsx";
 
 const SUPER_ADMIN_EMAIL = "nhcazateam@gmail.com";
 
@@ -17,7 +17,7 @@ export function isSuperAdmin(user) {
 }
 
 export function useDealAccess() {
-  const { data: currentUser, isLoading: userLoading } = useCurrentUser();
+  const { currentUser, isLoading: userLoading } = useCurrentUserCtx();
 
   const { data: serverData, isLoading: txLoading, error: txError } = useQuery({
     queryKey: ["transactions", currentUser?.id],
