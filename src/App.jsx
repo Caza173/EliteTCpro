@@ -26,6 +26,7 @@ import TemplateManager from './pages/TemplateManager'
 import TCSignIn from './pages/TCSignIn.jsx'
 import AgentSubmitTransaction from './pages/AgentSubmitTransaction.jsx'
 import TransactionDetail from './pages/TransactionDetail'
+import { ErrorBoundary } from './components/ErrorBoundary'
 import PendingDeals from './pages/PendingDeals'
 import Contacts from './pages/Contacts'
 import Invoices from './pages/Invoices'
@@ -231,7 +232,9 @@ const AuthenticatedApp = () => {
       <Route path="/transactions/:id" element={
         <RequireAuth>
           <LayoutWrapper currentPageName="TransactionDetail">
-            <TransactionDetail />
+            <ErrorBoundary>
+              <TransactionDetail />
+            </ErrorBoundary>
           </LayoutWrapper>
         </RequireAuth>
       } />
