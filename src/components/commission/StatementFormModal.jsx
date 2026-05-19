@@ -163,8 +163,8 @@ export default function StatementFormModal({ statement, currentUser, transaction
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="sm:col-span-2">
-                <Label className="text-sm font-medium text-gray-700">Property Address *</Label>
-                <Input className="mt-1.5" value={form.property_address} onChange={e => set("property_address", e.target.value)} required />
+                <Label className="text-sm font-medium text-gray-700">Property Address {!form.transaction_id && "*"}</Label>
+                <Input className="mt-1.5" value={form.property_address} onChange={e => set("property_address", e.target.value)} required={!form.transaction_id} />
               </div>
               <div>
                 <Label className="text-sm font-medium text-gray-700">Agent Name</Label>
