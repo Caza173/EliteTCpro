@@ -47,9 +47,9 @@ const BLANK = {
   notes: "",
 };
 
-export default function StatementFormModal({ statement, currentUser, onClose, onSaved }) {
+export default function StatementFormModal({ statement, currentUser, transactionId, onClose, onSaved }) {
   const [source, setSource] = useState("transaction");
-  const [form, setForm] = useState(statement ? { ...BLANK, ...statement } : BLANK);
+  const [form, setForm] = useState(statement ? { ...BLANK, ...statement } : { ...BLANK, transaction_id: transactionId || "" });
 
   const { data: transactions = [] } = useQuery({
     queryKey: ["transactions", "all-for-commission"],
@@ -106,6 +106,7 @@ export default function StatementFormModal({ statement, currentUser, onClose, on
       if (statement?.id) return base44.entities.CommissionStatement.update(statement.id, payload);
       return base44.entities.CommissionStatement.create({
         ...payload,
+        transaction_id: data.transaction_id || transactionId || undefined,
         status: "draft",
         owner_id: currentUser?.id,
       });

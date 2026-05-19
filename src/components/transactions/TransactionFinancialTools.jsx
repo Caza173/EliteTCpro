@@ -171,6 +171,7 @@ export default function TransactionFinancialTools({ transaction, currentUser }) 
         <StatementFormModal
           statement={null}
           currentUser={currentUser}
+          transactionId={transaction.id}
           onClose={() => setStmtForm(false)}
           onSaved={() => {
             queryClient.invalidateQueries({ queryKey: ["commissionStatements", transaction.id] });
