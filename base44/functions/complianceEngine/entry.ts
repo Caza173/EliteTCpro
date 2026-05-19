@@ -2,10 +2,21 @@ import { createClientFromRequest } from 'npm:@base44/sdk@0.8.25';
 import { PDFDocument } from 'npm:pdf-lib@1.17.1';
 
 // ─── Centralized transaction status helper ──────────────────────────────────
+// CANONICAL LIST — must match lib/transactionStatusHelpers.js and lib/engine/constants.js
 function isTransactionClosed(status) {
   if (!status) return false;
   const normalized = status.trim().toLowerCase();
-  return ["closed", "closed successfully", "closed & funded", "archived"].includes(normalized);
+  return [
+    "closed",
+    "closed successfully",
+    "closed & funded",
+    "archived",
+    "expired",
+    "withdrawn",
+    "cancelled",
+    "canceled",
+    "terminated"
+  ].includes(normalized);
 }
 
 // ─── NHAR Document Templates ─────────────────────────────────────────────────
@@ -324,8 +335,11 @@ Deno.serve(async (req) => {
       for (const { field, label } of deadlineFields) {
         const dateStr = transaction_data[field];
         if (!dateStr) continue;
-        const dt = new Date(dateStr);
-        const daysLeft = Math.ceil((dt - today) / (1000 * 60 * 60 * 24));
+        // Force noon to prevent UTC-midnight timezone shift (canonical pattern)
+        const pureDateStr = String(dateStr).split('T')[0];
+        const dt = new Date(pureDateStr + 'T12:00:00');
+        const todayNoon = new Date(new Date().toLocaleDateString('en-CA', { timeZone: 'America/New_York' }) + 'T12:00:00');
+        const daysLeft = Math.round((dt - todayNoon) / (1000 * 60 * 60 * 24));
         if (daysLeft < 0) {
           deadlineIssues.push({
             issue_type: "deadline", severity: "blocker",
@@ -860,6 +874,22 @@ Please review and correct these issues as soon as possible to avoid closing dela
         subject: `⚠ Compliance Blocker — ${file_name || "Document"} · ${transaction_data?.address || "Transaction"}`,
         body: emailBody,
       });
+    }
+
+    // Write audit log entry for compliance scan
+    try {
+      await base44.asServiceRole.entities.AuditLog.create({
+        transaction_id,
+        brokerage_id: brokerage_id || null,
+        actor_email: user?.email || 'system:complianceEngine',
+        action: 'compliance_scan',
+        entity_type: 'document',
+        entity_id: document_id || transaction_id,
+        description: `Compliance scan: ${status.toUpperCase()} (score: ${report.compliance_score}/100) — ${blockers.length} blocker(s), ${warnings.length} warning(s) on "${file_name || 'Document'}"`,
+        after: { status, score: report.compliance_score, blockers_count: blockers.length, warnings_count: warnings.length },
+      });
+    } catch (e) {
+      console.warn('[complianceEngine] AuditLog write failed:', e.message);
     }
 
     return Response.json({

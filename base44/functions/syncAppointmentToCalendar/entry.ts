@@ -46,7 +46,8 @@ Deno.serve(async (req) => {
       const endH = String(h + 1).padStart(2, '0');
       const endDateTime = `${dateStr}T${endH}:${String(m).padStart(2, '0')}:00`;
 
-      const timeZone = 'America/Denver';
+      // Use America/New_York as platform default — consistent with all other calendar/deadline services
+      const timeZone = 'America/New_York';
 
       const description = [
         appt.notes || '',
