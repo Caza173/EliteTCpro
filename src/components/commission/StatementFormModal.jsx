@@ -52,12 +52,8 @@ export default function StatementFormModal({ statement, currentUser, onClose, on
   const [form, setForm] = useState(statement ? { ...BLANK, ...statement } : BLANK);
 
   const { data: transactions = [] } = useQuery({
-    queryKey: ["transactions", "mine"],
-    queryFn: () => base44.entities.Transaction.filter(
-      { created_by: currentUser?.id },
-      "-created_date",
-      100
-    ),
+    queryKey: ["transactions", "all-for-commission"],
+    queryFn: () => base44.entities.Transaction.list("-created_date", 200),
     enabled: !!currentUser?.id,
   });
 
