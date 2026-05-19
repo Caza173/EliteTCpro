@@ -50,11 +50,38 @@ const BLANK = {
 export default function StatementFormModal({ statement, currentUser, transactionId, onClose, onSaved }) {
   const [source, setSource] = useState("transaction");
   const [form, setForm] = useState(statement ? { ...BLANK, ...statement } : { ...BLANK, transaction_id: transactionId || "" });
+  const [prefilled, setPrefilled] = useState(false);
 
   const { data: transactions = [] } = useQuery({
     queryKey: ["transactions", "all-for-commission"],
     queryFn: () => base44.entities.Transaction.list("-created_date", 200),
     enabled: !!currentUser?.id,
+    onSuccess: (txList) => {
+      // Auto-prefill from transaction when transactionId is passed and no statement is being edited
+      if (!statement && transactionId && !prefilled) {
+        const tx = txList.find(t => t.id === transactionId);
+        if (tx) {
+          setPrefilled(true);
+          setForm(p => ({
+            ...p,
+            transaction_id: transactionId,
+            property_address: tx.address || p.property_address,
+            agent_name: tx.agent || p.agent_name,
+            agent_email: tx.agent_email || p.agent_email,
+            closing_date: tx.closing_date || p.closing_date,
+            purchase_price: tx.sale_price || p.purchase_price,
+            side: tx.transaction_type === "seller" ? "listing" : "buyer",
+            buyer_commission_percent: tx.commission_percent || p.buyer_commission_percent,
+            listing_commission_percent: tx.commission_percent || p.listing_commission_percent,
+            listing_agent_name: tx.sellers_agent_name || p.listing_agent_name,
+            listing_agent_brokerage: tx.seller_brokerage || p.listing_agent_brokerage,
+            buyer_agent_name: tx.buyers_agent_name || p.buyer_agent_name,
+            buyer_agent_brokerage: tx.buyer_brokerage || p.buyer_agent_brokerage,
+            title_company_email: tx.title_company_email || p.title_company_email,
+          }));
+        }
+      }
+    },
   });
 
   const { gross, commissionGross, buyerComp, brokerageSplit, referralAmount, agentNet } = calcCommission(form);

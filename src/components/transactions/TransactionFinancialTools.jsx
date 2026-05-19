@@ -22,6 +22,7 @@ const FUEL_STATUS_STYLES = { draft: "bg-gray-100 text-gray-600", ready: "bg-blue
 
 export default function TransactionFinancialTools({ transaction, currentUser }) {
   const [stmtForm, setStmtForm] = useState(false);
+  const [stmtEditing, setStmtEditing] = useState(null);
   const [stmtDetail, setStmtDetail] = useState(null);
   const [fuelForm, setFuelForm] = useState(false);
   const [fuelDetail, setFuelDetail] = useState(null);
@@ -179,11 +180,23 @@ export default function TransactionFinancialTools({ transaction, currentUser }) 
           }}
         />
       )}
-      {stmtDetail && (
+      {stmtEditing && (
+        <StatementFormModal
+          statement={stmtEditing}
+          currentUser={currentUser}
+          transactionId={transaction.id}
+          onClose={() => setStmtEditing(null)}
+          onSaved={() => {
+            queryClient.invalidateQueries({ queryKey: ["commissionStatements", transaction.id] });
+            setStmtEditing(null);
+          }}
+        />
+      )}
+      {stmtDetail && !stmtEditing && (
         <StatementDetailModal
           statement={stmtDetail}
           onClose={() => setStmtDetail(null)}
-          onEdit={() => setStmtDetail(null)}
+          onEdit={() => { setStmtEditing(stmtDetail); setStmtDetail(null); }}
           onUpdated={() => {
             queryClient.invalidateQueries({ queryKey: ["commissionStatements", transaction.id] });
             setStmtDetail(null);
