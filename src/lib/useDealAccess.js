@@ -1,4 +1,4 @@
-// cache-bust: 2026-05-20-v6-force
+// cache-bust: 2026-05-20-v7-nocache
 /**
  * useDealAccess — Strictly per-user isolated deal access.
  * Uses useState/useEffect ONLY — zero react-query — to avoid cross-chunk dispatcher errors.
