@@ -2,6 +2,7 @@ import React from 'react'
 import ReactDOM from 'react-dom/client'
 import App from '@/App.jsx'
 import '@/index.css'
+// cache-bust: 2026-05-20
 
 // Suppress benign ResizeObserver browser notification errors
 const _origError = window.onerror;
