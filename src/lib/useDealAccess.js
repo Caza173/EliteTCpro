@@ -1,11 +1,11 @@
-// cache-bust: 2026-05-20-v4
+// cache-bust: 2026-05-20-v5-no-query
 /**
  * useDealAccess — Strictly per-user isolated deal access.
  *
- * Uses useState/useEffect to avoid any cross-chunk react-query version mismatch.
+ * Uses useState/useEffect only — no react-query — to avoid cross-chunk dispatcher errors.
  * Super admin (nhcazateam@gmail.com) sees all transactions.
  */
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { base44 } from "@/api/base44Client";
 import { useCurrentUser as useCurrentUserCtx } from "@/lib/CurrentUserContext.jsx";
 
@@ -28,20 +28,24 @@ export function useDealAccess() {
 
   const isReady = !userLoading && !!currentUser?.id;
 
+  const fetchTransactions = useCallback(async () => {
+    const r = await base44.functions.invoke("getTeamTransactions", { sort: "-created_date", limit: 200 });
+    const txs = r.data?.transactions;
+    if (!Array.isArray(txs)) throw new Error("Invalid response from getTeamTransactions");
+    return txs;
+  }, []);
+
   useEffect(() => {
     if (!isReady) return;
-    // Avoid re-fetching for the same user
     if (fetchedForRef.current === currentUser.id && transactions.length > 0) return;
 
     let cancelled = false;
     setTxLoading(true);
     setTxError(null);
 
-    base44.functions.invoke("getTeamTransactions", { sort: "-created_date", limit: 200 })
-      .then(r => {
+    fetchTransactions()
+      .then(txs => {
         if (cancelled) return;
-        const txs = r.data?.transactions;
-        if (!Array.isArray(txs)) throw new Error("Invalid response from getTeamTransactions");
         setTransactions(txs);
         fetchedForRef.current = currentUser.id;
       })
@@ -55,7 +59,7 @@ export function useDealAccess() {
       });
 
     return () => { cancelled = true; };
-  }, [currentUser?.id, isReady]);
+  }, [currentUser?.id, isReady, fetchTransactions]);
 
   const isLoading = userLoading || txLoading;
   const accessibleDealIds = new Set(transactions.map(t => t.id));
