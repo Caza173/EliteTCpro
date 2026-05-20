@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from "react";
+import React, { useState } from "react";
 import { Link } from "react-router-dom";
 import { base44 } from "@/api/base44Client";
 import { useQuery } from "@tanstack/react-query";
@@ -36,9 +36,7 @@ const STATUS_STYLES = {
 
 function StatCard({ label, value, sub, icon: Icon }) {
   return (
-    <div
-      className="theme-card rounded-xl p-5 flex items-start gap-4 cursor-default"
-    >
+    <div className="theme-card rounded-xl p-5 flex items-start gap-4 cursor-default">
       <div style={{
         width: 36, height: 36,
         borderRadius: 8,
@@ -108,20 +106,17 @@ export default function Dashboard() {
   const [deadlineView, setDeadlineView] = useState("list");
   const [activeTab, setActiveTab] = useState("overview");
 
-  // Role-based deal access — only shows deals the user is authorized to see
   const dealAccess = useDealAccess();
   const transactions = dealAccess?.transactions ?? [];
   const isLoading = dealAccess?.isLoading ?? true;
   const currentUser = dealAccess?.currentUser ?? null;
 
-  // Scoped to transactions the current user owns
   const txIds = transactions.map(t => t.id);
   const { data: checklistItems = [] } = useQuery({
     queryKey: ["allChecklist", currentUser?.id],
     queryFn: async () => {
       if (!txIds.length) return [];
-      const items = await base44.entities.DocumentChecklistItem.filter({ created_by: currentUser.id });
-      return items;
+      return await base44.entities.DocumentChecklistItem.filter({ created_by: currentUser.id });
     },
     enabled: !!currentUser && transactions.length > 0,
     staleTime: 30_000,
@@ -161,15 +156,12 @@ export default function Dashboard() {
   return (
     <div className="space-y-6 w-full">
 
-      {/* Silent checkers */}
       {!isLoading && <AddendumAlertChecker transactions={transactions} currentUser={currentUser} />}
 
-      {/* Onboarding checklist widget */}
       {!isLoading && currentUser && !currentUser.onboarding_complete && (
         <GetStartedChecklist user={currentUser} />
       )}
 
-      {/* Page header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <div>
           <h1 className="text-xl font-semibold tracking-tight" style={{ color: "var(--text-primary)" }}>
@@ -179,10 +171,8 @@ export default function Dashboard() {
             {new Date().toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric" })}
           </p>
         </div>
-
       </div>
 
-      {/* Alert strip */}
       {!isLoading && (missingDocsCount > 0 || pendingApprovalCount > 0) && (
         <div className="flex flex-wrap gap-2">
           {missingDocsCount > 0 && (
@@ -202,27 +192,24 @@ export default function Dashboard() {
         </div>
       )}
 
-      {/* Stats row */}
       {isLoading ? (
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
           {[1,2,3,4].map(i => <Skeleton key={i} className="h-20 rounded-xl" />)}
         </div>
       ) : (
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-          <StatCard label="Active" value={active.length} sub={`${pending.length} pending`} icon={Activity} accent="blue" />
-          <StatCard label="Closing Soon" value={closingSoon.length} sub="within 30 days" icon={Clock} accent="amber" />
-          <StatCard label="Closed" value={closed.length} sub="all time" icon={CheckCircle2} accent="green" />
+          <StatCard label="Active" value={active.length} sub={`${pending.length} pending`} icon={Activity} />
+          <StatCard label="Closing Soon" value={closingSoon.length} sub="within 30 days" icon={Clock} />
+          <StatCard label="Closed" value={closed.length} sub="all time" icon={CheckCircle2} />
           <StatCard
             label="Total Volume"
             value={totalVolume > 0 ? `$${totalVolume.toLocaleString('en-US', { maximumFractionDigits: 0 })}` : "—"}
             sub="closed deals"
             icon={DollarSign}
-            accent="green"
           />
         </div>
       )}
 
-      {/* Tab Navigation */}
       <div className="flex gap-1 p-1 rounded-xl overflow-x-auto scrollbar-none theme-card"
         style={{ background: "var(--card-bg)", border: "1px solid var(--border)" }}>
         {[
@@ -243,10 +230,8 @@ export default function Dashboard() {
         ))}
       </div>
 
-      {/* Tab: Overview */}
       {activeTab === "overview" && (
         <div className="space-y-6">
-          {/* Calendar */}
           <div className="theme-card overflow-hidden w-full">
             <div className="px-4 py-3 border-b" style={{ borderColor: "var(--border)" }}>
               <h3 className="text-sm font-semibold" style={{ color: "var(--text-primary)" }}>Deadline Calendar</h3>
@@ -256,7 +241,6 @@ export default function Dashboard() {
             </div>
           </div>
 
-          {/* Alerts & Tasks Combined */}
           {!isLoading && (
             <div className="theme-card overflow-hidden w-full">
               <div className="px-4 py-3 border-b" style={{ borderColor: "var(--border)" }}>
@@ -273,7 +257,6 @@ export default function Dashboard() {
         </div>
       )}
 
-      {/* Tab: Finance */}
       {activeTab === "finance" && !isLoading && transactions.length > 0 && (
         <FinanceDashboardMetrics transactions={transactions} />
       )}
@@ -282,7 +265,6 @@ export default function Dashboard() {
           <p className="text-sm" style={{ color: "var(--text-muted)" }}>No transaction data available yet.</p>
         </div>
       )}
-
 
     </div>
   );
