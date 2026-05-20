@@ -142,7 +142,18 @@ export default function Settings() {
     e.preventDefault();
     if (!inviteEmail) return;
     setInviting(true);
-    await base44.users.inviteUser(inviteEmail, inviteRole === "tc" || inviteRole === "admin" ? "admin" : "user");
+    // Platform requires "admin" or "user"; then we update the app-level role separately
+    const platformRole = ["tc", "tc_lead", "admin", "owner"].includes(inviteRole) ? "admin" : "user";
+    await base44.users.inviteUser(inviteEmail, platformRole);
+    // Attempt to pre-set the intended app role on the newly created user record
+    try {
+      const users = await base44.entities.User.list();
+      const newUser = users.find(u => u.email === inviteEmail);
+      if (newUser) {
+        await base44.entities.User.update(newUser.id, { role: inviteRole });
+        queryClient.invalidateQueries({ queryKey: ["users"] });
+      }
+    } catch (_) {}
     setInviting(false);
     setInvited(true);
     setInviteEmail("");
@@ -384,6 +395,9 @@ export default function Settings() {
                 <Select value={inviteRole} onValueChange={setInviteRole}>
                   <SelectTrigger className="w-32"><SelectValue /></SelectTrigger>
                   <SelectContent>
+                    <SelectItem value="owner">Owner</SelectItem>
+                    <SelectItem value="admin">Admin</SelectItem>
+                    <SelectItem value="tc_lead">TC Lead</SelectItem>
                     <SelectItem value="tc">TC</SelectItem>
                     <SelectItem value="agent">Agent</SelectItem>
                     <SelectItem value="client">Client</SelectItem>
