@@ -1,7 +1,6 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { base44 } from "@/api/base44Client";
-import { useQuery } from "@tanstack/react-query";
 import { createPageUrl } from "@/utils";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -111,23 +110,22 @@ export default function Dashboard() {
   const isLoading = dealAccess?.isLoading ?? true;
   const currentUser = dealAccess?.currentUser ?? null;
 
-  const txIds = transactions.map(t => t.id);
-  const { data: checklistItems = [] } = useQuery({
-    queryKey: ["allChecklist", currentUser?.id],
-    queryFn: async () => {
-      if (!txIds.length) return [];
-      return await base44.entities.DocumentChecklistItem.filter({ created_by: currentUser.id });
-    },
-    enabled: !!currentUser && transactions.length > 0,
-    staleTime: 30_000,
-  });
+  const [checklistItems, setChecklistItems] = useState([]);
+  const [notifications, setNotifications] = useState([]);
 
-  const { data: notifications = [] } = useQuery({
-    queryKey: ["deadlineNotifications", currentUser?.email],
-    queryFn: () => base44.entities.InAppNotification.filter({ user_email: currentUser.email, type: "deadline" }),
-    enabled: !!currentUser,
-    staleTime: 30_000,
-  });
+  useEffect(() => {
+    if (!currentUser?.id || transactions.length === 0) return;
+    base44.entities.DocumentChecklistItem.filter({ created_by: currentUser.id })
+      .then(setChecklistItems)
+      .catch(() => {});
+  }, [currentUser?.id, transactions.length]);
+
+  useEffect(() => {
+    if (!currentUser?.email) return;
+    base44.entities.InAppNotification.filter({ user_email: currentUser.email, type: "deadline" })
+      .then(setNotifications)
+      .catch(() => {});
+  }, [currentUser?.email]);
 
   const active = transactions.filter(t => t.status === "active" && t.transaction_phase !== "closed");
   const pending = transactions.filter(t => t.status === "pending");
