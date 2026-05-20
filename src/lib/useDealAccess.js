@@ -1,3 +1,4 @@
+// cache-bust: 2026-05-20
 /**
  * useDealAccess — Strictly per-user isolated deal access.
  *
