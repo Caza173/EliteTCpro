@@ -1,12 +1,11 @@
-// cache-bust: 2026-05-20
+// cache-bust: 2026-05-20-v3
 /**
  * useDealAccess — Strictly per-user isolated deal access.
  *
- * Each user only sees transactions they own (created_by, owner_id, agent_email).
+ * Uses useState/useEffect to avoid any cross-chunk react-query version mismatch.
  * Super admin (nhcazateam@gmail.com) sees all transactions.
- * No team, brokerage, or shared access of any kind.
  */
-import { useQuery } from "@tanstack/react-query";
+import { useState, useEffect, useRef } from "react";
 import { base44 } from "@/api/base44Client";
 import { useCurrentUser as useCurrentUserCtx } from "@/lib/CurrentUserContext.jsx";
 
@@ -22,27 +21,44 @@ export function useDealAccess() {
   const currentUser = ctx?.currentUser ?? null;
   const userLoading = ctx?.isLoading ?? true;
 
-  // Only enable once we have confirmed user identity
+  const [transactions, setTransactions] = useState([]);
+  const [txLoading, setTxLoading] = useState(false);
+  const [txError, setTxError] = useState(null);
+  const fetchedForRef = useRef(null);
+
   const isReady = !userLoading && !!currentUser?.id;
 
-  const { data: serverData, isLoading: txLoading, error: txError } = useQuery({
-    queryKey: ["transactions", currentUser?.id ?? "none"],
-    queryFn: async () => {
-      const r = await base44.functions.invoke("getTeamTransactions", { sort: "-created_date", limit: 200 });
-      const txs = r.data?.transactions;
-      if (!Array.isArray(txs)) throw new Error("Invalid response from getTeamTransactions");
-      return txs;
-    },
-    enabled: isReady,
-    staleTime: 30_000,
-    retry: 2,
-  });
+  useEffect(() => {
+    if (!isReady) return;
+    // Avoid re-fetching for the same user
+    if (fetchedForRef.current === currentUser.id && transactions.length > 0) return;
 
-  if (txError) console.error("[useDealAccess] Error fetching transactions:", txError);
+    let cancelled = false;
+    setTxLoading(true);
+    setTxError(null);
 
-  const allTransactions = serverData || [];
+    base44.functions.invoke("getTeamTransactions", { sort: "-created_date", limit: 200 })
+      .then(r => {
+        if (cancelled) return;
+        const txs = r.data?.transactions;
+        if (!Array.isArray(txs)) throw new Error("Invalid response from getTeamTransactions");
+        setTransactions(txs);
+        fetchedForRef.current = currentUser.id;
+      })
+      .catch(err => {
+        if (cancelled) return;
+        console.error("[useDealAccess] Error fetching transactions:", err);
+        setTxError(err);
+      })
+      .finally(() => {
+        if (!cancelled) setTxLoading(false);
+      });
+
+    return () => { cancelled = true; };
+  }, [currentUser?.id, isReady]);
+
   const isLoading = userLoading || txLoading;
-  const accessibleDealIds = new Set(allTransactions.map(t => t.id));
+  const accessibleDealIds = new Set(transactions.map(t => t.id));
 
   function canAccess(dealId) {
     if (!currentUser || !dealId) return false;
@@ -51,8 +67,8 @@ export function useDealAccess() {
   }
 
   return {
-    transactions: allTransactions,
-    allTransactions,
+    transactions,
+    allTransactions: transactions,
     accessibleDealIds,
     isLoading,
     canAccess,
