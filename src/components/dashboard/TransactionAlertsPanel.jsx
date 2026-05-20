@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { Link } from "react-router-dom";
 import { createPageUrl } from "@/utils";
 import {
@@ -6,7 +6,6 @@ import {
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { base44 } from "@/api/base44Client";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useCurrentUser } from "../auth/useCurrentUser";
 import { useAccessibleDealIds } from "../../lib/useDealAccess";
 import { isTransactionClosed } from "../../lib/transactionStatusHelpers";
@@ -20,64 +19,61 @@ const ALERT_CONFIG = {
   compliance_blockers:  { icon: AlertTriangle, iconColor: "var(--danger)",   bgStyle: { backgroundColor: "var(--danger-bg)" },  borderColor: "var(--danger)",   label: "Compliance" },
 };
 
-const PRIORITY_BADGE_STYLE = {
-  critical: { backgroundColor: "var(--danger-bg)",  color: "var(--danger)" },
-  warning:  { backgroundColor: "var(--warning-bg)", color: "var(--warning)" },
-  info:     { backgroundColor: "var(--accent-subtle)", color: "var(--accent)" },
-};
-
 export default function TransactionAlertsPanel() {
   const [filter, setFilter] = useState("all");
-  const queryClient = useQueryClient();
+  const [dbAlerts, setDbAlerts] = useState([]);
+  const [isLoading, setIsLoading] = useState(false);
+  const [mutating, setMutating] = useState(false);
+
   const { data: currentUser } = useCurrentUser();
   const { accessibleDealIds } = useAccessibleDealIds();
 
-  // Only fetch alerts for transactions this user can access
-  const { data: rawAlerts = [], isLoading } = useQuery({
-    queryKey: ["monitorAlerts", currentUser?.id],
-    queryFn: async () => {
-      if (!accessibleDealIds.size) return [];
+  const fetchAlerts = useCallback(async () => {
+    if (!currentUser) return;
+    setIsLoading(true);
+    try {
       const alerts = await base44.entities.MonitorAlert.filter({ alert_state: "active" });
-      return alerts.filter(a =>
+      const filtered = alerts.filter(a =>
         accessibleDealIds.has(a.transaction_id) &&
         !isTransactionClosed(a.transaction_status)
       );
-    },
-    enabled: !!currentUser,
-  });
+      setDbAlerts(filtered);
+    } catch {
+      setDbAlerts([]);
+    } finally {
+      setIsLoading(false);
+    }
+  }, [currentUser, accessibleDealIds]);
 
-  const dbAlerts = rawAlerts;
-
-  // Update alert state (resolve or dismiss)
-  const updateAlertMutation = useMutation({
-    mutationFn: ({ alertId, alertState }) =>
-      base44.entities.MonitorAlert.update(alertId, {
-        alert_state: alertState,
-        ...(alertState === "dismissed" ? { dismissed_at: new Date().toISOString() } : {}),
-        ...(alertState === "resolved"  ? { resolved_at:  new Date().toISOString() } : {}),
-      }),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["monitorAlerts", currentUser?.id] });
-    },
-  });
+  useEffect(() => {
+    fetchAlerts();
+  }, [fetchAlerts]);
 
   const handleClearAll = async () => {
+    setMutating(true);
     await Promise.all(filtered.map(a =>
       base44.entities.MonitorAlert.update(a.id, { alert_state: "dismissed", dismissed_at: new Date().toISOString() })
     ));
-    queryClient.invalidateQueries({ queryKey: ["monitorAlerts", currentUser?.id] });
+    await fetchAlerts();
+    setMutating(false);
   };
 
   const handleDismiss = async (e, alert) => {
     e.preventDefault();
     e.stopPropagation();
-    updateAlertMutation.mutate({ alertId: alert.id, alertState: "dismissed" });
+    setMutating(true);
+    await base44.entities.MonitorAlert.update(alert.id, { alert_state: "dismissed", dismissed_at: new Date().toISOString() });
+    await fetchAlerts();
+    setMutating(false);
   };
 
   const handleResolved = async (e, alert) => {
     e.preventDefault();
     e.stopPropagation();
-    updateAlertMutation.mutate({ alertId: alert.id, alertState: "resolved" });
+    setMutating(true);
+    await base44.entities.MonitorAlert.update(alert.id, { alert_state: "resolved", resolved_at: new Date().toISOString() });
+    await fetchAlerts();
+    setMutating(false);
   };
 
   const filtered = filter === "all" ? dbAlerts : dbAlerts.filter(a => a.priority === filter);
@@ -99,7 +95,8 @@ export default function TransactionAlertsPanel() {
       {filtered.length > 0 && (
         <button
           onClick={handleClearAll}
-          className="text-xs font-medium hover:underline"
+          disabled={mutating}
+          className="text-xs font-medium hover:underline disabled:opacity-50"
           style={{ color: "var(--text-muted)" }}
         >
           Clear all
@@ -149,41 +146,40 @@ export default function TransactionAlertsPanel() {
             const Icon = cfg.icon;
             return (
               <Link
-                 key={alert.id}
-                 to={`/transactions/${alert.transaction_id}`}
-                 className="flex items-center gap-2 p-2 rounded-lg border hover:opacity-90 transition-opacity"
-                 style={{ ...cfg.bgStyle, borderColor: cfg.borderColor }}
-               >
-                 <Icon className="w-4 h-4 flex-shrink-0" style={{ color: cfg.iconColor }} />
-                 <div className="flex-1 min-w-0">
-                   <p className="text-xs font-semibold leading-tight" style={{ color: "var(--text-primary)" }}>{alert.deadline_label}</p>
-                   <p className="text-[10px]" style={{ color: "var(--text-muted)" }}>
-                     {alert.days_remaining < 0 ? `Overdue by ${Math.abs(alert.days_remaining)} days` : `${alert.days_remaining} days remaining`}
-                   </p>
-                   <p className="text-[10px] truncate" style={{ color: "var(--accent)" }}>{alert.transaction_address}</p>
-                 </div>
-                 {/* Action buttons */}
-                 <div className="flex gap-1 flex-shrink-0" onClick={e => e.preventDefault()}>
-                   <button
-                     onClick={(e) => handleResolved(e, alert)}
-                     disabled={updateAlertMutation.isPending}
-                     title="Mark resolved"
-                     className="flex items-center gap-0.5 px-2 py-px rounded text-[9px] font-semibold border transition-colors disabled:opacity-50 whitespace-nowrap"
-                     style={{ backgroundColor: "var(--success-bg)", color: "var(--success)", borderColor: "var(--success)" }}
-                   >
-                     {updateAlertMutation.isPending ? <Loader2 className="w-3 h-3 animate-spin" /> : <CheckCircle2 className="w-3 h-3" />} Resolved
-                   </button>
-                   <button
-                     onClick={(e) => handleDismiss(e, alert)}
-                     disabled={updateAlertMutation.isPending}
-                     title="Dismiss alert"
-                     className="flex items-center gap-0.5 px-2 py-px rounded text-[9px] font-semibold border transition-colors disabled:opacity-50 whitespace-nowrap"
-                     style={{ backgroundColor: "var(--card-bg)", color: "var(--text-secondary)", borderColor: "var(--border)" }}
-                   >
-                     <X className="w-3 h-3" /> Dismiss
-                   </button>
-                 </div>
-               </Link>
+                key={alert.id}
+                to={`/transactions/${alert.transaction_id}`}
+                className="flex items-center gap-2 p-2 rounded-lg border hover:opacity-90 transition-opacity"
+                style={{ ...cfg.bgStyle, borderColor: cfg.borderColor }}
+              >
+                <Icon className="w-4 h-4 flex-shrink-0" style={{ color: cfg.iconColor }} />
+                <div className="flex-1 min-w-0">
+                  <p className="text-xs font-semibold leading-tight" style={{ color: "var(--text-primary)" }}>{alert.deadline_label}</p>
+                  <p className="text-[10px]" style={{ color: "var(--text-muted)" }}>
+                    {alert.days_remaining < 0 ? `Overdue by ${Math.abs(alert.days_remaining)} days` : `${alert.days_remaining} days remaining`}
+                  </p>
+                  <p className="text-[10px] truncate" style={{ color: "var(--accent)" }}>{alert.transaction_address}</p>
+                </div>
+                <div className="flex gap-1 flex-shrink-0" onClick={e => e.preventDefault()}>
+                  <button
+                    onClick={(e) => handleResolved(e, alert)}
+                    disabled={mutating}
+                    title="Mark resolved"
+                    className="flex items-center gap-0.5 px-2 py-px rounded text-[9px] font-semibold border transition-colors disabled:opacity-50 whitespace-nowrap"
+                    style={{ backgroundColor: "var(--success-bg)", color: "var(--success)", borderColor: "var(--success)" }}
+                  >
+                    {mutating ? <Loader2 className="w-3 h-3 animate-spin" /> : <CheckCircle2 className="w-3 h-3" />} Resolved
+                  </button>
+                  <button
+                    onClick={(e) => handleDismiss(e, alert)}
+                    disabled={mutating}
+                    title="Dismiss alert"
+                    className="flex items-center gap-0.5 px-2 py-px rounded text-[9px] font-semibold border transition-colors disabled:opacity-50 whitespace-nowrap"
+                    style={{ backgroundColor: "var(--card-bg)", color: "var(--text-secondary)", borderColor: "var(--border)" }}
+                  >
+                    <X className="w-3 h-3" /> Dismiss
+                  </button>
+                </div>
+              </Link>
             );
           })}
         </div>
