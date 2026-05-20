@@ -1,9 +1,7 @@
-// cache-bust: 2026-05-20-v5-no-query
+// cache-bust: 2026-05-20-v6-force
 /**
  * useDealAccess — Strictly per-user isolated deal access.
- *
- * Uses useState/useEffect only — no react-query — to avoid cross-chunk dispatcher errors.
- * Super admin (nhcazateam@gmail.com) sees all transactions.
+ * Uses useState/useEffect ONLY — zero react-query — to avoid cross-chunk dispatcher errors.
  */
 import { useState, useEffect, useRef, useCallback } from "react";
 import { base44 } from "@/api/base44Client";
@@ -12,8 +10,7 @@ import { useCurrentUser as useCurrentUserCtx } from "@/lib/CurrentUserContext.js
 const SUPER_ADMIN_EMAIL = "nhcazateam@gmail.com";
 
 export function isSuperAdmin(user) {
-  if (!user) return false;
-  return user.email === SUPER_ADMIN_EMAIL;
+  return user?.email === SUPER_ADMIN_EMAIL;
 }
 
 export function useDealAccess() {
@@ -51,7 +48,7 @@ export function useDealAccess() {
       })
       .catch(err => {
         if (cancelled) return;
-        console.error("[useDealAccess] Error fetching transactions:", err);
+        console.error("[useDealAccess] fetch error:", err);
         setTxError(err);
       })
       .finally(() => {
