@@ -17,6 +17,13 @@ window.addEventListener('error', (e) => {
   }
 }, true);
 
+// Suppress ServiceWorker installation errors in preview/sandbox environments
+window.addEventListener('unhandledrejection', (e) => {
+  if (e.reason && e.reason.message && e.reason.message.includes('ServiceWorker')) {
+    e.preventDefault();
+  }
+}, true);
+
 ReactDOM.createRoot(document.getElementById('root')).render(
   <App />
 )
