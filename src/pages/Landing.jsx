@@ -748,13 +748,20 @@ export default function Landing() {
             </div>
 
             {[
-              { label: "Platform",    items: ["AI Contract Parsing", "Deadline Engine", "Compliance Monitoring", "Commission Statements", "Contact Management", "Document Management"] },
-              { label: "Company",     items: ["Why EliteTC", "How It Works", "Testimonials", "FAQ"] },
-              { label: "Get Started", items: ["Start a Transaction", "Schedule a Demo", "Contact Us", "Sign In"] },
+               { label: "Platform",    items: ["AI Contract Parsing", "Deadline Engine", "Compliance Monitoring", "Commission Statements", "Contact Management", "Document Management"] },
+               { label: "Company",     items: ["About", "Why EliteTC", "How It Works", "Testimonials", "FAQ"] },
+               { label: "Get Started", items: ["Start a Transaction", "Schedule a Demo", "Contact", "Sign In"] },
             ].map(({ label, items }) => (
               <div key={label}>
                 <p style={{ fontSize: 10, fontWeight: 700, letterSpacing: "0.18em", textTransform: "uppercase", color: C.gold, marginBottom: 22, fontFamily: "Inter, sans-serif" }}>{label}</p>
-                {items.map(l => <p key={l} style={{ fontSize: 13, color: C.textMuted, marginBottom: 12, cursor: "pointer", fontFamily: "Inter, sans-serif" }}>{l}</p>)}
+                {items.map(l => {
+                  const handleClick = () => {
+                    if (l === "About") navigate("/About");
+                    else if (l === "Contact") navigate("/Contact");
+                    else scrollTo(l.toLowerCase().replace(/\s+/g, "-"));
+                  };
+                  return <p key={l} onClick={handleClick} style={{ fontSize: 13, color: C.textMuted, marginBottom: 12, cursor: "pointer", fontFamily: "Inter, sans-serif", transition: "color 0.15s" }} onMouseEnter={e => e.currentTarget.style.color = C.gold} onMouseLeave={e => e.currentTarget.style.color = C.textMuted}>{l}</p>;
+                })}
               </div>
             ))}
           </div>

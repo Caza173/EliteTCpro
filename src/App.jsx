@@ -2,6 +2,8 @@
 import { useState, useEffect, useRef } from "react";
 import { Toaster } from "@/components/ui/toaster"
 import Landing from './pages/Landing'
+import About from './pages/About'
+import Contact from './pages/Contact'
 import SetupProfile from './pages/SetupProfile'
 import UserManagement from './pages/UserManagement'
 
@@ -95,6 +97,8 @@ const AuthenticatedApp = () => {
       <Route path="/onboarding/*" element={<Onboarding />} />
       <Route path="/" element={<Landing />} />
       <Route path="/Landing" element={<Landing />} />
+      <Route path="/About" element={<About />} />
+      <Route path="/Contact" element={<Contact />} />
       <Route path="/SetupProfile" element={
         <RequireAuth>
           <LayoutWrapper currentPageName="SetupProfile">
