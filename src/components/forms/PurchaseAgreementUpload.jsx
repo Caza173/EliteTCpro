@@ -57,10 +57,10 @@ function normalizeV2(src) {
 
 const STAGE_LABELS = {
   uploading:   "Uploading document...",
-  extracting:  "Stage 1: Extracting PDF text...",
-  splitting:   "Stage 2: Identifying sections (1, 2, 3, 5, 7, 15, 16, 19, 20)...",
-  parsing:     "Stage 3: AI extracting each section in parallel...",
-  combining:   "Stage 4: Combining fields & calculating deadlines...",
+  extracting:  "Reading contract with AWS Textract...",
+  splitting:   "Extracting form fields, tables & checkboxes...",
+  parsing:     "GPT-4.1 mapping fields to transaction data...",
+  combining:   "Calculating deadlines & validating dates...",
 };
 
 export default function PurchaseAgreementUpload({ onParsed, transactionId, brokerageId }) {
@@ -192,7 +192,7 @@ export default function PurchaseAgreementUpload({ onParsed, transactionId, broke
             </div>
             <div className="flex items-center gap-1.5 text-xs text-emerald-600 bg-emerald-50 px-3 py-1 rounded-full">
               <Zap className="w-3 h-3" />
-              Section-by-section AI extraction (NHAR optimized)
+              AWS Textract + GPT-4.1 pipeline (NHAR optimized)
             </div>
             <input
               ref={inputRef}
@@ -234,10 +234,10 @@ export default function PurchaseAgreementUpload({ onParsed, transactionId, broke
             <div className="flex gap-1.5 flex-wrap">
               {[
                 { key: "uploading",  label: "Upload" },
-                { key: "extracting", label: "Extract" },
-                { key: "splitting",  label: "Split Sections" },
-                { key: "parsing",    label: "AI Parse" },
-                { key: "combining",  label: "Combine" },
+                { key: "extracting", label: "Textract OCR" },
+                { key: "splitting",  label: "Form Parsing" },
+                { key: "parsing",    label: "GPT-4.1" },
+                { key: "combining",  label: "Deadlines" },
               ].map(({ key, label }, i) => {
                 const stages = ["uploading","extracting","splitting","parsing","combining"];
                 const currentIdx = stages.indexOf(status);

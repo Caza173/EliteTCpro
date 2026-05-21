@@ -277,22 +277,33 @@ Deno.serve(async (req) => {
 
     const debugFlags = [];
     const openai = new OpenAI({ apiKey: Deno.env.get('OPENAI_API_KEY') });
+    const t0 = Date.now();
 
     // ── STEP 1: Textract extraction ───────────────────────────────────────────
+    // Use user-scoped client (textractDocument requires auth.me() to pass)
     console.log('parsePurchaseAgreementV2 — Step 1: Textract AnalyzeDocument');
-    const textractRes = await serviceBase44.functions.invoke('textractDocument', { file_url });
-
     let textractData = null;
     let structuredContext = null;
 
-    if (textractRes?.structured_context) {
-      textractData = textractRes;
-      structuredContext = textractRes.structured_context;
-      console.log(`Textract success: ${textractRes.block_count} blocks, ${textractRes.kv_pair_count} KV pairs, ${textractRes.table_count} tables, ${textractRes.checkbox_count} checkboxes`);
-    } else {
-      // Textract failed — fall back to passing file_url directly for Base44 vision extraction
-      console.warn('Textract unavailable, falling back to Base44 vision extraction');
-      debugFlags.push('TEXTRACT_UNAVAILABLE_FALLBACK');
+    try {
+      const textractRes = await base44.functions.invoke('textractDocument', { file_url });
+      if (textractRes?.structured_context) {
+        textractData = textractRes;
+        structuredContext = textractRes.structured_context;
+        console.log(`Textract OK: ${textractRes.block_count} blocks, ${textractRes.kv_pair_count} KV pairs, ${textractRes.table_count} tables, ${textractRes.checkbox_count} checkboxes`);
+        console.log(`Textract confidence: avg_word=${textractRes.confidence_metrics?.avg_word_confidence}% kv_avg=${textractRes.confidence_metrics?.kv_avg_confidence}%`);
+      } else if (textractRes?.error) {
+        // Surface the specific error for debugging but still fall back
+        const errMsg = textractRes.error || 'unknown';
+        console.warn('Textract returned error:', errMsg);
+        debugFlags.push('TEXTRACT_ERROR:' + errMsg.slice(0, 80));
+      } else {
+        console.warn('Textract returned no structured_context, falling back');
+        debugFlags.push('TEXTRACT_NO_CONTEXT');
+      }
+    } catch (textractErr) {
+      console.warn('Textract failed, falling back to Base44 vision:', textractErr.message);
+      debugFlags.push('TEXTRACT_FAILED:' + textractErr.message.slice(0, 80));
     }
 
     // ── STEP 2: GPT-4.1 extraction ────────────────────────────────────────────
@@ -401,6 +412,32 @@ Return JSON with ONLY the fields listed above. Use null if still not found.`;
     if (!raw.deposit_amount)  debugFlags.push('DEPOSIT_AMOUNT_NOT_FOUND');
     if (!effectiveDate)       debugFlags.push('EFFECTIVE_DATE_NOT_FOUND');
 
+    // Date sanity checks
+    if (effectiveDate && raw.closing_date) {
+      if (new Date(raw.closing_date) <= new Date(effectiveDate)) {
+        validationErrors.push({ field: 'closing_date', message: 'Closing date is not after effective date — verify manually' });
+        debugFlags.push('CLOSING_DATE_BEFORE_EFFECTIVE');
+      }
+    }
+    if (raw.closing_date && !raw.closing_date.match(/^\d{4}-\d{2}-\d{2}$/)) {
+      validationErrors.push({ field: 'closing_date', message: 'Closing date format invalid' });
+      debugFlags.push('CLOSING_DATE_FORMAT_INVALID');
+    }
+    if (effectiveDate && !effectiveDate.match(/^\d{4}-\d{2}-\d{2}$/)) {
+      validationErrors.push({ field: 'acceptance_date', message: 'Effective date format invalid' });
+      debugFlags.push('EFFECTIVE_DATE_FORMAT_INVALID');
+    }
+    // Duplicate field reconciliation: if earnest_money_deadline_explicit conflicts with calculated, prefer explicit
+    if (raw.earnest_money_deadline_explicit && calc.earnest_money_initial_deadline?.value &&
+        raw.earnest_money_deadline_explicit !== calc.earnest_money_initial_deadline.value) {
+      debugFlags.push('EMD_DATE_CONFLICT:explicit=' + raw.earnest_money_deadline_explicit + ',calc=' + calc.earnest_money_initial_deadline.value);
+      // Prefer explicit
+      calc.earnest_money_initial_deadline = { value: raw.earnest_money_deadline_explicit, confidence: 'HIGH', source_section: 'Section 3', note: 'Explicit date overrides calculated' };
+    }
+
+    const totalMs = Date.now() - t0;
+    console.log(`parsePurchaseAgreementV2 total: ${totalMs}ms | pipeline: ${structuredContext ? 'textract+gpt4.1' : 'base44_vision'} | flags: [${debugFlags.join(', ')}]`);
+
     // ── STEP 6: Build output (shape unchanged — backward compatible) ───────────
     const output = {
       raw: {
@@ -473,12 +510,20 @@ Return JSON with ONLY the fields listed above. Use null if still not found.`;
       validation_errors: validationErrors,
       _debug: {
         pipeline: structuredContext ? 'textract+gpt4.1' : 'base44_vision_fallback',
-        textract_blocks:    textractData?.block_count || 0,
-        textract_kv_pairs:  textractData?.kv_pair_count || 0,
-        textract_tables:    textractData?.table_count || 0,
-        textract_checkboxes: textractData?.checkbox_count || 0,
+        total_ms: totalMs,
+        textract: textractData ? {
+          blocks:      textractData.block_count,
+          kv_pairs:    textractData.kv_pair_count,
+          tables:      textractData.table_count,
+          checkboxes:  textractData.checkbox_count,
+          pages:       textractData.page_count,
+          avg_word_confidence: textractData.confidence_metrics?.avg_word_confidence,
+          kv_avg_confidence:   textractData.confidence_metrics?.kv_avg_confidence,
+          low_conf_words:      textractData.confidence_metrics?.low_confidence_word_count,
+        } : null,
         effective_date_found: !!effectiveDate,
         flags: debugFlags,
+        validation_error_count: validationErrors.length,
         confidence_summary: {
           effective_date: effectiveDate ? 'HIGH' : 'LOW',
           earnest_money:  calc.earnest_money_initial_deadline?.confidence || 'LOW',
