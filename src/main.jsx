@@ -19,7 +19,15 @@ window.addEventListener('error', (e) => {
 
 // Suppress ServiceWorker installation errors in preview/sandbox environments
 window.addEventListener('unhandledrejection', (e) => {
-  if (e.reason && e.reason.message && e.reason.message.includes('ServiceWorker')) {
+  const msg = e.reason?.message || String(e.reason || '');
+  if (msg.includes('ServiceWorker') || msg.includes('service-worker') || msg.includes('sw.js')) {
+    e.preventDefault();
+  }
+}, true);
+window.addEventListener('error', (e) => {
+  const msg = e.message || '';
+  if (msg.includes('ServiceWorker') || msg.includes('sw.js')) {
+    e.stopImmediatePropagation();
     e.preventDefault();
   }
 }, true);
