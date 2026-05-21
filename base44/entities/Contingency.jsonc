@@ -5,6 +5,10 @@
     "transaction_id": {
       "type": "string"
     },
+    "owner_user_id": {
+      "type": "string",
+      "description": "Owner of the parent transaction"
+    },
     "brokerage_id": {
       "type": "string"
     },
@@ -37,20 +41,18 @@
     },
     "due_time": {
       "type": "string",
-      "description": "Time of deadline (for timed events like inspections). Format: HH:MM"
+      "description": "Time of deadline (HH:MM)"
     },
     "is_all_day": {
       "type": "boolean",
-      "default": true,
-      "description": "If false, this is a timed event. If true, it's an all-day deadline."
+      "default": true
     },
     "scheduled_date": {
       "type": "string",
       "format": "date"
     },
     "scheduled_time": {
-      "type": "string",
-      "description": "Time of scheduled inspection, e.g. 10:00 AM (for inspection types)"
+      "type": "string"
     },
     "completed_date": {
       "type": "string",
@@ -86,5 +88,80 @@
   "required": [
     "transaction_id",
     "contingency_type"
-  ]
+  ],
+  "rls": {
+    "create": true,
+    "read": {
+      "$or": [
+        {
+          "user_condition": {
+            "role": {
+              "$in": [
+                "admin",
+                "owner",
+                "super_admin"
+              ]
+            }
+          }
+        },
+        {
+          "data.owner_user_id": "{{user.id}}"
+        },
+        {
+          "data.created_by": "{{user.id}}"
+        },
+        {
+          "data.brokerage_id": "{{user.data.brokerage_id}}"
+        }
+      ]
+    },
+    "update": {
+      "$or": [
+        {
+          "user_condition": {
+            "role": {
+              "$in": [
+                "admin",
+                "owner",
+                "super_admin"
+              ]
+            }
+          }
+        },
+        {
+          "data.owner_user_id": "{{user.id}}"
+        },
+        {
+          "data.created_by": "{{user.id}}"
+        },
+        {
+          "data.brokerage_id": "{{user.data.brokerage_id}}"
+        }
+      ]
+    },
+    "delete": {
+      "$or": [
+        {
+          "user_condition": {
+            "role": {
+              "$in": [
+                "admin",
+                "owner",
+                "super_admin"
+              ]
+            }
+          }
+        },
+        {
+          "data.owner_user_id": "{{user.id}}"
+        },
+        {
+          "data.created_by": "{{user.id}}"
+        },
+        {
+          "data.brokerage_id": "{{user.data.brokerage_id}}"
+        }
+      ]
+    }
+  }
 }

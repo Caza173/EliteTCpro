@@ -1,94 +1,29 @@
 {
-  "name": "Note",
+  "name": "CalendarEventMap",
   "type": "object",
   "properties": {
     "transaction_id": {
-      "type": "string",
-      "description": "Reference to Transaction"
+      "type": "string"
     },
     "owner_user_id": {
       "type": "string",
       "description": "Owner of the parent transaction"
     },
+    "field_key": {
+      "type": "string",
+      "description": "e.g. inspection_deadline"
+    },
+    "calendar_event_id": {
+      "type": "string"
+    },
     "brokerage_id": {
       "type": "string"
-    },
-    "title": {
-      "type": "string"
-    },
-    "message": {
-      "type": "string",
-      "description": "Full note content"
-    },
-    "note_type": {
-      "type": "string",
-      "enum": [
-        "internal",
-        "agent_action",
-        "client_action",
-        "update"
-      ],
-      "default": "internal"
-    },
-    "visibility": {
-      "type": "string",
-      "enum": [
-        "internal",
-        "agent",
-        "client"
-      ],
-      "default": "internal"
-    },
-    "is_pinned": {
-      "type": "boolean",
-      "default": false
-    },
-    "linked_task_id": {
-      "type": "string"
-    },
-    "linked_deadline": {
-      "type": "string"
-    },
-    "assigned_to": {
-      "type": "string",
-      "description": "Email of assigned user"
-    },
-    "due_date": {
-      "type": "string",
-      "format": "date"
-    },
-    "status": {
-      "type": "string",
-      "enum": [
-        "open",
-        "in_progress",
-        "completed"
-      ],
-      "default": "open"
-    },
-    "created_by": {
-      "type": "string",
-      "description": "Email of creator"
-    },
-    "created_by_name": {
-      "type": "string"
-    },
-    "email_sent": {
-      "type": "boolean",
-      "default": false
-    },
-    "recipient_email": {
-      "type": "string"
-    },
-    "sent_timestamp": {
-      "type": "string",
-      "format": "date-time"
     }
   },
   "required": [
     "transaction_id",
-    "title",
-    "message"
+    "field_key",
+    "calendar_event_id"
   ],
   "rls": {
     "create": true,
@@ -110,9 +45,6 @@
         },
         {
           "data.created_by": "{{user.id}}"
-        },
-        {
-          "data.created_by": "{{user.email}}"
         },
         {
           "data.brokerage_id": "{{user.data.brokerage_id}}"
@@ -139,9 +71,6 @@
           "data.created_by": "{{user.id}}"
         },
         {
-          "data.created_by": "{{user.email}}"
-        },
-        {
           "data.brokerage_id": "{{user.data.brokerage_id}}"
         }
       ]
@@ -164,9 +93,6 @@
         },
         {
           "data.created_by": "{{user.id}}"
-        },
-        {
-          "data.created_by": "{{user.email}}"
         },
         {
           "data.brokerage_id": "{{user.data.brokerage_id}}"

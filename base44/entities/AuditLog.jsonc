@@ -1,0 +1,108 @@
+{
+  "name": "AuditLog",
+  "type": "object",
+  "properties": {
+    "brokerage_id": {
+      "type": "string"
+    },
+    "owner_user_id": {
+      "type": "string",
+      "description": "Owner of the parent transaction"
+    },
+    "transaction_id": {
+      "type": "string"
+    },
+    "actor_user_id": {
+      "type": "string"
+    },
+    "actor_email": {
+      "type": "string"
+    },
+    "action": {
+      "type": "string",
+      "description": "e.g. phase_changed, task_completed, doc_uploaded, ACCESS_DENIED"
+    },
+    "entity_type": {
+      "type": "string",
+      "enum": [
+        "transaction",
+        "task",
+        "deadline",
+        "document",
+        "checklist",
+        "user",
+        "template",
+        "billing",
+        "communication"
+      ]
+    },
+    "entity_id": {
+      "type": "string"
+    },
+    "before": {
+      "type": "object"
+    },
+    "after": {
+      "type": "object"
+    },
+    "description": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "action",
+    "entity_type"
+  ],
+  "rls": {
+    "create": true,
+    "read": {
+      "$or": [
+        {
+          "user_condition": {
+            "role": {
+              "$in": [
+                "admin",
+                "owner",
+                "super_admin"
+              ]
+            }
+          }
+        },
+        {
+          "data.owner_user_id": "{{user.id}}"
+        },
+        {
+          "data.actor_user_id": "{{user.id}}"
+        },
+        {
+          "data.actor_email": "{{user.email}}"
+        },
+        {
+          "data.brokerage_id": "{{user.data.brokerage_id}}"
+        }
+      ]
+    },
+    "update": {
+      "user_condition": {
+        "role": {
+          "$in": [
+            "admin",
+            "owner",
+            "super_admin"
+          ]
+        }
+      }
+    },
+    "delete": {
+      "user_condition": {
+        "role": {
+          "$in": [
+            "admin",
+            "owner",
+            "super_admin"
+          ]
+        }
+      }
+    }
+  }
+}

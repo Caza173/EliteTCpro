@@ -1,10 +1,9 @@
 {
-  "name": "Note",
+  "name": "ComplianceReport",
   "type": "object",
   "properties": {
     "transaction_id": {
-      "type": "string",
-      "description": "Reference to Transaction"
+      "type": "string"
     },
     "owner_user_id": {
       "type": "string",
@@ -13,82 +12,91 @@
     "brokerage_id": {
       "type": "string"
     },
-    "title": {
+    "document_id": {
       "type": "string"
     },
-    "message": {
-      "type": "string",
-      "description": "Full note content"
-    },
-    "note_type": {
-      "type": "string",
-      "enum": [
-        "internal",
-        "agent_action",
-        "client_action",
-        "update"
-      ],
-      "default": "internal"
-    },
-    "visibility": {
-      "type": "string",
-      "enum": [
-        "internal",
-        "agent",
-        "client"
-      ],
-      "default": "internal"
-    },
-    "is_pinned": {
-      "type": "boolean",
-      "default": false
-    },
-    "linked_task_id": {
+    "document_name": {
       "type": "string"
     },
-    "linked_deadline": {
+    "document_type": {
       "type": "string"
     },
-    "assigned_to": {
-      "type": "string",
-      "description": "Email of assigned user"
+    "page_count": {
+      "type": "number"
     },
-    "due_date": {
-      "type": "string",
-      "format": "date"
+    "compliance_score": {
+      "type": "number",
+      "default": 100
     },
     "status": {
       "type": "string",
       "enum": [
-        "open",
-        "in_progress",
-        "completed"
+        "compliant",
+        "warnings",
+        "blockers"
       ],
-      "default": "open"
+      "default": "compliant"
     },
-    "created_by": {
-      "type": "string",
-      "description": "Email of creator"
+    "blockers": {
+      "type": "array",
+      "items": {
+        "type": "object"
+      }
     },
-    "created_by_name": {
+    "warnings": {
+      "type": "array",
+      "items": {
+        "type": "object"
+      }
+    },
+    "info_items": {
+      "type": "array",
+      "items": {
+        "type": "object"
+      }
+    },
+    "all_issues": {
+      "type": "array",
+      "items": {
+        "type": "object"
+      }
+    },
+    "extracted_fields": {
+      "type": "object"
+    },
+    "signatures": {
+      "type": "object"
+    },
+    "missing_initials_pages": {
+      "type": "array",
+      "items": {
+        "type": "number"
+      }
+    },
+    "blank_fields": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "missing_docs": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "summary": {
       "type": "string"
     },
-    "email_sent": {
-      "type": "boolean",
-      "default": false
+    "has_digital_signature": {
+      "type": "boolean"
     },
-    "recipient_email": {
+    "digital_signature_platform": {
       "type": "string"
-    },
-    "sent_timestamp": {
-      "type": "string",
-      "format": "date-time"
     }
   },
   "required": [
-    "transaction_id",
-    "title",
-    "message"
+    "transaction_id"
   ],
   "rls": {
     "create": true,
@@ -110,9 +118,6 @@
         },
         {
           "data.created_by": "{{user.id}}"
-        },
-        {
-          "data.created_by": "{{user.email}}"
         },
         {
           "data.brokerage_id": "{{user.data.brokerage_id}}"
@@ -139,9 +144,6 @@
           "data.created_by": "{{user.id}}"
         },
         {
-          "data.created_by": "{{user.email}}"
-        },
-        {
           "data.brokerage_id": "{{user.data.brokerage_id}}"
         }
       ]
@@ -164,9 +166,6 @@
         },
         {
           "data.created_by": "{{user.id}}"
-        },
-        {
-          "data.created_by": "{{user.email}}"
         },
         {
           "data.brokerage_id": "{{user.data.brokerage_id}}"

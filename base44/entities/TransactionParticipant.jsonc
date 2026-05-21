@@ -1,0 +1,101 @@
+{
+  "name": "TransactionParticipant",
+  "type": "object",
+  "properties": {
+    "transaction_id": {
+      "type": "string",
+      "description": "Reference to Transaction"
+    },
+    "contact_id": {
+      "type": "string",
+      "description": "Reference to Contact"
+    },
+    "owner_user_id": {
+      "type": "string",
+      "description": "Owner of the parent transaction"
+    },
+    "role": {
+      "type": "string",
+      "enum": [
+        "buyer",
+        "seller",
+        "lender",
+        "attorney",
+        "listing_agent",
+        "buyer_agent"
+      ],
+      "default": "buyer"
+    }
+  },
+  "required": [
+    "transaction_id",
+    "contact_id",
+    "role"
+  ],
+  "rls": {
+    "create": true,
+    "read": {
+      "$or": [
+        {
+          "user_condition": {
+            "role": {
+              "$in": [
+                "admin",
+                "owner",
+                "super_admin"
+              ]
+            }
+          }
+        },
+        {
+          "data.owner_user_id": "{{user.id}}"
+        },
+        {
+          "data.created_by": "{{user.id}}"
+        }
+      ]
+    },
+    "update": {
+      "$or": [
+        {
+          "user_condition": {
+            "role": {
+              "$in": [
+                "admin",
+                "owner",
+                "super_admin"
+              ]
+            }
+          }
+        },
+        {
+          "data.owner_user_id": "{{user.id}}"
+        },
+        {
+          "data.created_by": "{{user.id}}"
+        }
+      ]
+    },
+    "delete": {
+      "$or": [
+        {
+          "user_condition": {
+            "role": {
+              "$in": [
+                "admin",
+                "owner",
+                "super_admin"
+              ]
+            }
+          }
+        },
+        {
+          "data.owner_user_id": "{{user.id}}"
+        },
+        {
+          "data.created_by": "{{user.id}}"
+        }
+      ]
+    }
+  }
+}
