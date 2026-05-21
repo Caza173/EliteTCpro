@@ -1,5 +1,61 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.25';
 import { PDFDocument } from 'npm:pdf-lib@1.17.1';
+import {
+  CloudWatchLogsClient,
+  CreateLogStreamCommand,
+  DescribeLogStreamsCommand,
+  PutLogEventsCommand,
+} from 'npm:@aws-sdk/client-cloudwatch-logs@3.600.0';
+
+// ── Structured logger ────────────────────────────────────────────────────────
+const LOG_GROUP_COMPLIANCE = '/elitetc/compliance';
+
+function genReqId() {
+  return `req_${Date.now()}_${Math.random().toString(36).slice(2, 9)}`;
+}
+
+function makeLogger(meta) {
+  const buf = [];
+  function log(level, message, context = {}) {
+    const entry = {
+      timestamp: new Date().toISOString(),
+      level,
+      service: 'complianceEngine',
+      request_id: meta.request_id,
+      transaction_id: meta.transaction_id || null,
+      owner_user_id: meta.owner_user_id || null,
+      document_id: meta.document_id || null,
+      message,
+      context,
+    };
+    buf.push(entry);
+    const fn = level === 'ERROR' ? console.error : level === 'WARN' ? console.warn : console.log;
+    fn(`[complianceEngine][${level}][${meta.request_id}] ${message}`, Object.keys(context).length ? context : '');
+  }
+  return {
+    info:  (m, c) => log('INFO',  m, c),
+    warn:  (m, c) => log('WARN',  m, c),
+    error: (m, c) => log('ERROR', m, c),
+    flush: async () => {
+      if (!buf.length) return;
+      const creds = { accessKeyId: Deno.env.get('AWS_ACCESS_KEY_ID'), secretAccessKey: Deno.env.get('AWS_SECRET_ACCESS_KEY') };
+      const cwClient = new CloudWatchLogsClient({ region: Deno.env.get('AWS_REGION') || 'us-east-2', credentials: creds });
+      const streamName = `${new Date().toISOString().slice(0,10)}-${meta.request_id}`;
+      try {
+        try { await cwClient.send(new CreateLogStreamCommand({ logGroupName: LOG_GROUP_COMPLIANCE, logStreamName: streamName })); } catch (_) {}
+        let seqToken;
+        try {
+          const s = await cwClient.send(new DescribeLogStreamsCommand({ logGroupName: LOG_GROUP_COMPLIANCE, logStreamNamePrefix: streamName, limit: 1 }));
+          seqToken = s.logStreams?.[0]?.uploadSequenceToken;
+        } catch (_) {}
+        const events = buf.map(e => ({ timestamp: new Date(e.timestamp).getTime(), message: JSON.stringify(e) })).sort((a,b) => a.timestamp - b.timestamp);
+        await cwClient.send(new PutLogEventsCommand({ logGroupName: LOG_GROUP_COMPLIANCE, logStreamName: streamName, logEvents: events, ...(seqToken ? { sequenceToken: seqToken } : {}) }));
+      } catch (err) {
+        console.warn('[complianceEngine] CW flush failed:', err.message);
+      }
+    },
+  };
+}
 
 // ─── Centralized transaction status helper ──────────────────────────────────
 // CANONICAL LIST — must match lib/transactionStatusHelpers.js and lib/engine/constants.js
@@ -287,15 +343,19 @@ Deno.serve(async (req) => {
     let user = null;
     try { user = await base44.auth.me(); } catch {}
 
-    const { document_url, file_name, document_id, transaction_id, brokerage_id, transaction_data } = await req.json();
+    const reqBody = await req.json();
+    const { document_url, file_name, document_id, transaction_id, brokerage_id, transaction_data, request_id: incomingReqId } = reqBody;
 
     if (!transaction_id) {
       return Response.json({ error: 'transaction_id required' }, { status: 400 });
     }
 
+    const request_id = incomingReqId || genReqId();
+    const log = makeLogger({ request_id, transaction_id, document_id, owner_user_id: user?.id });
+
     // CLOSED TRANSACTIONS DO NOT GENERATE COMPLIANCE WARNINGS
     if (isTransactionClosed(transaction_data?.status)) {
-      console.log(`[complianceEngine] Transaction ${transaction_id} is ${transaction_data.status} — skipping compliance evaluation`);
+      log.info('Skipping closed transaction', { status: transaction_data.status, transaction_id });
       return Response.json({ 
         success: true, 
         message: "Closed transactions do not generate compliance warnings",
@@ -315,7 +375,7 @@ Deno.serve(async (req) => {
     const buyerCount = buyerNames.length || 1;
     const sellerCount = sellerNames.length || 1;
 
-    console.log(`[complianceEngine] Party counts — Buyers: ${buyerCount} (${buyerNames.join(", ")}), Sellers: ${sellerCount} (${sellerNames.join(", ")})`);
+    log.info('Party counts resolved', { buyer_count: buyerCount, seller_count: sellerCount, buyers: buyerNames, sellers: sellerNames });
 
     // ─── 1. DEADLINE / FINANCIAL / MISSING-DOC CHECKS ────────────────────────
     const today = new Date();
@@ -418,7 +478,7 @@ Deno.serve(async (req) => {
     const hasPdfFields = pdfFields && pdfFields.total > 0;
     const pdfPageCount = pdfFields?.pageCount || null;
 
-    console.log(`[complianceEngine] PDF: ${pdfFields?.total || 0} fields, ${pdfPageCount} pages, ${pdfFields?.missingSignatures?.length || 0} missing sigs, ${pdfFields?.missingInitials?.length || 0} missing initials, digitalSig: ${pdfFields?.hasDigitalSig}`);
+    log.info('PDF fields extracted', { total_fields: pdfFields?.total || 0, pages: pdfPageCount, missing_sigs: pdfFields?.missingSignatures?.length || 0, missing_initials: pdfFields?.missingInitials?.length || 0, digital_sig: pdfFields?.hasDigitalSig });
 
     // ─── 3. AI DOCUMENT SCAN ─────────────────────────────────────────────────
     const allNharTemplates = Object.keys(NHAR_TEMPLATES).join(" | ");
@@ -837,10 +897,13 @@ OUTPUT — return this exact JSON structure:
 
     // Auto-mark at-risk if blockers
     if (blockers.length > 0) {
+      log.warn('Compliance blockers found — marking at_risk', { blockers_count: blockers.length, transaction_id, document_id, status });
       await base44.asServiceRole.entities.Transaction.update(transaction_id, {
         risk_level: "at_risk",
         last_activity_at: new Date().toISOString(),
       });
+    } else {
+      log.info('Compliance scan complete', { status, score: report.compliance_score, issues: issues.length, transaction_id });
     }
 
     // Auto-send compliance email
@@ -892,6 +955,7 @@ Please review and correct these issues as soon as possible to avoid closing dela
       console.warn('[complianceEngine] AuditLog write failed:', e.message);
     }
 
+    await log.flush();
     return Response.json({
       success: true,
       report_id: report.id,

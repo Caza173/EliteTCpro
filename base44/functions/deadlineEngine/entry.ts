@@ -8,8 +8,62 @@
  *  - One active notification per (transaction_id + deadline_field)
  */
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.25';
+import {
+  CloudWatchLogsClient,
+  CreateLogStreamCommand,
+  DescribeLogStreamsCommand,
+  PutLogEventsCommand,
+} from 'npm:@aws-sdk/client-cloudwatch-logs@3.600.0';
 
 const TZ = 'America/New_York';
+const LOG_GROUP_DEADLINES = '/elitetc/deadlines';
+
+function genReqId() {
+  return `req_${Date.now()}_${Math.random().toString(36).slice(2, 9)}`;
+}
+
+function makeLogger(meta) {
+  const buf = [];
+  function log(level, message, context = {}) {
+    const entry = {
+      timestamp: new Date().toISOString(),
+      level,
+      service: 'deadlineEngine',
+      request_id: meta.request_id,
+      transaction_id: meta.transaction_id || null,
+      owner_user_id: meta.owner_user_id || null,
+      document_id: null,
+      message,
+      context,
+    };
+    buf.push(entry);
+    const fn = level === 'ERROR' ? console.error : level === 'WARN' ? console.warn : console.log;
+    fn(`[deadlineEngine][${level}][${meta.request_id}] ${message}`, Object.keys(context).length ? context : '');
+  }
+  return {
+    info:  (m, c) => log('INFO',  m, c),
+    warn:  (m, c) => log('WARN',  m, c),
+    error: (m, c) => log('ERROR', m, c),
+    flush: async () => {
+      if (!buf.length) return;
+      const creds = { accessKeyId: Deno.env.get('AWS_ACCESS_KEY_ID'), secretAccessKey: Deno.env.get('AWS_SECRET_ACCESS_KEY') };
+      const cwClient = new CloudWatchLogsClient({ region: Deno.env.get('AWS_REGION') || 'us-east-2', credentials: creds });
+      const streamName = `${new Date().toISOString().slice(0,10)}-${meta.request_id}`;
+      try {
+        try { await cwClient.send(new CreateLogStreamCommand({ logGroupName: LOG_GROUP_DEADLINES, logStreamName: streamName })); } catch (_) {}
+        let seqToken;
+        try {
+          const s = await cwClient.send(new DescribeLogStreamsCommand({ logGroupName: LOG_GROUP_DEADLINES, logStreamNamePrefix: streamName, limit: 1 }));
+          seqToken = s.logStreams?.[0]?.uploadSequenceToken;
+        } catch (_) {}
+        const events = buf.map(e => ({ timestamp: new Date(e.timestamp).getTime(), message: JSON.stringify(e) })).sort((a,b) => a.timestamp - b.timestamp);
+        await cwClient.send(new PutLogEventsCommand({ logGroupName: LOG_GROUP_DEADLINES, logStreamName: streamName, logEvents: events, ...(seqToken ? { sequenceToken: seqToken } : {}) }));
+      } catch (err) {
+        console.warn('[deadlineEngine] CW flush failed:', err.message);
+      }
+    },
+  };
+}
 
 // ─── Centralized transaction status helper ──────────────────────────────────
 function isTransactionClosed(status) {
@@ -105,7 +159,9 @@ Deno.serve(async (req) => {
     let payload = {};
     try { payload = await req.json(); } catch {}
 
-    const { transaction_id } = payload;
+    const { transaction_id, request_id: incomingReqId } = payload;
+    const request_id = incomingReqId || genReqId();
+    const log = makeLogger({ request_id, transaction_id });
 
     let transactions;
     if (transaction_id) {
@@ -116,7 +172,7 @@ Deno.serve(async (req) => {
       transactions = allTx.filter(t => !isTransactionClosed(t.status));
     }
 
-    console.log(`[deadlineEngine] Evaluating ${transactions.length} transaction(s) — today: ${getTodayStr()}`);
+    log.info('Evaluating transactions', { count: transactions.length, today: getTodayStr(), request_id });
 
     let allContingencies = [];
     if (transactions.length > 0) {
@@ -177,7 +233,7 @@ Deno.serve(async (req) => {
         const severity = getSeverity(days);
         const needsAlert = shouldAlert(days);
 
-        console.log(`[deadlineEngine] ${field.key} on tx ${tx.id}: days=${days}, severity=${severity}, needsAlert=${needsAlert}`);
+        log.info('Deadline evaluated', { field: field.key, transaction_id: tx.id, days, severity, needs_alert: needsAlert });
 
         // Resolve existing alerts if no longer within alert window (> 3 days and not 7)
         if (!needsAlert) {
@@ -243,14 +299,15 @@ Deno.serve(async (req) => {
             dismissed: false,
           });
           totalCreated++;
-          console.log(`[deadlineEngine] Created ${severity} alert for ${field.key} on tx ${tx.id} (${days}d away)`);
+          log.info('Created deadline alert', { severity, field: field.key, transaction_id: tx.id, days_away: days });
         } catch (e) {
-          console.warn(`[deadlineEngine] Failed to create notification:`, e.message);
+          log.error('Failed to create notification', { error: e.message, field: field.key, transaction_id: tx.id });
         }
       }
     }
 
-    console.log(`[deadlineEngine] Done: ${totalCreated} created, ${totalResolved} resolved`);
+    log.info('Run complete', { notifications_created: totalCreated, notifications_resolved: totalResolved, transactions_evaluated: transactions.length });
+    await log.flush();
     return Response.json({
       success: true,
       notifications_created: totalCreated,

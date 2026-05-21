@@ -29,6 +29,61 @@
 
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.25';
 import { SNSClient, PublishCommand } from 'npm:@aws-sdk/client-sns@3';
+import {
+  CloudWatchLogsClient,
+  CreateLogStreamCommand,
+  DescribeLogStreamsCommand,
+  PutLogEventsCommand,
+} from 'npm:@aws-sdk/client-cloudwatch-logs@3.600.0';
+
+const LOG_GROUP_NOTIFICATIONS = '/elitetc/notifications';
+
+function genReqId() {
+  return `req_${Date.now()}_${Math.random().toString(36).slice(2, 9)}`;
+}
+
+function makeLogger(meta) {
+  const buf = [];
+  function log(level, message, context = {}) {
+    const entry = {
+      timestamp: new Date().toISOString(),
+      level,
+      service: 'notificationEngine',
+      request_id: meta.request_id,
+      transaction_id: meta.transaction_id || null,
+      owner_user_id: null,
+      document_id: null,
+      message,
+      context,
+    };
+    buf.push(entry);
+    const fn = level === 'ERROR' ? console.error : level === 'WARN' ? console.warn : console.log;
+    fn(`[notificationEngine][${level}][${meta.request_id}] ${message}`, Object.keys(context).length ? context : '');
+  }
+  return {
+    info:  (m, c) => log('INFO',  m, c),
+    warn:  (m, c) => log('WARN',  m, c),
+    error: (m, c) => log('ERROR', m, c),
+    flush: async () => {
+      if (!buf.length) return;
+      const creds = { accessKeyId: Deno.env.get('AWS_ACCESS_KEY_ID'), secretAccessKey: Deno.env.get('AWS_SECRET_ACCESS_KEY') };
+      const cwClient = new CloudWatchLogsClient({ region: Deno.env.get('AWS_REGION') || 'us-east-2', credentials: creds });
+      const streamName = `${new Date().toISOString().slice(0,10)}-${meta.request_id}`;
+      try {
+        try { await cwClient.send(new CreateLogStreamCommand({ logGroupName: LOG_GROUP_NOTIFICATIONS, logStreamName: streamName })); } catch (_) {}
+        let seqToken;
+        try {
+          const s = await cwClient.send(new DescribeLogStreamsCommand({ logGroupName: LOG_GROUP_NOTIFICATIONS, logStreamNamePrefix: streamName, limit: 1 }));
+          seqToken = s.logStreams?.[0]?.uploadSequenceToken;
+        } catch (_) {}
+        const events = buf.map(e => ({ timestamp: new Date(e.timestamp).getTime(), message: JSON.stringify(e) })).sort((a,b) => a.timestamp - b.timestamp);
+        await cwClient.send(new PutLogEventsCommand({ logGroupName: LOG_GROUP_NOTIFICATIONS, logStreamName: streamName, logEvents: events, ...(seqToken ? { sequenceToken: seqToken } : {}) }));
+      } catch (err) {
+        console.warn('[notificationEngine] CW flush failed:', err.message);
+      }
+    },
+  };
+}
 
 const TZ = 'America/New_York';
 
@@ -202,12 +257,15 @@ Deno.serve(async (req) => {
 
     let payload = {};
     try { payload = await req.json(); } catch {}
-    const { transaction_id: filterTxId, dry_run = false } = payload;
+    const { transaction_id: filterTxId, dry_run = false, request_id: incomingReqId } = payload;
+
+    const request_id = incomingReqId || genReqId();
+    const log = makeLogger({ request_id });
 
     const snsClient = createSNSClient();
     const today = getTodayStr();
 
-    console.log(`[notificationEngine] Starting run — today: ${today}, dry_run: ${dry_run}`);
+    log.info('Starting run', { today, dry_run, request_id });
 
     // Load transactions — exclude closed/cancelled deals
     let allTx;
@@ -219,7 +277,7 @@ Deno.serve(async (req) => {
     
     // SINGLE SOURCE OF TRUTH: closed transactions do not generate notifications
     const transactions = allTx.filter(tx => !isTransactionClosed(tx.status));
-    console.log(`[notificationEngine] Evaluating ${transactions.length} transaction(s)`);
+    log.info('Evaluating transactions', { count: transactions.length });
 
     if (transactions.length === 0) {
       return Response.json({ success: true, message: 'No active transactions', today });
@@ -372,9 +430,9 @@ Deno.serve(async (req) => {
               { deadline_type: field.type, days_until: days, severity, sns_message_id: snsResult.messageId || null }
             );
 
-            console.log(`[notificationEngine] Created ${severity} alert: ${field.key} on tx ${tx.id} (${days}d away)`);
+            log.info('Created deadline alert', { severity, field: field.key, transaction_id: tx.id, days_away: days, sns_published: snsResult.success });
           } catch (e) {
-            console.error(`[notificationEngine] Failed to create notification for ${field.key} on ${tx.id}:`, e.message);
+            log.error('Failed to create notification', { error: e.message, field: field.key, transaction_id: tx.id });
           }
         }
       }
@@ -440,14 +498,15 @@ Deno.serve(async (req) => {
                 { issue_count: criticalIssues.length, sns_message_id: snsResult.messageId || null }
               );
             } catch (e) {
-              console.error(`[notificationEngine] Compliance alert failed for tx ${tx.id}:`, e.message);
+              log.error('Compliance alert failed', { error: e.message, transaction_id: tx.id });
             }
           }
         }
       }
     }
 
-    console.log(`[notificationEngine] Run complete:`, JSON.stringify(stats));
+    log.info('Run complete', { ...stats });
+    await log.flush();
     return Response.json({ success: true, ...stats });
 
   } catch (error) {

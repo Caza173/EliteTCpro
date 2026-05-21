@@ -17,6 +17,62 @@ import {
   DeleteObjectCommand,
 } from 'npm:@aws-sdk/client-s3@3.600.0';
 import { SecretsManagerClient, GetSecretValueCommand } from 'npm:@aws-sdk/client-secrets-manager@3.600.0';
+import {
+  CloudWatchLogsClient,
+  CreateLogStreamCommand,
+  DescribeLogStreamsCommand,
+  PutLogEventsCommand,
+} from 'npm:@aws-sdk/client-cloudwatch-logs@3.600.0';
+
+// ── Structured logger ────────────────────────────────────────────────────────
+const LOG_GROUP = '/elitetc/ocr';
+
+function genReqId() {
+  return `req_${Date.now()}_${Math.random().toString(36).slice(2, 9)}`;
+}
+
+function makeLogger(meta) {
+  const buf = [];
+  function log(level, message, context = {}) {
+    const entry = {
+      timestamp: new Date().toISOString(),
+      level,
+      service: 'textractDocument',
+      request_id: meta.request_id,
+      transaction_id: meta.transaction_id || null,
+      owner_user_id: meta.owner_user_id || null,
+      document_id: meta.document_id || null,
+      message,
+      context,
+    };
+    buf.push(entry);
+    const fn = level === 'ERROR' ? console.error : level === 'WARN' ? console.warn : console.log;
+    fn(`[textractDocument][${level}][${meta.request_id}] ${message}`, Object.keys(context).length ? context : '');
+  }
+  return {
+    info:  (m, c) => log('INFO',  m, c),
+    warn:  (m, c) => log('WARN',  m, c),
+    error: (m, c) => log('ERROR', m, c),
+    flush: async () => {
+      if (!buf.length) return;
+      const creds = { accessKeyId: Deno.env.get('AWS_ACCESS_KEY_ID'), secretAccessKey: Deno.env.get('AWS_SECRET_ACCESS_KEY') };
+      const cwClient = new CloudWatchLogsClient({ region: Deno.env.get('AWS_REGION') || 'us-east-2', credentials: creds });
+      const streamName = `${new Date().toISOString().slice(0,10)}-${meta.request_id}`;
+      try {
+        try { await cwClient.send(new CreateLogStreamCommand({ logGroupName: LOG_GROUP, logStreamName: streamName })); } catch (_) {}
+        let seqToken;
+        try {
+          const s = await cwClient.send(new DescribeLogStreamsCommand({ logGroupName: LOG_GROUP, logStreamNamePrefix: streamName, limit: 1 }));
+          seqToken = s.logStreams?.[0]?.uploadSequenceToken;
+        } catch (_) {}
+        const events = buf.map(e => ({ timestamp: new Date(e.timestamp).getTime(), message: JSON.stringify(e) })).sort((a,b) => a.timestamp - b.timestamp);
+        await cwClient.send(new PutLogEventsCommand({ logGroupName: LOG_GROUP, logStreamName: streamName, logEvents: events, ...(seqToken ? { sequenceToken: seqToken } : {}) }));
+      } catch (err) {
+        console.warn('[textractDocument] CW flush failed:', err.message);
+      }
+    },
+  };
+}
 
 // ── Secrets Manager helper (with in-process cache) ───────────────────────────
 let _secretsCache = null;
@@ -275,27 +331,33 @@ Deno.serve(async (req) => {
     const user = await base44.auth.me();
     if (!user) return Response.json({ error: 'Unauthorized' }, { status: 401 });
 
-    const { file_url } = await req.json();
+    const reqBody = await req.json();
+    const { file_url, request_id: incomingReqId } = reqBody;
     if (!file_url) return Response.json({ error: 'file_url required' }, { status: 400 });
+
+    const request_id = incomingReqId || genReqId();
+    const log = makeLogger({ request_id, owner_user_id: user.id });
 
     const { s3, textract, bucket } = await getClients();
     const t0 = Date.now();
 
     // ── Step 1: Fetch PDF ───────────────────────────────────────────────────────
-    console.log('[textractDocument] Fetching PDF from:', file_url);
+    log.info('Fetching PDF', { file_url, owner_user_id: user.id });
     const fetchRes = await fetch(file_url);
     if (!fetchRes.ok) {
+      log.error('PDF fetch failed', { status: fetchRes.status, file_url });
+      await log.flush();
       return Response.json({ error: `Failed to fetch document: ${fetchRes.status}` }, { status: 400 });
     }
     const pdfBytes = new Uint8Array(await fetchRes.arrayBuffer());
     const fetchMs = Date.now() - t0;
-    console.log(`[textractDocument] PDF size: ${pdfBytes.length} bytes, fetch: ${fetchMs}ms`);
+    log.info('PDF fetched', { size_bytes: pdfBytes.length, fetch_ms: fetchMs });
 
     // ── Step 2: Upload to S3 with owner metadata ────────────────────────────────
     // Key format: textract-tmp/{owner_id}/{timestamp}-{random}.pdf
     const rand = Math.random().toString(36).slice(2, 8);
     const s3Key = `textract-tmp/${user.id}/${Date.now()}-${rand}.pdf`;
-    console.log('[textractDocument] Uploading to S3:', s3Key);
+    log.info('Uploading to S3', { s3_key: s3Key, bucket });
 
     const t1 = Date.now();
     await s3.send(new PutObjectCommand({
@@ -310,10 +372,10 @@ Deno.serve(async (req) => {
         'source': 'elitetc-textract-pipeline',
       },
     }));
-    console.log(`[textractDocument] S3 upload: ${Date.now() - t1}ms`);
+    log.info('S3 upload complete', { upload_ms: Date.now() - t1 });
 
     // ── Step 3: Textract AnalyzeDocument ───────────────────────────────────────
-    console.log('[textractDocument] Running Textract AnalyzeDocument (FORMS + TABLES)...');
+    log.info('Running Textract AnalyzeDocument');
     const t2 = Date.now();
     let textractResult;
     try {
@@ -322,19 +384,19 @@ Deno.serve(async (req) => {
         FeatureTypes: ['FORMS', 'TABLES'],
       }));
     } finally {
-      // ── Step 4: Always delete temp S3 object ──────────────────────────────────
-      try {
-        await s3.send(new DeleteObjectCommand({ Bucket: bucket, Key: s3Key }));
-        console.log('[textractDocument] Deleted temp S3 object');
-      } catch (delErr) {
-        console.warn('[textractDocument] Failed to delete S3 temp:', delErr.message);
-      }
+    // ── Step 4: Always delete temp S3 object ──────────────────────────────────
+    try {
+      await s3.send(new DeleteObjectCommand({ Bucket: bucket, Key: s3Key }));
+      log.info('Deleted temp S3 object', { s3_key: s3Key });
+    } catch (delErr) {
+      log.warn('Failed to delete S3 temp', { error: delErr.message, s3_key: s3Key });
+    }
     }
     const textractMs = Date.now() - t2;
 
     const blocks = textractResult.Blocks || [];
     const pageCount = blocks.length > 0 ? Math.max(...blocks.map(b => b.Page || 1)) : 0;
-    console.log(`[textractDocument] Textract: ${blocks.length} blocks, ${pageCount} pages, ${textractMs}ms`);
+    log.info('Textract complete', { blocks: blocks.length, pages: pageCount, textract_ms: textractMs });
 
     // ── Step 5: Normalize ──────────────────────────────────────────────────────
     const t3 = Date.now();
@@ -344,8 +406,7 @@ Deno.serve(async (req) => {
     const checkboxes = buildCheckboxes(blocks);
     const pageTexts  = buildPageText(pageMap, blocks);
     const metrics    = computeConfidenceMetrics(blocks, kvPairs);
-    console.log(`[textractDocument] Normalization: ${Date.now() - t3}ms | KV pairs: ${kvPairs.length} | Tables: ${tables.length} | Checkboxes: ${checkboxes.length}`);
-    console.log(`[textractDocument] Confidence: avg_word=${metrics.avg_word_confidence}% kv_avg=${metrics.kv_avg_confidence}% low_conf_words=${metrics.low_confidence_word_count}`);
+    log.info('Normalization complete', { normalization_ms: Date.now() - t3, kv_pairs: kvPairs.length, tables: tables.length, checkboxes: checkboxes.length, avg_word_confidence: metrics.avg_word_confidence, kv_avg_confidence: metrics.kv_avg_confidence, low_conf_words: metrics.low_confidence_word_count });
 
     // Build full text corpus
     const fullText = Object.keys(pageTexts)
@@ -373,7 +434,8 @@ Deno.serve(async (req) => {
     ].filter(Boolean).join('\n');
 
     const totalMs = Date.now() - t0;
-    console.log(`[textractDocument] Total pipeline: ${totalMs}ms`);
+    log.info('Pipeline complete', { total_ms: totalMs, request_id });
+    await log.flush();
 
     return Response.json({
       success: true,

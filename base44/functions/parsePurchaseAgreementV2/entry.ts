@@ -15,6 +15,62 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.25';
 import OpenAI from 'npm:openai@4.52.0';
 import { SecretsManagerClient, GetSecretValueCommand } from 'npm:@aws-sdk/client-secrets-manager@3.600.0';
+import {
+  CloudWatchLogsClient,
+  CreateLogStreamCommand,
+  DescribeLogStreamsCommand,
+  PutLogEventsCommand,
+} from 'npm:@aws-sdk/client-cloudwatch-logs@3.600.0';
+
+// ── Structured logger ────────────────────────────────────────────────────────
+const LOG_GROUP_PARSING = '/elitetc/parsing';
+
+function genReqId() {
+  return `req_${Date.now()}_${Math.random().toString(36).slice(2, 9)}`;
+}
+
+function makeLogger(service, logGroup, meta) {
+  const buf = [];
+  function log(level, message, context = {}) {
+    const entry = {
+      timestamp: new Date().toISOString(),
+      level,
+      service,
+      request_id: meta.request_id,
+      transaction_id: meta.transaction_id || null,
+      owner_user_id: meta.owner_user_id || null,
+      document_id: meta.document_id || null,
+      message,
+      context,
+    };
+    buf.push(entry);
+    const fn = level === 'ERROR' ? console.error : level === 'WARN' ? console.warn : console.log;
+    fn(`[${service}][${level}][${meta.request_id}] ${message}`, Object.keys(context).length ? context : '');
+  }
+  return {
+    info:  (m, c) => log('INFO',  m, c),
+    warn:  (m, c) => log('WARN',  m, c),
+    error: (m, c) => log('ERROR', m, c),
+    flush: async () => {
+      if (!buf.length) return;
+      const creds = { accessKeyId: Deno.env.get('AWS_ACCESS_KEY_ID'), secretAccessKey: Deno.env.get('AWS_SECRET_ACCESS_KEY') };
+      const cwClient = new CloudWatchLogsClient({ region: Deno.env.get('AWS_REGION') || 'us-east-2', credentials: creds });
+      const streamName = `${new Date().toISOString().slice(0,10)}-${meta.request_id}`;
+      try {
+        try { await cwClient.send(new CreateLogStreamCommand({ logGroupName: logGroup, logStreamName: streamName })); } catch (_) {}
+        let seqToken;
+        try {
+          const s = await cwClient.send(new DescribeLogStreamsCommand({ logGroupName: logGroup, logStreamNamePrefix: streamName, limit: 1 }));
+          seqToken = s.logStreams?.[0]?.uploadSequenceToken;
+        } catch (_) {}
+        const events = buf.map(e => ({ timestamp: new Date(e.timestamp).getTime(), message: JSON.stringify(e) })).sort((a,b) => a.timestamp - b.timestamp);
+        await cwClient.send(new PutLogEventsCommand({ logGroupName: logGroup, logStreamName: streamName, logEvents: events, ...(seqToken ? { sequenceToken: seqToken } : {}) }));
+      } catch (err) {
+        console.warn(`[${service}] CW flush failed:`, err.message);
+      }
+    },
+  };
+}
 
 // ── Secrets Manager helper (with in-process cache) ───────────────────────────
 let _secretsCache = null;
@@ -302,8 +358,12 @@ Deno.serve(async (req) => {
     const base44 = createClientFromRequest(req);
     const serviceBase44 = base44.asServiceRole;
 
-    const { file_url, transaction_id, brokerage_id } = await req.json();
+    const reqBody = await req.json();
+    const { file_url, transaction_id, brokerage_id, request_id: incomingReqId } = reqBody;
     if (!file_url) return Response.json({ error: 'No file_url provided' }, { status: 400 });
+
+    const request_id = incomingReqId || genReqId();
+    const log = makeLogger('parsePurchaseAgreementV2', LOG_GROUP_PARSING, { request_id, transaction_id });
 
     const debugFlags = [];
     const secrets = await getAppSecrets();
@@ -311,8 +371,7 @@ Deno.serve(async (req) => {
     const t0 = Date.now();
 
     // ── STEP 1: Textract extraction ───────────────────────────────────────────
-    // Use user-scoped client (textractDocument requires auth.me() to pass)
-    console.log('parsePurchaseAgreementV2 — Step 1: Textract AnalyzeDocument');
+    log.info('Step 1: Textract AnalyzeDocument', { file_url, transaction_id });
     let textractData = null;
     let structuredContext = null;
 
@@ -321,24 +380,22 @@ Deno.serve(async (req) => {
       if (textractRes?.structured_context) {
         textractData = textractRes;
         structuredContext = textractRes.structured_context;
-        console.log(`Textract OK: ${textractRes.block_count} blocks, ${textractRes.kv_pair_count} KV pairs, ${textractRes.table_count} tables, ${textractRes.checkbox_count} checkboxes`);
-        console.log(`Textract confidence: avg_word=${textractRes.confidence_metrics?.avg_word_confidence}% kv_avg=${textractRes.confidence_metrics?.kv_avg_confidence}%`);
+        log.info('Textract OK', { blocks: textractRes.block_count, kv_pairs: textractRes.kv_pair_count, tables: textractRes.table_count, checkboxes: textractRes.checkbox_count, avg_word_confidence: textractRes.confidence_metrics?.avg_word_confidence });
       } else if (textractRes?.error) {
-        // Surface the specific error for debugging but still fall back
         const errMsg = textractRes.error || 'unknown';
-        console.warn('Textract returned error:', errMsg);
+        log.error('Textract returned error', { error: errMsg });
         debugFlags.push('TEXTRACT_ERROR:' + errMsg.slice(0, 80));
       } else {
-        console.warn('Textract returned no structured_context, falling back');
+        log.warn('Textract returned no structured_context, falling back');
         debugFlags.push('TEXTRACT_NO_CONTEXT');
       }
     } catch (textractErr) {
-      console.warn('Textract failed, falling back to Base44 vision:', textractErr.message);
+      log.error('Textract call failed', { error: textractErr.message });
       debugFlags.push('TEXTRACT_FAILED:' + textractErr.message.slice(0, 80));
     }
 
     // ── STEP 2: GPT-4.1 extraction ────────────────────────────────────────────
-    console.log('parsePurchaseAgreementV2 — Step 2: GPT-4.1 structured extraction');
+    log.info('Step 2: GPT-4.1 structured extraction');
 
     let raw = {};
 
@@ -363,8 +420,14 @@ Return a JSON object matching the schema exactly. Use null for missing/unknown f
       const content = gptResponse.choices[0]?.message?.content;
       if (content) {
         raw = JSON.parse(content);
-        console.log('GPT-4.1 extraction complete. acceptance_date:', raw.acceptance_date, 'closing_date:', raw.closing_date);
+        const fieldsFilled = Object.values(raw).filter(v => v !== null && v !== undefined && v !== 0 && v !== false).length;
+        log.info('GPT-4.1 extraction complete', { acceptance_date: raw.acceptance_date, closing_date: raw.closing_date, fields_filled: fieldsFilled });
+        if (fieldsFilled === 0) {
+          log.error('GPT parse returned zero fields', { raw, transaction_id });
+          debugFlags.push('GPT_ZERO_FIELDS');
+        }
       } else {
+        log.error('GPT returned empty response', { transaction_id });
         debugFlags.push('GPT_EMPTY_RESPONSE');
       }
 
@@ -467,7 +530,8 @@ Return JSON with ONLY the fields listed above. Use null if still not found.`;
     }
 
     const totalMs = Date.now() - t0;
-    console.log(`parsePurchaseAgreementV2 total: ${totalMs}ms | pipeline: ${structuredContext ? 'textract+gpt4.1' : 'base44_vision'} | flags: [${debugFlags.join(', ')}]`);
+    log.info('Pipeline complete', { total_ms: totalMs, pipeline: structuredContext ? 'textract+gpt4.1' : 'base44_vision', flags: debugFlags, effective_date: effectiveDate, transaction_id });
+    await log.flush();
 
     // ── STEP 6: Build output (shape unchanged — backward compatible) ───────────
     const output = {
