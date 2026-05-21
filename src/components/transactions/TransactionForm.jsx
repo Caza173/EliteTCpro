@@ -17,6 +17,8 @@ import PurchaseAgreementUpload from "../forms/PurchaseAgreementUpload";
 import ParsedDeadlinesPreview from "../forms/ParsedDeadlinesPreview";
 import AddressAutocomplete from "../forms/AddressAutocomplete";
 import TCPickerSelect from "./TCPickerSelect";
+import TitleCompanyAutocomplete from "./TitleCompanyAutocomplete";
+import AgentContactAutocomplete from "./AgentContactAutocomplete";
 
 const initialForm = {
   transaction_type: "",
@@ -32,6 +34,9 @@ const initialForm = {
   agent: "",
   agent_email: "",
   closing_title_company: "",
+  agent_contact_name: "",
+  agent_contact_email: "",
+  agent_contact_phone: "",
   client_emails: [""],
   client_phone: "",
   is_cash_transaction: false,
@@ -270,7 +275,7 @@ export default function TransactionForm({ onSubmit, isSubmitting }) {
       {/* TC / Title */}
       <div>
         <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3">Coordinator &amp; Title</p>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
           <div>
             <Label className="text-sm font-medium text-gray-700">Transaction Coordinator *</Label>
             <TCPickerSelect
@@ -295,8 +300,24 @@ export default function TransactionForm({ onSubmit, isSubmitting }) {
             />
           </div>
         </div>
-        {field("closing_title_company", "Closing / Title Company Name", "text", "NH Title & Escrow Co.")}
+        <div>
+          <Label className="text-sm font-medium text-gray-700">Closing / Title Company</Label>
+          <TitleCompanyAutocomplete
+            value={form.closing_title_company}
+            onChange={(v) => handleChange("closing_title_company", v)}
+          />
+        </div>
       </div>
+
+      {/* Agent Contact */}
+      <AgentContactAutocomplete
+        agentName={form.agent_contact_name}
+        agentEmail={form.agent_contact_email}
+        agentPhone={form.agent_contact_phone}
+        onChange={({ agent, agent_email, agent_phone }) =>
+          setForm(prev => ({ ...prev, agent_contact_name: agent, agent_contact_email: agent_email, agent_contact_phone: agent_phone }))
+        }
+      />
 
       {/* Client Contact */}
       <div className="space-y-3">
