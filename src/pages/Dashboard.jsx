@@ -12,7 +12,6 @@ import {
 } from "lucide-react";
 import { format, differenceInDays, parseISO } from "date-fns";
 
-import { useCurrentUser } from "../components/auth/useCurrentUser";
 import { useDealAccess } from "../lib/useDealAccess";
 import { computeHealthScore } from "../components/utils/tenantUtils";
 import AddendumAlertChecker from "../components/dashboard/AddendumAlertChecker";
