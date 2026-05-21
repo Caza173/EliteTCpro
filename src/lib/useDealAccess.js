@@ -3,7 +3,7 @@
  * useDealAccess — Strictly per-user isolated deal access.
  * Uses useState/useEffect ONLY — zero react-query — to avoid cross-chunk dispatcher errors.
  */
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useRef } from "react";
 import { base44 } from "@/api/base44Client";
 import { useCurrentUser as useCurrentUserCtx } from "@/lib/CurrentUserContext.jsx";
 
@@ -27,13 +27,6 @@ export function useDealAccess() {
 
   const isReady = !userLoading && !!currentUser?.id;
 
-  const fetchTransactions = useCallback(async () => {
-    const r = await base44.functions.invoke("getTeamTransactions", { sort: "-created_date", limit: 200 });
-    const txs = r.data?.transactions;
-    if (!Array.isArray(txs)) throw new Error("Invalid response from getTeamTransactions");
-    return txs;
-  }, []);
-
   useEffect(() => {
     if (!isReady) return;
     if (fetchedForRef.current === currentUser.id && transactions.length > 0) return;
@@ -42,9 +35,11 @@ export function useDealAccess() {
     setTxLoading(true);
     setTxError(null);
 
-    fetchTransactions()
-      .then(txs => {
+    base44.functions.invoke("getTeamTransactions", { sort: "-created_date", limit: 200 })
+      .then(r => {
         if (cancelled) return;
+        const txs = r.data?.transactions;
+        if (!Array.isArray(txs)) throw new Error("Invalid response from getTeamTransactions");
         setTransactions(txs);
         fetchedForRef.current = currentUser.id;
       })
@@ -58,7 +53,7 @@ export function useDealAccess() {
       });
 
     return () => { cancelled = true; };
-  }, [currentUser?.id, isReady, fetchTransactions]);
+  }, [currentUser?.id, isReady]);
 
   const isLoading = userLoading || txLoading;
   const accessibleDealIds = new Set(transactions.map(t => t.id));
