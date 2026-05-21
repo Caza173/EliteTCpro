@@ -19,8 +19,7 @@ Deno.serve(async (req) => {
       .split(/[,&]/).map(s => s.trim()).filter(Boolean);
 
     // --- 2. Create Transaction ---
-    // CRITICAL: Use user-scoped client (base44.entities, NOT asServiceRole)
-    // The platform auto-stamps created_by = calling user's UUID from auth token
+    // CRITICAL: Use user-scoped client so platform stamps created_by = user.id (UUID)
     const tx = await base44.entities.Transaction.create({
       brokerage_id,
       address: extracted.property_address,
@@ -50,13 +49,16 @@ Deno.serve(async (req) => {
       phases_completed: [1, 2],
       tasks: [],
       last_activity_at: new Date().toISOString(),
+      // Ownership — always stamped authoritatively
+      owner_user_id: user.id,
+      created_by_email: user.email,
     });
 
-    console.log('[createTransactionFromContract] tx.id:', tx.id, '| created_by:', tx.created_by, '| user.id:', user.id);
+    console.log('[createTransactionFromContract] tx.id:', tx.id, '| owner_user_id:', tx.owner_user_id, '| created_by:', tx.created_by);
 
     const txId = tx.id;
 
-    // --- 3. Create Contacts + Participants (service role OK for these secondary records) ---
+    // --- 3. Create Contacts + Participants (service role OK for secondary records) ---
     const participantDefs = [
       ...buyerList.map(name => ({ name, role: "buyer" })),
       ...sellerList.map(name => ({ name, role: "seller" })),
@@ -90,7 +92,7 @@ Deno.serve(async (req) => {
         transaction_id: txId,
         contact_id: contactId,
         role: p.role,
-        owner_id: user.id,
+        owner_user_id: user.id,
       });
     }
 
@@ -99,6 +101,7 @@ Deno.serve(async (req) => {
       await base44.asServiceRole.entities.TransactionFinance.create({
         transaction_id: txId,
         brokerage_id,
+        owner_user_id: user.id,
         sale_price: extracted.purchase_price || null,
         commission_percent: extracted.commission_percent || null,
         seller_concession_amount: extracted.seller_concession_amount || 0,
@@ -126,6 +129,7 @@ Deno.serve(async (req) => {
     await base44.asServiceRole.entities.TransactionSummary.create({
       transaction_id: txId,
       brokerage_id,
+      owner_user_id: user.id,
       property_address: extracted.property_address,
       transaction_type: extracted.transaction_type || "buyer",
       status: "active",
@@ -143,6 +147,8 @@ Deno.serve(async (req) => {
     await base44.asServiceRole.entities.AuditLog.create({
       brokerage_id,
       transaction_id: txId,
+      owner_user_id: user.id,
+      actor_user_id: user.id,
       actor_email: user.email,
       action: "transaction_created",
       entity_type: "transaction",
@@ -172,6 +178,7 @@ Deno.serve(async (req) => {
       if (extracted[key] && Number(extracted[key]) > 0) {
         contingenciesToCreate.push({
           transaction_id: txId, brokerage_id,
+          owner_user_id: user.id,
           contingency_type: "Inspection", sub_type: label,
           days_from_effective: Number(extracted[key]),
           due_date: addDays(acceptanceDate, extracted[key]),
@@ -182,6 +189,7 @@ Deno.serve(async (req) => {
     if (extracted.financing_commitment_date) {
       contingenciesToCreate.push({
         transaction_id: txId, brokerage_id,
+        owner_user_id: user.id,
         contingency_type: "Financing", sub_type: "Mortgage Commitment",
         due_date: extracted.financing_commitment_date,
         is_active: true, is_custom: false, source: "Parsed", status: "Pending",
@@ -190,6 +198,7 @@ Deno.serve(async (req) => {
     if (extracted.due_diligence_days && Number(extracted.due_diligence_days) > 0) {
       contingenciesToCreate.push({
         transaction_id: txId, brokerage_id,
+        owner_user_id: user.id,
         contingency_type: "Due Diligence", sub_type: "Due Diligence Period",
         days_from_effective: Number(extracted.due_diligence_days),
         due_date: addDays(acceptanceDate, extracted.due_diligence_days),

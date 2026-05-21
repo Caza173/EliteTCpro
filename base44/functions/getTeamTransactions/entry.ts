@@ -1,6 +1,6 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.25';
 
-const SUPER_ADMIN_EMAIL = 'nhcazateam@gmail.com';
+const ADMIN_ROLES = new Set(['admin', 'owner', 'super_admin']);
 
 Deno.serve(async (req) => {
   try {
@@ -12,30 +12,37 @@ Deno.serve(async (req) => {
     try { body = await req.json(); } catch (_) {}
     const { status, sort = '-created_date', limit = 200, transaction_id } = body;
 
-    const isSuperAdmin = user.email === SUPER_ADMIN_EMAIL;
+    const isAdmin = ADMIN_ROLES.has(user.role) || ADMIN_ROLES.has(user.data?.role);
     const svc = base44.asServiceRole;
 
-    console.log(`[getTeamTransactions] user.id=${user.id} user.email=${user.email} isSuperAdmin=${isSuperAdmin}`);
+    console.log(`[getTeamTransactions] user.id=${user.id} user.email=${user.email} role=${user.role} isAdmin=${isAdmin}`);
 
     // ── SINGLE TRANSACTION LOOKUP ──────────────────────────────────────────
     if (transaction_id) {
       let results = [];
       try { results = await svc.entities.Transaction.filter({ id: transaction_id }); } catch (_) {}
       const tx = results[0] || null;
-      const canView = !tx || isSuperAdmin || _userOwnsTx(tx, user);
-      console.log(`[getTeamTransactions] single tx=${transaction_id} found=${!!tx} canView=${canView}`);
-      if (!canView) return Response.json({ transactions: [], transaction: null });
-      return Response.json({ transactions: tx ? [tx] : [], transaction: tx });
+
+      if (!tx) return Response.json({ transactions: [], transaction: null });
+
+      if (!isAdmin && !_userOwnsTx(tx, user)) {
+        // Log denied access
+        await _logAccessDenied(svc, user, transaction_id, 'single_lookup');
+        return Response.json({ transactions: [], transaction: null });
+      }
+
+      return Response.json({ transactions: [tx], transaction: tx });
     }
 
     // ── LIST ───────────────────────────────────────────────────────────────
+    // Admins can see all; regular users filtered server-side
     const all = status
       ? await svc.entities.Transaction.filter({ status }, sort, limit)
       : await svc.entities.Transaction.list(sort, limit);
 
     console.log(`[getTeamTransactions] total records in DB: ${all.length}`);
 
-    if (isSuperAdmin) {
+    if (isAdmin) {
       return Response.json({ transactions: all });
     }
 
@@ -54,13 +61,31 @@ Deno.serve(async (req) => {
 
 /**
  * Returns true only if the authenticated user owns this transaction.
- * Strictly user-isolated — no team, brokerage, or role-based sharing.
+ * Checks all ownership fields in priority order.
  */
 function _userOwnsTx(tx, user) {
   if (!tx || !user) return false;
-  if (tx.created_by === user.id) return true;
-  if (tx.created_by === user.email) return true;
-  if (tx.owner_id && tx.owner_id === user.id) return true;
-  if (tx.agent_email && tx.agent_email === user.email) return true;
+  const uid = user.id;
+  const email = user.email;
+  if (tx.owner_user_id && tx.owner_user_id === uid) return true;
+  if (tx.owner_id && tx.owner_id === uid) return true;
+  if (tx.created_by === uid) return true;
+  if (tx.created_by === email) return true;
+  if (tx.created_by_email && tx.created_by_email === email) return true;
+  if (tx.agent_email && tx.agent_email === email) return true;
+  if (tx.assigned_tc_id && tx.assigned_tc_id === uid) return true;
   return false;
+}
+
+async function _logAccessDenied(svc, user, entityId, reason) {
+  try {
+    await svc.entities.AuditLog.create({
+      action: 'ACCESS_DENIED',
+      entity_type: 'transaction',
+      entity_id: entityId,
+      actor_user_id: user.id,
+      actor_email: user.email,
+      description: `Access denied: user ${user.email} attempted to access transaction ${entityId} (reason: ${reason})`,
+    });
+  } catch (_) { /* never throw on audit log failure */ }
 }

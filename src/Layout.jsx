@@ -111,7 +111,7 @@ export default function Layout({ children, currentPageName }) {
   useEffect(() => {
     if (!currentUser || currentUser.profile_completed !== true) return;
 
-    const isMaster = currentUser.email === "nhcazateam@gmail.com";
+    const isMaster = ['super_admin', 'admin', 'owner'].includes(currentUser.role);
     if (isMaster) return;
 
     const role = currentUser.role;
@@ -129,8 +129,8 @@ export default function Layout({ children, currentPageName }) {
   }, [currentUser?.id, currentUser?.profile_completed, currentUser?.role, currentPageName]);
 
   const role = currentUser?.role;
-  const isMaster = currentUser?.email === "nhcazateam@gmail.com";
-  const navItems = (isMaster || role === "owner" || role === "admin") ? OWNER_NAV
+  const isMaster = role === "super_admin" || role === "owner" || role === "admin";
+  const navItems = (isMaster) ? OWNER_NAV
     : role === "client"   ? CLIENT_NAV
     : role === "agent"    ? AGENT_NAV
     : TC_NAV;

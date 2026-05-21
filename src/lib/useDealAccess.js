@@ -1,4 +1,4 @@
-// cache-bust: 2026-05-20-v7-nocache
+// cache-bust: 2026-05-21-v8-rls-hardened
 /**
  * useDealAccess — Strictly per-user isolated deal access.
  * Uses useState/useEffect ONLY — zero react-query — to avoid cross-chunk dispatcher errors.
@@ -65,7 +65,9 @@ export function useDealAccess() {
 
   function canAccess(dealId) {
     if (!currentUser || !dealId) return false;
-    if (txError || isLoading) return true;
+    // Never grant access while loading or if there was an error
+    if (isLoading) return false;
+    if (txError) return false;
     return accessibleDealIds.has(dealId);
   }
 

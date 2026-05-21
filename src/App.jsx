@@ -1,4 +1,5 @@
 // cache-bust: 2026-05-20-v2
+import { useState, useEffect, useRef } from "react";
 import { Toaster } from "@/components/ui/toaster"
 import Landing from './pages/Landing'
 import SetupProfile from './pages/SetupProfile'
@@ -37,7 +38,8 @@ import { pagesConfig } from './pages.config'
 import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
 import PageNotFound from './lib/PageNotFound';
 import { AuthProvider, useAuth } from '@/lib/AuthContext';
-import { CurrentUserProvider } from '@/lib/CurrentUserContext.jsx';
+import { CurrentUserProvider, useCurrentUser } from '@/lib/CurrentUserContext.jsx';
+import { clearQueryCacheOnLogout } from '@/lib/query-client';
 import { PWAProvider } from '@/lib/PWAContext.jsx';
 import { AIConversationProvider } from '@/lib/AIConversationContext';
 import UserNotRegisteredError from '@/components/UserNotRegisteredError';
@@ -53,7 +55,19 @@ const LayoutWrapper = ({ children, currentPageName }) => Layout ?
   : <>{children}</>;
 
 const AuthenticatedApp = () => {
-  const { isLoadingAuth, isLoadingPublicSettings, authError } = useAuth();
+  const { isLoadingAuth, isLoadingPublicSettings, authError, isAuthenticated } = useAuth();
+
+  // Clear React Query cache whenever the authenticated user changes or logs out
+  const { currentUser } = useCurrentUser() || {};
+  const prevUserIdRef = useRef(null);
+  useEffect(() => {
+    const currentId = currentUser?.id || null;
+    if (prevUserIdRef.current && prevUserIdRef.current !== currentId) {
+      // User switched or logged out — wipe all cached query data
+      clearQueryCacheOnLogout();
+    }
+    prevUserIdRef.current = currentId;
+  }, [currentUser?.id]);
 
   // Show loading spinner while checking app public settings or auth
   if (isLoadingPublicSettings || isLoadingAuth) {

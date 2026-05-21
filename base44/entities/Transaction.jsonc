@@ -2,6 +2,14 @@
   "name": "Transaction",
   "type": "object",
   "properties": {
+    "owner_user_id": {
+      "type": "string",
+      "description": "Primary ownership field \u2014 UUID of the user who created/owns this transaction"
+    },
+    "created_by_email": {
+      "type": "string",
+      "description": "Email of the creating user \u2014 secondary ownership lookup"
+    },
     "assigned_tc_id": {
       "type": "string",
       "description": "User ID of assigned TC"
@@ -606,13 +614,29 @@
             "role": {
               "$in": [
                 "admin",
-                "owner"
+                "owner",
+                "super_admin"
               ]
             }
           }
         },
         {
+          "data.owner_user_id": "{{user.id}}"
+        },
+        {
           "data.created_by": "{{user.id}}"
+        },
+        {
+          "data.created_by": "{{user.email}}"
+        },
+        {
+          "data.created_by_email": "{{user.email}}"
+        },
+        {
+          "data.agent_email": "{{user.email}}"
+        },
+        {
+          "data.assigned_tc_id": "{{user.id}}"
         }
       ]
     },
@@ -623,13 +647,29 @@
             "role": {
               "$in": [
                 "admin",
-                "owner"
+                "owner",
+                "super_admin"
               ]
             }
           }
         },
         {
+          "data.owner_user_id": "{{user.id}}"
+        },
+        {
           "data.created_by": "{{user.id}}"
+        },
+        {
+          "data.created_by": "{{user.email}}"
+        },
+        {
+          "data.created_by_email": "{{user.email}}"
+        },
+        {
+          "data.agent_email": "{{user.email}}"
+        },
+        {
+          "data.assigned_tc_id": "{{user.id}}"
         }
       ]
     },
@@ -640,13 +680,20 @@
             "role": {
               "$in": [
                 "admin",
-                "owner"
+                "owner",
+                "super_admin"
               ]
             }
           }
         },
         {
+          "data.owner_user_id": "{{user.id}}"
+        },
+        {
           "data.created_by": "{{user.id}}"
+        },
+        {
+          "data.created_by_email": "{{user.email}}"
         }
       ]
     }

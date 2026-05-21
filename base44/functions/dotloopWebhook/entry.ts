@@ -127,6 +127,15 @@ Deno.serve(async (req) => {
     }
 
     // 4. No match — create a pending transaction
+    // Resolve the first admin/owner user as the system owner for webhook-created transactions
+    let systemOwnerId = null;
+    let systemOwnerEmail = null;
+    try {
+      const adminUsers = await base44.asServiceRole.entities.User.filter({});
+      const admin = adminUsers.find(u => u.role === 'owner' || u.role === 'admin') || adminUsers[0];
+      if (admin) { systemOwnerId = admin.id; systemOwnerEmail = admin.email; }
+    } catch (_) {}
+
     if (!transaction) {
       console.log("Dotloop: no matching transaction found, creating pending record");
       transaction = await base44.asServiceRole.entities.Transaction.create({
@@ -140,6 +149,8 @@ Deno.serve(async (req) => {
         notes: `Auto-created from Dotloop webhook. Event: ${eventType}. Review and match manually.`,
         last_activity_at: new Date().toISOString(),
         tasks: [],
+        owner_user_id: systemOwnerId || undefined,
+        created_by_email: systemOwnerEmail || undefined,
       });
       console.log("Dotloop: created pending transaction:", transaction.id);
     }
