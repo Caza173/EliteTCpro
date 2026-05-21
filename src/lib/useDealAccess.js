@@ -14,9 +14,11 @@ export function isSuperAdmin(user) {
 }
 
 export function useDealAccess() {
+  // Always call useContext — hooks must be unconditional
   const ctx = useCurrentUserCtx();
-  const currentUser = ctx?.currentUser ?? null;
-  const userLoading = ctx?.isLoading ?? true;
+  // ctx may be null if rendered outside CurrentUserProvider; default safely
+  const currentUser = (ctx ?? {}).currentUser ?? null;
+  const userLoading = (ctx ?? {}).isLoading ?? true;
 
   const [transactions, setTransactions] = useState([]);
   const [txLoading, setTxLoading] = useState(false);

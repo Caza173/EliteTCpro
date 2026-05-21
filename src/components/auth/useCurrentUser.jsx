@@ -5,7 +5,9 @@
 import { useCurrentUser as _useCurrentUser } from '@/lib/CurrentUserContext.jsx';
 
 export function useCurrentUser() {
-  const { currentUser, isLoading } = _useCurrentUser();
+  const ctx = _useCurrentUser();
+  const currentUser = (ctx ?? {}).currentUser ?? null;
+  const isLoading = (ctx ?? {}).isLoading ?? true;
   // Shim: return same shape as react-query { data, isLoading }
   return { data: currentUser, isLoading };
 }
