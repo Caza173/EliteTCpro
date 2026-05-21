@@ -14,6 +14,36 @@
 
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.25';
 import OpenAI from 'npm:openai@4.52.0';
+import { SecretsManagerClient, GetSecretValueCommand } from 'npm:@aws-sdk/client-secrets-manager@3.600.0';
+
+// ── Secrets Manager helper (with in-process cache) ───────────────────────────
+let _secretsCache = null;
+let _secretsCachedAt = 0;
+const SECRETS_TTL_MS = 5 * 60 * 1000;
+const SECRET_ID = 'elitetc/prod/app';
+
+async function getAppSecrets() {
+  const now = Date.now();
+  if (_secretsCache && (now - _secretsCachedAt) < SECRETS_TTL_MS) return _secretsCache;
+  try {
+    const smClient = new SecretsManagerClient({
+      region: Deno.env.get('AWS_REGION') || 'us-east-2',
+      credentials: {
+        accessKeyId: Deno.env.get('AWS_ACCESS_KEY_ID'),
+        secretAccessKey: Deno.env.get('AWS_SECRET_ACCESS_KEY'),
+      },
+    });
+    const res = await smClient.send(new GetSecretValueCommand({ SecretId: SECRET_ID }));
+    _secretsCache = JSON.parse(res.SecretString || '{}');
+    _secretsCachedAt = now;
+    console.log('[parsePurchaseAgreementV2] Secrets loaded from Secrets Manager');
+  } catch (err) {
+    console.warn('[parsePurchaseAgreementV2] Secrets Manager unavailable, using env vars:', err.message);
+    _secretsCache = { OPENAI_API_KEY: Deno.env.get('OPENAI_API_KEY') };
+    _secretsCachedAt = now;
+  }
+  return _secretsCache;
+}
 
 // ── Date helpers ───────────────────────────────────────────────────────────────
 
@@ -276,7 +306,8 @@ Deno.serve(async (req) => {
     if (!file_url) return Response.json({ error: 'No file_url provided' }, { status: 400 });
 
     const debugFlags = [];
-    const openai = new OpenAI({ apiKey: Deno.env.get('OPENAI_API_KEY') });
+    const secrets = await getAppSecrets();
+    const openai = new OpenAI({ apiKey: secrets.OPENAI_API_KEY || Deno.env.get('OPENAI_API_KEY') });
     const t0 = Date.now();
 
     // ── STEP 1: Textract extraction ───────────────────────────────────────────

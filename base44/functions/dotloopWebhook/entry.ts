@@ -1,5 +1,37 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.20';
 
+import { SecretsManagerClient, GetSecretValueCommand } from 'npm:@aws-sdk/client-secrets-manager@3.600.0';
+
+const SECRET_ID = 'elitetc/prod/app';
+let _secretsCache = null;
+let _secretsCachedAt = 0;
+const SECRETS_TTL_MS = 5 * 60 * 1000;
+
+async function getAppSecrets() {
+  const now = Date.now();
+  if (_secretsCache && (now - _secretsCachedAt) < SECRETS_TTL_MS) return _secretsCache;
+  try {
+    const smClient = new SecretsManagerClient({
+      region: Deno.env.get('AWS_REGION') || 'us-east-2',
+      credentials: {
+        accessKeyId: Deno.env.get('AWS_ACCESS_KEY_ID'),
+        secretAccessKey: Deno.env.get('AWS_SECRET_ACCESS_KEY'),
+      },
+    });
+    const res = await smClient.send(new GetSecretValueCommand({ SecretId: SECRET_ID }));
+    _secretsCache = JSON.parse(res.SecretString || '{}');
+    _secretsCachedAt = now;
+  } catch (err) {
+    console.warn('[dotloopWebhook] Secrets Manager unavailable, using env vars:', err.message);
+    _secretsCache = {
+      DOTLOOP_WEBHOOK_SECRET: Deno.env.get('DOTLOOP_WEBHOOK_SECRET'),
+      DOTLOOP_API_KEY: Deno.env.get('DOTLOOP_API_KEY'),
+    };
+    _secretsCachedAt = now;
+  }
+  return _secretsCache;
+}
+
 // Classify doc type from dotloop document name
 function classifyDocType(name = "") {
   const n = name.toLowerCase();
@@ -30,9 +62,10 @@ Deno.serve(async (req) => {
     const base44 = createClientFromRequest(req);
 
     // Validate shared secret from query param
+    const secrets = await getAppSecrets();
     const url = new URL(req.url);
     const secret = url.searchParams.get("secret");
-    const expectedSecret = Deno.env.get("DOTLOOP_WEBHOOK_SECRET");
+    const expectedSecret = secrets.DOTLOOP_WEBHOOK_SECRET || Deno.env.get("DOTLOOP_WEBHOOK_SECRET");
     if (expectedSecret && secret !== expectedSecret) {
       console.warn("Dotloop webhook: invalid secret");
       return Response.json({ error: "Unauthorized" }, { status: 401 });
@@ -76,7 +109,7 @@ Deno.serve(async (req) => {
 
     // --- Try to fetch the document from Dotloop if API key is available ---
     let fileUrl = docUrl; // Use direct URL if provided
-    const dotloopApiKey = Deno.env.get("DOTLOOP_API_KEY");
+    const dotloopApiKey = secrets.DOTLOOP_API_KEY || Deno.env.get("DOTLOOP_API_KEY");
 
     if (dotloopApiKey && docUrl && !docUrl.startsWith("http")) {
       // docUrl is a path — build full Dotloop API URL

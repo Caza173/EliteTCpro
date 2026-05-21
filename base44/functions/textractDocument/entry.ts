@@ -16,10 +16,44 @@ import {
   PutObjectCommand,
   DeleteObjectCommand,
 } from 'npm:@aws-sdk/client-s3@3.600.0';
+import { SecretsManagerClient, GetSecretValueCommand } from 'npm:@aws-sdk/client-secrets-manager@3.600.0';
+
+// ── Secrets Manager helper (with in-process cache) ───────────────────────────
+let _secretsCache = null;
+let _secretsCachedAt = 0;
+const SECRETS_TTL_MS = 5 * 60 * 1000;
+const SECRET_ID = 'elitetc/prod/app';
+
+async function getAppSecrets() {
+  const now = Date.now();
+  if (_secretsCache && (now - _secretsCachedAt) < SECRETS_TTL_MS) return _secretsCache;
+  try {
+    const smClient = new SecretsManagerClient({
+      region: Deno.env.get('AWS_REGION') || 'us-east-2',
+      credentials: {
+        accessKeyId: Deno.env.get('AWS_ACCESS_KEY_ID'),
+        secretAccessKey: Deno.env.get('AWS_SECRET_ACCESS_KEY'),
+      },
+    });
+    const res = await smClient.send(new GetSecretValueCommand({ SecretId: SECRET_ID }));
+    _secretsCache = JSON.parse(res.SecretString || '{}');
+    _secretsCachedAt = now;
+    console.log('[textractDocument] Secrets loaded from Secrets Manager');
+  } catch (err) {
+    console.warn('[textractDocument] Secrets Manager unavailable, using env vars:', err.message);
+    _secretsCache = {
+      S3_BUCKET: Deno.env.get('S3_BUCKET'),
+    };
+    _secretsCachedAt = now;
+  }
+  return _secretsCache;
+}
 
 // ── AWS clients (initialized inside handler to avoid boot-level errors) ────────
-function getClients() {
+async function getClients() {
+  const secrets = await getAppSecrets();
   const region = Deno.env.get('AWS_REGION') || 'us-east-2';
+  // Bootstrap AWS creds always come from env — they are the Secrets Manager access credentials
   const credentials = {
     accessKeyId: Deno.env.get('AWS_ACCESS_KEY_ID'),
     secretAccessKey: Deno.env.get('AWS_SECRET_ACCESS_KEY'),
@@ -27,7 +61,7 @@ function getClients() {
   return {
     s3: new S3Client({ region, credentials }),
     textract: new TextractClient({ region, credentials }),
-    bucket: Deno.env.get('S3_BUCKET') || 'elitetc-documents',
+    bucket: secrets.S3_BUCKET || Deno.env.get('S3_BUCKET') || 'elitetc-documents',
   };
 }
 
@@ -244,7 +278,7 @@ Deno.serve(async (req) => {
     const { file_url } = await req.json();
     if (!file_url) return Response.json({ error: 'file_url required' }, { status: 400 });
 
-    const { s3, textract, bucket } = getClients();
+    const { s3, textract, bucket } = await getClients();
     const t0 = Date.now();
 
     // ── Step 1: Fetch PDF ───────────────────────────────────────────────────────
