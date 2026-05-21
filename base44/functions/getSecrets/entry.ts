@@ -49,20 +49,27 @@ async function fetchFromSecretsManager() {
   return JSON.parse(response.SecretString);
 }
 
+// Track the source of the last successful load
+let _secretsSource = null; // 'SECRETS_MANAGER' | 'ENV_FALLBACK'
+let _secretsError  = null; // error message if SM failed
+
 async function getSecretsCached() {
   const now = Date.now();
   if (_cachedSecrets && (now - _cachedAt) < CACHE_TTL_MS) {
     return _cachedSecrets;
   }
 
-  // Fall back gracefully to env vars if Secrets Manager is not yet configured
   let smSecrets = {};
   try {
     smSecrets = await fetchFromSecretsManager();
-    console.log('[getSecrets] Loaded from Secrets Manager:', Object.keys(smSecrets).join(', '));
+    _secretsSource = 'SECRETS_MANAGER';
+    _secretsError  = null;
+    console.log('[getSecrets] ✅ Loaded from Secrets Manager:', Object.keys(smSecrets).join(', '));
   } catch (err) {
-    console.warn('[getSecrets] Secrets Manager unavailable, falling back to env vars:', err.message);
-    // Return env-var values so existing functions continue working during migration
+    _secretsSource = 'ENV_FALLBACK';
+    _secretsError  = err.message;
+    console.warn('[getSecrets] ⚠️  Secrets Manager FAILED — falling back to env vars. Error:', err.message);
+    // Fallback so functions stay operational — but this is reported as a degraded state
     smSecrets = {
       OPENAI_API_KEY:          Deno.env.get('OPENAI_API_KEY')          || null,
       STRIPE_SECRET_KEY:       Deno.env.get('STRIPE_SECRET_KEY')       || null,
@@ -81,7 +88,7 @@ async function getSecretsCached() {
     };
   }
 
-  // Always merge AWS region + S3 bucket from env (infrastructure-level, not secret)
+  // Infrastructure-level config — always from env (not secret)
   smSecrets.AWS_REGION = Deno.env.get('AWS_REGION') || 'us-east-2';
   smSecrets.S3_BUCKET  = smSecrets.S3_BUCKET || Deno.env.get('S3_BUCKET') || 'elitetc-documents';
 
@@ -109,10 +116,18 @@ Deno.serve(async (req) => {
       Object.entries(secrets).map(([k, v]) => [k, v ? 'set' : 'missing'])
     );
 
+    const smOk = _secretsSource === 'SECRETS_MANAGER';
+
     return Response.json({
       success: true,
       secret_id: SECRET_ID,
       region: REGION,
+      source: _secretsSource || 'UNKNOWN',
+      secrets_manager_ok: smOk,
+      // IMPORTANT: "set" keys when source=ENV_FALLBACK means env vars, NOT Secrets Manager
+      source_note: smOk
+        ? 'Secrets loaded directly from AWS Secrets Manager — authoritative source confirmed.'
+        : `⚠️  Secrets Manager UNAVAILABLE. Keys below are from env vars (fallback). SM error: ${_secretsError}`,
       cache_age_ms: Date.now() - _cachedAt,
       keys: keyStatus,
     });
