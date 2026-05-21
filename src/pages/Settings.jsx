@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Settings as SettingsIcon, Users, Bell, Palette, Loader2, UserPlus, CheckCircle, Building2, DollarSign, FileText, Pencil, X, Bug, Lightbulb, Puzzle, MessageSquarePlus, Activity, Mail, UserCircle, Trash2, Shield, Search, HelpCircle, BookOpen, Globe, Plus, Upload, CreditCard, AlertTriangle, ArrowUpRight, Plug, Zap, BarChart3, Workflow, Calendar, FileSignature, Home, Download, Radio } from "lucide-react";
+import { Settings as SettingsIcon, Users, Bell, Palette, Loader2, UserPlus, CheckCircle, Building2, DollarSign, FileText, Pencil, X, Bug, Lightbulb, Puzzle, MessageSquarePlus, Activity, Mail, UserCircle, Trash2, Shield, Search, HelpCircle, BookOpen, Globe, Plus, Upload, CreditCard, AlertTriangle, ArrowUpRight, Plug, Workflow, Calendar, FileSignature, Home, Download, Radio } from "lucide-react";
 import { useToast } from "@/components/ui/use-toast";
 import DeleteAccountModal from "@/components/settings/DeleteAccountModal";
 import ExportDataModal from "@/components/settings/ExportDataModal";
@@ -628,8 +628,6 @@ export default function Settings() {
       {/* ── Integrations ── */}
       {resolvedActiveTab === "integrations" && (() => {
         const INTEGRATIONS = [
-          { id: "dotloop", name: "Dotloop", icon: Zap, status: "Coming Soon", description: "Integration will be available soon", route: "DotloopIntegration" },
-          { id: "skyslope", name: "SkySlope", icon: BarChart3, status: "Coming Soon", description: "Integration will be available soon", route: null },
           { id: "zapier", name: "Zapier", icon: Workflow, status: "Coming Soon", description: "Integration will be available soon", route: null },
           { id: "gmail", name: "Gmail", icon: Mail, status: "Active", description: "Send transactional emails to clients and parties", route: "GmailSetup" },
           { id: "google-calendar", name: "Google Calendar", icon: Calendar, status: "Active", description: "Sync transaction deadlines to your calendar", route: "GoogleCalendarSetup" },

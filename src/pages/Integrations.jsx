@@ -2,28 +2,10 @@ import React from "react";
 import { Link } from "react-router-dom";
 import { createPageUrl } from "@/utils";
 import {
-  Zap, Mail, Calendar, Home, FileSignature, BarChart3, Workflow,
+  Mail, Calendar, Home, FileSignature, Workflow,
 } from "lucide-react";
 
 const INTEGRATIONS = [
-  {
-    id: "dotloop",
-    name: "Dotloop",
-    icon: Zap,
-    status: "Coming Soon",
-    description: "Integration will be available soon",
-    color: "from-blue-50 to-blue-100",
-    route: "DotloopIntegration",
-  },
-  {
-    id: "skyslope",
-    name: "SkySlope",
-    icon: BarChart3,
-    status: "Coming Soon",
-    description: "Integration will be available soon",
-    color: "from-purple-50 to-purple-100",
-    route: null,
-  },
   {
     id: "zapier",
     name: "Zapier",

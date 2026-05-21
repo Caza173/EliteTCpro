@@ -7,7 +7,6 @@ import Contact from './pages/Contact'
 import SetupProfile from './pages/SetupProfile'
 import UserManagement from './pages/UserManagement'
 
-import DotloopIntegration from './pages/DotloopIntegration'
 import Integrations from './pages/Integrations'
 import GmailSetup from './pages/GmailSetup'
 import GoogleCalendarSetup from './pages/GoogleCalendarSetup'
@@ -144,13 +143,6 @@ const AuthenticatedApp = () => {
         <RequireAuth>
           <LayoutWrapper currentPageName="GoogleCalendarSetup">
             <GoogleCalendarSetup />
-          </LayoutWrapper>
-        </RequireAuth>
-      } />
-      <Route path="/DotloopIntegration" element={
-        <RequireAuth>
-          <LayoutWrapper currentPageName="DotloopIntegration">
-            <DotloopIntegration />
           </LayoutWrapper>
         </RequireAuth>
       } />
