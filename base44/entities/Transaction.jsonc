@@ -84,37 +84,6 @@
       ],
       "default": "buyer"
     },
-    "dotloop_loop_id": {
-      "type": "string"
-    },
-    "skyslope_transaction_id": {
-      "type": "string"
-    },
-    "skyslope_file_guid": {
-      "type": "string"
-    },
-    "skyslope_sale_guid": {
-      "type": "string"
-    },
-    "skyslope_listing_guid": {
-      "type": "string"
-    },
-    "skyslope_last_sync": {
-      "type": "string"
-    },
-    "skyslope_sync_status": {
-      "type": "string",
-      "enum": [
-        "pending",
-        "synced",
-        "error",
-        "not_synced"
-      ],
-      "default": "not_synced"
-    },
-    "skyslope_sync_error": {
-      "type": "string"
-    },
     "buyer": {
       "type": "string"
     },

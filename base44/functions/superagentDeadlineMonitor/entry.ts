@@ -2,7 +2,11 @@ import { createClientFromRequest } from 'npm:@base44/sdk@0.8.21';
 
 const APP_URL = 'https://app.elitetc.pro';
 
-const TOKEN_SECRET = () => Deno.env.get('BASE44_APP_ID') || 'elitetc-deadline-hmac-v1';
+const TOKEN_SECRET = () => {
+  const secret = Deno.env.get('BASE44_APP_ID');
+  if (!secret) throw new Error('HMAC secret not configured');
+  return secret;
+};
 
 function b64urlEncode(str) {
   return btoa(unescape(encodeURIComponent(str)))

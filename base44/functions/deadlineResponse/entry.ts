@@ -9,7 +9,11 @@ const DEADLINE_LABELS = {
   due_diligence_deadline: 'Due Diligence',
 };
 
-const TOKEN_SECRET = () => Deno.env.get('BASE44_APP_ID') || 'elitetc-deadline-hmac-v1';
+const TOKEN_SECRET = () => {
+  const secret = Deno.env.get('BASE44_APP_ID');
+  if (!secret) throw new Error('HMAC secret not configured');
+  return secret;
+};
 
 // ── HMAC Token Helpers ─────────────────────────────────────────────────────────
 
