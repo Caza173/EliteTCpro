@@ -13,45 +13,35 @@ Deno.serve(async (req) => {
     const { status, sort = '-created_date', limit = 200, transaction_id } = body;
 
     const isAdmin = ADMIN_ROLES.has(user.role) || ADMIN_ROLES.has(user.data?.role);
-    const svc = base44.asServiceRole;
+    // Use user-scoped entity access — RLS handles visibility correctly.
+    // asServiceRole sees 0 records because Transaction RLS requires owner_user_id = user.id
+    // and the service role has no user.id match. User-scoped reads respect the multi-field RLS correctly.
+    const entityAccess = base44.entities;
 
     console.log(`[getTeamTransactions] user.id=${user.id} user.email=${user.email} role=${user.role} isAdmin=${isAdmin}`);
 
     // ── SINGLE TRANSACTION LOOKUP ──────────────────────────────────────────
     if (transaction_id) {
       let results = [];
-      try { results = await svc.entities.Transaction.filter({ id: transaction_id }); } catch (_) {}
-      const tx = results[0] || null;
-
-      if (!tx) return Response.json({ transactions: [], transaction: null });
-
-      if (!isAdmin && !_userOwnsTx(tx, user)) {
-        // Log denied access
-        await _logAccessDenied(svc, user, transaction_id, 'single_lookup');
-        return Response.json({ transactions: [], transaction: null });
+      try { results = await entityAccess.Transaction.filter({ id: transaction_id }); } catch (_) {}
+      // If RLS hid it and user is admin, try service role as fallback
+      if (!results.length && isAdmin) {
+        try { results = await base44.asServiceRole.entities.Transaction.filter({ id: transaction_id }); } catch (_) {}
       }
-
+      const tx = results[0] || null;
+      if (!tx) return Response.json({ transactions: [], transaction: null });
       return Response.json({ transactions: [tx], transaction: tx });
     }
 
     // ── LIST ───────────────────────────────────────────────────────────────
-    // Admins can see all; regular users filtered server-side
+    // User-scoped: RLS already filters to owned/accessible transactions
     const all = status
-      ? await svc.entities.Transaction.filter({ status }, sort, limit)
-      : await svc.entities.Transaction.list(sort, limit);
+      ? await entityAccess.Transaction.filter({ status }, sort, limit)
+      : await entityAccess.Transaction.list(sort, limit);
 
     console.log(`[getTeamTransactions] total records in DB: ${all.length}`);
 
-    if (isAdmin) {
-      return Response.json({ transactions: all });
-    }
-
-    // Regular user: strictly their own transactions only
-    const transactions = all.filter(tx => _userOwnsTx(tx, user));
-
-    console.log(`[getTeamTransactions] user=${user.email} owns=${transactions.length} / total=${all.length}`);
-
-    return Response.json({ transactions });
+    return Response.json({ transactions: all });
 
   } catch (error) {
     console.error('[getTeamTransactions] error:', error);
