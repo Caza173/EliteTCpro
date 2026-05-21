@@ -192,7 +192,7 @@ export default function TransactionDocumentsTab({ transaction, currentUser }) {
     }
     const doc = response.data;
     const matchingItem = checklistItems.find(
-      (ci) => ci.doc_type === selectedDocType && ci.status === "missing"
+      (ci) => ci.doc_type === docType && ci.status === "missing"
     );
     if (matchingItem) {
       await base44.entities.DocumentChecklistItem.update(matchingItem.id, {

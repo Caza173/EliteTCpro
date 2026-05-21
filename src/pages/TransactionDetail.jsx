@@ -205,7 +205,7 @@ export default function TransactionDetail() {
 
   const { data: documents = [] } = useQuery({
     queryKey: ["tx-documents", id],
-    queryFn: () => base44.entities.Document.filter({ transaction_id: id }, "-created_date"),
+    queryFn: () => base44.entities.Document.filter({ transaction_id: id, is_deleted: { $ne: true } }, "-created_date"),
     enabled: !!id,
   });
 
