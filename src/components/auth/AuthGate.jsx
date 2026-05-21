@@ -4,9 +4,8 @@ import { useCurrentUser } from "@/lib/CurrentUserContext.jsx";
 
 // Routes that are always accessible without auth
 const PUBLIC_PATHS = [
-  "/", "/Landing", "/login", "/AgentIntake", "/ClientLookup",
-  "/DeadlineResponse", "/ApprovalAction", "/agent-signin",
-  "/TCSignIn", "/agent/submit-transaction",
+  "/", "/Landing", "/login",
+  "/DeadlineResponse", "/ApprovalAction",
 ];
 
 function isPublicPath(path) {

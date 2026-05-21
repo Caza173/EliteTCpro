@@ -14,20 +14,16 @@ import CommissionStatements from './pages/CommissionStatements'
 import FuelProrations from './pages/FuelProrations'
 import DeadlineResponse from './pages/DeadlineResponse'
 import ApprovalAction from './pages/ApprovalAction'
-import ClientLookup from './pages/ClientLookup'
 import AddendumBuilder from './pages/AddendumBuilder'
 import TutorialFAQPage from './pages/TutorialFAQPage'
 import Notifications from './pages/Notifications.jsx'
 import FeedbackCenter from './pages/FeedbackCenter.jsx'
 import SignDocument from './pages/SignDocument.jsx'
 import SystemDiagnostics from './pages/SystemDiagnostics.jsx'
-import AgentSignIn from './pages/AgentSignIn.jsx'
 import AgentIntake from './pages/AgentIntake'
 import TransactionDiagnostics from './pages/TransactionDiagnostics'
 import Onboarding from './pages/Onboarding'
 import TemplateManager from './pages/TemplateManager'
-import TCSignIn from './pages/TCSignIn.jsx'
-import AgentSubmitTransaction from './pages/AgentSubmitTransaction.jsx'
 import TransactionDetail from './pages/TransactionDetail'
 import { ErrorBoundary } from './components/ErrorBoundary'
 import PendingDeals from './pages/PendingDeals'
@@ -170,7 +166,6 @@ const AuthenticatedApp = () => {
       } />
       <Route path="/DeadlineResponse" element={<DeadlineResponse />} />
       <Route path="/ApprovalAction" element={<ApprovalAction />} />
-      <Route path="/ClientLookup" element={<ClientLookup />} />
 
       <Route path="/AddendumBuilder" element={
         <RequireAuth>
@@ -208,10 +203,13 @@ const AuthenticatedApp = () => {
           </LayoutWrapper>
         </RequireAuth>
       } />
-      <Route path="/agent-signin" element={<AgentSignIn />} />
-      <Route path="/TCSignIn" element={<TCSignIn />} />
-      <Route path="/agent/submit-transaction" element={<AgentSubmitTransaction />} />
-      <Route path="/AgentIntake" element={<AgentIntake />} />
+      <Route path="/AgentIntake" element={
+        <RequireAuth>
+          <LayoutWrapper currentPageName="AgentIntake">
+            <AgentIntake />
+          </LayoutWrapper>
+        </RequireAuth>
+      } />
       <Route path="/TemplateManager" element={
         <RequireAuth>
           <LayoutWrapper currentPageName="TemplateManager">

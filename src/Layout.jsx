@@ -63,9 +63,7 @@ const OWNER_NAV = [
   { label: "Diagnostics",   page: "TransactionDiagnostics", icon: Cpu, path: "/diagnostics" },
 ];
 
-const AGENT_NAV = [
-  { label: "Deal Intake", page: "AgentIntake", icon: UserPlus },
-];
+const AGENT_NAV = [];
 
 const CLIENT_NAV = [];
 

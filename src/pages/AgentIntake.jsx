@@ -162,12 +162,9 @@ export default function AgentIntake() {
   const { data: currentUser } = useQuery({ queryKey: ["currentUser"], queryFn: () => base44.auth.me(), retry: false });
   const navigate = useNavigate();
 
-  // Hide TC features when accessed via the public agent intake link (?agent=1)
-  const isAgentPublicFlow = new URLSearchParams(window.location.search).get("agent") === "1";
-  // Internal TC view — show pending reviews
-  const isTC = !isAgentPublicFlow && currentUser && ["tc", "tc_lead", "admin", "owner"].includes(currentUser.role);
-  // Authenticated user — create transaction directly instead of going through intake queue
-  const isAuthenticatedUser = !!currentUser && !isAgentPublicFlow;
+  // Internal TC/admin only — always creates directly
+  const isTC = currentUser && ["tc", "tc_lead", "admin", "owner"].includes(currentUser.role);
+  const isAuthenticatedUser = !!currentUser;
 
   const [dealType, setDealType] = useState(null);
   const [docType, setDocType] = useState("ps");
@@ -342,32 +339,7 @@ export default function AgentIntake() {
         if (!tx?.id) throw new Error("Transaction was not created. Please try again.");
         navigate(`/transactions/${tx.id}`);
       } else {
-        // Public/unauthenticated: go through intake submission queue
-        const res = await base44.functions.invoke("submitIntake", {
-          deal_type: isBuyerAgency ? "buyer_agency" : isSellerUC ? "seller_uc" : dealType,
-          form_data: {
-            ...form,
-            client_phones: cleanClientPhones,
-            sale_price: form.sale_price ? Number(form.sale_price) : undefined,
-            is_cash_transaction: form.is_cash_transaction || false,
-            inspections_waived: form.inspections_waived || false,
-            inspection_waiver_type: form.inspections_waived ? (form.inspection_waiver_type || null) : null,
-            inspection_waiver_notes: form.inspections_waived ? (form.inspection_waiver_notes || "") : "",
-            inspection_deadline: form.inspections_waived ? null : form.inspection_deadline,
-          },
-          buyers: buyerList,
-          sellers: sellerList,
-          client_emails: cleanClientEmails,
-          agent_name: form.agent || "",
-          agent_email: form.agent_email || "",
-          agent_phone: form.agent_phone || form.client_phone || "",
-          property_address: isBuyerAgency ? "Pre-Transaction — Buyer Representation" : (form.address || ""),
-          document_url: documentUrl,
-          document_name: documentName,
-          _honey: "",
-        });
-        if (res.data?.error) throw new Error(res.data.error);
-        setSubmitted(true);
+        throw new Error("Authentication required. Please log in to submit a transaction.");
       }
     } catch (err) {
       setSubmitError(err.message || "Submission failed. Please try again.");
@@ -376,30 +348,6 @@ export default function AgentIntake() {
   };
 
 
-
-  // ── Success ───────────────────────────────────────────────────────────────
-
-  if (submitted) {
-    return (
-      <div className="max-w-xl mx-auto text-center py-20">
-        <div className="w-16 h-16 rounded-full bg-emerald-50 flex items-center justify-center mx-auto mb-4">
-          <CheckCircle className="w-8 h-8 text-emerald-500" />
-        </div>
-        <h2 className="text-2xl font-bold text-gray-900 mb-2">Submission Received!</h2>
-        <p className="text-gray-500 mb-3">
-          Your deal has been submitted and is <strong>pending TC review</strong>. You'll receive a confirmation once it's approved and activated.
-        </p>
-        <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-amber-50 border border-amber-200 text-amber-700 text-sm mb-6">
-          <AlertTriangle className="w-4 h-4" /> Pending Review — Not yet active
-        </div>
-        <div>
-          <Button onClick={() => { setSubmitted(false); setDealType(null); }} className="bg-blue-600 hover:bg-blue-700">
-            Submit Another
-          </Button>
-        </div>
-      </div>
-    );
-  }
 
   // ── TC Review Tab (TC users only) ─────────────────────────────────────────
 

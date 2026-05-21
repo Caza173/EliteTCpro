@@ -13,7 +13,7 @@ import {
 } from "@/components/ui/select";
 import {
   MapPin, User, Users, Mail, Phone, Calendar, ArrowLeft, Trash2,
-  ClipboardCheck, Send, UserPlus, LayoutDashboard, GitBranch, Clock,
+  ClipboardCheck, Send, LayoutDashboard, GitBranch, Clock,
   DollarSign, FolderOpen, ShieldCheck, PanelLeftClose, PanelLeftOpen,
   Globe, X, Pencil, Mail as MailIcon, Receipt, CalendarDays, Info, AlertTriangle,
   ChevronDown, ChevronUp, Bot, Zap,
@@ -54,7 +54,6 @@ import UnderContractCommsPanel from "../components/comms/UnderContractCommsPanel
 import CollaboratorsPanel from "../components/collaborators/CollaboratorsPanel";
 import SendTimelineModal from "../components/transactions/SendTimelineModal";
 import InspectionPanel from "../components/transactions/InspectionPanel";
-import InviteClientModal from "../components/transactions/InviteClientModal";
 
 const TX_TABS = [
   { id: "overview",      label: "Overview",      icon: LayoutDashboard, info: "Phase checklist, tasks, and compliance summary" },
@@ -127,7 +126,6 @@ export default function TransactionDetail() {
   const [syncingCalendar, setSyncingCalendar] = useState(false);
   const [emailModalOpen, setEmailModalOpen] = useState(false);
   const [invitingClient, setInvitingClient] = useState(false);
-  const [inviteModalOpen, setInviteModalOpen] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [alertDialog, setAlertDialog] = useState({ open: false, title: "", message: "" });
   const [contactsExpanded, setContactsExpanded] = useState(false);
@@ -437,73 +435,7 @@ export default function TransactionDetail() {
     updateMutation.mutate({ id: transaction.id, data: { status: newStatus, last_activity_at: new Date().toISOString() } });
   };
 
-  const handleInviteClient = async (selectedEmails) => {
-    if (!selectedEmails?.length) return;
-    setInvitingClient(true);
-    setInviteModalOpen(false);
 
-    // Generate / retrieve both codes
-    const codesRes = await base44.functions.invoke("portalLookup", {
-      action: "generate_codes",
-      transaction_id: transaction.id,
-    });
-    const clientCode = codesRes.data?.client_code || transaction.client_code || transaction.client_access_code;
-    const agentCode  = codesRes.data?.agent_code  || transaction.agent_code;
-
-    queryClient.invalidateQueries({ queryKey: ["transactions"] });
-
-    const appUrl = window.location.origin + window.location.pathname.replace(/\/[^/]*$/, "") + "/#/ClientLookup";
-
-    const clientEmailBody = `<p>Hello,</p>
-<p>Your transaction coordinator has set up a status portal for your transaction at <strong>${transaction.address}</strong>.</p>
-<p>Use the button and code below to check your transaction progress and key dates at any time — no account needed:</p>
-<p style="margin:20px 0;">
-  <a href="${appUrl}" style="background:#2563EB;color:white;padding:12px 24px;border-radius:8px;text-decoration:none;font-weight:600;">View Transaction Status</a>
-</p>
-<p><strong>Your Access Code: <span style="font-size:20px;letter-spacing:2px;color:#2563EB;">${clientCode}</span></strong></p>
-<p style="color:#666;font-size:13px;">Keep this code handy — you'll use it each time you check your status.</p>
-<p>Best regards,<br/>TC Manager</p>`;
-
-    await Promise.allSettled(selectedEmails.map(to =>
-      base44.functions.invoke("sendGmailEmail", {
-        to: [to],
-        subject: `Your Transaction Portal Access — ${transaction.address}`,
-        body: clientEmailBody,
-        transaction_id: transaction.id,
-        brokerage_id: transaction.brokerage_id,
-      })
-    ));
-
-    // Also send agent code if agent email is set
-    const agentEmail = transaction.agent_email || transaction.buyers_agent_email;
-    if (agentCode && agentEmail) {
-      const agentEmailBody = `<p>Hello,</p>
-<p>You have been given agent portal access for the transaction at <strong>${transaction.address}</strong>.</p>
-<p>Use the button and code below to view status, deadlines, timeline, and add notes — no account needed:</p>
-<p style="margin:20px 0;">
-  <a href="${appUrl}" style="background:#2563EB;color:white;padding:12px 24px;border-radius:8px;text-decoration:none;font-weight:600;">View Transaction Portal</a>
-</p>
-<p><strong>Your Agent Code: <span style="font-size:20px;letter-spacing:2px;color:#2563EB;">${agentCode}</span></strong></p>
-<p style="color:#666;font-size:13px;">This code gives you agent-level access including timeline, shared notes, and the ability to leave notes for your TC.</p>
-<p>Best regards,<br/>TC Manager</p>`;
-
-      await base44.functions.invoke("sendGmailEmail", {
-        to: [agentEmail],
-        subject: `Agent Portal Access — ${transaction.address}`,
-        body: agentEmailBody,
-        transaction_id: transaction.id,
-        brokerage_id: transaction.brokerage_id,
-      }).catch(() => {});
-    }
-
-    const sentTo = [...selectedEmails, ...(agentCode && agentEmail && !selectedEmails.includes(agentEmail) ? [agentEmail] : [])];
-    setAlertDialog({
-      open: true,
-      title: "Portal Invites Sent!",
-      message: `Access codes sent to ${sentTo.join(", ")}. Client code: ${clientCode}${agentCode ? ` · Agent code: ${agentCode}` : ""}`,
-    });
-    setInvitingClient(false);
-  };
 
   const handleSendTimeline = async (recipients) => {
     if (!transaction || !recipients?.length) return;
@@ -698,14 +630,6 @@ export default function TransactionDetail() {
           onSend={handleSendTimeline}
         />
       )}
-      {inviteModalOpen && (
-        <InviteClientModal
-          transaction={transaction}
-          sending={invitingClient}
-          onConfirm={handleInviteClient}
-          onCancel={() => setInviteModalOpen(false)}
-        />
-      )}
       <EmailComposerModal
         open={emailModalOpen}
         onClose={() => setEmailModalOpen(false)}
@@ -807,7 +731,6 @@ export default function TransactionDetail() {
             </Select>
             <IconAction icon={MailIcon} label="Email" onClick={() => setEmailModalOpen(true)} />
             <UnderContractEmailButton transaction={transaction} currentUser={currentUser} documents={documents} iconOnly />
-            <IconAction icon={UserPlus} label="Invite" onClick={() => setInviteModalOpen(true)} disabled={invitingClient} />
             <MarkUnderContractButton transaction={transaction} onConverted={() => queryClient.invalidateQueries({ queryKey: ["transactions"] })} iconOnly />
             <IconAction icon={Trash2} label="Delete" onClick={() => setConfirmDelete(true)} danger />
             <button
