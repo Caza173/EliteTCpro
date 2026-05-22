@@ -113,10 +113,52 @@
   "rls": {
     "create": true,
     "read": {
-      "data.brokerage_id": "{{user.data.brokerage_id}}"
+      "$or": [
+        {
+          "data.brokerage_id": "{{user.data.brokerage_id}}",
+          "user_condition": {
+            "role": {
+              "$in": [
+                "admin",
+                "owner",
+                "tc_lead",
+                "tc"
+              ]
+            }
+          }
+        },
+        {
+          "data.transaction_id": {
+            "$in": [
+              "{{user.data.accessible_tx_ids}}"
+            ]
+          }
+        }
+      ]
     },
     "update": {
-      "data.brokerage_id": "{{user.data.brokerage_id}}"
+      "$or": [
+        {
+          "data.brokerage_id": "{{user.data.brokerage_id}}",
+          "user_condition": {
+            "role": {
+              "$in": [
+                "admin",
+                "owner",
+                "tc_lead",
+                "tc"
+              ]
+            }
+          }
+        },
+        {
+          "data.transaction_id": {
+            "$in": [
+              "{{user.data.editable_tx_ids}}"
+            ]
+          }
+        }
+      ]
     },
     "delete": {
       "user_condition": {
