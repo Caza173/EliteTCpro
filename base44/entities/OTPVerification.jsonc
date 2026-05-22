@@ -27,9 +27,17 @@
     "expiresAt"
   ],
   "rls": {
-    "create": false,
-    "read": false,
-    "update": false,
-    "delete": false
+    "create": {
+      "created_by": "system"
+    },
+    "read": {
+      "created_by": "system"
+    },
+    "update": {
+      "created_by": "system"
+    },
+    "delete": {
+      "created_by": "system"
+    }
   }
 }
