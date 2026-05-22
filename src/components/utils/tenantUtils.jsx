@@ -73,6 +73,9 @@ export async function createNotification({ brokerageId, userEmail, transactionId
   } catch (_) {}
 }
 
+// Stub export — billing plans removed; kept to prevent stale import errors
+export const PLAN_DETAILS = {};
+
 export const ROLE_COLORS = {
   owner: "bg-red-50 text-red-700 border-red-200",
   admin: "bg-red-50 text-red-700 border-red-200",
