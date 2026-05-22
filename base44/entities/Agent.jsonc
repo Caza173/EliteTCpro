@@ -1,0 +1,102 @@
+{
+  "name": "Agent",
+  "type": "object",
+  "properties": {
+    "contact_id": {
+      "type": "string",
+      "description": "Reference to Contact"
+    },
+    "brokerage_id": {
+      "type": "string",
+      "description": "Reference to Brokerage"
+    },
+    "license_number": {
+      "type": "string"
+    },
+    "agent_role": {
+      "type": "string",
+      "enum": [
+        "listing_agent",
+        "buyer_agent"
+      ],
+      "default": "buyer_agent"
+    },
+    "reference_code": {
+      "type": "string",
+      "description": "Unique agent reference code for secure portal access (e.g. AGT-XXXXXX)"
+    }
+  },
+  "required": [
+    "contact_id"
+  ],
+  "rls": {
+    "create": {
+      "user_condition": {
+        "role": {
+          "$in": [
+            "admin",
+            "owner",
+            "tc_lead"
+          ]
+        }
+      }
+    },
+    "read": {
+      "$or": [
+        {
+          "created_by": "{{user.email}}"
+        },
+        {
+          "data.brokerage_id": "{{user.data.brokerage_id}}",
+          "user_condition": {
+            "role": {
+              "$in": [
+                "admin",
+                "owner",
+                "tc_lead",
+                "tc"
+              ]
+            }
+          }
+        },
+        {
+          "data.contact_id": {
+            "$in": [
+              "{{user.data.contact_ids}}"
+            ]
+          }
+        }
+      ]
+    },
+    "update": {
+      "$or": [
+        {
+          "created_by": "{{user.email}}"
+        },
+        {
+          "data.brokerage_id": "{{user.data.brokerage_id}}",
+          "user_condition": {
+            "role": {
+              "$in": [
+                "admin",
+                "owner",
+                "tc_lead"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    "delete": {
+      "user_condition": {
+        "role": {
+          "$in": [
+            "admin",
+            "owner",
+            "super_admin"
+          ]
+        }
+      }
+    }
+  }
+}
