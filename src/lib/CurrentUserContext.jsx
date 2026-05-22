@@ -1,35 +1,24 @@
-import React, { createContext, useContext, useState, useEffect, useCallback, useRef } from "react";
+import React, { createContext, useContext, useState, useEffect, useCallback } from "react";
+import { useAuth } from "@/lib/AuthContext";
 import { base44 } from "@/api/base44Client";
 
 const CurrentUserContext = createContext(null);
 
 export function CurrentUserProvider({ children }) {
+  const { user: authUser, isLoadingAuth } = useAuth();
   const [currentUser, setCurrentUser] = useState(null);
-  const [isLoading, setIsLoading] = useState(true);
-  const hasFetched = useRef(false);
 
+  // Sync from AuthContext — no duplicate base44.auth.me() call
   useEffect(() => {
-    // Only fetch once on mount — never re-fetch due to dependency changes
-    if (hasFetched.current) return;
-    hasFetched.current = true;
+    setCurrentUser(authUser || null);
+  }, [authUser]);
 
-    base44.auth.me()
-      .then(authUser => {
-        setCurrentUser(authUser || null);
-      })
-      .catch(err => {
-        console.error("User fetch error:", err);
-        setCurrentUser(null);
-      })
-      .finally(() => {
-        setIsLoading(false);
-      });
-  }, []);
+  const isLoading = isLoadingAuth;
 
   const refreshUser = useCallback(async () => {
     try {
-      const authUser = await base44.auth.me();
-      setCurrentUser(authUser || null);
+      const freshUser = await base44.auth.me();
+      setCurrentUser(freshUser || null);
     } catch (err) {
       console.error("refreshUser error:", err);
     }

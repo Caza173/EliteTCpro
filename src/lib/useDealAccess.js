@@ -1,4 +1,4 @@
-// cache-bust: 2026-05-22-v9-hook-order-fix
+// cache-bust: 2026-05-22-v10-stable
 /**
  * useDealAccess — Strictly per-user isolated deal access.
  * Uses useState/useEffect ONLY — zero react-query — to avoid cross-chunk dispatcher errors.
@@ -60,10 +60,29 @@ export function useDealAccess() {
 
   function canAccess(dealId) {
     if (!currentUser || !dealId) return false;
-    // Never grant access while loading or if there was an error
     if (isLoading) return false;
     if (txError) return false;
     return accessibleDealIds.has(dealId);
+  }
+
+  function refetch() {
+    // Force re-fetch by clearing the cache ref
+    fetchedForRef.current = null;
+    if (!currentUser?.id) return;
+    setTxLoading(true);
+    setTxError(null);
+    base44.functions.invoke("getTeamTransactions", { sort: "-created_date", limit: 200 })
+      .then(r => {
+        const txs = r.data?.transactions;
+        if (!Array.isArray(txs)) throw new Error("Invalid response from getTeamTransactions");
+        setTransactions(txs);
+        fetchedForRef.current = currentUser.id;
+      })
+      .catch(err => {
+        console.error("[useDealAccess] refetch error:", err);
+        setTxError(err);
+      })
+      .finally(() => setTxLoading(false));
   }
 
   return {
@@ -72,6 +91,7 @@ export function useDealAccess() {
     accessibleDealIds,
     isLoading,
     canAccess,
+    refetch,
     currentUser,
     isSuperAdmin: isSuperAdmin(currentUser),
   };
