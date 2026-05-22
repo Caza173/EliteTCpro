@@ -177,5 +177,60 @@
     "type",
     "title",
     "description"
-  ]
+  ],
+  "rls": {
+    "create": true,
+    "read": {
+      "$or": [
+        {
+          "data.user_email": "{{user.email}}"
+        },
+        {
+          "user_condition": {
+            "role": {
+              "$in": [
+                "admin",
+                "owner",
+                "tc_lead"
+              ]
+            }
+          }
+        },
+        {
+          "data.brokerage_id": "{{user.data.brokerage_id}}"
+        }
+      ]
+    },
+    "update": {
+      "$or": [
+        {
+          "data.user_email": "{{user.email}}"
+        },
+        {
+          "user_condition": {
+            "role": {
+              "$in": [
+                "admin",
+                "owner",
+                "tc_lead"
+              ]
+            }
+          }
+        },
+        {
+          "data.brokerage_id": "{{user.data.brokerage_id}}"
+        }
+      ]
+    },
+    "delete": {
+      "user_condition": {
+        "role": {
+          "$in": [
+            "admin",
+            "owner"
+          ]
+        }
+      }
+    }
+  }
 }
