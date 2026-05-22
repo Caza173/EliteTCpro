@@ -1,4 +1,4 @@
-// cache-bust: 2026-05-21-v8-rls-hardened
+// cache-bust: 2026-05-22-v9-hook-order-fix
 /**
  * useDealAccess — Strictly per-user isolated deal access.
  * Uses useState/useEffect ONLY — zero react-query — to avoid cross-chunk dispatcher errors.
