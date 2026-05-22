@@ -62,3 +62,7 @@ export function isAgent(user) {
 export function isClient(user) {
   return user?.role === "client";
 }
+
+export function canManageBilling(user) {
+  return isMasterAccount(user) || user?.role === "admin" || user?.role === "owner";
+}
