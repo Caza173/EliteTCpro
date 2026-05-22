@@ -137,7 +137,13 @@
           "data.owner_id": "{{user.id}}"
         },
         {
-          "data.created_by": "{{user.id}}"
+          "created_by": "{{user.id}}"
+        },
+        {
+          "data.agent_email": "{{user.email}}"
+        },
+        {
+          "data.brokerage_id": "{{user.data.brokerage_id}}"
         }
       ]
     },
@@ -157,7 +163,7 @@
           "data.owner_id": "{{user.id}}"
         },
         {
-          "data.created_by": "{{user.id}}"
+          "created_by": "{{user.id}}"
         }
       ]
     },
@@ -177,7 +183,7 @@
           "data.owner_id": "{{user.id}}"
         },
         {
-          "data.created_by": "{{user.id}}"
+          "created_by": "{{user.id}}"
         }
       ]
     }
