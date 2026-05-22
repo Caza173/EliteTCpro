@@ -101,56 +101,98 @@
   ],
   "rls": {
     "create": {
-      "data.brokerage_id": "{{user.data.brokerage_id}}"
-    },
-    "read": {
       "$or": [
         {
+          "data.brokerage_id": "{{user.data.brokerage_id}}",
           "user_condition": {
             "role": {
               "$in": [
                 "admin",
-                "owner"
+                "owner",
+                "tc_lead",
+                "tc"
               ]
             }
           }
         },
         {
-          "data.created_by": "{{user.id}}"
+          "data.transaction_id": {
+            "$in": [
+              "{{user.data.editable_tx_ids}}"
+            ]
+          }
+        }
+      ]
+    },
+    "read": {
+      "$or": [
+        {
+          "data.brokerage_id": "{{user.data.brokerage_id}}",
+          "user_condition": {
+            "role": {
+              "$in": [
+                "admin",
+                "owner",
+                "tc_lead",
+                "tc",
+                "agent"
+              ]
+            }
+          }
+        },
+        {
+          "data.transaction_id": {
+            "$in": [
+              "{{user.data.accessible_tx_ids}}"
+            ]
+          }
         }
       ]
     },
     "update": {
       "$or": [
         {
+          "data.brokerage_id": "{{user.data.brokerage_id}}",
           "user_condition": {
             "role": {
               "$in": [
                 "admin",
-                "owner"
+                "owner",
+                "tc_lead",
+                "tc"
               ]
             }
           }
         },
         {
-          "data.created_by": "{{user.id}}"
+          "data.transaction_id": {
+            "$in": [
+              "{{user.data.editable_tx_ids}}"
+            ]
+          }
         }
       ]
     },
     "delete": {
       "$or": [
         {
+          "data.brokerage_id": "{{user.data.brokerage_id}}",
           "user_condition": {
             "role": {
               "$in": [
                 "admin",
-                "owner"
+                "owner",
+                "tc_lead"
               ]
             }
           }
         },
         {
-          "data.created_by": "{{user.id}}"
+          "data.transaction_id": {
+            "$in": [
+              "{{user.data.editable_tx_ids}}"
+            ]
+          }
         }
       ]
     }
