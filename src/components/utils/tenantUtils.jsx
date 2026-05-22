@@ -73,23 +73,6 @@ export async function createNotification({ brokerageId, userEmail, transactionId
   } catch (_) {}
 }
 
-export const PLAN_DETAILS = {
-  individual_monthly: {
-    label: "Individual",
-    price: "$24.99/mo",
-    stripe_price_id: "individual_monthly",
-    description: "Perfect for solo TCs managing their own transactions",
-    can_create_team: false,
-  },
-  team_monthly: {
-    label: "Team",
-    price: "$39.99/mo",
-    stripe_price_id: "team_monthly",
-    description: "Collaborate with others — create teams and invite members",
-    can_create_team: true,
-  },
-};
-
 export const ROLE_COLORS = {
   owner: "bg-red-50 text-red-700 border-red-200",
   admin: "bg-red-50 text-red-700 border-red-200",

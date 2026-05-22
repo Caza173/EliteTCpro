@@ -35,26 +35,6 @@
     "phone": {
       "type": "string"
     },
-    "broker_split_percent": {
-      "type": "number",
-      "default": 20
-    },
-    "broker_cap": {
-      "type": "number",
-      "default": 0
-    },
-    "franchise_fee_percent": {
-      "type": "number",
-      "default": 0
-    },
-    "transaction_fee": {
-      "type": "number",
-      "default": 0
-    },
-    "eo_fee": {
-      "type": "number",
-      "default": 0
-    },
     "weekly_transaction_updates": {
       "type": "boolean",
       "default": true
@@ -129,26 +109,6 @@
     "deleted_at": {
       "type": "string",
       "description": "ISO timestamp when user was soft-deleted"
-    },
-    "subscription_plan": {
-      "type": "string",
-      "enum": [
-        "individual",
-        "team"
-      ],
-      "default": "individual",
-      "description": "User's active subscription plan"
-    },
-    "can_create_team": {
-      "type": "boolean",
-      "default": false,
-      "description": "Whether this user is allowed to create teams and invite members"
-    },
-    "stripe_customer_id": {
-      "type": "string"
-    },
-    "stripe_subscription_id": {
-      "type": "string"
     },
     "onboarding_step": {
       "type": "number",

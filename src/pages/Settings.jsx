@@ -14,8 +14,6 @@ import DeleteAccountModal from "@/components/settings/DeleteAccountModal";
 import ExportDataModal from "@/components/settings/ExportDataModal";
 import { createPageUrl } from "@/utils";
 import { Progress } from "@/components/ui/progress";
-import { PLAN_DETAILS } from "../components/utils/tenantUtils";
-import { canManageBilling } from "../components/auth/useCurrentUser";
 import { tutorialSections } from "@/lib/helpContent";
 import TutorialSidebar from "@/components/help/TutorialSidebar";
 import TutorialSectionCard from "@/components/help/TutorialSectionCard";
@@ -103,15 +101,6 @@ export default function Settings() {
   });
 
   const [activeTab, setActiveTab] = useState("account");
-
-  const billing = null; // Billing managed on dedicated /Billing page
-  const planOrder = ["individual_monthly", "team_monthly"];
-  const statusBadge = {
-    trial: "bg-amber-50 text-amber-700 border-amber-200",
-    active: "bg-emerald-50 text-emerald-700 border-emerald-200",
-    past_due: "bg-red-50 text-red-700 border-red-200",
-    canceled: "bg-gray-50 text-gray-600 border-gray-200",
-  };
 
   const brokerage = null; // Brokerage display not used in owner-isolated architecture
 
@@ -245,7 +234,7 @@ export default function Settings() {
     { id: "auditlog",   label: "Audit Log",  icon: Shield,            ownerOnly: true },
     { id: "help",       label: "Help",       icon: HelpCircle },
     { id: "feedback",   label: "Feedback",   icon: MessageSquarePlus },
-    { id: "billing",    label: "Billing",    icon: CreditCard,        ownerOnly: true },
+
     { id: "integrations", label: "Integrations", icon: Plug,              adminOnly: true },
     { id: "system",     label: "System",     icon: Activity,          tcHidden: true },
   ].filter(t => {
@@ -896,28 +885,7 @@ export default function Settings() {
         </div>
       )}
 
-      {/* ── Billing ── */}
-      {resolvedActiveTab === "billing" && (
-        <div className="space-y-6">
-          {!canManageBilling(currentUser) ? (
-            <div className="text-center py-20">
-              <CreditCard className="w-10 h-10 text-gray-300 mx-auto mb-3" />
-              <p className="text-gray-500">Billing management is restricted to Owner/Admin accounts.</p>
-            </div>
-          ) : (
-            <div className="space-y-2">
-              <p className="text-sm" style={{ color: "var(--text-muted)" }}>
-                Manage your subscription and plan features on the dedicated billing page.
-              </p>
-              <Link to="/Billing">
-                <Button variant="outline" size="sm" className="gap-2">
-                  <CreditCard className="w-4 h-4" /> Go to Billing
-                </Button>
-              </Link>
-            </div>
-          )}
-        </div>
-      )}
+
 
       <FeedbackModal open={feedbackModal.open} onClose={() => setFeedbackModal({ open: false, type: "bug" })} defaultType={feedbackModal.type} />
 

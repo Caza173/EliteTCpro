@@ -23,8 +23,6 @@ import {
   PanelLeftOpen,
   ClipboardList,
   Layers,
-  Receipt,
-  CreditCard,
   Droplets,
   BookUser,
   MessageSquarePlus,
@@ -48,8 +46,6 @@ const TC_NAV = [
   { label: "Transactions",    page: "Transactions",    icon: FileText, path: "/Transactions" },
   { label: "Addendum Builder", page: "AddendumBuilder", icon: ClipboardList, path: "/AddendumBuilder" },
   { label: "Contacts",        page: "Contacts",         icon: BookUser, path: "/Contacts" },
-  { label: "Invoices",        page: "Invoices",         icon: Receipt, path: "/invoices" },
-  { label: "Billing",         page: "Billing",          icon: CreditCard, path: "/Billing" },
   { label: "Settings",        page: "Settings",         icon: Settings, path: "/Settings" },
 ];
 
@@ -58,7 +54,6 @@ const OWNER_NAV = [
   { label: "Transactions",   page: "Transactions",   icon: FileText, path: "/Transactions" },
   { label: "Addendum Builder",page: "AddendumBuilder",  icon: ClipboardList, path: "/AddendumBuilder" },
   { label: "Contacts",       page: "Contacts",       icon: BookUser, path: "/Contacts" },
-  { label: "Invoices",       page: "Invoices",       icon: Receipt, path: "/invoices" },
   { label: "Settings",       page: "Settings",       icon: Settings, path: "/Settings" },
   { label: "Diagnostics",   page: "TransactionDiagnostics", icon: Cpu, path: "/diagnostics" },
 ];
@@ -80,19 +75,14 @@ const PAGE_TITLES = {
   DotloopIntegration:"Dotloop Integration",
   Integrations:      "Integrations",
   FuelProrations:    "Fuel Prorations",
-  Billing:           "Billing",
   Settings:          "Settings",
   Deadlines:         "Deadlines",
   Dashboard:         "Dashboard",
   Transactions:      "Transactions",
-  CommissionStatements: "Commission Statements",
   AddendumBuilder: "Addendum Builder",
   PendingDeals: "Pending Deal Queue",
   TemplateManager: "Templates",
   Contacts: "Contacts",
-
-  Contacts: "Contacts",
-  Invoices: "Invoices",
   TutorialFAQPage: "Help & Training",
   TransactionDiagnostics: "Transaction Intelligence Diagnostics",
 };
@@ -114,7 +104,7 @@ export default function Layout({ children, currentPageName }) {
 
     const role = currentUser.role;
     const isTCRole = role === "tc" || role === "tc_lead";
-    const TC_RESTRICTED = ["Integrations", "AuditLog", "Billing"];
+    const TC_RESTRICTED = ["Integrations", "AuditLog"];
     const path = window.location.pathname;
     const isTransactionDetail = path.includes("TransactionDetail") || path.includes("/transactions/");
 

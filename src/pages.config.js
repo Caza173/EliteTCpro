@@ -49,7 +49,6 @@
  */
 import AddTransaction from './pages/AddTransaction';
 import AuditLog from './pages/AuditLog';
-import Billing from './pages/Billing';
 import BrokerageSetup from './pages/BrokerageSetup';
 import Dashboard from './pages/Dashboard';
 import Deadlines from './pages/Deadlines';
@@ -67,7 +66,6 @@ import __Layout from './Layout.jsx';
 export const PAGES = {
     "AddTransaction": AddTransaction,
     "AuditLog": AuditLog,
-    "Billing": Billing,
     "BrokerageSetup": BrokerageSetup,
     "Dashboard": Dashboard,
     "Deadlines": Deadlines,

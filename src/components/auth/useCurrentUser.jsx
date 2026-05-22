@@ -34,10 +34,6 @@ export function canManageUsers(user) {
   return isMasterAccount(user) || user?.role === "admin";
 }
 
-export function canManageBilling(user) {
-  return isMasterAccount(user) || user?.role === "admin";
-}
-
 // Legacy compat
 export function isOwnerOrAdmin(user) {
   return isMasterAccount(user) || user?.role === "admin";

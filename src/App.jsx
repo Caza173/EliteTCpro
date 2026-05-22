@@ -1,4 +1,4 @@
-// cache-bust: 2026-05-20-v2
+// cache-bust: 2026-05-22-billing-removed
 import { useState, useEffect, useRef } from "react";
 import { Toaster } from "@/components/ui/toaster"
 import Landing from './pages/Landing'
@@ -10,7 +10,6 @@ import UserManagement from './pages/UserManagement'
 import Integrations from './pages/Integrations'
 import GmailSetup from './pages/GmailSetup'
 import GoogleCalendarSetup from './pages/GoogleCalendarSetup'
-import CommissionStatements from './pages/CommissionStatements'
 import FuelProrations from './pages/FuelProrations'
 import DeadlineResponse from './pages/DeadlineResponse'
 import ApprovalAction from './pages/ApprovalAction'
@@ -28,7 +27,6 @@ import TransactionDetail from './pages/TransactionDetail'
 import { ErrorBoundary } from './components/ErrorBoundary'
 import PendingDeals from './pages/PendingDeals'
 import Contacts from './pages/Contacts'
-import Invoices from './pages/Invoices'
 import { QueryClientProvider } from '@tanstack/react-query'
 import { queryClientInstance } from '@/lib/query-client'
 import { pagesConfig } from './pages.config'
@@ -81,8 +79,6 @@ const AuthenticatedApp = () => {
       return <UserNotRegisteredError />;
     }
   }
-
-
 
   // Render the main app
   return (
@@ -142,14 +138,6 @@ const AuthenticatedApp = () => {
           </LayoutWrapper>
         </RequireAuth>
       } />
-      <Route path="/CommissionStatements" element={
-        <RequireAuth>
-          <LayoutWrapper currentPageName="CommissionStatements">
-            <CommissionStatements />
-          </LayoutWrapper>
-        </RequireAuth>
-      } />
-
       <Route path="/FuelProrations" element={
         <RequireAuth>
           <LayoutWrapper currentPageName="FuelProrations">
@@ -214,13 +202,6 @@ const AuthenticatedApp = () => {
         <RequireAuth>
           <LayoutWrapper currentPageName="TemplateManager">
             <TemplateManager />
-          </LayoutWrapper>
-        </RequireAuth>
-      } />
-      <Route path="/invoices" element={
-        <RequireAuth>
-          <LayoutWrapper currentPageName="Invoices">
-            <Invoices />
           </LayoutWrapper>
         </RequireAuth>
       } />
