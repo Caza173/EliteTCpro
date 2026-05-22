@@ -59,95 +59,57 @@
   ],
   "rls": {
     "create": {
-      "$or": [
-        {
-          "data.transaction_id": {
-            "$in": [
-              "{{user.data.editable_tx_ids}}"
-            ]
-          }
-        },
-        {
-          "user_condition": {
-            "role": {
-              "$in": [
-                "admin",
-                "owner",
-                "tc_lead",
-                "tc"
-              ]
-            }
-          }
+      "data.brokerage_id": "{{user.data.brokerage_id}}",
+      "user_condition": {
+        "role": {
+          "$in": [
+            "admin",
+            "owner",
+            "tc_lead",
+            "tc"
+          ]
         }
-      ]
+      }
     },
     "read": {
       "$or": [
         {
-          "data.transaction_id": {
-            "$in": [
-              "{{user.data.accessible_tx_ids}}"
-            ]
-          }
-        },
-        {
-          "data.signature_id": {
-            "$in": [
-              "{{user.data.accessible_sig_ids}}"
-            ]
-          }
-        },
-        {
           "user_condition": {
             "role": {
               "$in": [
                 "admin",
-                "owner",
-                "tc_lead",
-                "tc"
+                "owner"
               ]
             }
           }
+        },
+        {
+          "data.email": "{{user.email}}"
+        },
+        {
+          "data.brokerage_id": "{{user.data.brokerage_id}}"
         }
       ]
     },
     "update": {
-      "$or": [
-        {
-          "data.transaction_id": {
-            "$in": [
-              "{{user.data.editable_tx_ids}}"
-            ]
-          }
-        },
-        {
-          "data.signature_id": {
-            "$in": [
-              "{{user.data.editable_sig_ids}}"
-            ]
-          }
-        },
-        {
-          "user_condition": {
-            "role": {
-              "$in": [
-                "admin",
-                "owner",
-                "tc_lead",
-                "tc"
-              ]
-            }
-          }
+      "data.brokerage_id": "{{user.data.brokerage_id}}",
+      "user_condition": {
+        "role": {
+          "$in": [
+            "admin",
+            "owner",
+            "tc_lead",
+            "tc"
+          ]
         }
-      ]
+      }
     },
     "delete": {
       "user_condition": {
         "role": {
           "$in": [
             "admin",
-            "owner",
-            "super_admin"
+            "owner"
           ]
         }
       }
