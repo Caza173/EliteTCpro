@@ -1,0 +1,112 @@
+{
+  "name": "BillingAccount",
+  "type": "object",
+  "properties": {
+    "brokerage_id": {
+      "type": "string"
+    },
+    "stripe_customer_id": {
+      "type": "string"
+    },
+    "stripe_subscription_id": {
+      "type": "string"
+    },
+    "plan": {
+      "type": "string",
+      "enum": [
+        "starter",
+        "pro",
+        "team"
+      ],
+      "default": "starter"
+    },
+    "seat_limit": {
+      "type": "number",
+      "default": 6
+    },
+    "seats_used": {
+      "type": "number",
+      "default": 0
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "trial",
+        "active",
+        "past_due",
+        "canceled"
+      ],
+      "default": "trial"
+    },
+    "trial_ends_at": {
+      "type": "string",
+      "format": "date"
+    },
+    "current_period_end": {
+      "type": "string",
+      "format": "date"
+    }
+  },
+  "required": [
+    "brokerage_id"
+  ],
+  "rls": {
+    "create": {
+      "user_condition": {
+        "role": {
+          "$in": [
+            "admin",
+            "owner"
+          ]
+        }
+      }
+    },
+    "read": {
+      "$or": [
+        {
+          "data.brokerage_id": "{{user.data.brokerage_id}}",
+          "user_condition": {
+            "role": {
+              "$in": [
+                "admin",
+                "owner"
+              ]
+            }
+          }
+        },
+        {
+          "created_by": "{{user.id}}"
+        }
+      ]
+    },
+    "update": {
+      "$or": [
+        {
+          "data.brokerage_id": "{{user.data.brokerage_id}}",
+          "user_condition": {
+            "role": {
+              "$in": [
+                "admin",
+                "owner"
+              ]
+            }
+          }
+        },
+        {
+          "created_by": "{{user.id}}"
+        }
+      ]
+    },
+    "delete": {
+      "user_condition": {
+        "role": {
+          "$in": [
+            "admin",
+            "owner",
+            "super_admin"
+          ]
+        }
+      }
+    }
+  }
+}
