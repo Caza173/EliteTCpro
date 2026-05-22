@@ -1,0 +1,123 @@
+{
+  "name": "Clause",
+  "type": "object",
+  "properties": {
+    "brokerage_id": {
+      "type": "string"
+    },
+    "name": {
+      "type": "string"
+    },
+    "category": {
+      "type": "string",
+      "enum": [
+        "deadline",
+        "financial",
+        "inspection",
+        "title",
+        "legal",
+        "occupancy",
+        "custom"
+      ],
+      "default": "custom"
+    },
+    "type": {
+      "type": "string",
+      "enum": [
+        "extension",
+        "modification",
+        "contingency",
+        "disclosure",
+        "addendum"
+      ],
+      "default": "modification"
+    },
+    "use_case": {
+      "type": "string"
+    },
+    "tags": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "text": {
+      "type": "string"
+    },
+    "is_system": {
+      "type": "boolean",
+      "default": false
+    },
+    "created_by": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "name",
+    "text"
+  ],
+  "rls": {
+    "create": {
+      "user_condition": {
+        "role": {
+          "$in": [
+            "admin",
+            "owner",
+            "tc_lead"
+          ]
+        }
+      }
+    },
+    "read": {
+      "data.brokerage_id": "{{user.data.brokerage_id}}",
+      "user_condition": {
+        "role": {
+          "$in": [
+            "admin",
+            "owner",
+            "tc_lead",
+            "tc"
+          ]
+        }
+      }
+    },
+    "update": {
+      "$or": [
+        {
+          "created_by": "{{user.id}}"
+        },
+        {
+          "data.brokerage_id": "{{user.data.brokerage_id}}",
+          "user_condition": {
+            "role": {
+              "$in": [
+                "admin",
+                "owner",
+                "tc_lead"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    "delete": {
+      "$or": [
+        {
+          "created_by": "{{user.id}}"
+        },
+        {
+          "data.brokerage_id": "{{user.data.brokerage_id}}",
+          "user_condition": {
+            "role": {
+              "$in": [
+                "admin",
+                "owner",
+                "tc_lead"
+              ]
+            }
+          }
+        }
+      ]
+    }
+  }
+}
