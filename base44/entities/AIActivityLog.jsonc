@@ -1,0 +1,119 @@
+{
+  "name": "AIActivityLog",
+  "type": "object",
+  "properties": {
+    "brokerage_id": {
+      "type": "string"
+    },
+    "transaction_id": {
+      "type": "string"
+    },
+    "transaction_address": {
+      "type": "string"
+    },
+    "deadline_type": {
+      "type": "string"
+    },
+    "deadline_label": {
+      "type": "string"
+    },
+    "interval_label": {
+      "type": "string",
+      "enum": [
+        "72h",
+        "48h",
+        "24h",
+        "4h",
+        "overdue"
+      ]
+    },
+    "recipient_email": {
+      "type": "string"
+    },
+    "recipient_name": {
+      "type": "string"
+    },
+    "subject": {
+      "type": "string"
+    },
+    "message": {
+      "type": "string"
+    },
+    "response_status": {
+      "type": "string",
+      "enum": [
+        "sent",
+        "responded_yes",
+        "responded_no",
+        "pending"
+      ],
+      "default": "sent"
+    },
+    "addendum_draft": {
+      "type": "string"
+    },
+    "notification_id": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "transaction_id",
+    "deadline_type"
+  ],
+  "rls": {
+    "create": true,
+    "read": {
+      "$or": [
+        {
+          "data.recipient_email": "{{user.email}}"
+        },
+        {
+          "data.brokerage_id": "{{user.data.brokerage_id}}",
+          "user_condition": {
+            "role": {
+              "$in": [
+                "admin",
+                "owner",
+                "tc_lead",
+                "tc"
+              ]
+            }
+          }
+        },
+        {
+          "created_by": "{{user.email}}"
+        }
+      ]
+    },
+    "update": {
+      "$or": [
+        {
+          "data.brokerage_id": "{{user.data.brokerage_id}}",
+          "user_condition": {
+            "role": {
+              "$in": [
+                "admin",
+                "owner",
+                "tc_lead"
+              ]
+            }
+          }
+        },
+        {
+          "created_by": "{{user.email}}"
+        }
+      ]
+    },
+    "delete": {
+      "user_condition": {
+        "role": {
+          "$in": [
+            "admin",
+            "owner",
+            "super_admin"
+          ]
+        }
+      }
+    }
+  }
+}
