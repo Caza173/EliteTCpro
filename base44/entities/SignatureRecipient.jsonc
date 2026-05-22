@@ -3,6 +3,10 @@
   "type": "object",
   "properties": {
     "signature_id": {
+      "type": "string",
+      "description": "Reference to SignatureRequest"
+    },
+    "transaction_id": {
       "type": "string"
     },
     "name": {
@@ -32,18 +36,121 @@
       "type": "string",
       "enum": [
         "pending",
+        "viewed",
         "signed",
-        "declined",
-        "expired"
+        "declined"
       ],
       "default": "pending"
     },
+    "provider_signer_id": {
+      "type": "string"
+    },
     "signed_at": {
+      "type": "string"
+    },
+    "viewed_at": {
       "type": "string"
     }
   },
   "required": [
     "signature_id",
+    "name",
     "email"
-  ]
+  ],
+  "rls": {
+    "create": {
+      "$or": [
+        {
+          "data.transaction_id": {
+            "$in": [
+              "{{user.data.editable_tx_ids}}"
+            ]
+          }
+        },
+        {
+          "user_condition": {
+            "role": {
+              "$in": [
+                "admin",
+                "owner",
+                "tc_lead",
+                "tc"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    "read": {
+      "$or": [
+        {
+          "data.transaction_id": {
+            "$in": [
+              "{{user.data.accessible_tx_ids}}"
+            ]
+          }
+        },
+        {
+          "data.signature_id": {
+            "$in": [
+              "{{user.data.accessible_sig_ids}}"
+            ]
+          }
+        },
+        {
+          "user_condition": {
+            "role": {
+              "$in": [
+                "admin",
+                "owner",
+                "tc_lead",
+                "tc"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    "update": {
+      "$or": [
+        {
+          "data.transaction_id": {
+            "$in": [
+              "{{user.data.editable_tx_ids}}"
+            ]
+          }
+        },
+        {
+          "data.signature_id": {
+            "$in": [
+              "{{user.data.editable_sig_ids}}"
+            ]
+          }
+        },
+        {
+          "user_condition": {
+            "role": {
+              "$in": [
+                "admin",
+                "owner",
+                "tc_lead",
+                "tc"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    "delete": {
+      "user_condition": {
+        "role": {
+          "$in": [
+            "admin",
+            "owner",
+            "super_admin"
+          ]
+        }
+      }
+    }
+  }
 }
