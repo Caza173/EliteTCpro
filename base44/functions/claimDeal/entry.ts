@@ -18,7 +18,7 @@ Deno.serve(async (req) => {
     const { transaction_id, force_assign_to_user_id, force_assign_to_email } = await req.json();
     if (!transaction_id) return Response.json({ error: 'transaction_id is required' }, { status: 400 });
 
-    const isAdmin = ['admin', 'owner'].includes(user.role) || user.email === 'nhcazateam@gmail.com';
+    const isAdmin = ['admin', 'owner', 'super_admin'].includes(user.role);
     const isTC = ['tc', 'tc_lead'].includes(user.role);
 
     if (!isAdmin && !isTC) {
@@ -97,9 +97,9 @@ Deno.serve(async (req) => {
       `,
     }).catch(() => {});
 
-    // 2. Notify admins
+    // 2. Notify admins (role-based lookup, no hardcoded emails)
     const allUsers = await base44.asServiceRole.entities.User.list();
-    const admins = allUsers.filter(u => ['admin', 'owner'].includes(u.role) || u.email === 'nhcazateam@gmail.com');
+    const admins = allUsers.filter(u => ['admin', 'owner', 'super_admin'].includes(u.role));
     await Promise.allSettled(admins.map(admin =>
       base44.asServiceRole.integrations.Core.SendEmail({
         to: admin.email,

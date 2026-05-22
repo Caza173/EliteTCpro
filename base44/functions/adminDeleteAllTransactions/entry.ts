@@ -1,10 +1,12 @@
-import { createClientFromRequest } from 'npm:@base44/sdk@0.8.20';
+import { createClientFromRequest } from 'npm:@base44/sdk@0.8.25';
 
 Deno.serve(async (req) => {
   try {
     const base44 = createClientFromRequest(req);
     const user = await base44.auth.me();
-    if (!user || user.email !== 'nhcazateam@gmail.com') {
+
+    if (!user) return Response.json({ error: 'Unauthorized' }, { status: 401 });
+    if (!['admin', 'owner', 'super_admin'].includes(user.role)) {
       return Response.json({ error: 'Forbidden' }, { status: 403 });
     }
 

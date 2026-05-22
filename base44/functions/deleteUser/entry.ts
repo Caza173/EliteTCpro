@@ -5,12 +5,18 @@ Deno.serve(async (req) => {
     const base44 = createClientFromRequest(req);
     const user = await base44.auth.me();
 
-    if (user?.email !== "nhcazateam@gmail.com") {
-      return Response.json({ error: "Forbidden" }, { status: 403 });
+    if (!user) return Response.json({ error: 'Unauthorized' }, { status: 401 });
+    if (!['admin', 'owner', 'super_admin'].includes(user.role)) {
+      return Response.json({ error: 'Forbidden' }, { status: 403 });
     }
 
     const { user_id } = await req.json();
-    if (!user_id) return Response.json({ error: "user_id required" }, { status: 400 });
+    if (!user_id) return Response.json({ error: 'user_id required' }, { status: 400 });
+
+    // Prevent self-deletion
+    if (user_id === user.id) {
+      return Response.json({ error: 'Cannot delete your own account via this endpoint' }, { status: 400 });
+    }
 
     // Soft-delete: set is_deleted=true so if the user logs back in they're treated as new
     try {
@@ -20,7 +26,7 @@ Deno.serve(async (req) => {
         status: 'disabled',
       });
     } catch (updateErr) {
-      // If update fails (e.g. RLS on User entity), fall back to hard delete
+      // If update fails fall back to hard delete
       console.error("Soft-delete failed, falling back to hard delete:", updateErr.message);
       await base44.asServiceRole.entities.User.delete(user_id);
     }

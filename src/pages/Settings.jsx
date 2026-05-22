@@ -428,7 +428,7 @@ export default function Settings() {
                           <SelectItem value="admin">Admin</SelectItem>
                         </SelectContent>
                       </Select>
-                      {currentUser?.email === "nhcazateam@gmail.com" && u.id !== currentUser?.id && (
+                      {['admin', 'owner', 'super_admin'].includes(currentUser?.role) && u.id !== currentUser?.id && (
                         <button
                           onClick={() => { if (window.confirm(`Delete ${u.full_name || u.email}?`)) deleteUserMutation.mutate(u.id); }}
                           className="p-1.5 rounded-lg text-red-400 hover:text-red-600 hover:bg-red-50 transition-colors"

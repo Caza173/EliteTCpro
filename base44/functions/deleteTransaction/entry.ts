@@ -1,7 +1,5 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.25';
 
-const SUPER_ADMIN_EMAIL = 'nhcazateam@gmail.com';
-
 Deno.serve(async (req) => {
   try {
     const base44 = createClientFromRequest(req);
@@ -11,7 +9,7 @@ Deno.serve(async (req) => {
     const { transaction_id } = await req.json();
     if (!transaction_id) return Response.json({ error: 'transaction_id required' }, { status: 400 });
 
-    const isSuperAdmin = user.email === SUPER_ADMIN_EMAIL || user.role === 'admin' || user.role === 'owner';
+    const isAdmin = ['admin', 'owner', 'super_admin'].includes(user.role);
 
     console.log(`[deleteTransaction] user.id=${user.id} tx=${transaction_id}`);
 
@@ -24,14 +22,14 @@ Deno.serve(async (req) => {
       return Response.json({ success: true });
     }
 
-    // Ownership check
-    const isOwner = tx.created_by === user.id || tx.created_by === user.email || tx.agent_email === user.email;
-    if (!isSuperAdmin && !isOwner) {
-      console.warn(`[deleteTransaction] FORBIDDEN user.id=${user.id} attempted tx=${transaction_id} (created_by=${tx.created_by})`);
+    // Ownership check: admins bypass; everyone else must own the record
+    const isOwner = tx.owner_user_id === user.id || tx.created_by === user.id || tx.agent_email === user.email;
+    if (!isAdmin && !isOwner) {
+      console.warn(`[deleteTransaction] FORBIDDEN user.id=${user.id} attempted tx=${transaction_id}`);
       return Response.json({ error: 'Forbidden' }, { status: 403 });
     }
 
-    console.log(`[deleteTransaction] confirmed ownership, deleting tx=${transaction_id}`);
+    console.log(`[deleteTransaction] confirmed authorization, deleting tx=${transaction_id}`);
     await base44.asServiceRole.entities.Transaction.delete(transaction_id);
     return Response.json({ success: true });
 
