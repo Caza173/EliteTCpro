@@ -183,18 +183,17 @@
     "read": {
       "$or": [
         {
-          "data.user_email": "{{user.email}}"
-        },
-        {
           "user_condition": {
             "role": {
               "$in": [
                 "admin",
-                "owner",
-                "tc_lead"
+                "owner"
               ]
             }
           }
+        },
+        {
+          "data.user_email": "{{user.email}}"
         },
         {
           "data.brokerage_id": "{{user.data.brokerage_id}}"
@@ -204,21 +203,17 @@
     "update": {
       "$or": [
         {
-          "data.user_email": "{{user.email}}"
-        },
-        {
           "user_condition": {
             "role": {
               "$in": [
                 "admin",
-                "owner",
-                "tc_lead"
+                "owner"
               ]
             }
           }
         },
         {
-          "data.brokerage_id": "{{user.data.brokerage_id}}"
+          "data.user_email": "{{user.email}}"
         }
       ]
     },
