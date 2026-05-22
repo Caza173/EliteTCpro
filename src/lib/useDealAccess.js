@@ -14,17 +14,16 @@ export function isSuperAdmin(user) {
 }
 
 export function useDealAccess() {
-  // All hooks called unconditionally at top level
-  const [transactions, setTransactions] = useState([]);
-  const [txLoading, setTxLoading] = useState(false);
-  const [txError, setTxError] = useState(null);
-  const fetchedForRef = useRef(null);
-
-  // useContext must come after other hooks to avoid dispatcher issues on first render
+  // useContext-based hook must be called FIRST before any useState/useRef
   const ctx = useCurrentUserCtx();
   // ctx may be null if rendered outside CurrentUserProvider; default safely
   const currentUser = (ctx ?? {}).currentUser ?? null;
   const userLoading = (ctx ?? {}).isLoading ?? true;
+
+  const [transactions, setTransactions] = useState([]);
+  const [txLoading, setTxLoading] = useState(false);
+  const [txError, setTxError] = useState(null);
+  const fetchedForRef = useRef(null);
 
   const isReady = !userLoading && !!currentUser?.id;
 
