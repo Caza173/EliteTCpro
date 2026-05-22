@@ -87,23 +87,23 @@
     "read": {
       "$or": [
         {
-          "data.transaction_id": {
-            "$in": [
-              "{{user.data.accessible_tx_ids}}"
-            ]
-          }
-        },
-        {
-          "data.brokerage_id": "{{user.data.brokerage_id}}",
           "user_condition": {
             "role": {
               "$in": [
                 "admin",
-                "owner",
-                "tc_lead",
-                "tc"
+                "owner"
               ]
             }
+          }
+        },
+        {
+          "data.brokerage_id": "{{user.data.brokerage_id}}"
+        },
+        {
+          "data.transaction_id": {
+            "$in": [
+              "{{user.data.accessible_tx_ids}}"
+            ]
           }
         }
       ]
@@ -111,24 +111,17 @@
     "update": {
       "$or": [
         {
-          "data.transaction_id": {
-            "$in": [
-              "{{user.data.editable_tx_ids}}"
-            ]
-          }
-        },
-        {
-          "data.brokerage_id": "{{user.data.brokerage_id}}",
           "user_condition": {
             "role": {
               "$in": [
                 "admin",
-                "owner",
-                "tc_lead",
-                "tc"
+                "owner"
               ]
             }
           }
+        },
+        {
+          "data.brokerage_id": "{{user.data.brokerage_id}}"
         }
       ]
     },
@@ -137,8 +130,7 @@
         "role": {
           "$in": [
             "admin",
-            "owner",
-            "super_admin"
+            "owner"
           ]
         }
       }
