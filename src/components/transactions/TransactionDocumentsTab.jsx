@@ -81,7 +81,10 @@ export default function TransactionDocumentsTab({ transaction, currentUser }) {
 
   const { data: documents = [], isLoading } = useQuery({
     queryKey: ["tx-documents", transaction.id],
-    queryFn: () => base44.entities.Document.filter({ transaction_id: transaction.id, is_deleted: { $ne: true } }, "-created_date"),
+    queryFn: async () => {
+      const docs = await base44.entities.Document.filter({ transaction_id: transaction.id }, "-created_date");
+      return docs.filter(d => !d.is_deleted);
+    },
     enabled: !!transaction.id,
     staleTime: 30_000,
     refetchOnWindowFocus: false,
