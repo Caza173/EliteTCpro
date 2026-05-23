@@ -62,25 +62,17 @@
   ],
   "rls": {
     "create": true,
-    "read": null,
+    "read": {
+      "data.brokerage_id": "{{user.data.brokerage_id}}"
+    },
     "update": {
       "user_condition": {
-        "role": {
-          "$in": [
-            "admin",
-            "owner"
-          ]
-        }
+        "role": "admin"
       }
     },
     "delete": {
       "user_condition": {
-        "role": {
-          "$in": [
-            "admin",
-            "owner"
-          ]
-        }
+        "role": "admin"
       }
     }
   }
