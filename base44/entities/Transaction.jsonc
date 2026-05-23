@@ -575,20 +575,10 @@
     "agent"
   ],
   "rls": {
-    "create": true,
-    "read": {
-      "$or": [
-        {
-          "data.brokerage_id": "{{user.data.brokerage_id}}"
-        },
-        {
-          "data.owner_user_id": "{{user.id}}"
-        },
-        {
-          "data.agent_email": "{{user.email}}"
-        }
-      ]
+    "create": {
+      "created_by": "{{user.id}}"
     },
+    "read": null,
     "update": {
       "$or": [
         {
