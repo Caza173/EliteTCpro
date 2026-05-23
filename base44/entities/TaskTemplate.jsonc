@@ -57,42 +57,77 @@
   ],
   "rls": {
     "create": {
-      "data.brokerage_id": "{{user.data.brokerage_id}}",
-      "user_condition": {
-        "role": {
-          "$in": [
-            "admin",
-            "owner",
-            "tc_lead"
-          ]
+      "$or": [
+        {
+          "data.brokerage_id": "{{user.data.brokerage_id}}"
+        },
+        {
+          "user_condition": {
+            "role": {
+              "$in": [
+                "admin",
+                "owner",
+                "tc_lead"
+              ]
+            }
+          }
         }
-      }
+      ]
     },
     "read": {
-      "data.brokerage_id": "{{user.data.brokerage_id}}"
+      "$or": [
+        {
+          "data.brokerage_id": "{{user.data.brokerage_id}}"
+        },
+        {
+          "user_condition": {
+            "role": {
+              "$in": [
+                "admin",
+                "owner",
+                "tc_lead",
+                "tc"
+              ]
+            }
+          }
+        }
+      ]
     },
     "update": {
-      "data.brokerage_id": "{{user.data.brokerage_id}}",
-      "user_condition": {
-        "role": {
-          "$in": [
-            "admin",
-            "owner",
-            "tc_lead"
-          ]
+      "$or": [
+        {
+          "data.brokerage_id": "{{user.data.brokerage_id}}"
+        },
+        {
+          "user_condition": {
+            "role": {
+              "$in": [
+                "admin",
+                "owner",
+                "tc_lead"
+              ]
+            }
+          }
         }
-      }
+      ]
     },
     "delete": {
-      "data.brokerage_id": "{{user.data.brokerage_id}}",
-      "user_condition": {
-        "role": {
-          "$in": [
-            "admin",
-            "owner"
-          ]
+      "$or": [
+        {
+          "data.brokerage_id": "{{user.data.brokerage_id}}"
+        },
+        {
+          "user_condition": {
+            "role": {
+              "$in": [
+                "admin",
+                "owner",
+                "tc_lead"
+              ]
+            }
+          }
         }
-      }
+      ]
     }
   }
 }
