@@ -192,19 +192,27 @@ export default function TransactionDetail() {
     queryKey: ["checklist", id],
     queryFn: () => base44.entities.DocumentChecklistItem.filter({ transaction_id: id }),
     enabled: !!id,
+    staleTime: 30_000,
+    refetchOnWindowFocus: false,
+    retry: 1,
   });
 
   const { data: txTasks = [], refetch: refetchTxTasks } = useQuery({
     queryKey: ["txTasks", id],
     queryFn: () => base44.entities.TransactionTask.filter({ transaction_id: id }),
     enabled: !!id,
+    staleTime: 30_000,
     refetchOnWindowFocus: false,
+    retry: 1,
   });
 
   const { data: documents = [] } = useQuery({
     queryKey: ["tx-documents", id],
     queryFn: () => base44.entities.Document.filter({ transaction_id: id, is_deleted: { $ne: true } }, "-created_date"),
     enabled: !!id,
+    staleTime: 30_000,
+    refetchOnWindowFocus: false,
+    retry: 1,
   });
 
   // Fetch compliance reports for badge count (must be before early returns)
@@ -213,6 +221,8 @@ export default function TransactionDetail() {
     queryFn: () => base44.entities.ComplianceReport.filter({ transaction_id: id }, "-created_date"),
     enabled: !!id,
     staleTime: 60_000,
+    refetchOnWindowFocus: false,
+    retry: 1,
   });
 
   // Fetch comms for badge count (must be before early returns)
@@ -220,7 +230,9 @@ export default function TransactionDetail() {
     queryKey: ["comm-automations", id],
     queryFn: () => base44.entities.CommAutomation.filter({ transaction_id: id }),
     enabled: !!id,
-    staleTime: 30_000,
+    staleTime: 60_000,
+    refetchOnWindowFocus: false,
+    retry: 1,
   });
 
   // Auto-switch to listing_intake tab for seller transactions
@@ -493,17 +505,8 @@ export default function TransactionDetail() {
 
     (async () => {
       try {
-        // Create the in-app notification
-        await base44.entities.InAppNotification.create({
-          brokerage_id: transaction.brokerage_id || null,
-          user_id: currentUser.id || null,
-          user_email: currentUser.email,
-          transaction_id: transaction.id,
-          title: "Lead Based Paint Disclosure Required",
-          body: `Lead Based Paint Disclosure required. Property was built in ${yearBuilt} (1978 or earlier).`,
-          type: "system",
-          severity: "warning",
-        });
+        // Log warning to console instead of creating InAppNotification entity (avoids 429)
+        console.warn(`[LeadPaint] Disclosure required for ${transaction.address} — built ${yearBuilt}`);
         // Mark the transaction so we don't re-notify for the same year
         updateMutation.mutate({
           id: transaction.id,

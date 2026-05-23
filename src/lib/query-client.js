@@ -7,7 +7,7 @@ export const queryClientInstance = new QueryClient({
 			retry: 1,
 			// Prevent stale data from a prior account session leaking into a new session
 			gcTime: 5 * 60 * 1000, // 5 minutes
-			staleTime: 0,
+			staleTime: 30_000,
 		},
 	},
 });

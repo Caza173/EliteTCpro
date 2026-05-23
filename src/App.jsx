@@ -228,6 +228,7 @@ const AuthenticatedApp = () => {
           </LayoutWrapper>
         </RequireAuth>
       } />
+
       <Route path="*" element={<PageNotFound />} />
     </Routes>
     </AuthGate>

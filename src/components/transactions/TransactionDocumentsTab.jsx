@@ -83,18 +83,26 @@ export default function TransactionDocumentsTab({ transaction, currentUser }) {
     queryKey: ["tx-documents", transaction.id],
     queryFn: () => base44.entities.Document.filter({ transaction_id: transaction.id, is_deleted: { $ne: true } }, "-created_date"),
     enabled: !!transaction.id,
+    staleTime: 30_000,
+    refetchOnWindowFocus: false,
+    retry: 1,
   });
 
   const { data: checklistItems = [] } = useQuery({
     queryKey: ["checklist", transaction.id],
     queryFn: () => base44.entities.DocumentChecklistItem.filter({ transaction_id: transaction.id }),
     enabled: !!transaction.id,
+    staleTime: 30_000,
+    refetchOnWindowFocus: false,
+    retry: 1,
   });
 
   const { data: signatureRequests = [] } = useQuery({
     queryKey: ["signatures", transaction.id],
     queryFn: () => base44.entities.SignatureRequest.filter({ transaction_id: transaction.id }),
     staleTime: 30_000,
+    refetchOnWindowFocus: false,
+    retry: 1,
     enabled: !!transaction.id,
   });
 
@@ -102,8 +110,8 @@ export default function TransactionDocumentsTab({ transaction, currentUser }) {
 
   const handleAutoSendToggle = async () => {
     const newVal = !transaction.auto_send_signatures;
-    await base44.entities.Transaction.update(transaction.id, { auto_send_signatures: newVal });
-    queryClient.invalidateQueries({ queryKey: ["transaction", transaction.id] });
+    await base44.functions.invoke("updateTransaction", { transaction_id: transaction.id, data: { auto_send_signatures: newVal } });
+    queryClient.invalidateQueries({ queryKey: ["transactions"] });
     toast.success(newVal ? "Auto-send signatures enabled" : "Auto-send signatures disabled");
   };
 
@@ -167,82 +175,126 @@ export default function TransactionDocumentsTab({ transaction, currentUser }) {
   const [uploadError, setUploadError] = useState(null);
 
   const uploadFile = async (file) => {
-    // Client-side duplicate check against current cache
-    const isDuplicate = documents.some(d => d.file_name === file.name);
-    if (isDuplicate) {
-      setUploadError(`"${file.name}" already exists for this transaction. Delete the existing file first, or rename yours before uploading.`);
-      return;
-    }
-    const autoType = classifyDocType(file.name);
-    const docType = autoType || selectedDocType;
-    const { file_url } = await base44.integrations.Core.UploadFile({ file });
-    const response = await base44.functions.invoke('createDocument', {
-      brokerage_id: transaction.brokerage_id,
-      transaction_id: transaction.id,
-      doc_type: docType,
-      file_url,
-      file_name: file.name,
-      uploaded_by: currentUser?.email || "unknown",
-      uploaded_by_role: currentUser?.role || "agent",
-    });
-    // Backend duplicate check — response.data.duplicate means blocked
-    if (response.data?.duplicate || response.data?.error) {
-      setUploadError(response.data.error || `"${file.name}" already exists.`);
-      return;
-    }
-    const doc = response.data;
-    const matchingItem = checklistItems.find(
-      (ci) => ci.doc_type === docType && ci.status === "missing"
-    );
-    if (matchingItem) {
-      await base44.entities.DocumentChecklistItem.update(matchingItem.id, {
-        status: "uploaded",
-        uploaded_document_id: doc.id,
-      });
-      queryClient.invalidateQueries({ queryKey: ["checklist", transaction.id] });
-    }
-    await writeAuditLog({
-      brokerageId: transaction.brokerage_id,
-      transactionId: transaction.id,
-      actorEmail: currentUser?.email,
-      action: "doc_uploaded",
-      entityType: "document",
-      entityId: doc.id,
-      description: `${currentUser?.email} uploaded ${file.name} (${docType}${autoType ? " — auto-classified" : ""})`,
-    });
+    try {
+      // Client-side duplicate check against current cache
+      const isDuplicate = documents.some(d => d.file_name === file.name);
+      if (isDuplicate) {
+        setUploadError(`"${file.name}" already exists for this transaction. Delete the existing file first, or rename yours before uploading.`);
+        return;
+      }
+      const autoType = classifyDocType(file.name);
+      const docType = autoType || selectedDocType;
 
-    // Auto-trigger compliance scan in the background
-    toast.info("Compliance scan started in background…", { icon: "🔍", duration: 3000 });
-    base44.functions.invoke('complianceEngine', {
-      document_url: file_url,
-      file_name: file.name,
-      document_id: doc.id,
-      transaction_id: transaction.id,
-      brokerage_id: transaction.brokerage_id,
-      transaction_data: {
-        address: transaction.address,
-        transaction_type: transaction.transaction_type,
-        is_cash_transaction: transaction.is_cash_transaction,
-        sale_price: transaction.sale_price,
-        agent_email: transaction.agent_email,
-        phase: transaction.phase,
-        inspection_deadline: transaction.inspection_deadline,
-        appraisal_deadline: transaction.appraisal_deadline,
-        financing_deadline: transaction.financing_deadline,
-        earnest_money_deadline: transaction.earnest_money_deadline,
-        due_diligence_deadline: transaction.due_diligence_deadline,
-        closing_date: transaction.closing_date,
-        ctc_target: transaction.ctc_target,
+      console.log("[UPLOAD_STARTED]", { file: file.name, transaction_id: transaction.id });
+
+      let file_url;
+      try {
+        const uploaded = await base44.integrations.Core.UploadFile({ file });
+        file_url = uploaded.file_url;
+      } catch (uploadErr) {
+        console.error("[UPLOAD_FAILED]", uploadErr);
+        setUploadError(`Upload failed for "${file.name}": ${uploadErr?.message || "Unknown error"}`);
+        return;
       }
-    }).then((res) => {
-      queryClient.invalidateQueries({ queryKey: ["compliance-reports", transaction.id] });
-      queryClient.invalidateQueries({ queryKey: ["transactions"] });
-      if (res?.data?.blockers_count > 0) {
-        toast.error(`Compliance scan found ${res.data.blockers_count} blocker(s) — check Compliance tab`, { duration: 6000 });
-      } else if (res?.data?.status === "compliant") {
-        toast.success("Document passed compliance check", { icon: "✅", duration: 4000 });
+
+      console.log("[DOCUMENT_SAVING]", { file: file.name, file_url });
+
+      let response;
+      try {
+        response = await base44.functions.invoke('createDocument', {
+          brokerage_id: transaction.brokerage_id,
+          transaction_id: transaction.id,
+          doc_type: docType,
+          file_url,
+          file_name: file.name,
+          uploaded_by: currentUser?.email || "unknown",
+          uploaded_by_role: currentUser?.role || "agent",
+        });
+      } catch (docErr) {
+        console.error("[DOCUMENT_SAVE_FAILED]", docErr);
+        setUploadError(`Failed to save document record for "${file.name}": ${docErr?.message || "Unknown error"}`);
+        return;
       }
-    }).catch(() => {});
+
+      // Backend duplicate check — response.data.duplicate means blocked
+      if (response.data?.duplicate || response.data?.error) {
+        setUploadError(response.data.error || `"${file.name}" already exists.`);
+        return;
+      }
+
+      const doc = response.data;
+      console.log("[DOCUMENT_SAVED]", { doc_id: doc?.id, file: file.name });
+
+      // Refresh document list immediately so upload is visible
+      queryClient.invalidateQueries({ queryKey: ["tx-documents", transaction.id] });
+
+      // Update checklist item if matched
+      const matchingItem = checklistItems.find(
+        (ci) => ci.doc_type === docType && ci.status === "missing"
+      );
+      if (matchingItem) {
+        base44.entities.DocumentChecklistItem.update(matchingItem.id, {
+          status: "uploaded",
+          uploaded_document_id: doc?.id,
+        }).then(() => {
+          queryClient.invalidateQueries({ queryKey: ["checklist", transaction.id] });
+        }).catch(() => {});
+      }
+
+      // Audit log — fire and forget
+      writeAuditLog({
+        brokerageId: transaction.brokerage_id,
+        transactionId: transaction.id,
+        actorEmail: currentUser?.email,
+        action: "doc_uploaded",
+        entityType: "document",
+        entityId: doc?.id,
+        description: `${currentUser?.email} uploaded ${file.name} (${docType}${autoType ? " — auto-classified" : ""})`,
+      }).catch(() => {});
+
+      // Auto-trigger compliance scan fully in background — never awaited
+      console.log("[OCR_STARTED]", { doc_id: doc?.id, file: file.name });
+      toast.info("Compliance scan started in background…", { icon: "🔍", duration: 3000 });
+      base44.functions.invoke('complianceEngine', {
+        document_url: file_url,
+        file_name: file.name,
+        document_id: doc?.id,
+        transaction_id: transaction.id,
+        brokerage_id: transaction.brokerage_id,
+        transaction_data: {
+          address: transaction.address,
+          transaction_type: transaction.transaction_type,
+          is_cash_transaction: transaction.is_cash_transaction,
+          sale_price: transaction.sale_price,
+          agent_email: transaction.agent_email,
+          phase: transaction.phase,
+          inspection_deadline: transaction.inspection_deadline,
+          appraisal_deadline: transaction.appraisal_deadline,
+          financing_deadline: transaction.financing_deadline,
+          earnest_money_deadline: transaction.earnest_money_deadline,
+          due_diligence_deadline: transaction.due_diligence_deadline,
+          closing_date: transaction.closing_date,
+          ctc_target: transaction.ctc_target,
+        }
+      }).then((res) => {
+        console.log("[OCR_COMPLETED]", { doc_id: doc?.id, status: res?.data?.status });
+        queryClient.invalidateQueries({ queryKey: ["compliance-reports", transaction.id] });
+        queryClient.invalidateQueries({ queryKey: ["transactions"] });
+        if (res?.data?.blockers_count > 0) {
+          toast.error(`Compliance scan found ${res.data.blockers_count} blocker(s) — check Compliance tab`, { duration: 6000 });
+        } else if (res?.data?.status === "compliant") {
+          toast.success("Document passed compliance check", { icon: "✅", duration: 4000 });
+        }
+      }).catch((err) => {
+        console.warn("[OCR_FAILED]", { doc_id: doc?.id, error: err?.message });
+        // Compliance failure is non-fatal — document is already saved
+      });
+
+    } catch (err) {
+      // Top-level safety net — prevents blank screen
+      console.error("[UPLOAD_UNEXPECTED_ERROR]", err);
+      setUploadError(`Unexpected error uploading "${file.name}": ${err?.message || "Unknown error"}`);
+    }
   };
 
   const handleUpload = async (e) => {

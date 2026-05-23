@@ -35,11 +35,10 @@ export function useDealAccess() {
     setTxLoading(true);
     setTxError(null);
 
-    base44.functions.invoke("getTeamTransactions", { sort: "-created_date", limit: 200 })
-      .then(r => {
+    base44.entities.Transaction.list("-created_date", 200)
+      .then(txs => {
         if (cancelled) return;
-        const txs = r.data?.transactions;
-        if (!Array.isArray(txs)) throw new Error("Invalid response from getTeamTransactions");
+        if (!Array.isArray(txs)) throw new Error("Invalid response from Transaction.list");
         setTransactions(txs);
         fetchedForRef.current = currentUser.id;
       })
@@ -71,10 +70,9 @@ export function useDealAccess() {
     if (!currentUser?.id) return;
     setTxLoading(true);
     setTxError(null);
-    base44.functions.invoke("getTeamTransactions", { sort: "-created_date", limit: 200 })
-      .then(r => {
-        const txs = r.data?.transactions;
-        if (!Array.isArray(txs)) throw new Error("Invalid response from getTeamTransactions");
+    base44.entities.Transaction.list("-created_date", 200)
+      .then(txs => {
+        if (!Array.isArray(txs)) throw new Error("Invalid response from Transaction.list");
         setTransactions(txs);
         fetchedForRef.current = currentUser.id;
       })
