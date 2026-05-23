@@ -208,41 +208,21 @@
   ],
   "rls": {
     "create": {
-      "data.brokerage_id": "{{user.data.brokerage_id}}",
       "user_condition": {
-        "role": {
-          "$in": [
-            "admin",
-            "owner",
-            "tc_lead"
-          ]
-        }
+        "role": "admin"
       }
     },
     "read": {
       "data.brokerage_id": "{{user.data.brokerage_id}}"
     },
     "update": {
-      "data.brokerage_id": "{{user.data.brokerage_id}}",
       "user_condition": {
-        "role": {
-          "$in": [
-            "admin",
-            "owner",
-            "tc_lead"
-          ]
-        }
+        "role": "admin"
       }
     },
     "delete": {
-      "data.brokerage_id": "{{user.data.brokerage_id}}",
       "user_condition": {
-        "role": {
-          "$in": [
-            "admin",
-            "owner"
-          ]
-        }
+        "role": "admin"
       }
     }
   }
