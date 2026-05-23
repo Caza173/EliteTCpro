@@ -31,21 +31,14 @@
   ],
   "rls": {
     "create": {
-      "$or": [
-        {
-          "data.owner_id": "{{user.id}}"
-        },
-        {
-          "user_condition": {
-            "role": {
-              "$in": [
-                "admin",
-                "owner"
-              ]
-            }
-          }
+      "user_condition": {
+        "role": {
+          "$in": [
+            "admin",
+            "owner"
+          ]
         }
-      ]
+      }
     },
     "read": {
       "$or": [
@@ -53,9 +46,10 @@
           "data.owner_id": "{{user.id}}"
         },
         {
-          "data.brokerage_id": "{{user.data.brokerage_id}}"
+          "data.created_by": "{{user.email}}"
         },
         {
+          "data.brokerage_id": "{{user.data.brokerage_id}}",
           "user_condition": {
             "role": {
               "$in": [
@@ -73,6 +67,10 @@
           "data.owner_id": "{{user.id}}"
         },
         {
+          "data.created_by": "{{user.email}}"
+        },
+        {
+          "data.brokerage_id": "{{user.data.brokerage_id}}",
           "user_condition": {
             "role": {
               "$in": [
@@ -90,13 +88,11 @@
           "data.owner_id": "{{user.id}}"
         },
         {
+          "data.created_by": "{{user.email}}"
+        },
+        {
           "user_condition": {
-            "role": {
-              "$in": [
-                "admin",
-                "owner"
-              ]
-            }
+            "role": "owner"
           }
         }
       ]
