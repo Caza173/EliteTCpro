@@ -145,21 +145,45 @@
     "template_type"
   ],
   "rls": {
-    "create": true,
-    "read": {
+    "create": {
       "$or": [
         {
-          "data.brokerage_id": "{{user.data.brokerage_id}}"
-        },
-        {
-          "created_by": "{{user.id}}"
+          "created_by": "{{user.email}}"
         },
         {
           "user_condition": {
             "role": {
               "$in": [
                 "admin",
-                "owner"
+                "owner",
+                "tc_lead",
+                "tc"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    "read": {
+      "$or": [
+        {
+          "created_by": "{{user.email}}"
+        },
+        {
+          "data.transaction_id": {
+            "$in": [
+              "{{user.data.accessible_transaction_ids}}"
+            ]
+          }
+        },
+        {
+          "user_condition": {
+            "role": {
+              "$in": [
+                "admin",
+                "owner",
+                "tc_lead",
+                "tc"
               ]
             }
           }
@@ -169,17 +193,15 @@
     "update": {
       "$or": [
         {
-          "data.brokerage_id": "{{user.data.brokerage_id}}"
-        },
-        {
-          "created_by": "{{user.id}}"
+          "created_by": "{{user.email}}"
         },
         {
           "user_condition": {
             "role": {
               "$in": [
                 "admin",
-                "owner"
+                "owner",
+                "tc_lead"
               ]
             }
           }
@@ -189,17 +211,15 @@
     "delete": {
       "$or": [
         {
-          "data.brokerage_id": "{{user.data.brokerage_id}}"
-        },
-        {
-          "created_by": "{{user.id}}"
+          "created_by": "{{user.email}}"
         },
         {
           "user_condition": {
             "role": {
               "$in": [
                 "admin",
-                "owner"
+                "owner",
+                "tc_lead"
               ]
             }
           }
