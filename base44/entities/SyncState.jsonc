@@ -14,17 +14,9 @@
     "key"
   ],
   "rls": {
-    "create": {
-      "created_by": "system"
-    },
-    "read": {
-      "created_by": "system"
-    },
-    "update": {
-      "created_by": "system"
-    },
-    "delete": {
-      "created_by": "system"
-    }
+    "create": false,
+    "read": false,
+    "update": false,
+    "delete": false
   }
 }
