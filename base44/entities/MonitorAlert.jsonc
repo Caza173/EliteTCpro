@@ -83,7 +83,7 @@
     "severity"
   ],
   "rls": {
-    "create": true,
+    "create": false,
     "read": {
       "$or": [
         {
@@ -94,7 +94,9 @@
             "role": {
               "$in": [
                 "admin",
-                "owner"
+                "owner",
+                "tc_lead",
+                "tc"
               ]
             }
           }
@@ -111,7 +113,9 @@
             "role": {
               "$in": [
                 "admin",
-                "owner"
+                "owner",
+                "tc_lead",
+                "tc"
               ]
             }
           }
@@ -128,7 +132,8 @@
             "role": {
               "$in": [
                 "admin",
-                "owner"
+                "owner",
+                "tc_lead"
               ]
             }
           }
