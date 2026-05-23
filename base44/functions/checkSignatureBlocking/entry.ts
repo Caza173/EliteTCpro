@@ -4,7 +4,7 @@
  * due to pending required signatures, and creates deadline-linked alerts.
  * 
  * Called by: entity automation on SignatureRequest updates,
- *            or manually from the frontend.
+ *            or manually from the frontend (requires auth + admin/owner/tc role).
  */
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.25';
 
@@ -16,6 +16,8 @@ const DEADLINE_LINKS = {
   due_diligence_deadline: { doc_type: "addendum", label: "Due Diligence Addendum" },
   closing_date:        { doc_type: "closing",     label: "Closing Documents" },
 };
+
+const ALLOWED_ROLES = ["admin", "owner", "tc_lead", "tc", "super_admin"];
 
 function getDaysUntil(dateStr) {
   if (!dateStr) return null;
@@ -29,17 +31,47 @@ Deno.serve(async (req) => {
   try {
     const base44 = createClientFromRequest(req);
 
+    // Require authentication
+    const user = await base44.auth.me();
+    if (!user?.id) {
+      return Response.json({ error: "Authentication required" }, { status: 401 });
+    }
+
+    // Require appropriate role
+    if (!ALLOWED_ROLES.includes(user.role)) {
+      return Response.json({ error: "Forbidden" }, { status: 403 });
+    }
+
     let payload = {};
     try { payload = await req.json(); } catch {}
     const { transaction_id } = payload;
 
-    // Fetch transactions to evaluate
+    // Fetch transactions to evaluate — scoped by ownership unless admin/owner
     let transactions;
+    const isMaster = ["admin", "owner", "super_admin"].includes(user.role);
+
     try {
       if (transaction_id) {
-        transactions = await base44.asServiceRole.entities.Transaction.filter({ id: transaction_id, status: "active" });
+        const txList = await base44.asServiceRole.entities.Transaction.filter({ id: transaction_id, status: "active" });
+        const tx = txList[0];
+        if (!tx) {
+          return Response.json({ error: "Transaction not found" }, { status: 404 });
+        }
+        // TC/tc_lead can only run on transactions they own or are assigned to
+        if (!isMaster && tx.owner_user_id !== user.id && tx.assigned_tc_id !== user.id) {
+          return Response.json({ error: "Forbidden: not your transaction" }, { status: 403 });
+        }
+        transactions = [tx];
       } else {
-        transactions = await base44.asServiceRole.entities.Transaction.filter({ status: "active" });
+        if (isMaster) {
+          transactions = await base44.asServiceRole.entities.Transaction.filter({ status: "active" });
+        } else {
+          // TC roles: only their assigned transactions
+          transactions = await base44.asServiceRole.entities.Transaction.filter({
+            status: "active",
+            assigned_tc_id: user.id,
+          });
+        }
       }
     } catch {
       transactions = [];
@@ -124,7 +156,7 @@ Deno.serve(async (req) => {
             entity_type: "document",
             entity_id: linkedDoc.id,
             description: `Alert: ${message}`,
-            actor_email: "system",
+            actor_email: user.email,
           });
 
           alertsCreated++;
@@ -140,6 +172,7 @@ Deno.serve(async (req) => {
     });
 
   } catch (error) {
+    if (error instanceof Response) return error;
     console.error("[checkSignatureBlocking] Error:", error.message);
     return Response.json({ error: error.message }, { status: 500 });
   }

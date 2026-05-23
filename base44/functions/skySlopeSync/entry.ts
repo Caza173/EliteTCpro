@@ -1,4 +1,4 @@
-import { createClientFromRequest } from 'npm:@base44/sdk@0.8.20';
+import { createClientFromRequest } from 'npm:@base44/sdk@0.8.25';
 
 const SKYSLOPE_BASE = "https://api.skyslope.com";
 
@@ -184,6 +184,8 @@ async function documentExistsInSkySlope(skySlopeId, fileName, txType) {
   }
 }
 
+const ALLOWED_ROLES = ["admin", "owner", "tc_lead", "tc", "super_admin"];
+
 // ============================================================
 // MAIN HANDLER
 // ============================================================
@@ -191,23 +193,29 @@ Deno.serve(async (req) => {
   try {
     const base44 = createClientFromRequest(req);
 
+    // Require authentication — no silent fallback
+    const user = await base44.auth.me();
+    if (!user?.id) {
+      return Response.json({ error: "Authentication required" }, { status: 401 });
+    }
+
+    // Require appropriate role
+    if (!ALLOWED_ROLES.includes(user.role)) {
+      return Response.json({ error: "Forbidden" }, { status: 403 });
+    }
+
     const body = await req.json();
     const { action, transaction_id, document_id } = body;
 
     if (!action) return Response.json({ error: "action required" }, { status: 400 });
 
-    // Allow both direct user calls and service-role automation calls
-    let user = null;
-    try { user = await base44.auth.me(); } catch { /* service-role or unauthenticated call */ }
+    const isMaster = ["admin", "owner", "super_admin"].includes(user.role);
 
     // ---- ACTION: syncTransaction ----
     if (action === "syncTransaction") {
       if (!transaction_id) return Response.json({ error: "transaction_id required" }, { status: 400 });
 
-      // Use large page to find the transaction across all records
-      const { brokerage_id: brokerageId } = body;
-      if (!brokerageId) return Response.json({ error: "brokerage_id required" }, { status: 400 });
-
+      // brokerage_id is NOT trusted from client payload — resolved from transaction record
       let tx;
       try {
         const txList = await base44.asServiceRole.entities.Transaction.filter({ id: transaction_id });
@@ -216,6 +224,11 @@ Deno.serve(async (req) => {
         return Response.json({ error: "Failed to find transaction: " + listErr.message }, { status: 500 });
       }
       if (!tx) return Response.json({ error: `Transaction ${transaction_id} not found` }, { status: 404 });
+
+      // Verify ownership
+      if (!isMaster && tx.owner_user_id !== user.id && tx.assigned_tc_id !== user.id) {
+        return Response.json({ error: "Forbidden: not your transaction" }, { status: 403 });
+      }
 
       if (tx.skyslope_file_guid || tx.skyslope_transaction_id) {
         return Response.json({ skipped: true, skyslope_file_guid: tx.skyslope_file_guid, message: "Already synced" });
@@ -234,7 +247,7 @@ Deno.serve(async (req) => {
         try {
           await base44.asServiceRole.entities.InAppNotification.create({
             brokerage_id: tx.brokerage_id,
-            user_email: tx.agent_email || "system",
+            user_email: user.email,
             transaction_id: tx.id,
             title: "SkySlope Sync Failed",
             body: `Could not create SkySlope compliance file for ${tx.address}: ${err.message}`,
@@ -259,7 +272,8 @@ Deno.serve(async (req) => {
       await base44.asServiceRole.entities.AuditLog.create({
         brokerage_id: tx.brokerage_id,
         transaction_id: tx.id,
-        actor_email: user?.email || "system",
+        actor_email: user.email,
+        actor_user_id: user.id,
         action: "skyslope_transaction_created",
         entity_type: "transaction",
         entity_id: tx.id,
@@ -273,9 +287,7 @@ Deno.serve(async (req) => {
     if (action === "syncDocument") {
       if (!document_id) return Response.json({ error: "document_id required" }, { status: 400 });
 
-      const { brokerage_id: brokerageId2 } = body;
-      if (!brokerageId2) return Response.json({ error: "brokerage_id required" }, { status: 400 });
-
+      // brokerage_id is NOT trusted from client payload — resolved from transaction record
       const docList = await base44.asServiceRole.entities.Document.filter({ id: document_id });
       const doc = docList[0];
       if (!doc) return Response.json({ error: "Document not found" }, { status: 404 });
@@ -283,6 +295,11 @@ Deno.serve(async (req) => {
       const txList2 = await base44.asServiceRole.entities.Transaction.filter({ id: doc.transaction_id });
       const tx = txList2[0];
       if (!tx) return Response.json({ error: "Transaction not found for document" }, { status: 404 });
+
+      // Verify ownership
+      if (!isMaster && tx.owner_user_id !== user.id && tx.assigned_tc_id !== user.id) {
+        return Response.json({ error: "Forbidden: not your transaction" }, { status: 403 });
+      }
 
       if (!tx.skyslope_transaction_id) {
         return Response.json({ skipped: true, message: "No SkySlope transaction ID on transaction; skipping document sync" });
@@ -299,10 +316,10 @@ Deno.serve(async (req) => {
         await uploadDocumentToSkySlope(tx.skyslope_transaction_id, doc, tx.transaction_type);
       } catch (err) {
         console.error("SkySlope uploadDocument error:", err.message);
-        // Notify TC via in-app notification
+        // Notify TC via in-app notification — use authenticated user email, not agent_email from tx
         await base44.asServiceRole.entities.InAppNotification.create({
           brokerage_id: tx.brokerage_id,
-          user_email: user?.email || "system",
+          user_email: user.email,
           transaction_id: tx.id,
           title: "SkySlope Document Sync Failed",
           body: `Failed to upload "${fileName}" to SkySlope for ${tx.address}: ${err.message}`,
@@ -315,7 +332,8 @@ Deno.serve(async (req) => {
       await base44.asServiceRole.entities.AuditLog.create({
         brokerage_id: tx.brokerage_id,
         transaction_id: tx.id,
-        actor_email: user?.email || "system",
+        actor_email: user.email,
+        actor_user_id: user.id,
         action: "skyslope_document_uploaded",
         entity_type: "document",
         entity_id: doc.id,

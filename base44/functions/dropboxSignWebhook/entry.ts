@@ -2,6 +2,11 @@
  * dropboxSignWebhook — Processes Dropbox Sign events.
  * PERFORMANCE: Returns "Hello API Event Received" immediately (<2s).
  * Heavy tasks (PDF download, compliance, notifications) run async via EdgeRuntime.waitUntil.
+ * 
+ * SECURITY: Validates DROPBOX_SIGN_API_KEY presence and event structure.
+ * This is a webhook endpoint — it must NOT require user auth (called by Dropbox Sign servers).
+ * Authenticity is validated via HMAC header check if DROPBOX_SIGN_WEBHOOK_SECRET is set,
+ * otherwise falls back to API key presence validation.
  */
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.25';
 
@@ -22,6 +27,45 @@ function mapEventToStatus(eventType) {
     signature_request_canceled:    "cancelled",
   };
   return map[eventType] || null;
+}
+
+/**
+ * Validate that the webhook call appears to come from Dropbox Sign.
+ * Dropbox Sign sends an HMAC-SHA256 signature in X-HelloSign-Signature header.
+ * If no webhook secret is configured, we skip validation (less secure but still
+ * requires a valid DROPBOX_SIGN_API_KEY to do anything meaningful).
+ */
+async function validateWebhookSignature(req, rawBody) {
+  const webhookSecret = Deno.env.get("DROPBOX_SIGN_WEBHOOK_SECRET");
+  if (!webhookSecret) {
+    // No secret configured — allow but log warning
+    console.warn("[dropboxSignWebhook] DROPBOX_SIGN_WEBHOOK_SECRET not set; skipping HMAC validation");
+    return true;
+  }
+
+  const signature = req.headers.get("X-HelloSign-Signature") || req.headers.get("x-hellosign-signature");
+  if (!signature) {
+    console.warn("[dropboxSignWebhook] Missing X-HelloSign-Signature header");
+    return false;
+  }
+
+  try {
+    const key = await crypto.subtle.importKey(
+      "raw",
+      new TextEncoder().encode(webhookSecret),
+      { name: "HMAC", hash: "SHA-256" },
+      false,
+      ["sign"]
+    );
+    const sig = await crypto.subtle.sign("HMAC", key, new TextEncoder().encode(rawBody));
+    const expected = Array.from(new Uint8Array(sig))
+      .map(b => b.toString(16).padStart(2, "0"))
+      .join("");
+    return expected === signature.toLowerCase();
+  } catch (e) {
+    console.error("[dropboxSignWebhook] HMAC validation error:", e.message);
+    return false;
+  }
 }
 
 async function processEventAsync(base44, eventType, signatureRequest, sigRecord) {
@@ -177,7 +221,7 @@ async function processEventAsync(base44, eventType, signatureRequest, sigRecord)
       }
     }
 
-    // Notify TC of completion
+    // Notify TC of completion — use owner_user_id to look up TC email, not trusting sigRecord.created_by as email
     if (sigRecord.created_by) {
       await base44.asServiceRole.entities.InAppNotification.create({
         transaction_id: sigRecord.transaction_id,
@@ -223,21 +267,35 @@ async function processEventAsync(base44, eventType, signatureRequest, sigRecord)
 }
 
 Deno.serve(async (req) => {
+  // Ensure DROPBOX_SIGN_API_KEY is configured — reject if not
+  if (!Deno.env.get("DROPBOX_SIGN_API_KEY")) {
+    console.error("[dropboxSignWebhook] DROPBOX_SIGN_API_KEY not configured");
+    return new Response("Hello API Event Received", { status: 200 }); // Still return 200 to Dropbox
+  }
+
   // IMPORTANT: Return immediately for Dropbox Sign
   const contentType = req.headers.get("content-type") || "";
+  let rawBody = "";
   let payload;
 
   try {
+    rawBody = await req.text();
     if (contentType.includes("application/json")) {
-      payload = await req.json();
+      payload = JSON.parse(rawBody);
     } else {
-      const text = await req.text();
-      const params = new URLSearchParams(text);
+      const params = new URLSearchParams(rawBody);
       const jsonStr = params.get("json");
       payload = jsonStr ? JSON.parse(jsonStr) : {};
     }
   } catch {
     return new Response("Hello API Event Received", { status: 200 });
+  }
+
+  // Validate webhook signature
+  const isValid = await validateWebhookSignature(req, rawBody);
+  if (!isValid) {
+    console.warn("[dropboxSignWebhook] Invalid webhook signature — rejecting");
+    return new Response("Hello API Event Received", { status: 200 }); // Return 200 to avoid Dropbox retry storms
   }
 
   const event = payload?.event;

@@ -1,4 +1,4 @@
-import { createClientFromRequest } from 'npm:@base44/sdk@0.8.23';
+import { createClientFromRequest } from 'npm:@base44/sdk@0.8.25';
 
 /**
  * Process parsed Buyer Agency Agreement:
@@ -9,42 +9,59 @@ import { createClientFromRequest } from 'npm:@base44/sdk@0.8.23';
  * 
  * Payload: { 
  *   transaction_id, 
- *   brokerage_id,
  *   document_id,
  *   agreement_start_date,
  *   agreement_expiration_date,
- *   agent_email
  * }
+ * 
+ * NOTE: brokerage_id and agent_email are NOT trusted from the client payload.
+ * They are always resolved from the authenticated transaction record.
  */
+
+const ALLOWED_ROLES = ["admin", "owner", "tc_lead", "tc", "super_admin"];
+
 Deno.serve(async (req) => {
   try {
     const base44 = createClientFromRequest(req);
+
+    // Require authentication
     const user = await base44.auth.me();
-    
-    if (!user) {
+    if (!user?.id) {
       return Response.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    // Require appropriate role
+    if (!ALLOWED_ROLES.includes(user.role)) {
+      return Response.json({ error: 'Forbidden' }, { status: 403 });
     }
 
     const body = await req.json();
     const {
       transaction_id,
-      brokerage_id,
       document_id,
-      agreement_start_date,
       agreement_expiration_date,
-      agent_email,
     } = body;
 
     if (!transaction_id || !agreement_expiration_date) {
-      return Response.json({ error: 'Missing required fields' }, { status: 400 });
+      return Response.json({ error: 'Missing required fields: transaction_id, agreement_expiration_date' }, { status: 400 });
     }
 
-    // Fetch transaction to check status
-    const transactions = await base44.entities.Transaction.filter({ id: transaction_id });
+    // Fetch transaction server-side — never trust client-provided brokerage_id/agent_email
+    const transactions = await base44.asServiceRole.entities.Transaction.filter({ id: transaction_id });
     const transaction = transactions[0];
     if (!transaction) {
       return Response.json({ error: 'Transaction not found' }, { status: 404 });
     }
+
+    // Verify caller owns or is assigned to this transaction
+    const isMaster = ["admin", "owner", "super_admin"].includes(user.role);
+    if (!isMaster && transaction.owner_user_id !== user.id && transaction.assigned_tc_id !== user.id) {
+      return Response.json({ error: 'Forbidden: not your transaction' }, { status: 403 });
+    }
+
+    // Resolve trusted fields from the transaction record (not from client payload)
+    const trustedBrokerageId = transaction.brokerage_id;
+    const trustedAgentEmail = transaction.agent_email;
 
     // Determine actual expiration date (override with closing_date if under_contract)
     let effectiveExpirationDate = agreement_expiration_date;
@@ -52,40 +69,34 @@ Deno.serve(async (req) => {
       effectiveExpirationDate = transaction.closing_date;
     }
 
-    // Archive prior buyer agency agreement deadlines
+    // Archive prior buyer agency agreement documents
     if (document_id) {
-      await archivePriorAgreements(transaction_id, brokerage_id, document_id);
+      try {
+        const docs = await base44.asServiceRole.entities.Document.filter({
+          transaction_id,
+          doc_type: "buyer_agency_agreement",
+        });
+        for (const doc of docs) {
+          if (doc.id !== document_id) {
+            await base44.asServiceRole.entities.Document.update(doc.id, { is_deleted: true });
+          }
+        }
+      } catch (_) {
+        // Silent fail on archival
+      }
     }
 
-    // Create deadline in transaction (if we have a Deadline entity/field)
-    const deadlineData = {
-      transaction_id,
-      brokerage_id,
-      field_key: "buyer_agency_agreement_expiration",
-      deadline_type: "buyer_agency_agreement_expiration",
-      label: "Buyer Agency Agreement Expires",
-      date: effectiveExpirationDate,
-      category: "Compliance",
-      priority: "High",
-      source: "document_parse",
-    };
-
-    // Store as transaction deadline (add to transaction.deadlines or create separate record)
-    // For now, store in transaction fields
-    await base44.entities.Transaction.update(transaction_id, {
+    // Update transaction with expiration deadline
+    await base44.asServiceRole.entities.Transaction.update(transaction_id, {
       agreement_expiration_deadline: effectiveExpirationDate,
       last_activity_at: new Date().toISOString(),
     });
 
-    // Create reminder automation (3 days before expiration)
-    const reminderDate = new Date(effectiveExpirationDate);
-    reminderDate.setDate(reminderDate.getDate() - 3);
-
-    // Create in-app notification
-    if (agent_email) {
-      await base44.entities.InAppNotification.create({
-        brokerage_id,
-        user_email: agent_email,
+    // Create in-app notification — only if transaction has an agent email
+    if (trustedAgentEmail) {
+      await base44.asServiceRole.entities.InAppNotification.create({
+        brokerage_id: trustedBrokerageId,
+        user_email: trustedAgentEmail,
         transaction_id,
         title: "Buyer Agency Agreement Expiring",
         body: `Buyer Agency Agreement expires on ${effectiveExpirationDate}. Review and renew if needed.`,
@@ -95,10 +106,20 @@ Deno.serve(async (req) => {
       });
     }
 
-    // Sync to calendar if enabled
-    if (transaction.agent_email) {
-      await syncToAgentCalendar(transaction, effectiveExpirationDate);
-    }
+    // Audit log
+    await base44.asServiceRole.entities.AuditLog.create({
+      transaction_id,
+      brokerage_id: trustedBrokerageId,
+      action: "buyer_agency_agreement_processed",
+      entity_type: "document",
+      entity_id: document_id || null,
+      description: `Buyer Agency Agreement expiration set to ${effectiveExpirationDate}`,
+      actor_email: user.email,
+      actor_user_id: user.id,
+    });
+
+    const reminderDate = new Date(effectiveExpirationDate);
+    reminderDate.setDate(reminderDate.getDate() - 3);
 
     return Response.json({
       success: true,
@@ -107,39 +128,7 @@ Deno.serve(async (req) => {
       reminder_date: reminderDate.toISOString().split('T')[0],
     });
   } catch (error) {
+    console.error("[processBuyerAgencyAgreement] Error:", error.message);
     return Response.json({ error: error.message }, { status: 500 });
   }
 });
-
-async function archivePriorAgreements(transactionId, brokerageId, currentDocId) {
-  try {
-    // Find prior buyer agency agreement documents
-    const docs = await base44.entities.Document.filter({
-      transaction_id: transactionId,
-      doc_type: "buyer_agency_agreement",
-    });
-
-    // Mark old ones as deleted (soft delete)
-    for (const doc of docs) {
-      if (doc.id !== currentDocId) {
-        await base44.entities.Document.update(doc.id, { is_deleted: true });
-      }
-    }
-  } catch (_) {
-    // Silent fail on archival
-  }
-}
-
-async function syncToAgentCalendar(transaction, expirationDate) {
-  try {
-    // This would call the Google Calendar sync function
-    // For now, just log that it should be synced
-    console.log(`[INFO] Should sync to agent calendar: ${transaction.agent_email} - ${expirationDate}`);
-    
-    // In production:
-    // const { accessToken } = await base44.asServiceRole.connectors.getConnection("googlecalendar");
-    // Create calendar event for expiration date
-  } catch (_) {
-    // Silent fail on calendar sync
-  }
-}

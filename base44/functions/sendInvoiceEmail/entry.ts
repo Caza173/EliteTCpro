@@ -1,19 +1,47 @@
 /**
  * sendInvoiceEmail — Sends an invoice to a client via email and marks it as sent.
+ * 
+ * SECURITY:
+ * - Requires authenticated user.
+ * - Requires admin/owner/tc_lead/tc role.
+ * - Verifies the caller owns the invoice (created_by === user.email) or is admin/owner.
+ * - Recipient email is sourced from the invoice record, NOT from client payload.
  */
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.25';
+
+const ALLOWED_ROLES = ["admin", "owner", "tc_lead", "tc", "super_admin"];
 
 Deno.serve(async (req) => {
   try {
     const base44 = createClientFromRequest(req);
+
+    // Require authentication
     const user = await base44.auth.me();
-    if (!user) return Response.json({ error: 'Unauthorized' }, { status: 401 });
+    if (!user?.id) {
+      return Response.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    // Require appropriate role
+    if (!ALLOWED_ROLES.includes(user.role)) {
+      return Response.json({ error: 'Forbidden' }, { status: 403 });
+    }
 
     const { invoice_id } = await req.json();
     if (!invoice_id) return Response.json({ error: 'invoice_id required' }, { status: 400 });
 
     const invoice = await base44.asServiceRole.entities.Invoice.get(invoice_id);
     if (!invoice) return Response.json({ error: 'Invoice not found' }, { status: 404 });
+
+    // Verify ownership — admin/owner can send any invoice; tc_lead/tc can only send their own
+    const isMaster = ["admin", "owner", "super_admin"].includes(user.role);
+    if (!isMaster && invoice.created_by !== user.email && invoice.created_by !== user.id) {
+      return Response.json({ error: 'Forbidden: not your invoice' }, { status: 403 });
+    }
+
+    // Recipient email is sourced from the invoice record — never from client payload
+    if (!invoice.client_email || !invoice.client_email.includes("@")) {
+      return Response.json({ error: 'Invoice has no valid client email' }, { status: 400 });
+    }
 
     // Format currency
     const fmt = (n) => `$${(n || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
@@ -100,7 +128,7 @@ Deno.serve(async (req) => {
 </body>
 </html>`;
 
-    // Use Gmail connector to send to external email addresses
+    // Use Gmail connector to send — recipient sourced from invoice record
     const { accessToken } = await base44.asServiceRole.connectors.getConnection("gmail");
     const subject = `Invoice ${invoice.invoice_number || `INV-${invoice_id.slice(-6).toUpperCase()}`} — ${fmt(invoice.total)}`;
 
@@ -132,6 +160,16 @@ Deno.serve(async (req) => {
     await base44.asServiceRole.entities.Invoice.update(invoice_id, {
       status: 'sent',
       sent_at: new Date().toISOString(),
+    });
+
+    // Audit log
+    await base44.asServiceRole.entities.AuditLog.create({
+      action: "invoice_email_sent",
+      entity_type: "billing",
+      entity_id: invoice_id,
+      description: `Invoice ${invoice.invoice_number || invoice_id} sent to ${invoice.client_email} by ${user.email}`,
+      actor_email: user.email,
+      actor_user_id: user.id,
     });
 
     return Response.json({ ok: true });
