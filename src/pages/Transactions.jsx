@@ -12,7 +12,7 @@ import StatusBoardView from "../components/transactions/StatusBoardView";
 import { Skeleton } from "@/components/ui/skeleton";
 import TransactionTable from "../components/transactions/TransactionTable";
 import TransactionCardGrid from "../components/transactions/TransactionCardGrid";
-import { useDealAccess } from "../lib/useDealAccess";
+import { useDealAccess } from "@/lib/useDealAccess";
 import NewTransactionModal from "../components/transactions/NewTransactionModal";
 
 const PAGE_SIZE = 25;

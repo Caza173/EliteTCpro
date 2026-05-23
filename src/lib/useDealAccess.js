@@ -5,7 +5,7 @@
  */
 import { useState, useEffect, useRef } from "react";
 import { base44 } from "@/api/base44Client";
-import { useCurrentUser as useCurrentUserCtx } from "@/lib/CurrentUserContext.jsx";
+import { useCurrentUser as useCurrentUserCtx } from "./CurrentUserContext.jsx";
 
 const SUPER_ADMIN_EMAIL = "nhcazateam@gmail.com";
 
