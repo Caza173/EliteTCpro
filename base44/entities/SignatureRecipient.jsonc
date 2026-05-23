@@ -58,19 +58,7 @@
     "email"
   ],
   "rls": {
-    "create": {
-      "data.brokerage_id": "{{user.data.brokerage_id}}",
-      "user_condition": {
-        "role": {
-          "$in": [
-            "admin",
-            "owner",
-            "tc_lead",
-            "tc"
-          ]
-        }
-      }
-    },
+    "create": true,
     "read": {
       "$or": [
         {
@@ -85,24 +73,25 @@
         },
         {
           "data.email": "{{user.email}}"
-        },
-        {
-          "data.brokerage_id": "{{user.data.brokerage_id}}"
         }
       ]
     },
     "update": {
-      "data.brokerage_id": "{{user.data.brokerage_id}}",
-      "user_condition": {
-        "role": {
-          "$in": [
-            "admin",
-            "owner",
-            "tc_lead",
-            "tc"
-          ]
+      "$or": [
+        {
+          "user_condition": {
+            "role": {
+              "$in": [
+                "admin",
+                "owner"
+              ]
+            }
+          }
+        },
+        {
+          "data.email": "{{user.email}}"
         }
-      }
+      ]
     },
     "delete": {
       "user_condition": {
