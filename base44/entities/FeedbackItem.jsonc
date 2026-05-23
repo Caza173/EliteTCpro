@@ -179,7 +179,9 @@
     "description"
   ],
   "rls": {
-    "create": true,
+    "create": {
+      "created_by": "{{user.email}}"
+    },
     "read": {
       "$or": [
         {
@@ -190,7 +192,8 @@
             "role": {
               "$in": [
                 "admin",
-                "owner"
+                "owner",
+                "tc_lead"
               ]
             }
           }
@@ -198,28 +201,23 @@
       ]
     },
     "update": {
-      "$or": [
-        {
-          "created_by": "{{user.email}}"
-        },
-        {
-          "user_condition": {
-            "role": {
-              "$in": [
-                "admin",
-                "owner"
-              ]
-            }
-          }
+      "user_condition": {
+        "role": {
+          "$in": [
+            "admin",
+            "owner",
+            "tc_lead"
+          ]
         }
-      ]
+      }
     },
     "delete": {
       "user_condition": {
         "role": {
           "$in": [
             "admin",
-            "owner"
+            "owner",
+            "tc_lead"
           ]
         }
       }
