@@ -146,63 +146,17 @@
   ],
   "rls": {
     "create": {
-      "data.brokerage_id": "{{user.data.brokerage_id}}",
-      "user_condition": {
-        "role": {
-          "$in": [
-            "admin",
-            "owner",
-            "tc_lead",
-            "tc"
-          ]
-        }
-      }
+      "data.brokerage_id": "{{user.data.brokerage_id}}"
     },
     "read": {
-      "$or": [
-        {
-          "user_condition": {
-            "role": {
-              "$in": [
-                "admin",
-                "owner"
-              ]
-            }
-          }
-        },
-        {
-          "data.brokerage_id": "{{user.data.brokerage_id}}"
-        },
-        {
-          "data.recipients": "{{user.email}}"
-        },
-        {
-          "data.cc_recipients": "{{user.email}}"
-        }
-      ]
+      "data.brokerage_id": "{{user.data.brokerage_id}}"
     },
     "update": {
-      "data.brokerage_id": "{{user.data.brokerage_id}}",
-      "user_condition": {
-        "role": {
-          "$in": [
-            "admin",
-            "owner",
-            "tc_lead",
-            "tc"
-          ]
-        }
-      }
+      "data.brokerage_id": "{{user.data.brokerage_id}}"
     },
     "delete": {
-      "data.brokerage_id": "{{user.data.brokerage_id}}",
       "user_condition": {
-        "role": {
-          "$in": [
-            "admin",
-            "owner"
-          ]
-        }
+        "role": "admin"
       }
     }
   }
