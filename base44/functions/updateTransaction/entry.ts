@@ -28,8 +28,8 @@ Deno.serve(async (req) => {
       return Response.json({ error: 'Not found' }, { status: 404 });
     }
 
-    // Ownership check: admins bypass; everyone else must own the record
-    const isOwner = tx.owner_user_id === user.id || tx.created_by === user.id || tx.agent_email === user.email;
+    // Ownership check: admins bypass; everyone else must match owner_user_id or created_by (UUID, not email)
+    const isOwner = tx.owner_user_id === user.id || tx.created_by === user.id;
     if (!isAdmin && !isOwner) {
       console.warn(`[updateTransaction] FORBIDDEN user.id=${user.id} attempted tx=${transaction_id}`);
       return Response.json({ error: 'Forbidden' }, { status: 403 });

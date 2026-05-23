@@ -6,9 +6,11 @@ Deno.serve(async (req) => {
     const user = await base44.auth.me();
     if (!user) return Response.json({ error: 'Unauthorized' }, { status: 401 });
 
-    const allowedRoles = ['admin', 'owner', 'tc_lead', 'tc'];
-    const isMaster = user.email === 'nhcazateam@gmail.com';
-    if (!isMaster && !allowedRoles.includes(user.role)) {
+    // Role-based check — NO hardcoded email bypasses
+    const ADMIN_ROLES = ['admin', 'owner', 'super_admin'];
+    const ALLOWED_ROLES = ['admin', 'owner', 'super_admin', 'tc_lead', 'tc'];
+    const isAdmin = ADMIN_ROLES.includes(user.role);
+    if (!ALLOWED_ROLES.includes(user.role)) {
       return Response.json({ error: 'Forbidden' }, { status: 403 });
     }
 
@@ -25,9 +27,19 @@ Deno.serve(async (req) => {
     } catch (_) {}
 
     if (!doc) {
-      // Already gone — idempotent success
       console.log(`[deleteDocument] Not found — already deleted: ${document_id}`);
       return Response.json({ success: true, already_deleted: true, document_id });
+    }
+
+    // Ownership check: non-admins must own the parent transaction
+    if (!isAdmin) {
+      const txList = await base44.asServiceRole.entities.Transaction.filter({ id: doc.transaction_id });
+      const tx = txList[0];
+      const isOwner = tx?.owner_user_id === user.id || tx?.created_by === user.id || tx?.agent_email === user.email;
+      if (!isOwner) {
+        console.warn(`[deleteDocument] FORBIDDEN user=${user.id} attempted doc=${document_id}`);
+        return Response.json({ error: 'Forbidden' }, { status: 403 });
+      }
     }
 
     // Hard delete the specific record by ID

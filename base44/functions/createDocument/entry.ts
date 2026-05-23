@@ -1,4 +1,6 @@
-import { createClientFromRequest } from 'npm:@base44/sdk@0.8.23';
+import { createClientFromRequest } from 'npm:@base44/sdk@0.8.25';
+
+const ADMIN_ROLES = ['admin', 'owner', 'super_admin'];
 
 Deno.serve(async (req) => {
   try {
@@ -12,12 +14,20 @@ Deno.serve(async (req) => {
     if (!transaction_id) return Response.json({ error: 'transaction_id required' }, { status: 400 });
     if (!file_name) return Response.json({ error: 'file_name required' }, { status: 400 });
 
-    // Resolve brokerage_id
-    let brokerage_id = user.data?.brokerage_id || bodyBrokerageId;
-    if (!brokerage_id) {
-      const brokerages = await base44.asServiceRole.entities.Brokerage.list();
-      brokerage_id = brokerages[0]?.id;
+    // Verify caller owns the transaction before attaching a document
+    const isAdmin = ADMIN_ROLES.includes(user.role);
+    const txList = await base44.asServiceRole.entities.Transaction.filter({ id: transaction_id });
+    const tx = txList[0];
+    if (!tx) return Response.json({ error: 'Transaction not found' }, { status: 404 });
+
+    const isOwner = tx.owner_user_id === user.id || tx.created_by === user.id || tx.agent_email === user.email;
+    if (!isAdmin && !isOwner) {
+      console.warn(`[createDocument] FORBIDDEN user=${user.id} attempted tx=${transaction_id}`);
+      return Response.json({ error: 'Forbidden' }, { status: 403 });
     }
+
+    // Resolve brokerage_id from auth — never trust client-supplied value
+    const brokerage_id = user.data?.brokerage_id || tx.brokerage_id || bodyBrokerageId || null;
     if (!brokerage_id) {
       return Response.json({ error: 'No brokerage found' }, { status: 400 });
     }
@@ -37,9 +47,13 @@ Deno.serve(async (req) => {
     }
     // ────────────────────────────────────────────────────────────────────────
 
+    // Strip client-supplied ownership fields — stamp authoritatively
+    const { created_by: _c, owner_user_id: _o, brokerage_id: _b, ...safeBody } = body;
+
     const doc = await base44.asServiceRole.entities.Document.create({
-      ...body,
+      ...safeBody,
       brokerage_id,
+      created_by: user.id,
     });
 
     console.log(`[createDocument] Created doc ${doc.id} (${file_name}) for tx ${transaction_id}`);

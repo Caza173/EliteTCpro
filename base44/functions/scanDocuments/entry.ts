@@ -9,6 +9,18 @@ Deno.serve(async (req) => {
     const { transaction_id, action } = await req.json();
     if (!transaction_id) return Response.json({ error: 'transaction_id required' }, { status: 400 });
 
+    // Ownership check — verify caller owns the transaction before running expensive AI scans
+    const ADMIN_ROLES = ['admin', 'owner', 'super_admin'];
+    const isAdmin = ADMIN_ROLES.includes(user.role);
+    const txOwnerCheck = await base44.asServiceRole.entities.Transaction.filter({ id: transaction_id });
+    const txRecord = txOwnerCheck[0];
+    if (!txRecord) return Response.json({ error: 'Transaction not found' }, { status: 404 });
+    const isOwner = txRecord.owner_user_id === user.id || txRecord.created_by === user.id || txRecord.agent_email === user.email;
+    if (!isAdmin && !isOwner) {
+      console.warn(`[scanDocuments] FORBIDDEN user=${user.id} attempted tx=${transaction_id}`);
+      return Response.json({ error: 'Forbidden' }, { status: 403 });
+    }
+
     // ── ACTION: status ─────────────────────────────────────────────────────
     if (action === 'status') {
       const jobs = await base44.asServiceRole.entities.ScanJob.filter(
@@ -42,10 +54,8 @@ Deno.serve(async (req) => {
       return Response.json({ error: 'No documents found for this transaction' }, { status: 400 });
     }
 
-    // Fetch transaction data
-    const txList = await base44.asServiceRole.entities.Transaction.filter({ id: transaction_id });
-    const tx = txList[0];
-    if (!tx) return Response.json({ error: 'Transaction not found' }, { status: 404 });
+    // Reuse already-fetched transaction record (ownership already verified above)
+    const tx = txRecord;
 
     // Cancel any existing pending/in_progress jobs
     const existingJobs = await base44.asServiceRole.entities.ScanJob.filter({ transaction_id });

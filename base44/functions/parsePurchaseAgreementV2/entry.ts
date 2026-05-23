@@ -353,14 +353,33 @@ Use the Textract key-value pairs and table data as authoritative sources when av
 
 // ── Main handler ──────────────────────────────────────────────────────────────
 
+const ADMIN_ROLES_PPV2 = ['admin', 'owner', 'super_admin'];
+
 Deno.serve(async (req) => {
   try {
     const base44 = createClientFromRequest(req);
     const serviceBase44 = base44.asServiceRole;
 
+    // Authentication required — this endpoint invokes expensive AI/OCR pipeline
+    const user = await base44.auth.me();
+    if (!user) return Response.json({ error: 'Unauthorized' }, { status: 401 });
+
     const reqBody = await req.json();
     const { file_url, transaction_id, brokerage_id, request_id: incomingReqId } = reqBody;
     if (!file_url) return Response.json({ error: 'No file_url provided' }, { status: 400 });
+
+    // If a transaction_id is provided, verify caller owns it
+    if (transaction_id) {
+      const txList = await serviceBase44.entities.Transaction.filter({ id: transaction_id });
+      const tx = txList[0];
+      if (!tx) return Response.json({ error: 'Transaction not found' }, { status: 404 });
+      const isAdmin = ADMIN_ROLES_PPV2.includes(user.role);
+      const isOwner = tx.owner_user_id === user.id || tx.created_by === user.id || tx.agent_email === user.email;
+      if (!isAdmin && !isOwner) {
+        console.warn(`[parsePurchaseAgreementV2] FORBIDDEN user=${user.id} attempted tx=${transaction_id}`);
+        return Response.json({ error: 'Forbidden' }, { status: 403 });
+      }
+    }
 
     const request_id = incomingReqId || genReqId();
     const log = makeLogger('parsePurchaseAgreementV2', LOG_GROUP_PARSING, { request_id, transaction_id });
