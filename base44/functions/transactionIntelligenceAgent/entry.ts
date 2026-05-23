@@ -263,9 +263,9 @@ Return JSON only.`,
 
 Deno.serve(async (req) => {
   try {
-    // Validate internal automation secret
+    // Validate internal automation secret — hard-fail if secret is not configured
     const authHeader = req.headers.get("x-internal-secret");
-    if (INTERNAL_SECRET && authHeader !== INTERNAL_SECRET) {
+    if (!INTERNAL_SECRET || authHeader !== INTERNAL_SECRET) {
       return Response.json({ error: "Unauthorized" }, { status: 401 });
     }
 

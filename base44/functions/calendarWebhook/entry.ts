@@ -15,9 +15,9 @@ const GOOGLE_WEBHOOK_SECRET = Deno.env.get("GOOGLE_CALENDAR_WEBHOOK_SECRET");
 
 Deno.serve(async (req) => {
   try {
-    // Validate Google webhook channel token
+    // Validate Google webhook channel token — hard-fail if secret is not configured
     const channelToken = req.headers.get("x-goog-channel-token");
-    if (GOOGLE_WEBHOOK_SECRET && channelToken !== GOOGLE_WEBHOOK_SECRET) {
+    if (!GOOGLE_WEBHOOK_SECRET || channelToken !== GOOGLE_WEBHOOK_SECRET) {
       console.warn("calendarWebhook: invalid channel token rejected");
       return Response.json({ error: "Unauthorized" }, { status: 401 });
     }

@@ -35,7 +35,7 @@ Deno.serve(async (req) => {
     if (!isAdmin) {
       const txList = await base44.asServiceRole.entities.Transaction.filter({ id: doc.transaction_id });
       const tx = txList[0];
-      const isOwner = tx?.owner_user_id === user.id || tx?.created_by === user.id || tx?.agent_email === user.email;
+      const isOwner = tx?.owner_user_id === user.id || tx?.created_by === user.id;
       if (!isOwner) {
         console.warn(`[deleteDocument] FORBIDDEN user=${user.id} attempted doc=${document_id}`);
         return Response.json({ error: 'Forbidden' }, { status: 403 });

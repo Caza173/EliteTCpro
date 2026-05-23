@@ -15,7 +15,7 @@ Deno.serve(async (req) => {
     const txOwnerCheck = await base44.asServiceRole.entities.Transaction.filter({ id: transaction_id });
     const txRecord = txOwnerCheck[0];
     if (!txRecord) return Response.json({ error: 'Transaction not found' }, { status: 404 });
-    const isOwner = txRecord.owner_user_id === user.id || txRecord.created_by === user.id || txRecord.agent_email === user.email;
+    const isOwner = txRecord.owner_user_id === user.id || txRecord.created_by === user.id;
     if (!isAdmin && !isOwner) {
       console.warn(`[scanDocuments] FORBIDDEN user=${user.id} attempted tx=${transaction_id}`);
       return Response.json({ error: 'Forbidden' }, { status: 403 });

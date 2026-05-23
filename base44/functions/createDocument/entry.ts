@@ -20,7 +20,7 @@ Deno.serve(async (req) => {
     const tx = txList[0];
     if (!tx) return Response.json({ error: 'Transaction not found' }, { status: 404 });
 
-    const isOwner = tx.owner_user_id === user.id || tx.created_by === user.id || tx.agent_email === user.email;
+    const isOwner = tx.owner_user_id === user.id || tx.created_by === user.id;
     if (!isAdmin && !isOwner) {
       console.warn(`[createDocument] FORBIDDEN user=${user.id} attempted tx=${transaction_id}`);
       return Response.json({ error: 'Forbidden' }, { status: 403 });
