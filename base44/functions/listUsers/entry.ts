@@ -1,4 +1,6 @@
-import { createClientFromRequest } from 'npm:@base44/sdk@0.8.20';
+import { createClientFromRequest } from 'npm:@base44/sdk@0.8.25';
+
+const ADMIN_ROLES = ['admin', 'owner'];
 
 Deno.serve(async (req) => {
     try {
@@ -9,10 +11,7 @@ Deno.serve(async (req) => {
             return Response.json({ error: 'Unauthorized' }, { status: 401 });
         }
 
-        const allowedRoles = ['admin', 'owner', 'tc_lead', 'tc'];
-        const isMaster = user.email === 'nhcazateam@gmail.com';
-
-        if (!isMaster && !allowedRoles.includes(user.role)) {
+        if (!ADMIN_ROLES.includes(user.role)) {
             return Response.json({ error: 'Forbidden' }, { status: 403 });
         }
 

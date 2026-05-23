@@ -1,7 +1,9 @@
-import { createClientFromRequest } from 'npm:@base44/sdk@0.8.21';
+import { createClientFromRequest } from 'npm:@base44/sdk@0.8.25';
+
+const STAFF_ROLES = ["admin", "owner", "tc_lead", "tc"];
 
 // ── Template generator ───────────────────────────────────────────────────────
-function buildTemplate({ propertyAddress, recipientName, issueList = [], customBody, fromName = "Team Caza" }) {
+function buildTemplate({ propertyAddress, recipientName, issueList = [], customBody, fromName = "EliteTC" }) {
   if (customBody) {
     return {
       subject: `Action Required – ${propertyAddress}`,
@@ -40,17 +42,16 @@ Deno.serve(async (req) => {
   try {
     const base44 = createClientFromRequest(req);
 
-    // Auth check — TC/Admin only
+    // Auth check — staff roles only
     const user = await base44.auth.me();
     if (!user) return Response.json({ error: "Unauthorized" }, { status: 401 });
-    const allowed = ["admin", "owner", "tc_lead", "tc"];
-    if (!allowed.includes(user.role) && user.email !== "nhcazateam@gmail.com") {
-      return Response.json({ error: "Forbidden: TC or Admin access required" }, { status: 403 });
+    if (!STAFF_ROLES.includes(user.role)) {
+      return Response.json({ error: "Forbidden: Staff access required" }, { status: 403 });
     }
 
     const body = await req.json();
     const {
-      to,                  // string or array
+      to,
       subject: customSubject,
       body: customBody,
       // Template fields (optional)
@@ -61,7 +62,6 @@ Deno.serve(async (req) => {
       fromName,
       // Logging fields
       transaction_id,
-      brokerage_id,
     } = body;
 
     if (!to) return Response.json({ error: "Recipient (to) is required" }, { status: 400 });
@@ -69,6 +69,16 @@ Deno.serve(async (req) => {
     const recipients = Array.isArray(to) ? to : [to];
     const filteredRecipients = recipients.filter(Boolean);
     if (filteredRecipients.length === 0) return Response.json({ error: "No valid recipients" }, { status: 400 });
+
+    // If transaction_id provided, verify ownership before sending
+    let resolvedBrokerageId = user.data?.brokerage_id || "";
+    if (transaction_id) {
+      const tx = await base44.asServiceRole.entities.Transaction.get(transaction_id);
+      if (!tx || ![tx.owner_user_id, tx.created_by, tx.assigned_tc_id].includes(user.id)) {
+        return Response.json({ error: "Transaction not found or access denied" }, { status: 404 });
+      }
+      resolvedBrokerageId = tx.brokerage_id || resolvedBrokerageId;
+    }
 
     // Build subject + body
     let finalSubject = customSubject;
@@ -98,10 +108,10 @@ Deno.serve(async (req) => {
     const failed = results.filter(r => r.status === "rejected");
     const sent = results.filter(r => r.status === "fulfilled");
 
-    // Log to AIActivityLog
+    // Log to AIActivityLog — brokerage_id resolved server-side only
     try {
       await base44.asServiceRole.entities.AIActivityLog.create({
-        brokerage_id: brokerage_id || user.data?.brokerage_id || "",
+        brokerage_id: resolvedBrokerageId,
         transaction_id: transaction_id || "",
         recipient_email: filteredRecipients.join(", "),
         subject: finalSubject,

@@ -1,6 +1,7 @@
 /**
  * exportUserData — Generates an Excel (.xlsx) export of all data owned by the current user.
  * Returns a signed download URL for a temporary file.
+ * Each user may only export their own data. Admins/owners are included but still scoped to their own records.
  */
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.25';
 import * as XLSX from 'npm:xlsx@0.18.5';
@@ -12,43 +13,35 @@ Deno.serve(async (req) => {
     if (!user) return Response.json({ error: 'Unauthorized' }, { status: 401 });
 
     const userId = user.id;
-    const userEmail = user.email;
 
-    console.log(`[exportUserData] Exporting data for: ${userEmail}`);
+    console.log(`[exportUserData] Exporting data for user ID: ${userId}`);
 
-    const SUPER_ADMIN_EMAIL = 'nhcazateam@gmail.com';
-    const isSuper = userEmail === SUPER_ADMIN_EMAIL || user.role === 'admin' || user.role === 'owner';
-
-    let transactions;
-    if (isSuper) {
-      transactions = await base44.entities.Transaction.list('-created_date', 500);
-    } else {
-      const [createdTx, assignedTx] = await Promise.all([
-        base44.asServiceRole.entities.Transaction.filter({ created_by: userId }),
-        base44.asServiceRole.entities.Transaction.filter({ assigned_tc_id: userId }),
-      ]);
-      const txMap = new Map();
-      [...createdTx, ...assignedTx].forEach(tx => txMap.set(tx.id, tx));
-      transactions = [...txMap.values()];
-    }
+    // Always export only the authenticated user's own data — no global listing
+    const [createdTx, assignedTx] = await Promise.all([
+      base44.asServiceRole.entities.Transaction.filter({ owner_user_id: userId }),
+      base44.asServiceRole.entities.Transaction.filter({ assigned_tc_id: userId }),
+    ]);
+    const txMap = new Map();
+    [...createdTx, ...assignedTx].forEach(tx => txMap.set(tx.id, tx));
+    const transactions = [...txMap.values()];
 
     const allTxIds = transactions.map(tx => tx.id);
 
-    // Fetch sub-records
+    // Fetch sub-records scoped to owned transactions
     const [tasks, notes, auditLogs, documents] = await Promise.all([
       allTxIds.length > 0
-        ? Promise.all(allTxIds.map(id => base44.asServiceRole.entities.TransactionTask?.filter({ transaction_id: id }).catch(() => [])))
+        ? Promise.all(allTxIds.map(id => base44.asServiceRole.entities.TransactionTask.filter({ transaction_id: id }).catch(() => [])))
             .then(r => r.flat())
-        : [],
+        : Promise.resolve([]),
       allTxIds.length > 0
-        ? Promise.all(allTxIds.map(id => base44.asServiceRole.entities.Note?.filter({ transaction_id: id }).catch(() => [])))
+        ? Promise.all(allTxIds.map(id => base44.asServiceRole.entities.Note.filter({ transaction_id: id }).catch(() => [])))
             .then(r => r.flat())
-        : [],
-      base44.asServiceRole.entities.AuditLog.filter({ actor_email: userEmail }).catch(() => []),
+        : Promise.resolve([]),
+      base44.asServiceRole.entities.AuditLog.filter({ actor_user_id: userId }).catch(() => []),
       allTxIds.length > 0
         ? Promise.all(allTxIds.map(id => base44.asServiceRole.entities.Document.filter({ transaction_id: id }).catch(() => [])))
             .then(r => r.flat())
-        : [],
+        : Promise.resolve([]),
     ]);
 
     // Build workbook
@@ -84,12 +77,12 @@ Deno.serve(async (req) => {
     // ── Sheet 2: Tasks ────────────────────────────────────────────────────
     const taskRows = tasks.map(t => ({
       'Transaction ID': t.transaction_id || '',
-      'Task Name':      t.task_name || t.name || t.title || '',
-      'Status':         t.status || (t.completed ? 'complete' : 'pending'),
-      'Assigned To':    t.assigned_to || t.assignee || '',
+      'Task Name':      t.title || t.name || '',
+      'Status':         t.is_completed ? 'complete' : 'pending',
+      'Assigned To':    t.assigned_to_name || t.assigned_to_email || '',
       'Due Date':       t.due_date || '',
-      'Phase':          t.phase_number || t.phase || '',
-      'Required':       t.required ? 'Yes' : 'No',
+      'Phase':          t.phase || '',
+      'Required':       t.is_required ? 'Yes' : 'No',
       'Created Date':   t.created_date || '',
     }));
     const taskSheet = XLSX.utils.json_to_sheet(taskRows.length ? taskRows : [{ 'No Data': 'No tasks found' }]);
@@ -110,8 +103,8 @@ Deno.serve(async (req) => {
     // ── Sheet 4: Notes ────────────────────────────────────────────────────
     const noteRows = notes.map(n => ({
       'Transaction ID': n.transaction_id || '',
-      'Note':           n.content || n.body || n.text || '',
-      'Author':         n.author || n.created_by || '',
+      'Note':           n.message || n.content || '',
+      'Author':         n.created_by_name || n.created_by || '',
       'Created Date':   n.created_date || '',
     }));
     const noteSheet = XLSX.utils.json_to_sheet(noteRows.length ? noteRows : [{ 'No Data': 'No notes found' }]);
@@ -122,7 +115,6 @@ Deno.serve(async (req) => {
       'Action':        a.action || '',
       'Entity Type':   a.entity_type || '',
       'Description':   a.description || '',
-      'Actor Email':   a.actor_email || '',
       'Transaction ID':a.transaction_id || '',
       'Created Date':  a.created_date || '',
     }));
@@ -155,7 +147,7 @@ Deno.serve(async (req) => {
       expires_in: 86400,
     });
 
-    console.log(`[exportUserData] Excel export ready for ${userEmail}: ${transactions.length} transactions`);
+    console.log(`[exportUserData] Export ready for user ${userId}: ${transactions.length} transactions`);
 
     return Response.json({
       ok: true,

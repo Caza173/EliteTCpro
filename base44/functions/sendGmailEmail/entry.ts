@@ -1,4 +1,6 @@
-import { createClientFromRequest } from 'npm:@base44/sdk@0.8.21';
+import { createClientFromRequest } from 'npm:@base44/sdk@0.8.25';
+
+const STAFF_ROLES = ["admin", "owner", "tc_lead", "tc"];
 
 // ── Standard Email Template ───────────────────────────────────────────────────
 function buildEmailHTML({
@@ -12,10 +14,10 @@ function buildEmailHTML({
   criticalDates = [],
   links = [],
   nextSteps,
-  senderName = "Corey Caza",
-  senderRole = "EliteTC Operations, NH Caza Team",
+  senderName = "EliteTC",
+  senderRole = "EliteTC Operations",
   companyName = "EliteTC",
-  phoneNumber = "(603) 520-5431",
+  phoneNumber = "",
   customBody,
   signatureOverrideHtml,
 }) {
@@ -26,7 +28,6 @@ function buildEmailHTML({
     ${phoneNumber}
   </p>`;
 
-  // If a plain custom body is passed with no template data, wrap it nicely
   if (customBody && !propertyAddress) {
     return `
 <div style="font-family:Arial,Inter,sans-serif;max-width:620px;margin:0 auto;padding:24px;color:#1e293b;line-height:1.6;font-size:14px;">
@@ -41,7 +42,7 @@ function buildEmailHTML({
 
   const txSummary = propertyAddress ? `
     <p style="margin:0 0 8px;font-size:11px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:#64748b;">Transaction Summary</p>
-    <ul style="margin:0 0 0 0;padding:0;list-style:none;">
+    <ul style="margin:0;padding:0;list-style:none;">
       ${propertyAddress ? `<li style="margin-bottom:4px;">📍 <strong>Property:</strong> ${propertyAddress}</li>` : ""}
       ${buyerName ? `<li style="margin-bottom:4px;">👤 <strong>Buyer:</strong> ${buyerName}</li>` : ""}
       ${sellerName ? `<li style="margin-bottom:4px;">👤 <strong>Seller:</strong> ${sellerName}</li>` : ""}
@@ -96,18 +97,17 @@ Deno.serve(async (req) => {
 
     const user = await base44.auth.me();
     if (!user) return Response.json({ error: "Unauthorized" }, { status: 401 });
-    const allowed = ["admin", "owner", "tc_lead", "tc"];
-    if (!allowed.includes(user.role) && user.email !== "nhcazateam@gmail.com") {
-      return Response.json({ error: "Forbidden" }, { status: 403 });
+    if (!STAFF_ROLES.includes(user.role)) {
+      return Response.json({ error: "Forbidden: Staff access required" }, { status: 403 });
     }
 
     const body = await req.json();
     const {
       to,
-      cc,                      // CC recipients (array or comma-separated string)
+      cc,
       subject,
-      body: emailBody,         // plain text / html fallback
-      htmlBody,                // pre-built HTML (from commission modal etc.)
+      body: emailBody,
+      htmlBody,
       // Template fields
       recipientName,
       openingLine,
@@ -125,9 +125,25 @@ Deno.serve(async (req) => {
       phoneNumber,
       // Logging
       transaction_id,
-      brokerage_id,
       fromName,
     } = body;
+
+    if (!to) return Response.json({ error: "Recipient required" }, { status: 400 });
+    if (!subject) return Response.json({ error: "Subject required" }, { status: 400 });
+
+    const recipients = Array.isArray(to) ? to.filter(Boolean) : [to];
+    if (!recipients.length) return Response.json({ error: "No valid recipients" }, { status: 400 });
+
+    // If transaction_id provided, verify ownership — also prevents cross-tenant attachment access
+    let verifiedTx = null;
+    let resolvedBrokerageId = user.data?.brokerage_id || "";
+    if (transaction_id) {
+      verifiedTx = await base44.asServiceRole.entities.Transaction.get(transaction_id);
+      if (!verifiedTx || ![verifiedTx.owner_user_id, verifiedTx.created_by, verifiedTx.assigned_tc_id].includes(user.id)) {
+        return Response.json({ error: "Transaction not found or access denied" }, { status: 404 });
+      }
+      resolvedBrokerageId = verifiedTx.brokerage_id || resolvedBrokerageId;
+    }
 
     // Normalize CC list
     const ccRecipients = cc
@@ -135,20 +151,14 @@ Deno.serve(async (req) => {
       : [];
 
     // Use user's saved signature fields as fallback defaults
-    const sigName    = senderName   || user.data?.sig_name    || user.full_name  || "Corey Caza";
+    const sigName    = senderName   || user.data?.sig_name    || user.full_name  || "EliteTC";
     const sigRole    = senderRole   || user.data?.sig_role    || "EliteTC Operations";
-    const sigCompany = companyName  || user.data?.sig_company || user.data?.company_name || "Realty One Group Next Level";
-    const sigPhone   = phoneNumber  || user.data?.sig_phone   || user.data?.phone || "(603) 520-5431";
+    const sigCompany = companyName  || user.data?.sig_company || user.data?.company_name || "EliteTC";
+    const sigPhone   = phoneNumber  || user.data?.sig_phone   || user.data?.phone || "";
     const sigWebsite = user.data?.website || "";
     const sigPhotoUrl = user.data?.profile_photo_url || "";
     const sigLogoUrl  = user.data?.company_logo_url || "";
     const useCustomSig = user.data?.signature_type === "custom" && user.data?.custom_signature_html;
-
-    if (!to) return Response.json({ error: "Recipient required" }, { status: 400 });
-    if (!subject) return Response.json({ error: "Subject required" }, { status: 400 });
-
-    const recipients = Array.isArray(to) ? to.filter(Boolean) : [to];
-    if (!recipients.length) return Response.json({ error: "No valid recipients" }, { status: 400 });
 
     // Build system signature block
     const systemSigHtml = useCustomSig
@@ -167,7 +177,7 @@ Deno.serve(async (req) => {
           </tr>
         </table>`;
 
-    // Build final HTML — use pre-built htmlBody if provided, otherwise render template
+    // Build final HTML
     const finalHtml = htmlBody || buildEmailHTML({
       recipientName,
       openingLine,
@@ -191,11 +201,11 @@ Deno.serve(async (req) => {
 
     const { accessToken } = await base44.asServiceRole.connectors.getConnection("gmail");
 
-    // Fetch and base64-encode attachments if any
+    // Fetch attachments ONLY from the verified transaction's documents
     const attachmentDocIds = body.attachment_document_ids || [];
     const attachments = [];
-    if (attachmentDocIds.length > 0) {
-      const docs = await base44.asServiceRole.entities.Document.filter({ transaction_id: transaction_id || "" });
+    if (attachmentDocIds.length > 0 && verifiedTx) {
+      const docs = await base44.asServiceRole.entities.Document.filter({ transaction_id: verifiedTx.id });
       for (const doc of docs) {
         if (!attachmentDocIds.includes(doc.id) || !doc.file_url) continue;
         try {
@@ -203,7 +213,6 @@ Deno.serve(async (req) => {
           if (!fileRes.ok) continue;
           const arrayBuf = await fileRes.arrayBuffer();
           const uint8 = new Uint8Array(arrayBuf);
-          // Convert to base64
           let binary = "";
           for (let i = 0; i < uint8.length; i++) binary += String.fromCharCode(uint8[i]);
           const b64 = btoa(binary);
@@ -221,10 +230,8 @@ Deno.serve(async (req) => {
     const buildMimeMessage = (recipient) => {
       const encodedSubject = `=?UTF-8?B?${btoa(unescape(encodeURIComponent(subject)))}?=`;
       const fromLabel = fromName || sigName || "EliteTC";
-      const ccLine = ccRecipients.length ? `\r\nCc: ${ccRecipients.join(", ")}` : "";
 
       if (attachments.length === 0) {
-        // Simple HTML-only message (no attachments)
         return [
           `From: ${fromLabel} <me>`,
           `To: ${recipient}`,
@@ -237,10 +244,7 @@ Deno.serve(async (req) => {
         ].join("\r\n");
       }
 
-      // Multipart/mixed with HTML body + attachments
       const parts = [];
-
-      // Headers
       parts.push(
         `From: ${fromLabel} <me>`,
         `To: ${recipient}`,
@@ -256,7 +260,6 @@ Deno.serve(async (req) => {
         finalHtml,
       );
 
-      // Attachment parts
       for (const att of attachments) {
         const safeName = `=?UTF-8?B?${btoa(unescape(encodeURIComponent(att.fileName)))}?=`;
         parts.push(
@@ -266,7 +269,6 @@ Deno.serve(async (req) => {
           `Content-Transfer-Encoding: base64`,
           `Content-Disposition: attachment; filename="${safeName}"`,
           ``,
-          // Split base64 into 76-char lines (RFC 2045)
           att.b64.match(/.{1,76}/g).join("\r\n"),
         );
       }
@@ -277,8 +279,6 @@ Deno.serve(async (req) => {
 
     const results = await Promise.allSettled(recipients.map(async (recipient) => {
       const mimeMessage = buildMimeMessage(recipient);
-
-      // base64url encode
       const encoded = btoa(unescape(encodeURIComponent(mimeMessage)))
         .replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
 
@@ -298,15 +298,15 @@ Deno.serve(async (req) => {
     const failed = results.filter(r => r.status === "rejected");
     const sent = results.filter(r => r.status === "fulfilled");
 
-    // Log to AIActivityLog (includes sender, CC, timestamp, transaction)
+    // Log — brokerage_id resolved server-side only
     try {
       await base44.asServiceRole.entities.AIActivityLog.create({
-        brokerage_id: brokerage_id || user.data?.brokerage_id || "",
+        brokerage_id: resolvedBrokerageId,
         transaction_id: transaction_id || "",
         deadline_type: "general_email",
         recipient_email: recipients.join(", "),
         subject,
-        message: `Sender: ${user.email}\nTo: ${recipients.join(", ")}\nCC: ${ccRecipients.join(", ") || "none"}\nTimestamp: ${new Date().toISOString()}\n\n${finalHtml}`,
+        message: `Sender: ${user.id}\nTo: ${recipients.join(", ")}\nCC: ${ccRecipients.join(", ") || "none"}\nTimestamp: ${new Date().toISOString()}`,
         response_status: "sent",
       });
     } catch (logErr) {
