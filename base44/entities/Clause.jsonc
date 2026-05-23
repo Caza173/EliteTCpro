@@ -60,7 +60,7 @@
     "create": {
       "$or": [
         {
-          "data.brokerage_id": "{{user.data.brokerage_id}}"
+          "created_by": "{{user.email}}"
         },
         {
           "user_condition": {
@@ -81,6 +81,9 @@
           "data.brokerage_id": "{{user.data.brokerage_id}}"
         },
         {
+          "data.is_system": true
+        },
+        {
           "user_condition": {
             "role": {
               "$in": [
@@ -97,7 +100,7 @@
     "update": {
       "$or": [
         {
-          "data.brokerage_id": "{{user.data.brokerage_id}}"
+          "created_by": "{{user.email}}"
         },
         {
           "user_condition": {
@@ -115,7 +118,7 @@
     "delete": {
       "$or": [
         {
-          "data.brokerage_id": "{{user.data.brokerage_id}}"
+          "created_by": "{{user.email}}"
         },
         {
           "user_condition": {
