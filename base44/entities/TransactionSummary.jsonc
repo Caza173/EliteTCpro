@@ -74,11 +74,7 @@
     "property_address"
   ],
   "rls": {
-    "create": {
-      "user_condition": {
-        "role": "admin"
-      }
-    },
+    "create": true,
     "read": {
       "$or": [
         {
@@ -86,20 +82,49 @@
         },
         {
           "user_condition": {
-            "role": "admin"
+            "role": {
+              "$in": [
+                "admin",
+                "owner"
+              ]
+            }
           }
         }
       ]
     },
     "update": {
-      "user_condition": {
-        "role": "admin"
-      }
+      "$or": [
+        {
+          "data.brokerage_id": "{{user.data.brokerage_id}}"
+        },
+        {
+          "user_condition": {
+            "role": {
+              "$in": [
+                "admin",
+                "owner"
+              ]
+            }
+          }
+        }
+      ]
     },
     "delete": {
-      "user_condition": {
-        "role": "admin"
-      }
+      "$or": [
+        {
+          "data.brokerage_id": "{{user.data.brokerage_id}}"
+        },
+        {
+          "user_condition": {
+            "role": {
+              "$in": [
+                "admin",
+                "owner"
+              ]
+            }
+          }
+        }
+      ]
     }
   }
 }
