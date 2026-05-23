@@ -85,54 +85,14 @@
   "rls": {
     "create": true,
     "read": {
-      "$or": [
-        {
-          "user_condition": {
-            "role": {
-              "$in": [
-                "admin",
-                "owner"
-              ]
-            }
-          }
-        },
-        {
-          "data.brokerage_id": "{{user.data.brokerage_id}}"
-        },
-        {
-          "data.transaction_id": {
-            "$in": [
-              "{{user.data.accessible_tx_ids}}"
-            ]
-          }
-        }
-      ]
+      "data.brokerage_id": "{{user.data.brokerage_id}}"
     },
     "update": {
-      "$or": [
-        {
-          "user_condition": {
-            "role": {
-              "$in": [
-                "admin",
-                "owner"
-              ]
-            }
-          }
-        },
-        {
-          "data.brokerage_id": "{{user.data.brokerage_id}}"
-        }
-      ]
+      "data.brokerage_id": "{{user.data.brokerage_id}}"
     },
     "delete": {
       "user_condition": {
-        "role": {
-          "$in": [
-            "admin",
-            "owner"
-          ]
-        }
+        "role": "admin"
       }
     }
   }
