@@ -103,64 +103,61 @@
     "client_email"
   ],
   "rls": {
-    "create": true,
+    "create": {
+      "created_by": "{{user.email}}"
+    },
     "read": {
       "$or": [
         {
-          "created_by": "{{user.id}}"
+          "created_by": "{{user.email}}"
         },
         {
           "user_condition": {
             "role": {
               "$in": [
                 "admin",
-                "owner"
+                "owner",
+                "tc_lead",
+                "tc"
               ]
             }
           }
-        },
-        {
-          "data.brokerage_id": "{{user.data.brokerage_id}}"
         }
       ]
     },
     "update": {
       "$or": [
         {
-          "created_by": "{{user.id}}"
+          "created_by": "{{user.email}}"
         },
         {
           "user_condition": {
             "role": {
               "$in": [
                 "admin",
-                "owner"
+                "owner",
+                "tc_lead"
               ]
             }
           }
-        },
-        {
-          "data.brokerage_id": "{{user.data.brokerage_id}}"
         }
       ]
     },
     "delete": {
       "$or": [
         {
-          "created_by": "{{user.id}}"
+          "created_by": "{{user.email}}"
         },
         {
           "user_condition": {
             "role": {
               "$in": [
                 "admin",
-                "owner"
+                "owner",
+                "tc_lead"
               ]
             }
           }
-        },
-        {
-          "data.brokerage_id": "{{user.data.brokerage_id}}"
         }
       ]
     }
