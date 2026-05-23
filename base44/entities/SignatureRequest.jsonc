@@ -111,46 +111,14 @@
     "provider"
   ],
   "rls": {
-    "create": true,
+    "create": {
+      "created_by": "{{user.email}}"
+    },
     "read": {
-      "$or": [
-        {
-          "user_condition": {
-            "role": {
-              "$in": [
-                "admin",
-                "owner"
-              ]
-            }
-          }
-        },
-        {
-          "data.brokerage_id": "{{user.data.brokerage_id}}"
-        },
-        {
-          "created_by": "{{user.id}}"
-        }
-      ]
+      "data.brokerage_id": "{{user.data.brokerage_id}}"
     },
     "update": {
-      "$or": [
-        {
-          "user_condition": {
-            "role": {
-              "$in": [
-                "admin",
-                "owner"
-              ]
-            }
-          }
-        },
-        {
-          "data.brokerage_id": "{{user.data.brokerage_id}}"
-        },
-        {
-          "created_by": "{{user.id}}"
-        }
-      ]
+      "data.brokerage_id": "{{user.data.brokerage_id}}"
     },
     "delete": {
       "user_condition": {
