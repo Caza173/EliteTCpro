@@ -47,23 +47,15 @@
     "create": {
       "$or": [
         {
-          "data.team_id": "{{user.data.team_id}}",
-          "user_condition": {
-            "role": {
-              "$in": [
-                "team_admin",
-                "admin",
-                "owner"
-              ]
-            }
-          }
+          "created_by": "{{user.email}}"
         },
         {
           "user_condition": {
             "role": {
               "$in": [
                 "admin",
-                "owner"
+                "owner",
+                "tc_lead"
               ]
             }
           }
@@ -73,7 +65,14 @@
     "read": {
       "$or": [
         {
-          "data.team_id": "{{user.data.team_id}}"
+          "data.user_id": "{{user.id}}"
+        },
+        {
+          "data.team_id": {
+            "$in": [
+              "{{user.data.member_of_team_ids}}"
+            ]
+          }
         },
         {
           "user_condition": {
@@ -90,23 +89,15 @@
     "update": {
       "$or": [
         {
-          "data.team_id": "{{user.data.team_id}}",
-          "user_condition": {
-            "role": {
-              "$in": [
-                "team_admin",
-                "admin",
-                "owner"
-              ]
-            }
-          }
+          "created_by": "{{user.email}}"
         },
         {
           "user_condition": {
             "role": {
               "$in": [
                 "admin",
-                "owner"
+                "owner",
+                "tc_lead"
               ]
             }
           }
@@ -116,23 +107,15 @@
     "delete": {
       "$or": [
         {
-          "data.team_id": "{{user.data.team_id}}",
-          "user_condition": {
-            "role": {
-              "$in": [
-                "team_admin",
-                "admin",
-                "owner"
-              ]
-            }
-          }
+          "created_by": "{{user.email}}"
         },
         {
           "user_condition": {
             "role": {
               "$in": [
                 "admin",
-                "owner"
+                "owner",
+                "tc_lead"
               ]
             }
           }
