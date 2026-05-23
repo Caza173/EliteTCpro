@@ -1,4 +1,6 @@
-import { createClientFromRequest } from 'npm:@base44/sdk@0.8.20';
+import { createClientFromRequest } from 'npm:@base44/sdk@0.8.25';
+
+const INTERNAL_SECRET = Deno.env.get("INTERNAL_AUTOMATION_SECRET");
 
 // ─── Centralized transaction status helper ──────────────────────────────────
 function isTransactionClosed(status) {
@@ -261,6 +263,12 @@ Return JSON only.`,
 
 Deno.serve(async (req) => {
   try {
+    // Validate internal automation secret
+    const authHeader = req.headers.get("x-internal-secret");
+    if (INTERNAL_SECRET && authHeader !== INTERNAL_SECRET) {
+      return Response.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
     const base44 = createClientFromRequest(req);
     const { event, data, payload_too_large } = await req.json();
 

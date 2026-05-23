@@ -1,4 +1,4 @@
-import { createClientFromRequest } from 'npm:@base44/sdk@0.8.21';
+import { createClientFromRequest } from 'npm:@base44/sdk@0.8.25';
 
 // Maps Google Calendar event summary prefixes back to transaction fields
 const TITLE_TO_FIELD = {
@@ -11,8 +11,17 @@ const TITLE_TO_FIELD = {
   'Closing / Transfer of Title': 'closing_date',
 };
 
+const GOOGLE_WEBHOOK_SECRET = Deno.env.get("GOOGLE_CALENDAR_WEBHOOK_SECRET");
+
 Deno.serve(async (req) => {
   try {
+    // Validate Google webhook channel token
+    const channelToken = req.headers.get("x-goog-channel-token");
+    if (GOOGLE_WEBHOOK_SECRET && channelToken !== GOOGLE_WEBHOOK_SECRET) {
+      console.warn("calendarWebhook: invalid channel token rejected");
+      return Response.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
     const body = await req.json();
     const base44 = createClientFromRequest(req);
 

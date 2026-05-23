@@ -1,4 +1,6 @@
-import { createClientFromRequest } from 'npm:@base44/sdk@0.8.23';
+import { createClientFromRequest } from 'npm:@base44/sdk@0.8.25';
+
+const INTERNAL_SECRET = Deno.env.get("INTERNAL_AUTOMATION_SECRET");
 
 const TRANSACTION_RISK_KEYWORDS = [
   "deadline", "closing", "calendar sync", "compliance", "signature", "initials",
@@ -14,6 +16,12 @@ function hasTransactionRisk(text) {
 
 Deno.serve(async (req) => {
   try {
+    // Validate internal automation secret
+    const authHeader = req.headers.get("x-internal-secret");
+    if (INTERNAL_SECRET && authHeader !== INTERNAL_SECRET) {
+      return Response.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
     const base44 = createClientFromRequest(req);
     const body = await req.json();
 
