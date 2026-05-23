@@ -94,6 +94,7 @@
     "title"
   ],
   "rls": {
+    "create": false,
     "read": {
       "data.user_email": "{{user.email}}"
     },
