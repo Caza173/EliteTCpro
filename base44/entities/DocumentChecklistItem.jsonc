@@ -56,7 +56,7 @@
     "create": {
       "$or": [
         {
-          "data.brokerage_id": "{{user.data.brokerage_id}}"
+          "created_by": "{{user.id}}"
         },
         {
           "user_condition": {
@@ -72,65 +72,8 @@
         }
       ]
     },
-    "read": {
-      "$or": [
-        {
-          "user_condition": {
-            "role": {
-              "$in": [
-                "admin",
-                "owner"
-              ]
-            }
-          }
-        },
-        {
-          "data.created_by": "{{user.id}}"
-        },
-        {
-          "data.brokerage_id": "{{user.data.brokerage_id}}"
-        }
-      ]
-    },
-    "update": {
-      "$or": [
-        {
-          "user_condition": {
-            "role": {
-              "$in": [
-                "admin",
-                "owner"
-              ]
-            }
-          }
-        },
-        {
-          "data.created_by": "{{user.id}}"
-        },
-        {
-          "data.brokerage_id": "{{user.data.brokerage_id}}"
-        }
-      ]
-    },
-    "delete": {
-      "$or": [
-        {
-          "user_condition": {
-            "role": {
-              "$in": [
-                "admin",
-                "owner"
-              ]
-            }
-          }
-        },
-        {
-          "data.created_by": "{{user.id}}"
-        },
-        {
-          "data.brokerage_id": "{{user.data.brokerage_id}}"
-        }
-      ]
-    }
+    "read": null,
+    "update": null,
+    "delete": null
   }
 }
