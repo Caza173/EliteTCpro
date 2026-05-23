@@ -44,21 +44,23 @@
     "transaction_id"
   ],
   "rls": {
-    "create": true,
+    "create": {
+      "created_by": "{{user.email}}"
+    },
     "read": {
       "$or": [
         {
           "data.triggered_by": "{{user.email}}"
         },
         {
-          "data.brokerage_id": "{{user.data.brokerage_id}}"
-        },
-        {
+          "data.brokerage_id": "{{user.data.brokerage_id}}",
           "user_condition": {
             "role": {
               "$in": [
                 "admin",
-                "owner"
+                "owner",
+                "tc_lead",
+                "tc"
               ]
             }
           }
@@ -68,14 +70,16 @@
     "update": {
       "$or": [
         {
-          "data.brokerage_id": "{{user.data.brokerage_id}}"
+          "data.triggered_by": "{{user.email}}"
         },
         {
+          "data.brokerage_id": "{{user.data.brokerage_id}}",
           "user_condition": {
             "role": {
               "$in": [
                 "admin",
-                "owner"
+                "owner",
+                "tc_lead"
               ]
             }
           }
@@ -85,14 +89,16 @@
     "delete": {
       "$or": [
         {
-          "data.brokerage_id": "{{user.data.brokerage_id}}"
+          "data.triggered_by": "{{user.email}}"
         },
         {
+          "data.brokerage_id": "{{user.data.brokerage_id}}",
           "user_condition": {
             "role": {
               "$in": [
                 "admin",
-                "owner"
+                "owner",
+                "tc_lead"
               ]
             }
           }
