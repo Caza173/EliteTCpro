@@ -183,6 +183,9 @@
     "read": {
       "$or": [
         {
+          "created_by": "{{user.email}}"
+        },
+        {
           "user_condition": {
             "role": {
               "$in": [
@@ -191,18 +194,15 @@
               ]
             }
           }
-        },
-        {
-          "data.user_email": "{{user.email}}"
-        },
-        {
-          "data.brokerage_id": "{{user.data.brokerage_id}}"
         }
       ]
     },
     "update": {
       "$or": [
         {
+          "created_by": "{{user.email}}"
+        },
+        {
           "user_condition": {
             "role": {
               "$in": [
@@ -211,9 +211,6 @@
               ]
             }
           }
-        },
-        {
-          "data.user_email": "{{user.email}}"
         }
       ]
     },
