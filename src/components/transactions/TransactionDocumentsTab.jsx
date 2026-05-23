@@ -668,11 +668,13 @@ export default function TransactionDocumentsTab({ transaction, currentUser }) {
                       <p className="text-sm font-medium text-gray-900 truncate hover:text-blue-600 transition-colors">{doc.file_name || "Document"}</p>
                       <p className="text-xs text-gray-400">
                         {doc.uploaded_by || "unknown"}
-                        {doc.created_date ? ` · ${format(new Date(doc.created_date), "MMM d, yyyy h:mm a")}` : ""}
+                        {doc.created_date && !isNaN(new Date(doc.created_date).getTime())
+                          ? ` · ${format(new Date(doc.created_date), "MMM d, yyyy h:mm a")}`
+                          : ""}
                         {" · "}
                         <span
                           className="font-mono text-[10px] opacity-50 cursor-help"
-                          title={`Document ID: ${doc.id}\nUploaded: ${doc.created_date ? new Date(doc.created_date).toLocaleString() : "unknown"}`}
+                          title={`Document ID: ${doc.id}\nUploaded: ${doc.created_date && !isNaN(new Date(doc.created_date).getTime()) ? new Date(doc.created_date).toLocaleString() : "unknown"}`}
                         >
                           #{doc.id?.slice(-6)}
                         </span>
