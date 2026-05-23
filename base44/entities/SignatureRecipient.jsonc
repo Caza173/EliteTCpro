@@ -58,50 +58,84 @@
     "email"
   ],
   "rls": {
-    "create": true,
+    "create": {
+      "created_by": "{{user.email}}"
+    },
     "read": {
       "$or": [
+        {
+          "data.email": "{{user.email}}"
+        },
+        {
+          "data.transaction_id": {
+            "$in": [
+              "{{user.data.accessible_transaction_ids}}"
+            ]
+          }
+        },
         {
           "user_condition": {
             "role": {
               "$in": [
                 "admin",
-                "owner"
+                "owner",
+                "tc_lead",
+                "tc"
               ]
             }
           }
-        },
-        {
-          "data.email": "{{user.email}}"
         }
       ]
     },
     "update": {
       "$or": [
         {
+          "data.transaction_id": {
+            "$in": [
+              "{{user.data.editable_transaction_ids}}"
+            ]
+          }
+        },
+        {
+          "created_by": "{{user.email}}"
+        },
+        {
           "user_condition": {
             "role": {
               "$in": [
                 "admin",
-                "owner"
+                "owner",
+                "tc_lead"
               ]
             }
           }
-        },
-        {
-          "data.email": "{{user.email}}"
         }
       ]
     },
     "delete": {
-      "user_condition": {
-        "role": {
-          "$in": [
-            "admin",
-            "owner"
-          ]
+      "$or": [
+        {
+          "data.transaction_id": {
+            "$in": [
+              "{{user.data.editable_transaction_ids}}"
+            ]
+          }
+        },
+        {
+          "created_by": "{{user.email}}"
+        },
+        {
+          "user_condition": {
+            "role": {
+              "$in": [
+                "admin",
+                "owner",
+                "tc_lead"
+              ]
+            }
+          }
         }
-      }
+      ]
     }
   }
 }
