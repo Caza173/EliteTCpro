@@ -52,7 +52,7 @@
 
     <!-- ── Service Worker Registration + Update Detection ────────── -->
     <script>
-      if ("serviceWorker" in navigator) {
+      if ("serviceWorker" in navigator && !location.hostname.includes('preview-sandbox')) {
         window.addEventListener("load", () => {
           navigator.serviceWorker
             .register("/sw.js", { updateViaCache: 'none' })
