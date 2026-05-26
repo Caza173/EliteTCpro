@@ -55,7 +55,7 @@
       if ("serviceWorker" in navigator) {
         window.addEventListener("load", () => {
           navigator.serviceWorker
-            .register("/sw.js")
+            .register("/sw.js", { updateViaCache: 'none' })
             .then((registration) => {
               // Poll for updates every 60 seconds
               setInterval(() => registration.update(), 60_000);
