@@ -1,9 +1,10 @@
-// cache-bust: 2026-05-22-v10-stable
+// cache-bust: 2026-05-26-shared-cache
 /**
- * useDealAccess — Strictly per-user isolated deal access.
- * Uses useState/useEffect ONLY — zero react-query — to avoid cross-chunk dispatcher errors.
+ * useDealAccess — Shared module-level cache so transactions are fetched ONCE
+ * and reused across all pages/components. Prevents duplicate API calls and
+ * fixes the "Transactions page shows 0" bug caused by independent per-instance state.
  */
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { base44 } from "@/api/base44Client";
 import { useCurrentUser as useCurrentUserCtx } from "./CurrentUserContext.jsx";
 
@@ -13,48 +14,83 @@ export function isSuperAdmin(user) {
   return user?.email === SUPER_ADMIN_EMAIL;
 }
 
+// ── Module-level shared cache ──────────────────────────────────────────────────
+let _cache = {
+  userId: null,
+  transactions: [],
+  loading: false,
+  error: null,
+  listeners: new Set(),
+};
+
+function notifyListeners() {
+  _cache.listeners.forEach(fn => fn({ ..._cache }));
+}
+
+function fetchTransactions(userId) {
+  if (_cache.loading) return; // already in flight
+  if (_cache.userId === userId && _cache.transactions.length > 0) return; // already cached
+
+  _cache.loading = true;
+  _cache.error = null;
+  notifyListeners();
+
+  base44.entities.Transaction.list("-created_date", 200)
+    .then(txs => {
+      if (!Array.isArray(txs)) throw new Error("Invalid response from Transaction.list");
+      _cache.transactions = txs;
+      _cache.userId = userId;
+      _cache.loading = false;
+      notifyListeners();
+    })
+    .catch(err => {
+      console.error("[useDealAccess] fetch error:", err);
+      _cache.error = err;
+      _cache.loading = false;
+      notifyListeners();
+    });
+}
+
+function invalidateCache() {
+  _cache.userId = null;
+  _cache.transactions = [];
+  _cache.error = null;
+}
+
+// ── Hook ───────────────────────────────────────────────────────────────────────
 export function useDealAccess() {
-  // useContext-based hook must be called FIRST before any useState/useRef
   const ctx = useCurrentUserCtx();
-  // ctx may be null if rendered outside CurrentUserProvider; default safely
   const currentUser = (ctx ?? {}).currentUser ?? null;
   const userLoading = (ctx ?? {}).isLoading ?? true;
 
-  const [transactions, setTransactions] = useState([]);
-  const [txLoading, setTxLoading] = useState(false);
-  const [txError, setTxError] = useState(null);
-  const fetchedForRef = useRef(null);
+  const [snapshot, setSnapshot] = useState({ ..._cache });
+
+  useEffect(() => {
+    const listener = (state) => setSnapshot({ ...state });
+    _cache.listeners.add(listener);
+    return () => { _cache.listeners.delete(listener); };
+  }, []);
 
   const isReady = !userLoading && !!currentUser?.id;
 
   useEffect(() => {
     if (!isReady) return;
-    if (fetchedForRef.current === currentUser.id && transactions.length > 0) return;
+    // If user changed, bust the cache
+    if (_cache.userId && _cache.userId !== currentUser.id) {
+      invalidateCache();
+    }
+    fetchTransactions(currentUser.id);
+  }, [isReady, currentUser?.id]);
 
-    let cancelled = false;
-    setTxLoading(true);
-    setTxError(null);
+  const refetch = useCallback(() => {
+    if (!currentUser?.id) return;
+    invalidateCache();
+    fetchTransactions(currentUser.id);
+  }, [currentUser?.id]);
 
-    base44.entities.Transaction.list("-created_date", 200)
-      .then(txs => {
-        if (cancelled) return;
-        if (!Array.isArray(txs)) throw new Error("Invalid response from Transaction.list");
-        setTransactions(txs);
-        fetchedForRef.current = currentUser.id;
-      })
-      .catch(err => {
-        if (cancelled) return;
-        console.error("[useDealAccess] fetch error:", err);
-        setTxError(err);
-      })
-      .finally(() => {
-        if (!cancelled) setTxLoading(false);
-      });
-
-    return () => { cancelled = true; };
-  }, [currentUser?.id, isReady]);
-
-  const isLoading = userLoading || txLoading;
+  const transactions = snapshot.transactions;
+  const isLoading = userLoading || snapshot.loading;
+  const txError = snapshot.error;
   const accessibleDealIds = new Set(transactions.map(t => t.id));
 
   function canAccess(dealId) {
@@ -62,25 +98,6 @@ export function useDealAccess() {
     if (isLoading) return false;
     if (txError) return false;
     return accessibleDealIds.has(dealId);
-  }
-
-  function refetch() {
-    // Force re-fetch by clearing the cache ref
-    fetchedForRef.current = null;
-    if (!currentUser?.id) return;
-    setTxLoading(true);
-    setTxError(null);
-    base44.entities.Transaction.list("-created_date", 200)
-      .then(txs => {
-        if (!Array.isArray(txs)) throw new Error("Invalid response from Transaction.list");
-        setTransactions(txs);
-        fetchedForRef.current = currentUser.id;
-      })
-      .catch(err => {
-        console.error("[useDealAccess] refetch error:", err);
-        setTxError(err);
-      })
-      .finally(() => setTxLoading(false));
   }
 
   return {
