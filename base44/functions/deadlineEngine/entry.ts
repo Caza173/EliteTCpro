@@ -275,12 +275,16 @@ Deno.serve(async (req) => {
         }
 
         // Create new notification — send to owner, fall back to agent_email
+        // created_by may be a UUID or already an email address
+        const isUuid = (v) => v && /^[0-9a-f]{24}$|^[0-9a-f-]{36}$/i.test(v);
         let ownerEmail = tx.agent_email || null;
-        if (tx.created_by) {
+        if (tx.created_by && isUuid(tx.created_by)) {
           try {
             const ownerResults = await base44.asServiceRole.entities.User.filter({ id: tx.created_by });
             if (ownerResults[0]?.email) ownerEmail = ownerResults[0].email;
           } catch (_) {}
+        } else if (tx.created_by && tx.created_by.includes('@')) {
+          ownerEmail = tx.created_by;
         }
         if (!ownerEmail) continue;
 

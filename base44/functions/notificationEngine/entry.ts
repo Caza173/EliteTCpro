@@ -363,14 +363,18 @@ Deno.serve(async (req) => {
         const activeNotifs = fieldNotifs.filter(n => !n.dismissed);
         
         // Get transaction owner's email (not agent email)
+        // created_by may be a UUID or an email — only do User lookup for UUIDs
+        const isUuid = (v) => v && /^[0-9a-f]{24}$|^[0-9a-f-]{36}$/i.test(v);
         let recipient = null;
-        if (tx.created_by) {
+        if (tx.created_by && isUuid(tx.created_by)) {
           try {
             const owner = await base44.asServiceRole.entities.User.filter({ id: tx.created_by });
             recipient = owner[0]?.email;
           } catch (e) {
             console.warn(`[notificationEngine] Could not fetch owner email for user=${tx.created_by}`);
           }
+        } else if (tx.created_by && tx.created_by.includes('@')) {
+          recipient = tx.created_by; // it's already an email
         }
         if (!recipient) continue;
 
@@ -455,14 +459,17 @@ Deno.serve(async (req) => {
           const issuesSummary = criticalIssues.slice(0, 3).map(i => i.message).join('; ');
           
           // Get transaction owner's email (not agent email)
+          const isUuid2 = (v) => v && /^[0-9a-f]{24}$|^[0-9a-f-]{36}$/i.test(v);
           let recipient = null;
-          if (tx.created_by) {
+          if (tx.created_by && isUuid2(tx.created_by)) {
             try {
               const owner = await base44.asServiceRole.entities.User.filter({ id: tx.created_by });
               recipient = owner[0]?.email;
             } catch (e) {
               console.warn(`[notificationEngine] Could not fetch owner email for user=${tx.created_by}`);
             }
+          } else if (tx.created_by && tx.created_by.includes('@')) {
+            recipient = tx.created_by;
           }
           if (recipient) {
             try {
