@@ -2,16 +2,16 @@ import React, { useState, useRef, useCallback, memo, useEffect } from "react";
 import { DragDropContext, Droppable, Draggable } from "@hello-pangea/dnd";
 import {
   CheckCircle2, Circle, AlertCircle, GripVertical,
-  Plus, Trash2, Pencil, BookOpen, ChevronDown, ChevronUp, Check,
+  Plus, Trash2, Pencil, Settings2, ChevronDown, ChevronUp, Check,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { base44 } from "@/api/base44Client";
 import { useQueryClient } from "@tanstack/react-query";
 import { getPhasesForType, isTaskIncompatible, SUB_PHASE_MAP } from "@/lib/taskLibrary";
-import TaskLibraryModal from "@/components/tasks/TaskLibraryModal";
 import PhaseCompletionBadge from "./PhaseCompletionBadge";
 import TaskActionToolbar from "@/components/tasks/TaskActionToolbar";
 import MovePhasePopover from "./MovePhasePopover";
+import WorkflowTemplateEditor from "./WorkflowTemplateEditor";
 
 // ── Determine phase status ──────────────────────────────────────────────────
 // For phase 1 (Under Contract): complete only when BOTH phase 1 AND phase 2
@@ -203,11 +203,12 @@ const TaskRow = memo(function TaskRow({
 function PhaseCard({
   phase, tasks, allPhases, isActive, isComplete, isMobile, defaultExpanded,
   onToggleTask, onDelete, onMoveTo, onSaveEdit, onAddTask, brokerageId, transactionId, onTasksChanged, transaction, currentUser,
+  transactionType,
 }) {
   const [expanded, setExpanded] = useState(defaultExpanded);
   const [addingTask, setAddingTask] = useState(false);
   const [newTitle, setNewTitle] = useState("");
-  const [libraryOpen, setLibraryOpen] = useState(false);
+  const [templateEditorOpen, setTemplateEditorOpen] = useState(false);
   const [addTaskError, setAddTaskError] = useState(null);
   const queryClient = useQueryClient();
 
@@ -393,59 +394,22 @@ function PhaseCard({
                 <Plus className="w-3 h-3" /> Add Task
               </button>
               <button
-                onClick={() => setLibraryOpen(true)}
+                onClick={() => setTemplateEditorOpen(true)}
                 className="flex items-center gap-1 text-[10px] font-medium text-purple-500 hover:text-purple-400 px-1 py-0.5 rounded"
               >
-                <BookOpen className="w-3 h-3" /> Library
+                <Settings2 className="w-3 h-3" /> Manage Template
               </button>
             </div>
           )}
         </div>
       )}
 
-      {libraryOpen && (
-        <TaskLibraryModal
-          phaseNum={phase.phaseNum}
-          phaseLabel={phase.label}
+      {templateEditorOpen && (
+        <WorkflowTemplateEditor
+          transactionType={transactionType || transaction?.transaction_type}
           brokerageId={brokerageId}
-          transactionType={transaction?.transaction_type}
-          currentTasks={phaseTasks}
-          onClose={() => setLibraryOpen(false)}
-          onApply={async (items, replaceExisting = false) => {
-            if (replaceExisting) {
-              // Template apply: delete existing phase tasks first, then create template tasks
-              await Promise.all(phaseTasks.map(t => base44.entities.TransactionTask.delete(t.id)));
-              await Promise.all(items.map((item, i) =>
-                base44.entities.TransactionTask.create({
-                  transaction_id: transactionId,
-                  brokerage_id: brokerageId || undefined,
-                  phase: phase.phaseNum,
-                  title: item.title,
-                  order_index: i,
-                  is_completed: false,
-                  is_required: item.required || false,
-                  is_custom: true,
-                  created_by: currentUser?.id || undefined,
-                })
-              ));
-            } else {
-              const maxOrder = phaseTasks.length > 0 ? Math.max(...phaseTasks.map(t => t.order_index ?? 0)) + 1 : 0;
-              await Promise.all(items.map((item, i) =>
-                base44.entities.TransactionTask.create({
-                  transaction_id: transactionId,
-                  brokerage_id: brokerageId || undefined,
-                  phase: phase.phaseNum,
-                  title: item.title,
-                  order_index: maxOrder + i,
-                  is_completed: false,
-                  is_required: item.is_required || item.required || false,
-                  is_custom: true,
-                  created_by: currentUser?.id || undefined,
-                })
-              ));
-            }
-            onTasksChanged?.();
-          }}
+          currentUser={currentUser}
+          onClose={() => setTemplateEditorOpen(false)}
         />
       )}
     </div>
@@ -672,6 +636,7 @@ export default function UnifiedPhaseBoard({
                   onTasksChanged={onTasksChanged}
                   transaction={transaction}
                   currentUser={currentUser}
+                  transactionType={transactionType}
                 />
               </div>
             );

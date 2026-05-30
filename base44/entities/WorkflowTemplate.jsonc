@@ -2,273 +2,128 @@
   "name": "WorkflowTemplate",
   "type": "object",
   "properties": {
-    "brokerage_id": {
-      "type": "string"
-    },
     "name": {
-      "type": "string"
-    },
-    "description": {
-      "type": "string"
+      "type": "string",
+      "description": "Template name"
     },
     "transaction_type": {
       "type": "string",
-      "enum": [
-        "buyer",
-        "seller",
-        "dual",
-        "lease",
-        "multifamily",
-        "land",
-        "commercial"
-      ],
-      "default": "buyer"
+      "description": "buyer_under_contract | listing | dual | other"
     },
-    "source": {
+    "brokerage_id": {
       "type": "string",
-      "enum": [
-        "manual",
-        "uploaded",
-        "system"
-      ],
-      "default": "manual"
+      "description": "Brokerage-scoped template; null = system default"
     },
-    "original_file_url": {
-      "type": "string"
-    },
-    "original_file_name": {
-      "type": "string"
-    },
-    "state": {
+    "created_by": {
       "type": "string",
-      "default": "NH"
-    },
-    "version": {
-      "type": "number",
-      "default": 1
-    },
-    "is_default": {
-      "type": "boolean",
-      "default": false
+      "description": "User ID of creator"
     },
     "phases": {
       "type": "array",
-      "description": "Phase definitions",
+      "description": "Ordered phase definitions with tasks",
       "items": {
         "type": "object",
         "properties": {
-          "phase_number": {
+          "phase_num": {
             "type": "number"
           },
-          "phase_name": {
+          "phase_id": {
             "type": "string"
           },
-          "phase_description": {
+          "label": {
             "type": "string"
+          },
+          "tasks": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "title": {
+                  "type": "string"
+                },
+                "description": {
+                  "type": "string"
+                },
+                "required": {
+                  "type": "boolean"
+                },
+                "default_checked": {
+                  "type": "boolean"
+                },
+                "auto_generated": {
+                  "type": "boolean"
+                },
+                "sort_order": {
+                  "type": "number"
+                },
+                "trigger_type": {
+                  "type": "string"
+                },
+                "trigger_offset": {
+                  "type": "number"
+                },
+                "deadline_rule": {
+                  "type": "string"
+                },
+                "auto_generate_date": {
+                  "type": "string"
+                }
+              }
+            }
           }
         }
       }
     },
-    "tasks": {
-      "type": "array",
-      "description": "Task templates",
-      "items": {
-        "type": "object",
-        "properties": {
-          "id": {
-            "type": "string"
-          },
-          "phase_number": {
-            "type": "number"
-          },
-          "task_name": {
-            "type": "string"
-          },
-          "default_assignee_role": {
-            "type": "string",
-            "enum": [
-              "tc",
-              "agent",
-              "client"
-            ]
-          },
-          "due_offset_days": {
-            "type": "number"
-          },
-          "due_anchor": {
-            "type": "string",
-            "enum": [
-              "contract_date",
-              "closing_date",
-              "effective_date"
-            ]
-          },
-          "required": {
-            "type": "boolean",
-            "default": true
-          },
-          "status": {
-            "type": "string",
-            "enum": [
-              "pending",
-              "complete"
-            ],
-            "default": "pending"
-          },
-          "alert_trigger": {
-            "type": "string"
-          },
-          "compliance_rule": {
-            "type": "string"
-          }
-        }
-      }
+    "is_default": {
+      "type": "boolean",
+      "default": false,
+      "description": "Whether this is the brokerage default template"
     },
-    "deadlines": {
-      "type": "array",
-      "description": "Deadline templates",
-      "items": {
-        "type": "object",
-        "properties": {
-          "id": {
-            "type": "string"
-          },
-          "deadline_type": {
-            "type": "string"
-          },
-          "due_offset_days": {
-            "type": "number"
-          },
-          "due_anchor": {
-            "type": "string",
-            "enum": [
-              "contract_date",
-              "closing_date",
-              "effective_date"
-            ]
-          }
-        }
-      }
+    "created_at": {
+      "type": "string"
     },
-    "doc_checklist": {
-      "type": "array",
-      "description": "Document checklist items",
-      "items": {
-        "type": "object",
-        "properties": {
-          "id": {
-            "type": "string"
-          },
-          "doc_type": {
-            "type": "string"
-          },
-          "required": {
-            "type": "boolean",
-            "default": true
-          },
-          "required_by_phase": {
-            "type": "number"
-          },
-          "visible_to_client": {
-            "type": "boolean",
-            "default": false
-          }
-        }
-      }
-    },
-    "compliance_rules": {
-      "type": "array",
-      "description": "Compliance rules for this template type",
-      "items": {
-        "type": "object",
-        "properties": {
-          "rule_id": {
-            "type": "string"
-          },
-          "check": {
-            "type": "string"
-          },
-          "severity": {
-            "type": "string",
-            "enum": [
-              "blocker",
-              "warning",
-              "info"
-            ]
-          },
-          "message": {
-            "type": "string"
-          }
-        }
-      }
+    "updated_at": {
+      "type": "string"
     }
   },
   "required": [
-    "name"
+    "name",
+    "transaction_type"
   ],
   "rls": {
     "create": {
-      "$or": [
-        {
-          "created_by": "{{user.email}}"
-        },
-        {
-          "user_condition": {
-            "role": {
-              "$in": [
-                "admin",
-                "owner"
-              ]
-            }
-          }
+      "user_condition": {
+        "role": {
+          "$in": [
+            "admin",
+            "owner",
+            "super_admin"
+          ]
         }
-      ]
+      }
     },
-    "read": {
-      "$or": [
-        {
-          "data.brokerage_id": "{{user.data.brokerage_id}}"
-        },
-        {
-          "data.is_system": true
-        }
-      ]
-    },
+    "read": true,
     "update": {
-      "$or": [
-        {
-          "created_by": "{{user.email}}"
-        },
-        {
-          "user_condition": {
-            "role": {
-              "$in": [
-                "admin",
-                "owner",
-                "tc_lead"
-              ]
-            }
-          }
+      "user_condition": {
+        "role": {
+          "$in": [
+            "admin",
+            "owner",
+            "super_admin"
+          ]
         }
-      ]
+      }
     },
     "delete": {
-      "$or": [
-        {
-          "created_by": "{{user.email}}"
-        },
-        {
-          "user_condition": {
-            "role": {
-              "$in": [
-                "admin",
-                "owner",
-                "tc_lead"
-              ]
-            }
-          }
+      "user_condition": {
+        "role": {
+          "$in": [
+            "admin",
+            "owner",
+            "super_admin"
+          ]
         }
-      ]
+      }
     }
   }
 }
