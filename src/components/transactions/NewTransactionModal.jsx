@@ -334,7 +334,8 @@ export default function NewTransactionModal({ open, onClose, onCreated }) {
         inspection_deadline: form.inspections_waived ? null : form.inspection_deadline,
       };
 
-      const tx = await base44.entities.Transaction.create(txPayload);
+      const res = await base44.functions.invoke("createTransaction", txPayload);
+      const tx = res?.data;
       if (!tx?.id) throw new Error("Transaction was not created. Please try again.");
       handleClose();
       if (onCreated) onCreated(tx);
