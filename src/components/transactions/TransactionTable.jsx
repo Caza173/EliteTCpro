@@ -14,7 +14,13 @@ import {
 } from "@/components/ui/table";
 import { MapPin, User, Calendar, AlertTriangle, CheckCircle2, ChevronRight, ChevronDown } from "lucide-react";
 import { base44 } from "@/api/base44Client";
-import { format } from "date-fns";
+import { format, isValid } from "date-fns";
+
+function safeFormat(dateStr, fmt) {
+  if (!dateStr || typeof dateStr !== "string") return null;
+  const d = new Date(dateStr);
+  return isValid(d) ? format(d, fmt) : null;
+}
 
 const DEADLINE_FIELDS = [
   "earnest_money_deadline", "inspection_deadline", "due_diligence_deadline",
@@ -28,6 +34,7 @@ export function calcPriorityScore(tx, complianceIssues = []) {
   for (const field of DEADLINE_FIELDS) {
     if (!tx[field]) continue;
     const d = new Date(tx[field]);
+    if (!isValid(d)) continue;
     const daysLeft = Math.ceil((d - today) / (1000 * 60 * 60 * 24));
     if (daysLeft < 0)       score += 100; // overdue
     else if (daysLeft <= 3) score += 80;
@@ -35,7 +42,9 @@ export function calcPriorityScore(tx, complianceIssues = []) {
   }
 
   if (tx.closing_date) {
-    const closingDays = Math.ceil((new Date(tx.closing_date) - today) / (1000 * 60 * 60 * 24));
+    const closingD = new Date(tx.closing_date);
+    if (!isValid(closingD)) return score;
+    const closingDays = Math.ceil((closingD - today) / (1000 * 60 * 60 * 24));
     if (closingDays >= 0 && closingDays <= 7) score += 40;
   }
 
@@ -62,6 +71,7 @@ function getPriorityReasons(tx) {
   for (const field of DEADLINE_FIELDS) {
     if (!tx[field]) continue;
     const d = new Date(tx[field]);
+    if (!isValid(d)) continue;
     const daysLeft = Math.ceil((d - today) / (1000 * 60 * 60 * 24));
     if (daysLeft < 0) reasons.push(`${DEADLINE_LABELS[field]} deadline overdue`);
     else if (daysLeft <= 3) reasons.push(`${DEADLINE_LABELS[field]} due in ${daysLeft}d`);
@@ -275,9 +285,9 @@ export default function TransactionTable({ transactions, sorted = false, onStatu
                 <Badge variant="outline" className={`text-[10px] font-medium capitalize ${statusStyles[tx.status] || statusStyles.active}`}>
                   {tx.status || "active"}
                 </Badge>
-                {tx.closing_date && (
+                {tx.closing_date && safeFormat(tx.closing_date, "MMM d") && (
                   <span className="text-[10px]" style={{ color: "var(--text-muted)" }}>
-                    Close: <span className="font-medium">{format(new Date(tx.closing_date), "MMM d")}</span>
+                    Close: <span className="font-medium">{safeFormat(tx.closing_date, "MMM d")}</span>
                   </span>
                 )}
               </div>
@@ -335,14 +345,14 @@ export default function TransactionTable({ transactions, sorted = false, onStatu
                    <div>
                      <span className="font-medium text-sm truncate max-w-[120px] sm:max-w-[200px] block transition-colors" style={{ color: "var(--foreground)", fontWeight: 500 }}>{tx.address}</span>
                      <div className="flex items-center gap-3 mt-0.5">
-                       {tx.closing_date && (
+                       {tx.closing_date && safeFormat(tx.closing_date, "MMM d") && (
                          <span className="text-[11px]" style={{ color: "var(--text-muted)" }}>
-                           Close: <span className="font-medium">{format(new Date(tx.closing_date), "MMM d")}</span>
+                           Close: <span className="font-medium">{safeFormat(tx.closing_date, "MMM d")}</span>
                          </span>
                        )}
-                       {tx.earnest_money_deadline && (
+                       {tx.earnest_money_deadline && safeFormat(tx.earnest_money_deadline, "MMM d") && (
                          <span className="text-[11px]" style={{ color: "var(--text-muted)" }}>
-                           EMD: <span className="font-medium">{format(new Date(tx.earnest_money_deadline), "MMM d")}</span>
+                           EMD: <span className="font-medium">{safeFormat(tx.earnest_money_deadline, "MMM d")}</span>
                          </span>
                        )}
                      </div>
@@ -359,7 +369,7 @@ export default function TransactionTable({ transactions, sorted = false, onStatu
                <TableCell className="hidden lg:table-cell">
                  <div className="flex items-center gap-1.5 text-sm transition-colors" style={{ color: "var(--muted-foreground)" }}>
                    <Calendar className="w-3.5 h-3.5" />
-                   {tx.contract_date ? format(new Date(tx.contract_date), "MMM d, yyyy") : "—"}
+                   {safeFormat(tx.contract_date, "MMM d, yyyy") || "—"}
                  </div>
                </TableCell>
                <TableCell className="hidden sm:table-cell">
