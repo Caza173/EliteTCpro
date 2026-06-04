@@ -69,6 +69,7 @@ function AlertRow({ alert, transaction, currentUser, onDismiss, documents }) {
 
       <div
         className="flex items-start gap-3 p-3 rounded-xl border transition-colors elite-card"
+        style={{ background: "var(--card-bg)", borderColor: "var(--card-border)" }}
       >
         <div className="mt-0.5 flex-shrink-0">
           {TYPE_ICONS[alert.type] || <AlertTriangle className="w-4 h-4 text-red-500" />}
@@ -96,14 +97,14 @@ function AlertRow({ alert, transaction, currentUser, onDismiss, documents }) {
               {alert.severity}
             </Badge>
           </div>
-          <p className="text-sm" style={{ color: "var(--text-primary, #f7f3ea)" }}>{alert.message}</p>
+          <p className="text-sm" style={{ color: "var(--text-primary)" }}>{alert.message}</p>
           {alert.deadline && (
-            <p className="text-xs mt-0.5" style={{ color: "var(--text-muted, #6f7683)" }}>
+            <p className="text-xs mt-0.5" style={{ color: "var(--text-muted)" }}>
               Date: {new Date(alert.deadline).toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" })}
             </p>
           )}
           {alert.source && (
-            <p className="text-[10px] mt-0.5 font-mono" style={{ color: "rgba(210,163,95,0.5)" }}>
+            <p className="text-[10px] mt-0.5 font-mono" style={{ color: "var(--accent-subtle)" }}>
               source: {alert.source}
             </p>
           )}
@@ -135,9 +136,9 @@ function AlertRow({ alert, transaction, currentUser, onDismiss, documents }) {
           <button
             onClick={() => onDismiss(alert.id)}
             className="h-8 w-8 flex items-center justify-center rounded-lg transition-colors"
-            style={{ color: "var(--text-muted, #6f7683)" }}
-            onMouseEnter={e => { e.currentTarget.style.color = "#f7f3ea"; e.currentTarget.style.background = "rgba(255,255,255,0.07)"; }}
-            onMouseLeave={e => { e.currentTarget.style.color = "var(--text-muted, #6f7683)"; e.currentTarget.style.background = ""; }}
+            style={{ color: "var(--text-muted)" }}
+            onMouseEnter={e => { e.currentTarget.style.color = "var(--text-primary)"; e.currentTarget.style.background = "var(--bg-hover)"; }}
+            onMouseLeave={e => { e.currentTarget.style.color = "var(--text-muted)"; e.currentTarget.style.background = ""; }}
             title="Dismiss"
           >
             <X className="w-3.5 h-3.5" />
@@ -272,11 +273,11 @@ export default function IssueDetectionPanel({ transaction, currentUser }) {
           onClick={() => setAutoSend(v => !v)}
           className="flex items-center gap-2 px-3 py-1.5 rounded-lg border text-xs font-medium transition-all"
           style={autoSend
-            ? { background: "rgba(210,163,95,0.08)", borderColor: "rgba(210,163,95,0.4)", color: "#d2a35f" }
-            : { background: "rgba(255,255,255,0.03)", borderColor: "rgba(255,255,255,0.1)", color: "#6f7683" }
+            ? { background: "var(--accent-subtle)", borderColor: "var(--accent)", color: "var(--accent)" }
+            : { background: "var(--bg-tertiary)", borderColor: "var(--border)", color: "var(--text-muted)" }
           }
         >
-          <span className="w-2 h-2 rounded-full" style={{ background: autoSend ? "#d2a35f" : "#6f7683" }} />
+          <span className="w-2 h-2 rounded-full" style={{ background: autoSend ? "var(--accent)" : "var(--text-muted)" }} />
           Auto-send emails
         </button>
       </div>
@@ -285,7 +286,7 @@ export default function IssueDetectionPanel({ transaction, currentUser }) {
        {visible.length > 0 && (
          <div
            className="flex gap-1 p-1 rounded-lg overflow-x-auto scrollbar-none"
-           style={{ background: "var(--bg-hover)" }}
+           style={{ background: "var(--bg-tertiary)" }}
          >
           {FILTER_TABS.map(tab => (
             <button
@@ -293,15 +294,15 @@ export default function IssueDetectionPanel({ transaction, currentUser }) {
               onClick={() => setFilter(tab.id)}
               className="px-3 py-1.5 rounded-md text-xs font-medium whitespace-nowrap transition-all"
               style={filter === tab.id
-                ? { background: "rgba(210,163,95,0.12)", color: "#d2a35f" }
-                : { color: "var(--text-muted, #6f7683)" }
+                ? { background: "var(--accent-subtle)", color: "var(--accent)" }
+                : { color: "var(--text-muted)" }
               }
             >
               {tab.label}
               {tab.id === "all" && visible.length > 0 && (
                 <span
                   className="ml-1.5 px-1.5 py-0.5 rounded-full text-[10px]"
-                  style={{ background: "rgba(255,255,255,0.08)", color: "var(--text-secondary, #a7adba)" }}
+                  style={{ background: "var(--bg-hover)", color: "var(--text-secondary)" }}
                 >
                   {visible.length}
                 </span>
@@ -341,7 +342,7 @@ export default function IssueDetectionPanel({ transaction, currentUser }) {
         <button
           onClick={clearAllDismissed}
           className="w-full text-xs py-1.5 rounded-lg border transition-colors"
-          style={{ borderColor: "rgba(255,255,255,0.1)", color: "var(--text-muted)" }}
+          style={{ borderColor: "var(--border)", color: "var(--text-muted)" }}
         >
           Show {activeDismissed.size} dismissed issue{activeDismissed.size > 1 ? "s" : ""}
         </button>

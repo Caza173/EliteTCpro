@@ -80,13 +80,13 @@
   --elite-card-shadow: 0 0 0 1px rgba(0, 0, 0, 0.03), 0 8px 32px rgba(0, 0, 0, 0.08);
   --elite-card-shadow-hover: 0 0 0 1px rgba(0, 0, 0, 0.06), 0 12px 48px rgba(0, 0, 0, 0.12);
 
-  --sidebar-bg:          #1a1a1e;
-  --sidebar-text:        #9097a6;
-  --sidebar-text-active: #f7f3ea;
-  --sidebar-item-hover:  rgba(210, 163, 95, 0.08);
-  --sidebar-item-active: rgba(210, 163, 95, 0.12);
-  --sidebar-accent:      #d2a35f;
-  --sidebar-border:      rgba(255, 255, 255, 0.06);
+  --sidebar-bg:          #f5f5f7;
+  --sidebar-text:        #6b7280;
+  --sidebar-text-active: #111827;
+  --sidebar-item-hover:  rgba(184, 134, 61, 0.08);
+  --sidebar-item-active: rgba(184, 134, 61, 0.12);
+  --sidebar-accent:      #b8863d;
+  --sidebar-border:      rgba(15, 23, 42, 0.08);
 
   --accent:        #b8863d;
   --accent-hover:  #c99655;
