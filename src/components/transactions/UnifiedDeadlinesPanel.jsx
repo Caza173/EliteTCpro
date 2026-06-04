@@ -100,6 +100,8 @@ function DeadlineRow({ item, calendarMaps, transactionId, onUpdateContingency, o
   const [syncing, setSyncing] = useState(false);
   const [markingReceived, setMarkingReceived] = useState(false);
   const [markingComplete, setMarkingComplete] = useState(false);
+  const [pickingReceivedDate, setPickingReceivedDate] = useState(false);
+  const [receivedDateInput, setReceivedDateInput] = useState("");
   const [confirmingDelete, setConfirmingDelete] = useState(false);
   const [deleting, setDeleting] = useState(false);
 
@@ -306,22 +308,52 @@ function DeadlineRow({ item, calendarMaps, transactionId, onUpdateContingency, o
                     Complete
                   </Button>
                 )}
-                {/* EMD: Mark Received button */}
+                {/* EMD: Mark Received button / date picker */}
                 {item.isEMD && !emdReceived && !isCompleted && item.date && (
-                  <Button
-                    size="sm" variant="ghost"
-                    className="h-6 px-2 text-[10px] font-semibold text-emerald-400 hover:bg-emerald-500/20 gap-1"
-                    disabled={markingReceived}
-                    onClick={async () => {
-                      setMarkingReceived(true);
-                      onUpdateTransaction({ earnest_money_received: true, earnest_money_received_date: new Date().toLocaleDateString("en-CA", { timeZone: "America/New_York" }) });
-                      setMarkingReceived(false);
-                    }}
-                    title="Mark earnest money as received"
-                  >
-                    {markingReceived ? <Loader2 className="w-3 h-3 animate-spin" /> : <CheckCircle2 className="w-3 h-3" />}
-                    Received
-                  </Button>
+                  pickingReceivedDate ? (
+                    <div className="flex items-center gap-1">
+                      <Input
+                        type="date"
+                        value={receivedDateInput}
+                        onChange={e => setReceivedDateInput(e.target.value)}
+                        className="h-6 text-[10px] py-0 px-1 w-32 bg-white/80 border-white"
+                        autoFocus
+                      />
+                      <Button
+                        size="icon" variant="ghost"
+                        className="h-6 w-6 text-emerald-500 hover:bg-emerald-500/20"
+                        disabled={markingReceived || !receivedDateInput}
+                        onClick={async () => {
+                          setMarkingReceived(true);
+                          onUpdateTransaction({ earnest_money_received: true, earnest_money_received_date: receivedDateInput });
+                          setMarkingReceived(false);
+                          setPickingReceivedDate(false);
+                          setReceivedDateInput("");
+                        }}
+                        title="Confirm received date"
+                      >
+                        {markingReceived ? <Loader2 className="w-3 h-3 animate-spin" /> : <Check className="w-3 h-3" />}
+                      </Button>
+                      <Button
+                        size="icon" variant="ghost"
+                        className="h-6 w-6 text-gray-400 hover:bg-gray-100"
+                        onClick={() => { setPickingReceivedDate(false); setReceivedDateInput(""); }}
+                        title="Cancel"
+                      >
+                        <X className="w-3 h-3" />
+                      </Button>
+                    </div>
+                  ) : (
+                    <Button
+                      size="sm" variant="ghost"
+                      className="h-6 px-2 text-[10px] font-semibold text-emerald-400 hover:bg-emerald-500/20 gap-1"
+                      onClick={() => { setReceivedDateInput(""); setPickingReceivedDate(true); }}
+                      title="Mark earnest money as received"
+                    >
+                      <CheckCircle2 className="w-3 h-3" />
+                      Received
+                    </Button>
+                  )
                 )}
                 {item.date && (
                   <Button

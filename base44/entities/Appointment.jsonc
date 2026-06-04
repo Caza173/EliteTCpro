@@ -49,9 +49,7 @@
     "event_date"
   ],
   "rls": {
-    "create": {
-      "data.owner_id": "{{user.id}}"
-    },
+    "create": true,
     "read": {
       "data.owner_id": "{{user.id}}"
     },

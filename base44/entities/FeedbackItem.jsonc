@@ -177,50 +177,5 @@
     "type",
     "title",
     "description"
-  ],
-  "rls": {
-    "create": {
-      "created_by": "{{user.email}}"
-    },
-    "read": {
-      "$or": [
-        {
-          "created_by": "{{user.email}}"
-        },
-        {
-          "user_condition": {
-            "role": {
-              "$in": [
-                "admin",
-                "owner",
-                "tc_lead"
-              ]
-            }
-          }
-        }
-      ]
-    },
-    "update": {
-      "user_condition": {
-        "role": {
-          "$in": [
-            "admin",
-            "owner",
-            "tc_lead"
-          ]
-        }
-      }
-    },
-    "delete": {
-      "user_condition": {
-        "role": {
-          "$in": [
-            "admin",
-            "owner",
-            "tc_lead"
-          ]
-        }
-      }
-    }
-  }
+  ]
 }

@@ -67,9 +67,78 @@
     "message"
   ],
   "rls": {
-    "create": false,
-    "read": null,
-    "update": null,
-    "delete": null
+    "create": true,
+    "read": {
+      "$or": [
+        {
+          "user_condition": {
+            "role": {
+              "$in": [
+                "admin",
+                "owner",
+                "super_admin"
+              ]
+            }
+          }
+        },
+        {
+          "data.owner_user_id": "{{user.id}}"
+        },
+        {
+          "data.created_by": "{{user.id}}"
+        },
+        {
+          "data.brokerage_id": "{{user.data.brokerage_id}}"
+        }
+      ]
+    },
+    "update": {
+      "$or": [
+        {
+          "user_condition": {
+            "role": {
+              "$in": [
+                "admin",
+                "owner",
+                "super_admin"
+              ]
+            }
+          }
+        },
+        {
+          "data.owner_user_id": "{{user.id}}"
+        },
+        {
+          "data.created_by": "{{user.id}}"
+        },
+        {
+          "data.brokerage_id": "{{user.data.brokerage_id}}"
+        }
+      ]
+    },
+    "delete": {
+      "$or": [
+        {
+          "user_condition": {
+            "role": {
+              "$in": [
+                "admin",
+                "owner",
+                "super_admin"
+              ]
+            }
+          }
+        },
+        {
+          "data.owner_user_id": "{{user.id}}"
+        },
+        {
+          "data.created_by": "{{user.id}}"
+        },
+        {
+          "data.brokerage_id": "{{user.data.brokerage_id}}"
+        }
+      ]
+    }
   }
 }

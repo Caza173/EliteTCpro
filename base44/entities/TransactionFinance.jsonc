@@ -101,10 +101,58 @@
   ],
   "rls": {
     "create": {
-      "created_by": "{{user.email}}"
+      "data.brokerage_id": "{{user.data.brokerage_id}}"
     },
-    "read": null,
-    "update": null,
-    "delete": null
+    "read": {
+      "$or": [
+        {
+          "user_condition": {
+            "role": {
+              "$in": [
+                "admin",
+                "owner"
+              ]
+            }
+          }
+        },
+        {
+          "data.created_by": "{{user.id}}"
+        }
+      ]
+    },
+    "update": {
+      "$or": [
+        {
+          "user_condition": {
+            "role": {
+              "$in": [
+                "admin",
+                "owner"
+              ]
+            }
+          }
+        },
+        {
+          "data.created_by": "{{user.id}}"
+        }
+      ]
+    },
+    "delete": {
+      "$or": [
+        {
+          "user_condition": {
+            "role": {
+              "$in": [
+                "admin",
+                "owner"
+              ]
+            }
+          }
+        },
+        {
+          "data.created_by": "{{user.id}}"
+        }
+      ]
+    }
   }
 }

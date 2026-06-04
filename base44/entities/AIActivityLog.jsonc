@@ -61,7 +61,11 @@
     "deadline_type"
   ],
   "rls": {
-    "create": false,
+    "create": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
     "read": {
       "$or": [
         {

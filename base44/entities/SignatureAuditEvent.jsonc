@@ -47,8 +47,27 @@
     "event_type"
   ],
   "rls": {
-    "create": false,
-    "read": null,
+    "create": true,
+    "read": {
+      "$or": [
+        {
+          "user_condition": {
+            "role": {
+              "$in": [
+                "admin",
+                "owner"
+              ]
+            }
+          }
+        },
+        {
+          "data.signer_email": "{{user.email}}"
+        },
+        {
+          "data.brokerage_id": "{{user.data.brokerage_id}}"
+        }
+      ]
+    },
     "update": {
       "user_condition": {
         "role": {

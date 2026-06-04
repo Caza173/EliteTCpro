@@ -111,9 +111,7 @@
     "provider"
   ],
   "rls": {
-    "create": {
-      "created_by": "{{user.email}}"
-    },
+    "create": true,
     "read": {
       "data.brokerage_id": "{{user.data.brokerage_id}}"
     },
