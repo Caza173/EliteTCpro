@@ -1,0 +1,37 @@
+{
+  "name": "Process Buyer Agency Agreement on Upload",
+  "description": "Automatically parse Buyer Agency Agreements when uploaded to extract Section 3 dates, create deadlines, set reminders, and sync to calendars.",
+  "trigger": {
+    "condition": "${ (.trigger.data.doc_type == \"buyer_agency_agreement\") }",
+    "config": {
+      "trigger_type": "entity",
+      "events": [
+        "create"
+      ],
+      "entity_name": "Document"
+    }
+  },
+  "definition": {
+    "document": {
+      "dsl": "1.0.0",
+      "name": "process_buyer_agency_agreement_on_upload",
+      "version": "1.0",
+      "namespace": "base44"
+    },
+    "do": [
+      {
+        "run_function": {
+          "call": "invoke_backend_function",
+          "with": {
+            "function_name": "onBuyerAgencyAgreementUpload",
+            "args": {}
+          },
+          "then": "end"
+        }
+      }
+    ]
+  },
+  "x-base44-migrated-from-automation": {
+    "legacy_payload_function": "onBuyerAgencyAgreementUpload"
+  }
+}

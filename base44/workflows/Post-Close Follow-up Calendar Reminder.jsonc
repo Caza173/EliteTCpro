@@ -1,0 +1,37 @@
+{
+  "name": "Post-Close Follow-up Calendar Reminder",
+  "description": "When a post-close follow-up task is marked complete, automatically create a Google Calendar reminder on the correct date (14/30/90 days, 6 months, or 1 year from closing).",
+  "trigger": {
+    "condition": "${ ((.trigger.data.is_completed == true) and (.trigger.old_data.is_completed == false)) }",
+    "config": {
+      "trigger_type": "entity",
+      "events": [
+        "update"
+      ],
+      "entity_name": "TransactionTask"
+    }
+  },
+  "definition": {
+    "document": {
+      "dsl": "1.0.0",
+      "name": "post_close_follow_up_calendar_reminder",
+      "version": "1.0",
+      "namespace": "base44"
+    },
+    "do": [
+      {
+        "run_function": {
+          "call": "invoke_backend_function",
+          "with": {
+            "function_name": "scheduleFollowUpReminder",
+            "args": {}
+          },
+          "then": "end"
+        }
+      }
+    ]
+  },
+  "x-base44-migrated-from-automation": {
+    "legacy_payload_function": "scheduleFollowUpReminder"
+  }
+}

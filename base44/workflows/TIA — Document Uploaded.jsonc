@@ -1,0 +1,37 @@
+{
+  "name": "TIA \u2014 Document Uploaded",
+  "description": "Fires the Transaction Intelligence Agent when a document is uploaded. Auto-parses P&S agreements and runs compliance checks on all document types.",
+  "trigger": {
+    "condition": null,
+    "config": {
+      "trigger_type": "entity",
+      "events": [
+        "create"
+      ],
+      "entity_name": "Document"
+    }
+  },
+  "definition": {
+    "document": {
+      "dsl": "1.0.0",
+      "name": "tia_document_uploaded",
+      "version": "1.0",
+      "namespace": "base44"
+    },
+    "do": [
+      {
+        "run_function": {
+          "call": "invoke_backend_function",
+          "with": {
+            "function_name": "transactionIntelligenceAgent",
+            "args": {}
+          },
+          "then": "end"
+        }
+      }
+    ]
+  },
+  "x-base44-migrated-from-automation": {
+    "legacy_payload_function": "transactionIntelligenceAgent"
+  }
+}

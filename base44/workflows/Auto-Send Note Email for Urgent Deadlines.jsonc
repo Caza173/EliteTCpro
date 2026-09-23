@@ -1,0 +1,37 @@
+{
+  "name": "Auto-Send Note Email for Urgent Deadlines",
+  "description": "Automatically send email notifications for Agent Action notes when a deadline is within 48 hours (high priority if within 24h)\"",
+  "trigger": {
+    "condition": null,
+    "config": {
+      "trigger_type": "entity",
+      "events": [
+        "create"
+      ],
+      "entity_name": "Note"
+    }
+  },
+  "definition": {
+    "document": {
+      "dsl": "1.0.0",
+      "name": "auto_send_note_email_for_urgent_deadlines",
+      "version": "1.0",
+      "namespace": "base44"
+    },
+    "do": [
+      {
+        "run_function": {
+          "call": "invoke_backend_function",
+          "with": {
+            "function_name": "noteEmailAutomation",
+            "args": {}
+          },
+          "then": "end"
+        }
+      }
+    ]
+  },
+  "x-base44-migrated-from-automation": {
+    "legacy_payload_function": "noteEmailAutomation"
+  }
+}

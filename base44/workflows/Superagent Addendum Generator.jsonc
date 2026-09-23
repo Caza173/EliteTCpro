@@ -1,0 +1,37 @@
+{
+  "name": "Superagent Addendum Generator",
+  "description": "When an agent responds 'yes' to an addendum request, auto-generates NHAR-compatible verbiage and notifies the TC.",
+  "trigger": {
+    "condition": null,
+    "config": {
+      "trigger_type": "entity",
+      "events": [
+        "update"
+      ],
+      "entity_name": "InAppNotification"
+    }
+  },
+  "definition": {
+    "document": {
+      "dsl": "1.0.0",
+      "name": "superagent_addendum_generator",
+      "version": "1.0",
+      "namespace": "base44"
+    },
+    "do": [
+      {
+        "run_function": {
+          "call": "invoke_backend_function",
+          "with": {
+            "function_name": "superagentAddendumGenerator",
+            "args": {}
+          },
+          "then": "end"
+        }
+      }
+    ]
+  },
+  "x-base44-migrated-from-automation": {
+    "legacy_payload_function": "superagentAddendumGenerator"
+  }
+}

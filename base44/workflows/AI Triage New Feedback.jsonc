@@ -1,0 +1,37 @@
+{
+  "name": "AI Triage New Feedback",
+  "description": "Automatically runs AI triage on every new feedback submission \u2014 generates summary, priority score, impact score, urgency reason, tags, and detects duplicates.",
+  "trigger": {
+    "condition": null,
+    "config": {
+      "trigger_type": "entity",
+      "events": [
+        "create"
+      ],
+      "entity_name": "FeedbackItem"
+    }
+  },
+  "definition": {
+    "document": {
+      "dsl": "1.0.0",
+      "name": "ai_triage_new_feedback",
+      "version": "1.0",
+      "namespace": "base44"
+    },
+    "do": [
+      {
+        "run_function": {
+          "call": "invoke_backend_function",
+          "with": {
+            "function_name": "triageFeedback",
+            "args": {}
+          },
+          "then": "end"
+        }
+      }
+    ]
+  },
+  "x-base44-migrated-from-automation": {
+    "legacy_payload_function": "triageFeedback"
+  }
+}
